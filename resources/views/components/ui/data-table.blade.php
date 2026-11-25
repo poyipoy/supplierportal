@@ -53,7 +53,7 @@
     @else
         @isset($cards)
             <div x-data="{ viewMode: 'cards' }" class="ui-data-table__hybrid">
-                <div class="d-md-none tw:flex tw:items-center tw:justify-between tw:px-3.5 tw:py-2 tw:bg-surface-container-low tw:border-b tw:border-outline-variant">
+                <div class="tw:md:hidden tw:flex tw:items-center tw:justify-between tw:px-3.5 tw:py-2 tw:bg-surface-container-low tw:border-b tw:border-outline-variant">
                     <span class="tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant" x-text="viewMode === 'cards' ? 'Mode Kartu (Mobile)' : 'Mode Tabel'"></span>
                     <div class="tw:inline-flex tw:items-center tw:rounded-ui-xs tw:bg-surface-container tw:p-0.5 tw:border tw:border-outline" role="group" aria-label="Table display mode">
                         <button type="button" class="ui-focus-ring tw:flex tw:items-center tw:gap-1 tw:px-2.5 tw:py-1 tw:rounded-ui-xs tw:text-ui-xs tw:font-semibold tw:border-0" :class="viewMode === 'cards' ? 'tw:bg-surface tw:text-primary tw:shadow-xs' : 'tw:bg-transparent tw:text-on-surface-variant'" x-on:click="viewMode = 'cards'">
@@ -66,10 +66,10 @@
                         </button>
                     </div>
                 </div>
-                <div class="ui-data-table__cards-container tw:p-3 tw:grid tw:gap-2.5 d-md-none" x-show="viewMode === 'cards'">
+                <div class="ui-data-table__cards-container tw:p-3 tw:grid tw:gap-2.5 tw:md:hidden" x-show="viewMode === 'cards'">
                     {{ $cards }}
                 </div>
-                <div class="ui-data-table__scroll tw:overflow-x-auto tw:w-full tw:min-w-0 tw:max-w-full" role="region" tabindex="0" aria-label="{{ $scrollLabel ?? $title ?? __('js.tables.scroll_region') }}" :class="{ 'd-none d-md-block': viewMode === 'cards' }">
+                <div class="ui-data-table__scroll tw:overflow-x-auto tw:w-full tw:min-w-0 tw:max-w-full" role="region" tabindex="0" aria-label="{{ $scrollLabel ?? $title ?? __('js.tables.scroll_region') }}" :class="{ 'tw:hidden tw:md:block': viewMode === 'cards' }">
                     {{ $slot }}
                 </div>
             </div>

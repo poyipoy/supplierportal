@@ -48,7 +48,7 @@ export function bootLocalPoGrTable(root = document) {
             field.removeAttribute('aria-invalid');
             field.classList.remove('is-invalid');
         });
-        modal.querySelectorAll?.('.invalid-feedback')?.forEach(error => { error.hidden = true; });
+        modal.querySelectorAll?.('.ui-field-error, .invalid-feedback')?.forEach(error => { error.hidden = true; });
         if (form) form.action = action.href;
         const numberEl = modal.querySelector('[data-gr-modal-number]');
         if (numberEl) numberEl.textContent = button.dataset.grNumber;
@@ -97,7 +97,7 @@ export function bootLocalPoGrTable(root = document) {
             { data: 'DT_RowIndex', orderable: false, searchable: false, className: 'ui-tabular-nums' },
             { data: 'gr_number', name: 'gr_number' }, { data: 'gr_date', name: 'gr_date' },
             { data: 'description', name: 'description', className: 'ui-col-data-name', defaultContent: '—' },
-            { data: 'qty', name: 'qty', className: 'text-end ui-tabular-nums' },
+            { data: 'qty', name: 'qty', className: 'tw:text-end ui-tabular-nums' },
             { data: 'uom', name: 'uom', defaultContent: '—' },
             { data: 'status_badge', name: 'status' },
             { data: 'invoice', orderable: false, searchable: false },

@@ -135,7 +135,7 @@
     </div>
 
     <label class="tw:flex tw:items-center tw:gap-2 tw:text-ui-sm tw:cursor-pointer" for="remember">
-        <input type="checkbox" name="remember" value="1" class="form-check-input tw:mt-0" id="remember" {{ old('remember') ? 'checked' : '' }}>
+        <input type="checkbox" name="remember" value="1" class="ui-check tw:mt-0" id="remember" {{ old('remember') ? 'checked' : '' }}>
         <span class="tw:font-medium tw:text-on-surface">{{ __('auth.login.remember_device') }}</span>
     </label>
 

@@ -117,7 +117,7 @@ test('applyPrTotalsResponse updates row Total KG cells, non-manual unit weights,
     assert.equal(qtyOutput.textContent, '10');
     assert.equal(kgOutput.textContent, '57.4998');
     assert.equal(statusEl.textContent, statusEl.dataset.defaultText);
-    assert.deepEqual(statusEl.classList.removed, ['text-danger']);
+    assert.deepEqual(statusEl.classList.removed, ['tw:text-error']);
 });
 
 test('createPrTotalsSyncController aborts stale in-flight requests and applies only the latest response', async () => {
@@ -215,7 +215,7 @@ test('createPrTotalsSyncController surfaces non-blocking status notice on server
     const result = await controller.syncNow();
     assert.equal(result.ok, false);
     assert.equal(statusEl.textContent, 'Could not refresh totals from the server.');
-    assert.deepEqual(statusEl.classList.added, ['text-danger']);
+    assert.deepEqual(statusEl.classList.added, ['tw:text-error']);
     assert.equal(qtyOutput.textContent, '4', 'existing output is preserved on transient sync error');
 });
 

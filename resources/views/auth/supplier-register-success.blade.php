@@ -17,11 +17,11 @@
         <p class="tw:text-ui-sm tw:font-semibold">{{ __('registration.important_key') }}</p>
         <div>
             <label for="registration_reference" class="tw:block tw:text-ui-sm tw:font-semibold">{{ __('registration.reference') }}</label>
-            <input id="registration_reference" data-receipt-reference readonly class="form-control tw:font-mono" value="{{ $receipt['reference'] }}">
+            <input id="registration_reference" data-receipt-reference readonly class="ui-input tw:font-mono" value="{{ $receipt['reference'] }}">
         </div>
         <div>
             <label for="registration_access_key" class="tw:block tw:text-ui-sm tw:font-semibold">{{ __('registration.key') }}</label>
-            <input id="registration_access_key" data-receipt-key readonly class="form-control tw:font-mono" value="{{ $receipt['access_key'] }}">
+            <input id="registration_access_key" data-receipt-key readonly class="ui-input tw:font-mono" value="{{ $receipt['access_key'] }}">
         </div>
         <div class="tw:flex tw:flex-wrap tw:gap-2">
             <x-ui.button type="button" variant="outline-primary" data-receipt-copy>{{ __('registration.receipt.copy_both') }}</x-ui.button>

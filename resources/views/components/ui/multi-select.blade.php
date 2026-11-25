@@ -420,7 +420,7 @@
                     @keydown.enter.prevent="toggleHighlighted()"
                     placeholder="{{ $searchPlaceholder }}"
                     autocomplete="off"
-                    class="form-control form-control-sm ui-motion"
+                    class="ui-input ui-input--sm ui-motion"
                     style="padding-left: 2.25rem !important; padding-right: 2.25rem !important; font-size: 0.8125rem; width: 100%; position: relative; z-index: 1;"
                 >
                 <button

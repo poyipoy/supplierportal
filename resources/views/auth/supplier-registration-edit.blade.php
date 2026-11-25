@@ -190,7 +190,7 @@
 
             <div class="tw:grid tw:content-start tw:gap-1.5 tw:md:col-span-2">
                 <label class="tw:flex tw:items-center tw:gap-2.5 tw:cursor-pointer" for="is_pkp">
-                    <input type="checkbox" name="is_pkp" id="is_pkp" value="1" x-model="isPkp" class="form-check-input tw:mt-0" {{ old('is_pkp', $supplier?->is_pkp) ? 'checked' : '' }}>
+                    <input type="checkbox" name="is_pkp" id="is_pkp" value="1" x-model="isPkp" class="ui-check tw:mt-0" {{ old('is_pkp', $supplier?->is_pkp) ? 'checked' : '' }}>
                     <span class="tw:text-ui-sm tw:font-medium tw:text-on-surface">{{ __('registration.pkp_edit') }}</span>
                 </label>
             </div>
@@ -220,7 +220,7 @@
                                     type="radio"
                                     name="questionnaire[{{ $questionKey }}]"
                                     value="{{ $answerValue }}"
-                                    class="form-check-input tw:m-0 tw:h-4 tw:w-4"
+                                    class="ui-check tw:m-0 tw:h-4 tw:w-4"
                                     @checked(($questionnaireAnswers[$questionKey] ?? null) === $answerValue)
                                     required
                                 >

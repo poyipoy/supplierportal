@@ -23,6 +23,11 @@ function resultAction(body) {
         else window.location.reload();
     } };
 }
+function setHidden(element, hidden) {
+    if (!element?.classList) return;
+    element.classList.toggle('tw:hidden', hidden);
+    if (!hidden) element.classList.remove('d-none');
+}
 // Toast hilang saat halaman di-reload; pesan sukses dititipkan sekali pakai di tab ini.
 const TOAST_KEY = 'adasi:local-import-toast';
 const TOAST_TTL_MS = 60000;
@@ -142,7 +147,7 @@ export function bootLocalProcurementImports(root = document) {
         retry.textContent = t('js.local_import.retry_status');
         retry.addEventListener('click', () => poll());
         const announcer = document.createElement('div');
-        announcer.className = 'visually-hidden'; announcer.setAttribute('aria-live', 'polite');
+        announcer.className = 'tw:sr-only'; announcer.setAttribute('aria-live', 'polite');
         statusPanel.append(filename, progress, countLabel, meter, helper, retry, announcer);
         (modal.querySelector('.modal-header') ?? modal.querySelector('.modal-body')).append(statusPanel);
         const warnings = document.createElement('ul');
@@ -399,7 +404,7 @@ export function bootLocalProcurementImports(root = document) {
                 });
                 body.append(row);
             });
-            find('PreviewPanel')?.classList.remove('d-none');
+            setHidden(find('PreviewPanel'), false);
         }
         function renderErrors(errors) {
             const list = find('ErrorsList');
@@ -423,7 +428,7 @@ export function bootLocalProcurementImports(root = document) {
                 }
                 list.append(item);
             });
-            find('ErrorsPanel')?.classList.toggle('d-none', errors.length === 0);
+            setHidden(find('ErrorsPanel'), errors.length === 0);
         }
         function render(body) {
             const previousStatus = last?.status;
@@ -479,7 +484,7 @@ export function bootLocalProcurementImports(root = document) {
             cancel.disabled = ['IMPORTING', 'COMPLETED', 'CANCELLED', 'EXPIRED'].includes(body.status);
             cancel.hidden = cancel.disabled || !statusUrl;
             form.action = body.confirm_url ?? confirmAction;
-            find('Result')?.classList.toggle('d-none', !body.preview);
+            setHidden(find('Result'), !body.preview);
             const summary = body.preview?.summary ?? {};
             const staleReview = body.status === 'VALIDATION_FAILED' && body.failure && Number(summary.invalid ?? 0) === 0 && newCount(body) > 0 && Number(body.errors_total ?? 0) === 0;
             const reviewSummary = find('ReviewSummary');
@@ -521,7 +526,7 @@ export function bootLocalProcurementImports(root = document) {
                 if (errorPage === 1) renderErrors(body.preview.errors ?? []);
             }
             find('RowCount')?.replaceChildren(document.createTextNode(number(body.records_total)));
-            if (staleReview) find('PreviewPanel')?.classList.add('d-none');
+            if (staleReview) setHidden(find('PreviewPanel'), true);
             const metricsPanel = modal.querySelector('[data-import-metrics]');
             if (metricsPanel) metricsPanel.hidden = Boolean(staleReview);
             controls.hidden = !body.preview || Boolean(staleReview);
@@ -631,7 +636,7 @@ export function bootLocalProcurementImports(root = document) {
             requestInFlight = true;
             parse.disabled = true;
             confirm.disabled = true;
-            find('Spinner')?.classList.remove('d-none');
+            setHidden(find('Spinner'), false);
             clearTimeout(timer);
             const data = new FormData();
             data.append('import_file', file);
@@ -646,7 +651,7 @@ export function bootLocalProcurementImports(root = document) {
             } catch (error) { if (generation === modalGeneration) { tell(error); await loadActiveImports(); } }
             finally {
                 if (generation === modalGeneration) {
-                    requestInFlight = false; parse.disabled = Boolean(statusUrl) && (!last || active.has(last.status)); find('Spinner')?.classList.add('d-none');
+                    requestInFlight = false; parse.disabled = Boolean(statusUrl) && (!last || active.has(last.status)); setHidden(find('Spinner'), true);
                     if (last) render(last);
                 }
             }
@@ -661,7 +666,7 @@ export function bootLocalProcurementImports(root = document) {
             find('Token').value = '';
             confirm.disabled = true;
             last = null;
-            find('Result')?.classList.add('d-none');
+            setHidden(find('Result'), true);
             revalidate.disabled = true;
             try {
                 const response = await json(candidate.revalidate_url, { method: 'POST', body: new URLSearchParams({_token:csrf(), expected_attempt:String(candidate.validation_attempt)}) });
@@ -777,8 +782,8 @@ export function bootLocalProcurementImports(root = document) {
             if (confirmLabel) confirmLabel.textContent = confirmText;
             form.action = confirmAction;
             find('Token').value = '';
-            find('Spinner')?.classList.add('d-none');
-            ['Result', 'PreviewPanel', 'ErrorsPanel'].forEach(suffix => find(suffix)?.classList.add('d-none'));
+            setHidden(find('Spinner'), true);
+            ['Result', 'PreviewPanel', 'ErrorsPanel'].forEach(suffix => setHidden(find(suffix), true));
             ['PreviewBody', 'ErrorsList', 'RowCount'].forEach(suffix => find(suffix)?.replaceChildren());
             modal.querySelectorAll(`[id^="kpi${name}"]`).forEach(element => { element.textContent = number(0); });
             modal.querySelectorAll('[data-import-step]').forEach(step => {

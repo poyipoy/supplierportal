@@ -91,7 +91,7 @@ export function applyPrTotalsResponse({ tbody, qtyOutput, kgOutput, statusEl, ac
         if (defaultText && statusEl.textContent !== defaultText) {
             statusEl.textContent = defaultText;
         }
-        statusEl.classList?.remove?.('text-danger');
+        statusEl.classList?.remove?.('tw:text-error');
         statusEl.removeAttribute?.('data-sync-error');
     }
 }
@@ -119,7 +119,7 @@ export function createPrTotalsSyncController({
     const markError = () => {
         if (!statusEl) return;
         statusEl.textContent = errorText;
-        statusEl.classList?.add?.('text-danger');
+        statusEl.classList?.add?.('tw:text-error');
         statusEl.setAttribute?.('data-sync-error', '1');
     };
 

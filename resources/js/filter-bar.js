@@ -151,7 +151,6 @@ export function bindLive(containerOrSelector, options = {}) {
 
         if (activeItems.length === 0) {
             chipsEl.classList.add('tw:hidden');
-            chipsEl.classList.remove('d-flex');
             return;
         }
 

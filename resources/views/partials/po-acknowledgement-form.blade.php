@@ -17,8 +17,8 @@
     >
         @csrf
         <div class="tw:md:col-span-3">
-            <label for="{{ $idPrefix }}-mode" class="form-label tw:text-ui-xs tw:font-semibold">{{ __('purchasing.po_ack.fields.action_mode') }}</label>
-            <select name="mode" id="{{ $idPrefix }}-mode" x-model="mode" class="ui-focus-ring form-select form-select-sm tw:min-h-[36px]">
+            <label for="{{ $idPrefix }}-mode" class="ui-label tw:text-ui-xs tw:font-semibold">{{ __('purchasing.po_ack.fields.action_mode') }}</label>
+            <select name="mode" id="{{ $idPrefix }}-mode" x-model="mode" class="ui-focus-ring ui-select ui-select--sm tw:min-h-[36px]">
                 <option value="confirm">{{ __('purchasing.po_ack.actions.confirm_po') }}</option>
                 <option value="propose_change">{{ __('purchasing.po_ack.actions.propose_date') }}</option>
             </select>
@@ -41,7 +41,7 @@
         </div>
 
         <div class="tw:md:col-span-4">
-            <label for="{{ $idPrefix }}-notes" class="form-label tw:text-ui-xs tw:font-semibold">
+            <label for="{{ $idPrefix }}-notes" class="ui-label tw:text-ui-xs tw:font-semibold">
                 {{ __('purchasing.po_ack.fields.notes') }}
                 <span class="tw:text-error" x-show="mode === 'propose_change'" x-cloak aria-hidden="true">*</span>
                 <span class="tw:sr-only" x-show="mode === 'propose_change'" x-cloak> {{ __('common.required') }}</span>
@@ -50,7 +50,7 @@
                 type="text"
                 name="acknowledgement_notes"
                 id="{{ $idPrefix }}-notes"
-                class="ui-focus-ring form-control form-control-sm tw:min-h-[36px]"
+                class="ui-focus-ring ui-input ui-input--sm tw:min-h-[36px]"
                 value="{{ old('acknowledgement_notes', $po->acknowledgement_notes) }}"
                 x-bind:required="mode === 'propose_change'"
                 x-bind:aria-required="mode === 'propose_change' ? 'true' : 'false'"

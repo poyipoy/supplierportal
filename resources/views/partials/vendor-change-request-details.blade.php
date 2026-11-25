@@ -53,8 +53,8 @@
     </div>
 
     @if(!empty($proposed))
-        <div class="table-responsive">
-            <table class="table table-sm table-hover tw:m-0 tw:text-ui-xs align-middle">
+        <div class="ui-table-responsive">
+            <table class="ui-table ui-table--sm ui-table--hover tw:m-0 tw:text-ui-xs tw:align-middle">
                 <thead class="tw:bg-surface-container-lowest tw:border-b tw:border-outline-variant/60">
                     <tr>
                         <th scope="col" class="tw:py-2 tw:ps-3 tw:text-on-surface-variant tw:font-semibold" style="width: 25%;">{{ __('local_procurement.change_details.field') }}</th>

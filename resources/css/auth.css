@@ -302,7 +302,8 @@ button:not(:disabled),
 }
 
 /* Standalone token-styled form primitives replacing Bootstrap CSS in auth views */
-.form-check-input {
+.form-check-input,
+.ui-check {
     width: 1em;
     height: 1em;
     margin-top: 0.25em;
@@ -319,33 +320,34 @@ button:not(:disabled),
     flex-shrink: 0;
     transition: background-color 0.15s ease-in-out, border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
 }
-.form-check-input[type="checkbox"] {
+:is(.form-check-input, .ui-check)[type="checkbox"] {
     border-radius: 0.25em;
 }
-.form-check-input[type="radio"] {
+:is(.form-check-input, .ui-check)[type="radio"] {
     border-radius: 50%;
 }
-.form-check-input:checked {
+:is(.form-check-input, .ui-check):checked {
     background-color: var(--md-primary);
     border-color: var(--md-primary);
 }
-.form-check-input[type="checkbox"]:checked {
+:is(.form-check-input, .ui-check)[type="checkbox"]:checked {
     background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3e%3cpath fill='none' stroke='%23fff' stroke-linecap='round' stroke-linejoin='round' stroke-width='3' d='m6 10 3 3 6-6'/%3e%3c/svg%3e");
 }
-.form-check-input[type="radio"]:checked {
+:is(.form-check-input, .ui-check)[type="radio"]:checked {
     background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='2' fill='%23fff'/%3e%3c/svg%3e");
 }
-.form-check-input:focus-visible {
+:is(.form-check-input, .ui-check):focus-visible {
     border-color: var(--ui-input-focus);
     outline: 0;
     box-shadow: 0 0 0 0.2rem rgba(var(--md-primary-rgb), 0.25);
 }
-.form-check-input:disabled {
+:is(.form-check-input, .ui-check):disabled {
     pointer-events: none;
     opacity: 0.5;
 }
 
-.form-control {
+.form-control,
+.ui-input {
     display: block;
     width: 100%;
     min-height: var(--ui-control-height-md);
@@ -360,7 +362,7 @@ button:not(:disabled),
     border-radius: var(--md-shape-sm);
     transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
 }
-.form-control:focus {
+:is(.form-control, .ui-input):focus {
     border-color: var(--ui-input-focus);
     outline: 0;
     box-shadow: 0 0 0 0.2rem rgba(var(--md-primary-rgb), 0.2);

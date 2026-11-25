@@ -4,7 +4,7 @@
         <aside class="chat-drawer" tabindex="-1" id="chatDrawer" role="dialog" aria-modal="true" aria-labelledby="chatDrawerTitle" hidden>
             <div class="offcanvas-header tw:flex tw:items-center tw:justify-between tw:gap-3 tw:border-b tw:border-outline-variant tw:bg-surface tw:px-4 tw:py-3">
                 <div class="tw:flex tw:flex-1 tw:min-w-0 tw:items-center tw:gap-2.5">
-                    <button type="button" class="ui-focus-ring tw:inline-flex tw:h-8 tw:w-8 tw:shrink-0 tw:items-center tw:justify-center tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-transparent tw:text-on-surface-variant tw:hover:bg-surface-container d-none" id="chatDrawerBack" title="{{ __('common.chat.back') }}" aria-label="{{ __('common.chat.back_lower') }}">
+                    <button type="button" class="ui-focus-ring tw:inline-flex tw:h-8 tw:w-8 tw:shrink-0 tw:items-center tw:justify-center tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-transparent tw:text-on-surface-variant tw:hover:bg-surface-container tw:hidden" id="chatDrawerBack" title="{{ __('common.chat.back') }}" aria-label="{{ __('common.chat.back_lower') }}">
                         <x-ui.icon name="arrow-left" />
                     </button>
                     <div class="tw:flex-1 tw:min-w-0 tw:overflow-hidden">
@@ -12,18 +12,18 @@
                         <span class="tw:block tw:truncate tw:text-ui-xs tw:text-on-surface-variant" id="chatDrawerSubtitle">{{ __('common.chat.list') }}</span>
                     </div>
                 </div>
-                <div class="tw:flex tw:shrink-0 tw:items-center tw:gap-2 ms-auto">
-                    <div class="d-none align-items-center tw:shrink-0" id="chatDrawerMuteContainer">
+                <div class="tw:flex tw:shrink-0 tw:items-center tw:gap-2 tw:ms-auto">
+                    <div class="tw:hidden tw:items-center tw:shrink-0" id="chatDrawerMuteContainer">
                         <button type="button"
                             class="ui-focus-ring ui-motion tw:inline-flex tw:h-8 tw:w-8 tw:items-center tw:justify-center tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-transparent tw:text-on-surface-variant tw:hover:bg-surface-container tw:hover:text-on-surface"
                             id="chatDrawerMuteToggle"
                             aria-pressed="false"
                             title="{{ __('common.chat.mute_help') }}"
                             aria-label="{{ __('common.chat.mute') }}">
-                            <span class="chat-drawer-mute-icon-unmuted d-inline-flex">
+                            <span class="chat-drawer-mute-icon-unmuted tw:inline-flex">
                                 <x-ui.icon name="bell" />
                             </span>
-                            <span class="chat-drawer-mute-icon-muted d-none">
+                            <span class="chat-drawer-mute-icon-muted tw:hidden">
                                 <x-ui.icon name="bell-off" />
                             </span>
                             <span class="tw:sr-only" id="chatDrawerMuteSrLabel">{{ __('common.chat.mute') }}</span>
@@ -52,27 +52,27 @@
                     </div>
                 </div>
 
-                <div class="chat-drawer-pane d-none" id="chatDrawerConversationPane">
-                    <div class="chat-context-panel tw:border-b tw:border-outline-variant tw:bg-surface tw:p-3 d-none" id="chatDrawerContext"></div>
-                    <div class="chat-action-panel tw:border-b tw:border-outline-variant tw:bg-surface-low tw:p-2 d-none" id="chatDrawerActions"></div>
-                    <div class="chat-message-list p-3" id="chatDrawerMessages"></div>
+                <div class="chat-drawer-pane tw:hidden" id="chatDrawerConversationPane">
+                    <div class="chat-context-panel tw:border-b tw:border-outline-variant tw:bg-surface tw:p-3 tw:hidden" id="chatDrawerContext"></div>
+                    <div class="chat-action-panel tw:border-b tw:border-outline-variant tw:bg-surface-low tw:p-2 tw:hidden" id="chatDrawerActions"></div>
+                    <div class="chat-message-list tw:p-3" id="chatDrawerMessages"></div>
                     <div class="tw:border-t tw:border-outline-variant tw:bg-surface tw:p-3">
                         <form id="chatDrawerForm" data-managed-submit>
-                            <div class="chat-composer-tools d-flex align-items-center justify-content-between gap-2 mb-2">
-                                <div class="dropdown d-none" id="chatDrawerTemplates">
+                            <div class="chat-composer-tools tw:flex tw:items-center tw:justify-between tw:gap-2 tw:mb-2">
+                                <div class="dropdown tw:hidden" id="chatDrawerTemplates">
                                     <button class="ui-focus-ring tw:inline-flex tw:h-7 tw:items-center tw:gap-1 tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-transparent tw:px-2.5 tw:text-ui-xs tw:font-medium tw:text-on-surface tw:hover:bg-surface-low" type="button" data-ui-dropdown-trigger popovertarget="chatDrawerTemplateMenu" aria-controls="chatDrawerTemplateMenu" aria-expanded="false">
                                         <x-ui.icon name="zap" /> {{ __('common.chat.template') }}
                                     </button>
-                                    <div class="dropdown-menu p-2 chat-template-menu" id="chatDrawerTemplateMenu" popover="auto" data-ui-dropdown-menu></div>
+                                    <div class="dropdown-menu tw:p-2 chat-template-menu" id="chatDrawerTemplateMenu" popover="auto" data-ui-dropdown-menu></div>
                                 </div>
-                                <div class="tw:flex-1 tw:text-end tw:text-ui-xs tw:text-on-surface-variant d-none" id="chatDrawerAttachmentList"></div>
+                                <div class="tw:flex-1 tw:text-end tw:text-ui-xs tw:text-on-surface-variant tw:hidden" id="chatDrawerAttachmentList"></div>
                             </div>
                             <div class="tw:flex tw:gap-2 tw:items-end">
                                 <textarea class="tw:flex-1 tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface tw:px-3 tw:py-2 tw:text-ui-sm tw:text-on-surface tw:focus:border-primary tw:focus:ring-2 tw:focus:ring-primary tw:resize-none" id="chatDrawerInput" rows="2" maxlength="2000" placeholder="{{ __('common.chat.type') }}" aria-label="{{ __('common.fields.message') }}"></textarea>
                                 <label class="ui-focus-ring tw:inline-flex tw:h-10 tw:w-10 tw:shrink-0 tw:cursor-pointer tw:items-center tw:justify-center tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-transparent tw:text-on-surface-variant tw:hover:bg-surface-container tw:mb-0" for="chatDrawerAttachments" title="{{ __('common.upload.attach') }}" aria-label="{{ __('common.upload.attach') }}">
                                     <x-ui.icon name="paperclip" />
                                 </label>
-                                <input type="file" class="d-none" id="chatDrawerAttachments" name="attachments[]" multiple accept=".jpg,.jpeg,.png,.pdf,.xlsx,.xls,.doc,.docx">
+                                <input type="file" class="tw:hidden" id="chatDrawerAttachments" name="attachments[]" multiple accept=".jpg,.jpeg,.png,.pdf,.xlsx,.xls,.doc,.docx">
                                 <button type="submit" class="ui-focus-ring tw:inline-flex tw:h-10 tw:w-10 tw:shrink-0 tw:items-center tw:justify-center tw:rounded-ui-sm tw:border-0 tw:bg-primary tw:text-primary-foreground tw:hover:brightness-95" id="chatDrawerSend" aria-label="{{ __('common.chat.send') }}">
                                     <x-ui.icon name="send" />
                                 </button>
@@ -144,7 +144,7 @@
                             drawerEl.classList.add('show');
                             window.AdasiOverlayModality?.acquire?.('chatDrawer', drawerEl);
                             requestAnimationFrame(() => {
-                                const target = (!conversationPane.classList.contains('d-none') ? inputEl : searchEl)
+                                const target = (!conversationPane.classList.contains('tw:hidden') ? inputEl : searchEl)
                                     || drawerEl.querySelector('[data-chat-drawer-close]');
                                 target?.focus?.({ preventScroll: true });
                             });
@@ -179,7 +179,7 @@
                             }
                             if (event.key === 'Tab') {
                                 const focusables = [...drawerEl.querySelectorAll('a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])')]
-                                    .filter((el) => !el.hidden && !el.closest('.d-none, [hidden]'));
+                                    .filter((el) => !el.hidden && !el.closest('.tw\\:hidden, [hidden]'));
                                 if (!focusables.length) return;
                                 const first = focusables[0];
                                 const last = focusables[focusables.length - 1];
@@ -310,12 +310,12 @@
                             muteToggle.setAttribute('title', @js(__('common.chat.currently_muted')));
                             if (muteSrLabel) muteSrLabel.textContent = @js(__('common.chat.unmute'));
                             if (muteIconUnmuted) {
-                                muteIconUnmuted.classList.add('d-none');
-                                muteIconUnmuted.classList.remove('d-inline-flex');
+                                muteIconUnmuted.classList.add('tw:hidden');
+                                muteIconUnmuted.classList.remove('tw:inline-flex');
                             }
                             if (muteIconMuted) {
-                                muteIconMuted.classList.remove('d-none');
-                                muteIconMuted.classList.add('d-inline-flex');
+                                muteIconMuted.classList.remove('tw:hidden');
+                                muteIconMuted.classList.add('tw:inline-flex');
                             }
                             muteToggle.classList.add('tw:bg-surface-container', 'tw:text-on-surface');
                             muteToggle.classList.remove('tw:bg-transparent', 'tw:text-on-surface-variant');
@@ -324,12 +324,12 @@
                             muteToggle.setAttribute('title', @js(__('common.chat.mute_help')));
                             if (muteSrLabel) muteSrLabel.textContent = @js(__('common.chat.mute'));
                             if (muteIconUnmuted) {
-                                muteIconUnmuted.classList.remove('d-none');
-                                muteIconUnmuted.classList.add('d-inline-flex');
+                                muteIconUnmuted.classList.remove('tw:hidden');
+                                muteIconUnmuted.classList.add('tw:inline-flex');
                             }
                             if (muteIconMuted) {
-                                muteIconMuted.classList.add('d-none');
-                                muteIconMuted.classList.remove('d-inline-flex');
+                                muteIconMuted.classList.add('tw:hidden');
+                                muteIconMuted.classList.remove('tw:inline-flex');
                             }
                             muteToggle.classList.remove('tw:bg-surface-container', 'tw:text-on-surface');
                             muteToggle.classList.add('tw:bg-transparent', 'tw:text-on-surface-variant');
@@ -345,32 +345,32 @@
                         clearInterval(pollTimer);
                         inputEl.value = '';
                         clearAttachments();
-                        backButton.classList.add('d-none');
+                        backButton.classList.add('tw:hidden');
                         titleEl.textContent = @js(__('common.chat.title'));
                         subtitleEl.textContent = @js(__('common.chat.list'));
                         if (muteContainer) {
-                            muteContainer.classList.add('d-none');
-                            muteContainer.classList.remove('d-flex');
+                            muteContainer.classList.add('tw:hidden');
+                            muteContainer.classList.remove('tw:flex');
                         }
-                        listPane.classList.remove('d-none');
-                        conversationPane.classList.add('d-none');
-                        contextEl.classList.add('d-none');
-                        actionsEl.classList.add('d-none');
-                        templatesEl.classList.add('d-none');
+                        listPane.classList.remove('tw:hidden');
+                        conversationPane.classList.add('tw:hidden');
+                        contextEl.classList.add('tw:hidden');
+                        actionsEl.classList.add('tw:hidden');
+                        templatesEl.classList.add('tw:hidden');
                         templateMenuEl.replaceChildren();
                     };
 
                     const setConversationMode = (conversation) => {
-                        backButton.classList.remove('d-none');
+                        backButton.classList.remove('tw:hidden');
                         titleEl.textContent = conversation.partner_name || @js(__('common.chat.short'));
                         subtitleEl.textContent = `${conversation.context_label || '-'} · ${conversation.partner_role || ''}`;
                         if (muteContainer) {
-                            muteContainer.classList.remove('d-none');
-                            muteContainer.classList.add('d-flex');
+                            muteContainer.classList.remove('tw:hidden');
+                            muteContainer.classList.add('tw:flex');
                             updateMuteUI(Boolean(conversation.muted));
                         }
-                        listPane.classList.add('d-none');
-                        conversationPane.classList.remove('d-none');
+                        listPane.classList.add('tw:hidden');
+                        conversationPane.classList.remove('tw:hidden');
                     };
 
                     const renderList = () => {
@@ -386,10 +386,10 @@
 
                         if (filtered.length === 0) {
                             listEl.innerHTML = `
-                                <div class="text-center text-muted py-5 px-4">
+                                <div class="tw:text-center tw:text-on-surface-variant tw:py-12 tw:px-4">
                                     <x-ui.icon name="message-square-text" size="lg" />
-                                    <div class="fw-medium mt-2">{{ __('common.chat.empty_chats') }}</div>
-                                    <div class="small">{{ __('common.chat.empty') }}</div>
+                                    <div class="tw:font-medium tw:mt-2">{{ __('common.chat.empty_chats') }}</div>
+                                    <div class="tw:text-ui-xs">{{ __('common.chat.empty') }}</div>
                                 </div>
                             `;
                             return;
@@ -397,23 +397,23 @@
 
                         listEl.innerHTML = filtered.map((conversation) => `
                             <button type="button" class="chat-thread-button" data-chat-conversation-id="${conversation.id}">
-                                <div class="d-flex justify-content-between gap-2 mb-1">
-                                    <div class="fw-semibold text-truncate d-flex align-items-center gap-1.5">
+                                <div class="tw:flex tw:justify-between tw:gap-2 tw:mb-1">
+                                    <div class="tw:font-semibold tw:truncate tw:flex tw:items-center tw:gap-1.5">
                                         <span>${escapeHtml(conversation.partner_name)}</span>
                                         ${conversation.muted ? `<span class="tw:inline-flex tw:items-center tw:text-on-surface-variant" title="${escapeHtml(window.AdasiI18n.t('js.chat.muted_help'))}"><x-ui.icon name="bell-off" size="xs" /></span>` : ''}
                                     </div>
                                     ${conversation.unread_count > 0 ? `<span class="tw:inline-flex tw:min-w-5 tw:items-center tw:justify-center tw:rounded-full tw:bg-error tw:px-1.5 tw:text-ui-xs tw:font-semibold tw:text-error-foreground">${conversation.unread_count}</span>` : ''}
                                 </div>
-                                <div class="d-flex align-items-center gap-2 mb-1">
+                                <div class="tw:flex tw:items-center tw:gap-2 tw:mb-1">
                                     <span class="${chipClass(conversation.context_type === 'PR' ? 'primary' : 'success')}">${escapeHtml(conversation.context_type)}</span>
-                                    <small class="text-muted text-truncate">${escapeHtml(conversation.context_label)}</small>
+                                    <small class="tw:text-on-surface-variant tw:truncate">${escapeHtml(conversation.context_label)}</small>
                                 </div>
-                                <div class="d-flex flex-wrap gap-1 mb-1">
+                                <div class="tw:flex tw:flex-wrap tw:gap-1 tw:mb-1">
                                     <span class="${chipClass(conversation.status_badge_class)}">${escapeHtml(conversation.status_label || @js(__('common.chat.active')))}</span>
                                     ${conversation.sla ? `<span class="${chipClass(conversation.sla.class)}">${escapeHtml(conversation.sla.label || '')}</span>` : ''}
                                 </div>
-                                <div class="small text-muted text-truncate">${escapeHtml(conversation.latest_preview)}</div>
-                                ${conversation.latest_time ? `<div class="small text-muted mt-1">${escapeHtml(conversation.latest_time)}</div>` : ''}
+                                <div class="tw:text-ui-xs tw:text-on-surface-variant tw:truncate">${escapeHtml(conversation.latest_preview)}</div>
+                                ${conversation.latest_time ? `<div class="tw:text-ui-xs tw:text-on-surface-variant tw:mt-1">${escapeHtml(conversation.latest_time)}</div>` : ''}
                             </button>
                         `).join('');
                     };
@@ -454,42 +454,42 @@
 
                     const renderContext = (context) => {
                         if (!context) {
-                            contextEl.classList.add('d-none');
+                            contextEl.classList.add('tw:hidden');
                             contextEl.replaceChildren();
                             return;
                         }
 
                         const fields = (context.fields || []).map((field) => `
                             <div class="chat-context-field">
-                                <div class="text-muted">${escapeHtml(field.label)}</div>
-                                <div class="fw-semibold text-truncate">${escapeHtml(field.value)}</div>
+                                <div class="tw:text-on-surface-variant">${escapeHtml(field.label)}</div>
+                                <div class="tw:font-semibold tw:truncate">${escapeHtml(field.value)}</div>
                             </div>
                         `).join('');
 
                         contextEl.innerHTML = `
-                            <div class="chat-context-compact d-flex justify-content-between gap-2 align-items-center">
+                            <div class="chat-context-compact tw:flex tw:justify-between tw:gap-2 tw:items-center">
                                 <div class="tw:min-w-0">
-                                    <div class="d-flex align-items-center gap-2 tw:min-w-0">
+                                    <div class="tw:flex tw:items-center tw:gap-2 tw:min-w-0">
                                         <span class="${chipClass(context.type === 'PO' ? 'success' : 'primary')}">${escapeHtml(context.type || 'DOC')}</span>
-                                        <div class="fw-bold text-truncate">${escapeHtml(context.title || '-')}</div>
+                                        <div class="tw:font-bold tw:truncate">${escapeHtml(context.title || '-')}</div>
                                     </div>
-                                    <div class="small text-muted text-truncate mt-1">${escapeHtml(context.subtitle || '')}</div>
+                                    <div class="tw:text-ui-xs tw:text-on-surface-variant tw:truncate tw:mt-1">${escapeHtml(context.subtitle || '')}</div>
                                 </div>
-                                <div class="d-flex gap-1 flex-shrink-0">
+                                <div class="tw:flex tw:gap-1 tw:shrink-0">
                                     <button type="button" class="ui-focus-ring tw:inline-flex tw:h-8 tw:w-8 tw:items-center tw:justify-center tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface tw:text-on-surface-variant tw:hover:bg-surface-container" data-chat-context-toggle title="{{ __('common.chat.toggle') }}" aria-label="{{ __('common.chat.toggle_context') }}">
                                         <x-ui.icon name="chevron-down" />
                                     </button>
                                     ${context.url ? `<a href="${escapeHtml(context.url)}" class="ui-focus-ring tw:inline-flex tw:h-8 tw:w-8 tw:items-center tw:justify-center tw:rounded-ui-sm tw:border tw:border-outline tw:bg-transparent tw:text-on-surface-variant tw:hover:bg-surface-container" title="${escapeHtml(@js(__('common.accessibility.open_details')))}" aria-label="${escapeHtml(@js(__('common.accessibility.open_context')))}"><x-ui.icon name="external-link" /></a>` : ''}
                                 </div>
                             </div>
-                            <div class="chat-context-grid d-none mt-2" id="chatContextDetail">${fields}</div>
+                            <div class="chat-context-grid tw:hidden tw:mt-2" id="chatContextDetail">${fields}</div>
                         `;
-                        contextEl.classList.remove('d-none');
+                        contextEl.classList.remove('tw:hidden');
                     };
 
                     const renderActions = (actions) => {
                         if (!actions || actions.length === 0) {
-                            actionsEl.classList.add('d-none');
+                            actionsEl.classList.add('tw:hidden');
                             actionsEl.replaceChildren();
                             return;
                         }
@@ -505,38 +505,38 @@
                                 ${escapeHtml(action.label)}
                             </button>`;
                         }).join('');
-                        actionsEl.classList.remove('d-none');
+                        actionsEl.classList.remove('tw:hidden');
                     };
 
                     const renderTemplates = (templates) => {
                         if (!templates || templates.length === 0) {
-                            templatesEl.classList.add('d-none');
+                            templatesEl.classList.add('tw:hidden');
                             templateMenuEl.replaceChildren();
                             return;
                         }
 
                         templateMenuEl.innerHTML = templates.map((template) => `
-                            <button type="button" class="dropdown-item rounded small text-wrap" data-chat-template="${escapeHtml(template)}">
+                            <button type="button" class="dropdown-item tw:rounded-ui-sm tw:text-ui-xs tw:whitespace-normal" data-chat-template="${escapeHtml(template)}">
                                 ${escapeHtml(template)}
                             </button>
                         `).join('');
-                        templatesEl.classList.remove('d-none');
+                        templatesEl.classList.remove('tw:hidden');
                     };
 
                     const renderAttachmentList = () => {
                         const files = Array.from(attachmentInput.files || []);
                         if (files.length === 0) {
-                            attachmentListEl.classList.add('d-none');
+                            attachmentListEl.classList.add('tw:hidden');
                             attachmentListEl.replaceChildren();
                             return;
                         }
 
                         attachmentListEl.innerHTML = files.map((file) => `
-                            <span class="ui-status-chip ui-status-chip--neutral me-1 mb-1">
-                                <x-ui.icon name="paperclip" class="me-1" />${escapeHtml(file.name)}
+                            <span class="ui-status-chip ui-status-chip--neutral tw:me-1 tw:mb-1">
+                                <x-ui.icon name="paperclip" class="tw:me-1" />${escapeHtml(file.name)}
                             </span>
                         `).join('');
-                        attachmentListEl.classList.remove('d-none');
+                        attachmentListEl.classList.remove('tw:hidden');
                     };
 
                     const clearAttachments = () => {
@@ -560,11 +560,11 @@
                     const renderMessageAttachments = (attachments) => {
                         if (!attachments || attachments.length === 0) return '';
 
-                        return `<div class="chat-attachment-stack mt-2">
+                        return `<div class="chat-attachment-stack tw:mt-2">
                             ${attachments.map((attachment) => `
                                 <a href="${escapeHtml(attachment.url)}" target="_blank" class="chat-attachment-link">
-                                    <x-ui.icon name="paperclip" class="me-1" />
-                                    <span class="text-truncate">${escapeHtml(attachment.name)}</span>
+                                    <x-ui.icon name="paperclip" class="tw:me-1" />
+                                    <span class="tw:truncate">${escapeHtml(attachment.name)}</span>
                                 </a>
                             `).join('')}
                         </div>`;
@@ -585,8 +585,8 @@
 
                     const renderMessage = (message, insert = (html) => messagesEl.insertAdjacentHTML('beforeend', html)) => {
                         const normalized = normalizeMessage(message);
-                        const wrapperClass = normalized.isMe ? 'justify-content-end' : 'justify-content-start';
-                        const alignClass = normalized.isMe ? 'align-items-end' : 'align-items-start';
+                        const wrapperClass = normalized.isMe ? 'tw:justify-end' : 'tw:justify-start';
+                        const alignClass = normalized.isMe ? 'tw:items-end' : 'tw:items-start';
                         const bubbleClass = normalized.isMe ? 'is-me' : 'is-partner';
                         const senderLabel = normalized.senderName;
 
@@ -597,7 +597,7 @@
                                         ${normalized.body ? `<div class="chat-message-text">${escapeHtml(normalized.body)}</div>` : ''}
                                         ${renderMessageAttachments(message.attachments)}
                                     </div>
-                                    <div class="chat-message-meta ${normalized.isMe ? 'text-end' : 'text-start'}">
+                                    <div class="chat-message-meta ${normalized.isMe ? 'tw:text-end' : 'tw:text-start'}">
                                         ${normalized.isMe ? '' : `${escapeHtml(senderLabel)} · `}
                                         ${escapeHtml(normalized.time)}
                                         ${readReceiptHtml(message)}
@@ -694,10 +694,10 @@
 
                                 if (!data.messages || data.messages.length === 0) {
                                     messagesEl.innerHTML = `
-                                        <div class="text-center text-muted py-5" id="chatDrawerEmpty">
+                                        <div class="tw:text-center tw:text-on-surface-variant tw:py-12" id="chatDrawerEmpty">
                                             <x-ui.icon name="message-circle-more" size="lg" />
-                                            <div class="fw-medium mt-2">{{ __('common.chat.empty_messages') }}</div>
-                                            <div class="small">{{ __('common.chat.start') }}</div>
+                                            <div class="tw:font-medium tw:mt-2">{{ __('common.chat.empty_messages') }}</div>
+                                            <div class="tw:text-ui-xs">{{ __('common.chat.start') }}</div>
                                         </div>
                                     `;
                                 } else {
@@ -895,11 +895,11 @@
                             const detail = document.getElementById('chatContextDetail');
                             if (!detail) return;
 
-                            detail.classList.toggle('d-none');
+                            detail.classList.toggle('tw:hidden');
                             const icon = contextToggle.querySelector('i');
                             if (icon) {
-                                icon.classList.toggle('chevron-down', detail.classList.contains('d-none'));
-                                icon.classList.toggle('chevron-up', !detail.classList.contains('d-none'));
+                                icon.classList.toggle('chevron-down', detail.classList.contains('tw:hidden'));
+                                icon.classList.toggle('chevron-up', !detail.classList.contains('tw:hidden'));
                             }
                             return;
                         }

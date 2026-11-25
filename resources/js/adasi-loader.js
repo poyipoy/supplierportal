@@ -386,7 +386,7 @@ const syncBusyGeometry = (wrapper, doc, isRegionMode) => {
         return;
     }
 
-    const scrollEl = wrapper.closest?.('.ui-data-table__scroll, .table-responsive') || wrapper;
+    const scrollEl = wrapper.closest?.('.ui-data-table__scroll, .ui-table-responsive, .table-responsive') || wrapper;
     const sRect = (scrollEl !== wrapper && typeof scrollEl?.getBoundingClientRect === 'function')
         ? scrollEl.getBoundingClientRect()
         : wrapRect;

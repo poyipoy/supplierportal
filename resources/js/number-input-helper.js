@@ -89,8 +89,9 @@
 
         const style = window.getComputedStyle ? window.getComputedStyle(input) : null;
         const isRightAligned = (style && style.textAlign === 'right') ||
-            input.classList.contains('text-end') ||
+            input.classList.contains('tw:text-end') ||
             input.classList.contains('tw:text-right') ||
+            input.classList.contains('text-end') ||
             (input.getAttribute('class') || '').includes('text-right');
 
         let left = isRightAligned

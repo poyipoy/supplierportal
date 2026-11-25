@@ -122,7 +122,7 @@ export function createQuotationAvailabilityController({
 
         if (banner) {
             banner.hidden = false;
-            banner.classList?.remove('d-none');
+            banner.classList?.remove('tw:hidden', 'd-none');
             const prefersReduced = Boolean(windowRef?.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches);
             banner.scrollIntoView?.({ behavior: prefersReduced ? 'auto' : 'smooth', block: 'nearest' });
             banner.focus?.({ preventScroll: true });

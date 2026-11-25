@@ -84,7 +84,7 @@
     </button>
 
     <div
-        class="visually-hidden"
+        class="tw:sr-only"
         role="tablist"
         aria-label="{{ __('navigation.workspace_shell.sessions_label') }}"
         aria-owns="workspace-session-shortcuts{{ ! $isShortcutsInitial ? ' workspace-session-initial' : '' }}"
@@ -260,7 +260,7 @@
     </template>
 
     <span
-        class="visually-hidden"
+        class="tw:sr-only"
         role="status"
         aria-live="polite"
         aria-atomic="true"

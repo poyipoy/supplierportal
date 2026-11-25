@@ -95,13 +95,13 @@
                                         @else
                                             <label for="{{ $fieldId }}" class="tw:text-ui-sm tw:font-medium">{{ __('exports.advanced.filters.'.$field['name']) }}</label>
                                             @if($field['type'] === 'select')
-                                                <select id="{{ $fieldId }}" name="{{ $field['name'] }}" data-filter-name="{{ $field['name'] }}" class="form-select form-select-sm">
+                                                <select id="{{ $fieldId }}" name="{{ $field['name'] }}" data-filter-name="{{ $field['name'] }}" class="ui-select ui-select--sm">
                                                     @if(!($field['required'] ?? false))<option value="">{{ __('exports.advanced.all') }}</option>@endif
                                                     @foreach($field['options'] as $value)<option value="{{ $value }}">{{ isset($field['labels'][$value]) ? __($field['labels'][$value]) : (($field['domain'] ?? 'po') === 'local_invoice' ? \App\Support\StatusHelper::localInvoiceLabel($value) : (($field['domain'] ?? 'po') === 'currency' ? $value : ($value === 'unresponded' ? __('exports.advanced.unresponded') : __('status.'.($field['domain'] ?? 'po').'.'.$value)))) }}</option>@endforeach
                                                 </select>
                                             @else
                                                 @if($field['type'] === 'boolean')
-                                                    <select id="{{ $fieldId }}" name="{{ $field['name'] }}" data-filter-name="{{ $field['name'] }}" class="form-select form-select-sm"><option value="">{{ __('exports.advanced.all') }}</option><option value="1">{{ __('exports.advanced.enabled') }}</option><option value="0">{{ __('exports.advanced.disabled') }}</option></select>
+                                                    <select id="{{ $fieldId }}" name="{{ $field['name'] }}" data-filter-name="{{ $field['name'] }}" class="ui-select ui-select--sm"><option value="">{{ __('exports.advanced.all') }}</option><option value="1">{{ __('exports.advanced.enabled') }}</option><option value="0">{{ __('exports.advanced.disabled') }}</option></select>
                                                 @else
                                                     @php($placeholder = isset($field['placeholder']) ? __($field['placeholder']) : null)
                                                     @php($hint = isset($field['hint']) ? __($field['hint']) : null)
@@ -110,7 +110,7 @@
                                                         id="{{ $fieldId }}"
                                                         name="{{ $field['name'] }}"
                                                         data-filter-name="{{ $field['name'] }}"
-                                                        class="form-control form-control-sm"
+                                                        class="ui-input ui-input--sm"
                                                         maxlength="255"
                                                         @if($placeholder) placeholder="{{ $placeholder }}" @endif
                                                         @if($hint) aria-describedby="{{ $fieldId }}-hint" @endif
@@ -131,7 +131,7 @@
                                 <div id="{{ $uid }}-relative-panel" data-export-relative-panel hidden class="ui-export-relative-panel">
                                     <div class="ui-export-relative-panel__controls">
                                         <label for="{{ $uid }}-days" class="tw:text-ui-sm tw:font-medium tw:mb-0">{{ __('exports.advanced.days') }}</label>
-                                        <input id="{{ $uid }}-days" type="number" min="1" max="3650" value="30" data-export-days aria-describedby="{{ $uid }}-relative-hint" class="form-control form-control-sm ui-tabular-nums tw:w-24" disabled>
+                                        <input id="{{ $uid }}-days" type="number" min="1" max="3650" value="30" data-export-days aria-describedby="{{ $uid }}-relative-hint" class="ui-input ui-input--sm ui-tabular-nums tw:w-24" disabled>
                                         <div class="ui-export-relative-panel__presets" role="group" aria-label="{{ __('exports.advanced.days') }}">
                                             @foreach([7, 30, 90] as $presetDays)
                                                 <button type="button" class="ui-export-days-chip ui-focus-ring" data-export-days-preset="{{ $presetDays }}" aria-pressed="{{ $presetDays === 30 ? 'true' : 'false' }}" disabled>{{ __('exports.advanced.relative_preset_days', ['days' => $presetDays]) }}</button>
@@ -156,7 +156,7 @@
                             </div>
                             <div class="ui-column-search-bar">
                                 <label for="{{ $uid }}-column-search" class="tw:sr-only">{{ __('exports.advanced.search_columns_label') }}</label>
-                                <input id="{{ $uid }}-column-search" type="search" data-column-search class="form-control form-control-sm" placeholder="{{ __('exports.advanced.search_columns_placeholder') }}" autocomplete="off">
+                                <input id="{{ $uid }}-column-search" type="search" data-column-search class="ui-input ui-input--sm" placeholder="{{ __('exports.advanced.search_columns_placeholder') }}" autocomplete="off">
                                 <span data-column-search-status class="tw:text-ui-xs tw:text-on-surface-variant" aria-live="polite"></span>
                             </div>
                             <div data-column-search-hidden class="ui-column-search-hidden" hidden></div>
@@ -173,10 +173,10 @@
                         <fieldset data-export-format-section class="tw:border tw:border-outline tw:rounded-ui-sm tw:p-3">
                             <legend class="tw:float-none tw:w-auto tw:px-1 tw:text-ui-sm tw:font-semibold">{{ __('exports.advanced.format_title') }}</legend>
                             <label for="{{ $uid }}-format" class="tw:text-ui-sm">{{ __('exports.advanced.format_title') }}</label>
-                            <select id="{{ $uid }}-format" data-export-format class="form-select form-select-sm"><option value="xlsx">XLSX</option><option value="csv">CSV</option></select>
+                            <select id="{{ $uid }}-format" data-export-format class="ui-select ui-select--sm"><option value="xlsx">XLSX</option><option value="csv">CSV</option></select>
                             <div data-export-csv-delimiter-group class="tw:mt-2" hidden>
                                 <label for="{{ $uid }}-csv-delimiter" class="tw:text-ui-sm">{{ __('exports.advanced.csv_delimiter_title') }}</label>
-                                <select id="{{ $uid }}-csv-delimiter" data-export-csv-delimiter class="form-select form-select-sm">
+                                <select id="{{ $uid }}-csv-delimiter" data-export-csv-delimiter class="ui-select ui-select--sm">
                                     <option value="," @selected(app()->getLocale() !== 'id')>{{ __('exports.advanced.csv_delimiter_comma') }}</option>
                                     <option value=";" @selected(app()->getLocale() === 'id')>{{ __('exports.advanced.csv_delimiter_semicolon') }}</option>
                                 </select>
@@ -186,14 +186,14 @@
                         <fieldset data-export-presets-section class="tw:border tw:border-outline tw:rounded-ui-sm tw:p-3">
                             <legend class="tw:float-none tw:w-auto tw:px-1 tw:text-ui-sm tw:font-semibold">{{ __('exports.advanced.presets_title') }}</legend>
                             <label for="{{ $uid }}-preset" class="tw:text-ui-sm">{{ __('exports.advanced.presets_title') }}</label>
-                            <select id="{{ $uid }}-preset" data-export-preset class="form-select form-select-sm"></select>
+                            <select id="{{ $uid }}-preset" data-export-preset class="ui-select ui-select--sm"></select>
                             <p class="ui-column-help">{{ __('exports.advanced.preset_columns_help') }}</p>
                             <p data-export-team-readonly hidden class="tw:m-0 tw:mb-2 tw:text-ui-xs tw:text-on-surface-variant">{{ __('exports.advanced.team_readonly_hint') }}</p>
                             <label for="{{ $uid }}-name" class="tw:mt-2 tw:text-ui-sm">{{ __('exports.advanced.preset_name') }}</label>
-                            <input id="{{ $uid }}-name" data-export-preset-name type="text" maxlength="80" class="form-control form-control-sm">
+                            <input id="{{ $uid }}-name" data-export-preset-name type="text" maxlength="80" class="ui-input ui-input--sm">
                             <div data-export-preset-scope-group class="tw:mt-2" hidden>
                                 <label for="{{ $uid }}-scope" class="tw:text-ui-sm">{{ __('exports.advanced.preset_scope') }}</label>
-                                <select id="{{ $uid }}-scope" data-export-preset-scope class="form-select form-select-sm">
+                                <select id="{{ $uid }}-scope" data-export-preset-scope class="ui-select ui-select--sm">
                                     <option value="personal">{{ __('exports.advanced.scope_personal') }}</option>
                                     <option value="team">{{ __('exports.advanced.scope_team') }}</option>
                                 </select>
@@ -224,7 +224,7 @@
         </div>
         <div id="{{ $uid }}-unhide" data-column-unhide data-column-layer class="ui-column-layer ui-column-unhide" role="group" aria-labelledby="{{ $uid }}-unhide-label" hidden>
             <label id="{{ $uid }}-unhide-label" for="{{ $uid }}-hidden-select">{{ __('exports.advanced.unhide') }}</label>
-            <select id="{{ $uid }}-hidden-select" data-column-hidden-select class="form-select form-select-sm" aria-describedby="{{ $uid }}-restore-position"></select>
+            <select id="{{ $uid }}-hidden-select" data-column-hidden-select class="ui-select ui-select--sm" aria-describedby="{{ $uid }}-restore-position"></select>
             <p id="{{ $uid }}-restore-position" data-column-restore-position class="ui-column-help"></p>
             <div class="tw:flex tw:flex-wrap tw:gap-2">
                 <x-ui.button type="button" size="sm" data-column-command="restore">{{ __('exports.advanced.restore') }}</x-ui.button>

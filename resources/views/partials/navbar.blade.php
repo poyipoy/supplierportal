@@ -1,6 +1,6 @@
-<nav class="top-navbar d-flex align-items-center justify-content-between">
+<nav class="top-navbar tw:flex tw:items-center tw:justify-between">
     {{-- Left: Mobile drawer toggle + Page title --}}
-    <div class="d-flex align-items-center tw:gap-2.5 tw:min-w-0">
+    <div class="tw:flex tw:items-center tw:gap-2.5 tw:min-w-0">
         <x-ui.icon-button
             icon="panel-left"
             :label="__('navigation.toggle_sidebar')"
@@ -23,16 +23,16 @@
                 </span>
             </x-slot:visual>
         </x-ui.icon-button>
-        <div class="vr mx-1 my-2 topbar-divider tw:text-outline d-none d-sm-block d-lg-none" style="height: 18px;"></div>
-        <p class="topbar-page-title text-truncate tw:text-balance">@yield('page-title', __('navigation.dashboard'))</p>
+        <div class="topbar-divider tw:mx-1 tw:my-2 tw:h-[18px] tw:w-px tw:bg-outline-variant tw:hidden tw:sm:block tw:lg:hidden" aria-hidden="true"></div>
+        <p class="topbar-page-title tw:truncate tw:text-balance">@yield('page-title', __('navigation.dashboard'))</p>
     </div>
 
     {{-- Right: Global Utility + Activity Alerts + User Identity --}}
-    <div class="d-flex align-items-center tw:gap-1.5 tw:sm:gap-2">
+    <div class="tw:flex tw:items-center tw:gap-1.5 tw:sm:gap-2">
         <x-ui.environment-tag placement="navbar" />
 
         {{-- 1. Global System Utility: Language Switcher (Desktop only in topbar; mobile accessed via sidebar drawer / user menu) --}}
-        <form action="{{ route('locale.switch') }}" method="POST" data-locale-switcher data-managed-submit data-track-unsaved="false" class="lang-toggle-track tw:inline-flex tw:items-center tw:gap-0.5 tw:p-0.5 tw:rounded-ui-sm tw:bg-surface-container tw:border tw:border-outline tw:m-0 d-none d-lg-inline-flex" role="group" aria-label="{{ __('customization.language.label') }}">
+        <form action="{{ route('locale.switch') }}" method="POST" data-locale-switcher data-managed-submit data-track-unsaved="false" class="lang-toggle-track tw:hidden tw:lg:inline-flex tw:items-center tw:gap-0.5 tw:p-0.5 tw:rounded-ui-sm tw:bg-surface-container tw:border tw:border-outline tw:m-0" role="group" aria-label="{{ __('customization.language.label') }}">
             @csrf
             <input type="hidden" name="return_to" value="{{ request()->getRequestUri() }}">
             <button
@@ -59,7 +59,7 @@
             </button>
         </form>
 
-        <div class="topbar-divider tw:h-4 tw:w-px tw:bg-outline-variant tw:shrink-0 d-none d-lg-block" aria-hidden="true"></div>
+        <div class="topbar-divider tw:h-4 tw:w-px tw:bg-outline-variant tw:shrink-0 tw:hidden tw:lg:block" aria-hidden="true"></div>
 
         {{-- 2. Operational Activity & Alerts: Chat + Notifications --}}
         <div class="tw:inline-flex tw:items-center tw:gap-1">
@@ -74,7 +74,7 @@
                     data-chat-drawer
                 >
                     <x-slot:badge>
-                        <span class="chat-badge topbar-counter {{ $initChatCount > 0 ? '' : 'd-none' }}">{{ $initChatCount }}</span>
+                        <span class="chat-badge topbar-counter {{ $initChatCount > 0 ? '' : 'tw:hidden' }}">{{ $initChatCount }}</span>
                     </x-slot:badge>
                 </x-ui.icon-button>
             @endif
@@ -96,10 +96,10 @@
                     aria-expanded="false"
                 >
                     <x-slot:badge>
-                        <span class="notif-badge topbar-counter {{ $initNotifCount > 0 ? '' : 'd-none' }}" aria-hidden="true">{{ $initNotifCount }}</span>
+                        <span class="notif-badge topbar-counter {{ $initNotifCount > 0 ? '' : 'tw:hidden' }}" aria-hidden="true">{{ $initNotifCount }}</span>
                     </x-slot:badge>
                 </x-ui.icon-button>
-                <div id="topbarNotificationPopover" popover="auto" data-ui-dropdown-menu data-ui-auto-close="outside" class="dropdown-menu dropdown-menu-end notification-dropdown shadow-sm border">
+                <div id="topbarNotificationPopover" popover="auto" data-ui-dropdown-menu data-ui-auto-close="outside" class="dropdown-menu dropdown-menu-end notification-dropdown tw:shadow-ui-1 tw:border tw:border-outline-variant">
                     <div
                         class="tw:flex tw:min-h-48 tw:min-w-72 tw:items-center tw:justify-center tw:p-4 tw:text-ui-sm tw:text-on-surface-variant"
                         data-notification-summary-container
@@ -112,12 +112,12 @@
             </div>
         </div>
 
-        <div class="topbar-divider tw:h-4 tw:w-px tw:bg-outline-variant tw:shrink-0 d-none d-lg-block" aria-hidden="true"></div>
+        <div class="topbar-divider tw:h-4 tw:w-px tw:bg-outline-variant tw:shrink-0 tw:hidden tw:lg:block" aria-hidden="true"></div>
 
         {{-- 3. User Identity & Role Cluster --}}
         <div class="tw:inline-flex tw:items-center tw:gap-1.5">
             {{-- Role Badge (Desktop only; on mobile rendered inside user dropdown & drawer header) --}}
-            <span class="role-badge role-badge-{{ auth()->user()->role }} d-none d-lg-inline-flex">
+            <span class="role-badge role-badge-{{ auth()->user()->role }} tw:hidden tw:lg:inline-flex">
                 {{ __('navigation.roles.'.auth()->user()->role) }}
             </span>
 
@@ -128,16 +128,16 @@
                     <x-ui.user-chip :name="auth()->user()->name" class="topbar-user-chip" />
                     <span class="tw:sr-only">{{ __('navigation.open_user') }}</span>
                 </button>
-                <ul id="topbarUserMenuPopover" popover="auto" data-ui-dropdown-menu @if(config('portal_session.logout_all_devices')) data-ui-auto-close="outside" @endif class="dropdown-menu dropdown-menu-end shadow-sm border">
+                <ul id="topbarUserMenuPopover" popover="auto" data-ui-dropdown-menu @if(config('portal_session.logout_all_devices')) data-ui-auto-close="outside" @endif class="dropdown-menu dropdown-menu-end tw:shadow-ui-1 tw:border tw:border-outline-variant">
                     <li>
-                        <div class="dropdown-item-text small text-muted tw:flex tw:items-center tw:justify-between tw:gap-2">
+                        <div class="dropdown-item-text tw:text-ui-xs tw:text-on-surface-variant tw:flex tw:items-center tw:justify-between tw:gap-2">
                             <span class="tw:truncate">{{ auth()->user()->email }}</span>
-                            <span class="role-badge role-badge-{{ auth()->user()->role }} tw:text-[10px] d-lg-none">
+                            <span class="role-badge role-badge-{{ auth()->user()->role }} tw:text-[10px] tw:lg:hidden">
                                 {{ __('navigation.roles.'.auth()->user()->role) }}
                             </span>
                         </div>
                     </li>
-                    <li class="d-lg-none">
+                    <li class="tw:lg:hidden">
                         <div class="dropdown-item-text tw:py-1.5 tw:flex tw:items-center tw:justify-between tw:gap-2 tw:bg-surface-container-low tw:rounded-ui-xs tw:mx-1 tw:my-1">
                             <span class="tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant">{{ __('customization.language.label') }}</span>
                             <form action="{{ route('locale.switch') }}" method="POST" data-locale-switcher data-managed-submit data-track-unsaved="false" class="lang-toggle-track tw:inline-flex tw:items-center tw:gap-0.5 tw:p-0.5 tw:rounded-ui-sm tw:bg-surface tw:border tw:border-outline tw:m-0" role="group" aria-label="{{ __('customization.language.label') }}">
@@ -167,42 +167,42 @@
                         </div>
                     </li>
                 <li>
-                    <hr class="dropdown-divider my-1">
+                    <hr class="dropdown-divider tw:my-1">
                 </li>
                 <li>
-                    <a href="{{ route('profile.edit') }}" class="dropdown-item tw:py-1.5 small">
-                        <x-ui.icon name="user-cog" class="me-2" />{{ __('navigation.profile') }}
+                    <a href="{{ route('profile.edit') }}" class="dropdown-item tw:py-1.5 tw:text-ui-xs">
+                        <x-ui.icon name="user-cog" class="tw:me-2" />{{ __('navigation.profile') }}
                     </a>
                 </li>
                 <li>
-                    <a href="{{ route('profile.security') }}" class="dropdown-item tw:py-1.5 small">
-                        <x-ui.icon name="shield-check" class="me-2" />{{ __('navigation.security') }}
+                    <a href="{{ route('profile.security') }}" class="dropdown-item tw:py-1.5 tw:text-ui-xs">
+                        <x-ui.icon name="shield-check" class="tw:me-2" />{{ __('navigation.security') }}
                     </a>
                 </li>
                 <li>
-                    <a href="{{ route('profile.notifications') }}" class="dropdown-item tw:py-1.5 small">
-                        <x-ui.icon name="bell" class="me-2" />{{ __('common.notification.title') }}
+                    <a href="{{ route('profile.notifications') }}" class="dropdown-item tw:py-1.5 tw:text-ui-xs">
+                        <x-ui.icon name="bell" class="tw:me-2" />{{ __('common.notification.title') }}
                     </a>
                 </li>
                 <li>
-                    <a href="{{ route('profile.customization') }}" class="dropdown-item tw:py-1.5 small">
-                        <x-ui.icon name="sliders-horizontal" class="me-2" />{{ __('navigation.customization') }}
+                    <a href="{{ route('profile.customization') }}" class="dropdown-item tw:py-1.5 tw:text-ui-xs">
+                        <x-ui.icon name="sliders-horizontal" class="tw:me-2" />{{ __('navigation.customization') }}
                     </a>
                 </li>
                 <li>
-                    <hr class="dropdown-divider my-1">
+                    <hr class="dropdown-divider tw:my-1">
                 </li>
                 <li>
                     <form action="{{ route('logout') }}" method="POST" data-logout-form>
                         @csrf
                         @if(config('portal_session.logout_all_devices'))
                             <label class="tw:flex tw:items-center tw:gap-2 tw:px-4 tw:py-2 tw:text-ui-xs tw:cursor-pointer" for="logout-all-devices">
-                                <input id="logout-all-devices" type="checkbox" name="logout_all" value="1" class="form-check-input tw:m-0">
+                                <input id="logout-all-devices" type="checkbox" name="logout_all" value="1" class="ui-check tw:m-0">
                                 <span>{{ __('navigation.logout_all_devices') }}</span>
                             </label>
                         @endif
                         <button type="submit"
-                            class="dropdown-item ui-focus-ring text-danger tw:flex tw:min-h-9 tw:items-center tw:gap-2 tw:whitespace-nowrap tw:py-1.5 small"
+                            class="dropdown-item ui-focus-ring tw:text-error tw:flex tw:min-h-9 tw:items-center tw:gap-2 tw:whitespace-nowrap tw:py-1.5 tw:text-ui-xs"
                             data-loading-text="{{ __('navigation.logging_out') }}">
                             <x-ui.icon name="log-out" size="sm" />
                             <span>{{ __('navigation.logout') }}</span>
@@ -302,10 +302,11 @@
                 document.querySelectorAll('.notif-badge').forEach((badge) => {
                     if (count > 0) {
                         badge.textContent = count;
-                        badge.classList.remove('d-none');
+                        badge.classList.remove('tw:hidden', 'd-none');
                     } else {
                         badge.textContent = '0';
-                        badge.classList.add('d-none');
+                        badge.classList.add('tw:hidden');
+                        badge.classList.remove('d-none');
                     }
 
                     badge.closest('button[data-ui-dropdown-trigger]')?.setAttribute('aria-label', label);

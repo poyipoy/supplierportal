@@ -677,9 +677,9 @@
                                 : window.AdasiI18n.t('js.notification.button_label');
                             if (data.count > 0) {
                                 badge.textContent = data.count;
-                                badge.classList.remove('d-none');
+                                badge.classList.remove('tw:hidden', 'd-none');
                             } else {
-                                badge.classList.add('d-none');
+                                badge.classList.add('tw:hidden');
                             }
                             badge.closest('button[data-ui-dropdown-trigger]')?.setAttribute('aria-label', label);
                         });
@@ -715,9 +715,9 @@
                                 }
                                 if (data.count > 0) {
                                     badge.textContent = data.count;
-                                    badge.classList.remove('d-none');
+                                    badge.classList.remove('tw:hidden', 'd-none');
                                 } else {
-                                    badge.classList.add('d-none');
+                                    badge.classList.add('tw:hidden');
                                 }
                             });
                         })
@@ -1084,8 +1084,8 @@
                 AdasiAlert.info({
                     title: @js(__('navigation.keyboard_shortcuts')),
                     html: `
-                        <div class="text-start">
-                            <table class="table table-borderless table-sm mb-0">
+                        <div class="tw:text-start">
+                            <table class="ui-table ui-table--borderless ui-table--sm tw:mb-0">
                                 <thead>
                                     <tr>
                                         <th scope="col" class="tw:w-2/5">{{ __('navigation.keyboard_shortcuts') }}</th>
@@ -1234,7 +1234,7 @@
                 ) => {
                     const item = document.createElement('div');
 
-                    item.className = 'notification-item bg-light';
+                    item.className = 'notification-item tw:bg-surface-container-low';
                     item.setAttribute('role', 'button');
                     item.dataset.notificationItem = '';
                     item.dataset.notificationCategory = category;
@@ -1244,7 +1244,7 @@
                     item.style.cursor = 'pointer';
 
                     const row = document.createElement('div');
-                    row.className = 'd-flex gap-3';
+                    row.className = 'tw:flex tw:gap-3';
 
                     const categoryIcon = document.querySelector(
                         `[data-notification-category="${category}"] .ui-icon`
@@ -1253,7 +1253,7 @@
                         || document.querySelector('.notification-menu-heading .ui-icon')?.cloneNode(true);
 
                     if (icon) {
-                        icon.classList.add('text-primary', 'flex-shrink-0', 'mt-1');
+                        icon.classList.add('tw:text-primary', 'tw:shrink-0', 'tw:mt-1');
                         icon.setAttribute('width', '20');
                         icon.setAttribute('height', '20');
                     }
@@ -1262,19 +1262,19 @@
                         document.createElement('div');
 
                     content.className =
-                        'tw:min-w-0 flex-grow-1';
+                        'tw:min-w-0 tw:flex-1';
 
                     const heading =
                         document.createElement('div');
 
                     heading.className =
-                        'd-flex justify-content-between gap-2';
+                        'tw:flex tw:justify-between tw:gap-2';
 
                     const title =
                         document.createElement('div');
 
                     title.className =
-                        'fw-semibold small text-truncate';
+                        'tw:font-semibold tw:text-ui-xs tw:truncate';
 
                     title.textContent =
                         String(
@@ -1286,7 +1286,7 @@
                         document.createElement('span');
 
                     newBadge.className =
-                        'ui-status-chip ui-status-chip--error flex-shrink-0';
+                        'ui-status-chip ui-status-chip--error tw:shrink-0';
                     newBadge.dataset.notificationNewBadge = '';
                     newBadge.textContent = @js(__('common.states.new'));
 
@@ -1295,7 +1295,7 @@
                     const message =
                         document.createElement('div');
 
-                    message.className = 'text-muted small';
+                    message.className = 'tw:text-on-surface-variant tw:text-ui-xs';
 
                     message.textContent =
                         String(
@@ -1306,7 +1306,7 @@
                         document.createElement('div');
 
                     time.className =
-                        'text-muted mt-2 small';
+                        'tw:text-on-surface-variant tw:mt-2 tw:text-ui-xs';
                     time.textContent = @js(__('navigation.just_now'));
 
                     content.append(
@@ -1369,7 +1369,7 @@
 
                             pane
                                 .querySelector(
-                                    '.text-center.text-muted.py-5'
+                                    '[data-notification-empty], .text-center.text-muted.py-5'
                                 )
                                 ?.remove();
 

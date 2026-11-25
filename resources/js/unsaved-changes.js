@@ -132,7 +132,7 @@
             if (type === 'hidden' || type === 'search') return false;
 
             // Skip un-named search filter fields inside custom popovers
-            if (!el.name && (el.classList?.contains?.('form-control') || el.hasAttribute?.('x-ref'))) {
+            if (!el.name && (el.classList?.contains?.('ui-input') || el.classList?.contains?.('form-control') || el.hasAttribute?.('x-ref'))) {
                 return false;
             }
             return true;

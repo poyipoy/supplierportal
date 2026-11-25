@@ -820,7 +820,7 @@
                             id="is_pkp"
                             value="1"
                             x-model="formData.is_pkp"
-                            class="form-check-input tw:mt-0 tw:w-4 tw:h-4"
+                            class="ui-check tw:mt-0 tw:w-4 tw:h-4"
                         >
                         <div>
                             <span class="tw:text-ui-sm tw:font-semibold tw:text-on-surface">
@@ -876,7 +876,7 @@
                                         value="{{ $answerValue }}"
                                         x-model="formData.questionnaire['{{ $questionKey }}']"
                                         @change="validateField('questionnaire.{{ $questionKey }}')"
-                                        class="form-check-input tw:m-0 tw:h-4 tw:w-4"
+                                        class="ui-check tw:m-0 tw:h-4 tw:w-4"
                                     >
                                     <span>{{ $answerLabel }}</span>
                                 </label>
@@ -1487,7 +1487,7 @@
                     type="checkbox"
                     id="legal_declaration"
                     x-model="legalDeclaration"
-                    class="form-check-input tw:mt-0.5 tw:w-4 tw:h-4 tw:shrink-0"
+                    class="ui-check tw:mt-0.5 tw:w-4 tw:h-4 tw:shrink-0"
                     required
                 >
                 <div class="tw:text-ui-xs tw:text-on-surface tw:leading-relaxed">

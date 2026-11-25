@@ -5,7 +5,7 @@
     ]]))" @click.outside="close()"
     x-on:pointerdown.window="if (open && !$el.contains($event.target)) close()"
     x-on:adasi:dismiss-overlays.window="if (open) close()">
-    @if($label)<label for="{{ $resolvedId }}" class="form-label tw:flex tw:items-center tw:min-h-6 tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:mb-1">{{ $label }}</label>@endif
+    @if($label)<label for="{{ $resolvedId }}" class="ui-label tw:flex tw:items-center tw:min-h-6 tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:mb-1">{{ $label }}</label>@endif
     <div class="tw:relative tw:min-w-0">
     <span class="ui-searchable-free-input__search" aria-hidden="true"><x-ui.icon name="search" size="sm" /></span>
     <input id="{{ $resolvedId }}" name="{{ $name }}" type="text" value="{{ $resolvedValue }}" x-ref="input"
@@ -17,7 +17,7 @@
         x-model="value" @input="input($event.target.value)" @focus="focus()" @blur="close()"
         @keydown.arrow-down.prevent="navigate(1)" @keydown.arrow-up.prevent="navigate(-1)"
         @keydown.enter.prevent="enter()" @keydown.escape.prevent.stop="close()" @keydown.tab="close()"
-        placeholder="{{ $placeholder }}" class="ui-searchable-free-input__input form-control form-control-sm tw:w-full tw:min-w-0 {{ $message ? 'is-invalid' : '' }}">
+        placeholder="{{ $placeholder }}" class="ui-searchable-free-input__input ui-input ui-input--sm tw:w-full tw:min-w-0 {{ $message ? 'is-invalid' : '' }}">
     <span class="ui-searchable-free-input__chevron" :class="open ? 'is-open' : ''" aria-hidden="true"><x-ui.icon name="chevron-down" size="sm" /></span>
     <div x-show="open" x-cloak class="ui-searchable-free-input__menu tw:absolute tw:top-full tw:left-0 tw:right-0 tw:z-50 tw:border tw:border-outline-variant tw:rounded-ui-sm tw:bg-surface tw:text-on-surface tw:max-h-60 tw:overflow-y-auto">
         <ul id="{{ $resolvedId }}-suggestions" role="listbox" aria-label="{{ $label ?: $name }}" x-ref="list" class="tw:list-none tw:m-0 tw:p-1">
@@ -34,6 +34,6 @@
     </div>
     </div>
     <span id="{{ $resolvedId }}-status" role="status" aria-live="polite" class="tw:block tw:text-ui-xs tw:text-on-surface-variant" x-text="status"></span>
-    @if($helper)<p id="{{ $helperId }}" class="form-text tw:m-0">{{ $helper }}</p>@endif
-    @if($message)<p id="{{ $errorId }}" class="invalid-feedback tw:block tw:m-0">{{ $message }}</p>@endif
+    @if($helper)<p id="{{ $helperId }}" class="ui-field-help tw:m-0">{{ $helper }}</p>@endif
+    @if($message)<p id="{{ $errorId }}" class="ui-field-error tw:m-0">{{ $message }}</p>@endif
 </div>

@@ -218,7 +218,7 @@ for (const locale of ['en', 'id']) for (const kind of ['PO', 'GR']) {
         assert.equal(app.requests.some(request => request.url.endsWith('/cancel')), false);
         assert.equal(app.get(`btnParseLocal${name}Import`).disabled, false);
         assert.equal(app.get(`btnConfirmLocal${name}Import`).disabled, true);
-        assert.equal(app.get(`local${name}ImportResult`).classList.contains('d-none'), true);
+        assert.equal(app.get(`local${name}ImportResult`).classList.contains('tw:hidden'), true);
     });
 
     test(`${locale} ${kind}: no recent batch leaves new upload available without a dropdown`, async () => {
@@ -277,7 +277,7 @@ test('choosing another file releases the pending run and re-enables validation',
     assert.equal(app.get('btnParseLocalPoImport').disabled, false);
     assert.equal(app.get('btnConfirmLocalPoImport').disabled, true);
     assert.equal(app.get('localPoImportToken').value, '');
-    assert.equal(app.get('localPoImportResult').classList.contains('d-none'), true);
+    assert.equal(app.get('localPoImportResult').classList.contains('tw:hidden'), true);
     assert.deepEqual(app.get('localPoImportFile').files, [{ name: 'second.xlsx' }]);
     await app.get('btnParseLocalPoImport').fire('click');
     assert.equal(app.requests.filter(request => request.url === '/preview').length, 2);
@@ -292,7 +292,7 @@ test('choosing another file while records are being saved keeps the running impo
     await app.get('localGrImportFile').fire('change');
     assert.equal(app.requests.length, requestCount);
     assert.equal(app.requests.some(request => request.url.endsWith('/cancel')), false);
-    assert.equal(app.get('localGrImportResult').classList.contains('d-none'), false);
+    assert.equal(app.get('localGrImportResult').classList.contains('tw:hidden'), false);
     assert.match(app.created.find(element => element.role === 'status').textContent, /masih disimpan/);
 });
 

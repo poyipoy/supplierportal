@@ -10,7 +10,7 @@
 >
     {{-- Mobile Drawer Context Header --}}
     @auth
-        <div class="sidebar-mobile-header d-lg-none tw:flex tw:items-center tw:justify-between tw:px-3 tw:py-2.5 tw:border-b tw:border-outline-variant tw:bg-surface-container-low">
+        <div class="sidebar-mobile-header tw:lg:hidden tw:flex tw:items-center tw:justify-between tw:px-3 tw:py-2.5 tw:border-b tw:border-outline-variant tw:bg-surface-container-low">
             <div class="tw:flex tw:items-center tw:gap-2 tw:min-w-0">
                 <x-ui.avatar :name="auth()->user()->name" size="xs" class="sidebar-mobile-avatar" />
                 <div class="tw:min-w-0">
@@ -114,7 +114,7 @@
         @endphp
         <div class="sidebar-portal-switcher dropdown">
             <button
-                class="btn sidebar-portal-switcher-btn dropdown-toggle ui-focus-ring"
+                class="sidebar-portal-switcher-btn dropdown-toggle ui-focus-ring"
                 type="button"
                 id="portalContextSwitcherDropdown"
                 data-ui-dropdown-trigger
@@ -143,7 +143,7 @@
                 </div>
                 <div class="tw:space-y-1">
                     {{-- Local Supplier Option --}}
-                    <form method="POST" action="{{ route('supplier-context.store') }}" class="m-0">
+                    <form method="POST" action="{{ route('supplier-context.store') }}" class="tw:m-0">
                         @csrf
                         <input type="hidden" name="context" value="local">
                         <button
@@ -168,7 +168,7 @@
                     </form>
 
                     {{-- Material Procurement Option --}}
-                    <form method="POST" action="{{ route('supplier-context.store') }}" class="m-0">
+                    <form method="POST" action="{{ route('supplier-context.store') }}" class="tw:m-0">
                         @csrf
                         <input type="hidden" name="context" value="import">
                         <button
@@ -244,7 +244,7 @@
                 <x-ui.sidebar-item :href="\App\Support\PageRegistry::url('supplier.conversations.index')" icon="message-circle-more" :active="request()->routeIs('supplier.conversations.*')" :label="__('navigation.chat_title')">
                     {{ __('common.chat.title') }}
                     <x-slot:trailing>
-                        <span class="chat-badge tw:inline-flex tw:min-w-5 tw:items-center tw:justify-center tw:rounded-full tw:bg-error tw:px-1.5 tw:text-ui-xs tw:font-semibold tw:text-error-foreground {{ $initChatCount > 0 ? '' : 'd-none' }}" aria-label="{{ __('navigation.unread_chats', ['count' => $initChatCount]) }}">{{ $initChatCount }}</span>
+                        <span class="chat-badge tw:inline-flex tw:min-w-5 tw:items-center tw:justify-center tw:rounded-full tw:bg-error tw:px-1.5 tw:text-ui-xs tw:font-semibold tw:text-error-foreground {{ $initChatCount > 0 ? '' : 'tw:hidden' }}" aria-label="{{ __('navigation.unread_chats', ['count' => $initChatCount]) }}">{{ $initChatCount }}</span>
                     </x-slot:trailing>
                 </x-ui.sidebar-item>
                 <x-ui.sidebar-item :href="\App\Support\PageRegistry::url('supplier.claims.index')" icon="shield-alert" :active="request()->routeIs('supplier.claims.*')" :label="__('navigation.material_claim')">{{ __('navigation.material_claim') }}</x-ui.sidebar-item>
@@ -256,7 +256,7 @@
                 <x-ui.sidebar-item :href="\App\Support\PageRegistry::url('supplier.company-profile.show')" icon="building-2" :active="request()->routeIs('supplier.company-profile.*')" :label="__('navigation.company_profile')">{{ __('navigation.company_profile') }}</x-ui.sidebar-item>
             @else
                 <div class="sidebar-heading"><span class="sidebar-heading-label sidebar-type-text" style="--sidebar-type-steps: 6;">{{ __('navigation.portal') }}</span></div>
-                <div class="sidebar-empty-scope-notice px-3 py-3 tw:text-ui-xs tw:text-on-surface-variant d-flex flex-column align-items-center text-center tw:gap-2">
+                <div class="sidebar-empty-scope-notice tw:px-3 tw:py-3 tw:text-ui-xs tw:text-on-surface-variant tw:flex tw:flex-col tw:items-center tw:text-center tw:gap-2">
                     <x-ui.icon name="info" size="sm" class="tw:text-on-surface-variant tw:shrink-0" />
                     <span>{{ __('navigation.choose_first') }}</span>
                 </div>
@@ -326,7 +326,7 @@
             <x-ui.sidebar-item :href="\App\Support\PageRegistry::url('purchasing.conversations.index', \App\Support\PurchasingNavigation::listUrl('purchasing.conversations.index'))" icon="message-circle-more" :active="request()->routeIs('purchasing.conversations.*')" :label="__('navigation.chat_title')">
                 {{ __('common.chat.title') }}
                 <x-slot:trailing>
-                    <span class="chat-badge tw:inline-flex tw:min-w-5 tw:items-center tw:justify-center tw:rounded-full tw:bg-error tw:px-1.5 tw:text-ui-xs tw:font-semibold tw:text-error-foreground {{ $initChatCount > 0 ? '' : 'd-none' }}" aria-label="{{ __('navigation.unread_chats', ['count' => $initChatCount]) }}">{{ $initChatCount }}</span>
+                    <span class="chat-badge tw:inline-flex tw:min-w-5 tw:items-center tw:justify-center tw:rounded-full tw:bg-error tw:px-1.5 tw:text-ui-xs tw:font-semibold tw:text-error-foreground {{ $initChatCount > 0 ? '' : 'tw:hidden' }}" aria-label="{{ __('navigation.unread_chats', ['count' => $initChatCount]) }}">{{ $initChatCount }}</span>
                 </x-slot:trailing>
             </x-ui.sidebar-item>
             <x-ui.sidebar-item :href="\App\Support\PageRegistry::url('purchasing.claims.index', \App\Support\PurchasingNavigation::listUrl('purchasing.claims.index'))" icon="shield-alert" :active="request()->routeIs('purchasing.claims.*')" :label="__('navigation.material_claim')">{{ __('navigation.material_claim') }}</x-ui.sidebar-item>
