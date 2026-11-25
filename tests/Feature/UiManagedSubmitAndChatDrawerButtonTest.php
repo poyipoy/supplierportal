@@ -174,10 +174,15 @@ class UiManagedSubmitAndChatDrawerButtonTest extends TestCase
             'chat-drawer must use ADASI .ui-spinner / inline-loader instead of Bootstrap spinner-border'
         );
 
-        // Must track active opener button and stopLoading in hidden.bs.offcanvas
+        // Must track active opener button and stopLoading in adasi:drawer-hidden
         $this->assertStringContainsString('activeOpenerButton', $content);
         $this->assertStringContainsString('AdasiButton.stopLoading', $content);
-        $this->assertStringContainsString('hidden.bs.offcanvas', $content);
+        $this->assertStringContainsString('adasi:drawer-hidden', $content);
+        $this->assertStringContainsString('id="chatDrawer"', $content);
+        $this->assertStringContainsString('role="dialog"', $content);
+        $this->assertStringContainsString('aria-modal="true"', $content);
+        $this->assertStringContainsString('data-chat-drawer-close', $content);
+        $this->assertStringContainsString('popovertarget="chatDrawerTemplateMenu"', $content);
     }
 
     public function test_historical_filter_form_has_data_managed_submit(): void

@@ -105,15 +105,13 @@
                 </div>
             </fieldset>
 
-            <div class="col-12 mt-2 mb-0">
-                <a href="#dimensionFilters" data-bs-toggle="collapse" class="ui-focus-ring tw:rounded-ui-xs text-decoration-none small fw-semibold d-inline-flex align-items-center gap-1 tw:text-on-surface-variant tw:hover:text-primary">
+            <div class="col-12 mt-2 mb-0" x-data="{ dimOpen: @js(request()->hasAny(['thickness', 'd_inner', 'd_outer', 'width', 'length'])) }">
+                <button type="button" x-on:click="dimOpen = !dimOpen" x-bind:aria-expanded="dimOpen.toString()" aria-expanded="{{ request()->hasAny(['thickness', 'd_inner', 'd_outer', 'width', 'length']) ? 'true' : 'false' }}" aria-controls="dimensionFilters" class="ui-focus-ring tw:rounded-ui-xs tw:border-0 tw:bg-transparent tw:p-0 text-decoration-none small fw-semibold d-inline-flex align-items-center gap-1 tw:text-on-surface-variant tw:hover:text-primary">
                             <x-ui.icon name="sliders-horizontal" size="sm" />
                     <span>{{ __('supplier.copy.filter_by_target_dimensions_optional') }}</span>
                             <x-ui.icon name="chevron-down" size="sm" />
-                </a>
-            </div>
-
-            <div class="collapse col-12 {{ request()->hasAny(['thickness', 'd_inner', 'd_outer', 'width', 'length']) ? 'show' : '' }}" id="dimensionFilters">
+                </button>
+                <div class="tw:mt-2" id="dimensionFilters" x-show="dimOpen" @unless(request()->hasAny(['thickness', 'd_inner', 'd_outer', 'width', 'length'])) x-cloak @endunless>
                 <div class="row g-2 tw:mt-1 tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface-container-low tw:p-3">
                     <div class="col-6 col-md-2 dimension-field" data-dim="thickness">
                         <label class="form-label tw:mb-1 tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant" for="supplier-history-thickness">{{ __('supplier.copy.thickness_mm') }}</label>
@@ -142,6 +140,7 @@
                         </x-ui.button>
                     </div>
                 </div>
+            </div>
             </div>
         </form>
     </x-ui.card>

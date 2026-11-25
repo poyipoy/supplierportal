@@ -64,8 +64,8 @@ class HsCodeRuleController extends Controller
 
                 return '<div class="d-inline-flex align-items-center gap-1">'
                     .'<button type="button" class="ui-data-action ui-data-action--primary ui-focus-ring btn-edit-rule" data-rule="'.$payload.'" aria-label="'.e(__('purchasing.action_names.edit_hs_code_rule', ['name' => $rule->hs_code])).'">'.e(__('admin.copy.edit')).'</button>'
-                    .'<div class="dropdown"><button type="button" class="ui-data-action ui-focus-ring dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" aria-label="'.e(__('purchasing.action_names.more_actions_for_hs_code', ['name' => $rule->hs_code])).'">'.e(__('admin.copy.more')).'</button>'
-                    .'<ul class="dropdown-menu dropdown-menu-end"><li><button type="button" class="dropdown-item btn-toggle-rule" data-id="'.$rule->id.'" data-status="'.($rule->status === HsCodeRule::STATUS_ACTIVE ? 'inactive' : 'active').'">'.$stateLabel.'</button></li>'
+                    .'<div class="dropdown"><button type="button" class="ui-data-action ui-focus-ring dropdown-toggle" data-ui-dropdown-trigger popovertarget="dd-hs-'.$rule->id.'" aria-controls="dd-hs-'.$rule->id.'" aria-expanded="false" aria-label="'.e(__('purchasing.action_names.more_actions_for_hs_code', ['name' => $rule->hs_code])).'">'.e(__('admin.copy.more')).'</button>'
+                    .'<ul id="dd-hs-'.$rule->id.'" popover="auto" data-ui-dropdown-menu class="dropdown-menu dropdown-menu-end"><li><button type="button" class="dropdown-item btn-toggle-rule" data-id="'.$rule->id.'" data-status="'.($rule->status === HsCodeRule::STATUS_ACTIVE ? 'inactive' : 'active').'">'.$stateLabel.'</button></li>'
                     .'<li><button type="button" class="dropdown-item text-danger btn-delete-rule" data-id="'.$rule->id.'" data-name="'.e($rule->hs_code).'">'.e(__('materials.master_data.delete')).'</button></li></ul></div>'
                     .'</div>';
             })

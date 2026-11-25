@@ -65,7 +65,7 @@
         {{ $hidden }}
     @endisset
 
-    <div class="ui-filter-bar__surface">
+    <div class="ui-filter-bar__surface"@isset($advanced) x-data="{ advancedOpen: @js($isAdvancedOpen) }" @endisset>
         <div class="ui-filter-bar__primary">
             @isset($search)
                 <div class="ui-filter-bar__search">
@@ -84,8 +84,8 @@
                             variant="outline"
                             size="sm"
                             type="button"
-                            data-bs-toggle="collapse"
-                            data-bs-target="#{{ $resolvedAdvancedId }}"
+                            x-on:click="advancedOpen = !advancedOpen"
+                            x-bind:aria-expanded="advancedOpen.toString()"
                             aria-expanded="{{ $isAdvancedOpen ? 'true' : 'false' }}"
                             aria-controls="{{ $resolvedAdvancedId }}"
                             data-filter-bar-advanced-toggle
@@ -155,8 +155,10 @@
 
         @isset($advanced)
             <div
-                class="collapse ui-filter-bar__tray {{ $isAdvancedOpen ? 'show' : '' }}"
+                class="ui-filter-bar__tray"
                 id="{{ $resolvedAdvancedId }}"
+                x-show="advancedOpen"
+                @unless($isAdvancedOpen) x-cloak @endunless
                 data-filter-bar-tray
             >
                 <div class="ui-filter-bar__tray-inner">

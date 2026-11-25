@@ -181,7 +181,7 @@
                                     @endphp
 
                                     @if($unvoucheredCount > 0)
-                                        <span class="tw:inline-block" tabindex="0" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="{{ __('finance.paid_ui.missing_vouchers', ['count' => $unvoucheredCount]) }}">
+                                        <span class="tw:inline-block" tabindex="0" data-ui-tooltip="{{ __('finance.paid_ui.missing_vouchers', ['count' => $unvoucheredCount]) }}">
                                             <x-ui.button
                                                 type="button"
                                                 size="sm"

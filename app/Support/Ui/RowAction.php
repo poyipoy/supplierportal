@@ -158,4 +158,30 @@ final class RowAction
 
         return '#';
     }
+
+    /**
+     * Build a native Popover API overflow menu trigger + menu list for DataTables rows.
+     *
+     * @param  list<string>  $itemsHtml
+     */
+    public static function overflowMenu(string $menuId, array $itemsHtml, string $ariaLabel, ?string $label = null): string
+    {
+        $items = array_values(array_filter(
+            $itemsHtml,
+            static fn ($item): bool => is_string($item) && trim($item) !== '',
+        ));
+
+        if ($items === []) {
+            return '';
+        }
+
+        $safeId = e($menuId);
+        $safeAria = e($ariaLabel);
+        $safeLabel = e($label ?? __('common.table.action'));
+
+        return '<div class="dropdown">'
+            .'<button type="button" class="ui-data-action ui-focus-ring dropdown-toggle" data-ui-dropdown-trigger popovertarget="'.$safeId.'" aria-controls="'.$safeId.'" aria-expanded="false" aria-label="'.$safeAria.'">'.$safeLabel.'</button>'
+            .'<ul id="'.$safeId.'" popover="auto" data-ui-dropdown-menu class="dropdown-menu dropdown-menu-end">'.implode('', $items).'</ul>'
+            .'</div>';
+    }
 }

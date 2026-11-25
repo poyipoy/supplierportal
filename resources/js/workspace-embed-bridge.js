@@ -152,7 +152,9 @@ export function bootWorkspaceEmbedBridge() {
         if (
             anchor.hasAttribute('download')
             || anchor.getAttribute('target') === '_blank'
-            || anchor.dataset.bsToggle
+            || anchor.hasAttribute('data-ui-dropdown-trigger')
+            || anchor.hasAttribute('data-ui-tab')
+            || anchor.hasAttribute('popovertarget')
             || anchor.hasAttribute('data-ui-modal-open')
             || anchor.hasAttribute('data-server-tab')
             || anchor.hasAttribute('data-tabs-link')

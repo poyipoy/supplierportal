@@ -18,14 +18,15 @@ class UserAccountNavigationTest extends TestCase
         $user = User::factory()->create(['role' => 'admin']);
         $response = $this->actingAs($user)->get(route('profile.edit'))->assertOk();
         $xpath = $this->xpath($response->getContent());
-        $trigger = $xpath->query('//button[@aria-label="Open user menu"]')->item(0);
+        $trigger = $xpath->query('//button[contains(@class, "topbar-user-trigger") and .//span[contains(@class, "tw:sr-only") and normalize-space(.)="Open user menu"]]')->item(0);
         $this->assertInstanceOf(DOMElement::class, $trigger);
-        $this->assertSame('dropdown', $trigger->getAttribute('data-bs-toggle'));
+        $this->assertTrue($trigger->hasAttribute('data-ui-dropdown-trigger'));
+        $this->assertSame('topbarUserMenuPopover', $trigger->getAttribute('popovertarget'));
         $this->assertSame('false', $trigger->getAttribute('aria-expanded'));
 
-        $menu = $xpath->query('//button[@aria-label="Open user menu"]/following-sibling::ul')->item(0);
+        $menu = $xpath->query('//button[contains(@class, "topbar-user-trigger")]/following-sibling::ul[@id="topbarUserMenuPopover"][@popover="auto"]')->item(0);
         $this->assertInstanceOf(DOMElement::class, $menu);
-        $actions = $xpath->query('.//a | .//button[@type="submit"]', $menu);
+        $actions = $xpath->query('.//a[not(ancestor::*[@data-locale-switcher])] | .//button[@type="submit" and not(ancestor::*[@data-locale-switcher])]', $menu);
         $labels = [];
         foreach ($actions as $action) {
             $labels[] = trim($action->textContent);
@@ -37,7 +38,7 @@ class UserAccountNavigationTest extends TestCase
         $this->assertSame(route('profile.customization'), $actions->item(3)->getAttribute('href'));
         $this->assertStringContainsString($user->email, $menu->textContent);
         $this->assertCount(2, $xpath->query('.//hr', $menu));
-        $logout = $xpath->query('.//form', $menu)->item(0);
+        $logout = $xpath->query('.//form[@data-logout-form]', $menu)->item(0);
         $this->assertSame('POST', $logout->getAttribute('method'));
         $this->assertSame(route('logout'), $logout->getAttribute('action'));
         $this->assertCount(1, $xpath->query('.//input[@name="_token"]', $logout));

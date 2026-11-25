@@ -1,8 +1,8 @@
 <div class="btn-group" role="group">
-    <x-ui.button type="button" variant="outline" size="sm" class="dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+    <x-ui.button type="button" variant="outline" size="sm" class="dropdown-toggle" data-ui-dropdown-trigger popovertarget="quotationImportActionsMenu" aria-controls="quotationImportActionsMenu" aria-expanded="false">
         <x-ui.icon name="upload" class="me-1" /> {{ __('supplier.copy.import_data') }}
     </x-ui.button>
-    <ul class="dropdown-menu dropdown-menu-end">
+    <ul id="quotationImportActionsMenu" popover="auto" data-ui-dropdown-menu class="dropdown-menu dropdown-menu-end">
         <li>
             <a
                 class="dropdown-item"

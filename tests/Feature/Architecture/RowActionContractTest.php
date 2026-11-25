@@ -5,6 +5,7 @@ namespace Tests\Feature\Architecture;
 use App\Support\Ui\RowAction;
 use DOMDocument;
 use DOMElement;
+use DOMXPath;
 use Illuminate\Support\Facades\Blade;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
@@ -239,6 +240,34 @@ class RowActionContractTest extends TestCase
         }
 
         $this->assertSame([], $violations, 'Found raw <a ... ui-data-action> HTML in DataTables controllers instead of RowAction::');
+    }
+
+    public function test_overflow_menu_builds_unique_popover_trigger_and_escapes_attributes(): void
+    {
+        $this->assertSame('', RowAction::overflowMenu('dd-empty', ['', '   '], 'More'));
+
+        $html = RowAction::overflowMenu(
+            'dd-pr-"test"',
+            ['<li><button type="button" class="dropdown-item">Delete</button></li>', ''],
+            'More actions for "PR & <Test>"',
+            'More'
+        );
+
+        $wrapper = $this->parseSingleRootElement($html, 'div');
+        $doc = $wrapper->ownerDocument;
+        $xpath = new DOMXPath($doc);
+        $button = $xpath->query('.//button[@data-ui-dropdown-trigger]', $wrapper)->item(0);
+        $menu = $xpath->query('.//ul[@data-ui-dropdown-menu]', $wrapper)->item(0);
+
+        $this->assertInstanceOf(DOMElement::class, $button);
+        $this->assertInstanceOf(DOMElement::class, $menu);
+        $this->assertSame('dd-pr-"test"', $button->getAttribute('popovertarget'));
+        $this->assertSame('dd-pr-"test"', $button->getAttribute('aria-controls'));
+        $this->assertSame('false', $button->getAttribute('aria-expanded'));
+        $this->assertSame('More actions for "PR & <Test>"', $button->getAttribute('aria-label'));
+        $this->assertSame('More', trim($button->textContent));
+        $this->assertSame('dd-pr-"test"', $menu->getAttribute('id'));
+        $this->assertSame('auto', $menu->getAttribute('popover'));
     }
 
     /**

@@ -261,14 +261,16 @@
                                             <div class="dropdown tw:inline-block">
                                                 <button type="button"
                                                     class="tw:inline-flex tw:items-center tw:gap-1.5 tw:px-2 tw:py-1 tw:rounded-ui-sm tw:text-ui-xs tw:font-semibold tw:bg-primary/10 tw:hover:bg-primary/20 tw:text-primary dark:tw-text-primary-light tw:transition-colors"
-                                                    data-bs-toggle="dropdown"
+                                                    data-ui-dropdown-trigger
+                                                    popovertarget="dd-inv-email-{{ $invoice->id }}"
+                                                    aria-controls="dd-inv-email-{{ $invoice->id }}"
                                                     aria-expanded="false"
                                                     title="{{ __('local_invoice.refund_contact.email_options', ['email' => $adasiFinanceEmail]) }}">
                                                     <x-ui.icon name="mail" size="sm" class="tw:w-4 tw:h-4 tw:shrink-0" />
                                                     <span>{{ __('common.fields.email') }}</span>
                                                     <x-ui.icon name="chevron-down" size="xs" class="tw:w-3 tw:h-3 tw:shrink-0 tw:opacity-70" />
                                                 </button>
-                                                <ul class="dropdown-menu shadow-sm tw:text-ui-xs tw:border tw:border-outline-variant tw:rounded-ui-md tw:py-1 tw:min-w-[220px] z-[1060]">
+                                                <ul id="dd-inv-email-{{ $invoice->id }}" popover="auto" data-ui-dropdown-menu class="dropdown-menu shadow-sm tw:text-ui-xs tw:border tw:border-outline-variant tw:rounded-ui-md tw:py-1 tw:min-w-[220px] z-[1060]">
                                                     <li>
                                                         <a class="dropdown-item tw:flex tw:items-center tw:gap-2 tw:py-1.5 tw:px-3 tw:text-on-surface tw:hover:bg-surface-container"
                                                             href="{{ $gmailUrl }}"

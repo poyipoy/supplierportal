@@ -1244,15 +1244,16 @@
                                                             <button
                                                                 type="button"
                                                                 class="mtc-file-action-btn"
-                                                                data-bs-toggle="dropdown"
-                                                                data-bs-display="static"
+                                                                data-ui-dropdown-trigger
+                                                                popovertarget="dd-qitem-{{ $item->id }}"
+                                                                aria-controls="dd-qitem-{{ $item->id }}"
                                                                 aria-expanded="false"
                                                                 title="{{ __('supplier.copy.copy_mtc_to_other_items') }}"
                                                                 data-mtc-copy-trigger
                                                             >
                                                                 <x-ui.icon name="copy" size="sm" />
                                                             </button>
-                                                            <ul class="dropdown-menu dropdown-menu-end shadow-sm" style="font-size: 0.75rem; min-width: 220px; z-index: 1060;">
+                                                            <ul id="dd-qitem-{{ $item->id }}" popover="auto" data-ui-dropdown-menu class="dropdown-menu dropdown-menu-end shadow-sm" style="font-size: 0.75rem; min-width: 220px; z-index: 1060;">
                                                                 <li>
                                                                     <button type="button" class="dropdown-item py-1.5 px-3 d-flex align-items-center gap-1.5" data-mtc-apply="same_material">
                                                                         <x-ui.icon name="layers" size="sm" class="tw:text-on-surface-variant flex-shrink-0" />

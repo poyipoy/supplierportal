@@ -73,7 +73,7 @@
                 title="{{ __('navigation.search_menu_label') }}"
                 data-sidebar-search-trigger
                 data-sidebar-tooltip
-                data-bs-title="{{ __('navigation.search_menu_label') }}"
+                data-ui-tooltip="{{ __('navigation.search_menu_label') }}"
             >
                 <x-ui.icon name="search" size="sm" />
             </button>
@@ -117,11 +117,12 @@
                 class="btn sidebar-portal-switcher-btn dropdown-toggle ui-focus-ring"
                 type="button"
                 id="portalContextSwitcherDropdown"
-                data-bs-toggle="dropdown"
-                data-bs-auto-close="true"
+                data-ui-dropdown-trigger
+                popovertarget="sidebarPortalSwitcherPopover"
+                aria-controls="sidebarPortalSwitcherPopover"
                 aria-expanded="false"
                 data-sidebar-tooltip
-                data-bs-title="{{ $currentLabel ?: __('navigation.switch_portal') }}"
+                data-ui-tooltip="{{ $currentLabel ?: __('navigation.switch_portal') }}"
                 title="{{ $currentLabel ?: __('navigation.switch_portal') }}"
                 aria-label="{{ __('navigation.current_portal', ['portal' => $currentLabel ?: __('navigation.portal')]) }}"
             >
@@ -135,7 +136,7 @@
                     <x-ui.icon name="chevron-down" size="xs" />
                 </span>
             </button>
-            <div class="dropdown-menu dropdown-menu-start tw:shadow-xl tw:border tw:border-outline-variant tw:rounded-xl tw:p-1.5 tw:min-w-[270px] tw:bg-surface tw-animate-in tw-fade-in-0 tw-zoom-in-95" aria-labelledby="portalContextSwitcherDropdown">
+            <div id="sidebarPortalSwitcherPopover" popover="auto" data-ui-dropdown-menu class="dropdown-menu dropdown-menu-start tw:shadow-xl tw:border tw:border-outline-variant tw:rounded-xl tw:p-1.5 tw:min-w-[270px] tw:bg-surface tw-animate-in tw-fade-in-0 tw-zoom-in-95" aria-labelledby="portalContextSwitcherDropdown">
                 <div class="tw:px-2.5 tw:pt-1.5 tw:pb-2 tw:flex tw:items-center tw:justify-between">
                     <span class="tw:text-[10px] tw:font-bold tw:text-on-surface-variant tw:uppercase tw:tracking-wider">{{ __('navigation.choose_portal') }}</span>
                     <span class="tw:text-[10px] tw:text-on-surface-variant">{{ __('navigation.dual_scope') }}</span>

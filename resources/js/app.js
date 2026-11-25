@@ -1,6 +1,9 @@
 import './debug-logger.js';
 import { onDataTableEvent, offDataTableEvent } from './datatables-events.js';
 import { AdasiModal, bootAdasiModals } from './adasi-modal.js';
+import { AdasiDropdown, bootAdasiDropdowns } from './adasi-dropdown.js';
+import { AdasiTooltip, bootAdasiTooltips } from './adasi-tooltip.js';
+import { AdasiTabs, bootAdasiTabs } from './adasi-tabs.js';
 import { t } from './i18n.js';
 import Alpine from 'alpinejs';
 import { searchableFreeInput } from './searchable-free-input';
@@ -30,7 +33,13 @@ import { registerToastCenter } from './toast-center';
 window.Alpine = Alpine;
 window.AdasiDataTableEvents = Object.freeze({ on: onDataTableEvent, off: offDataTableEvent });
 window.AdasiModal = AdasiModal;
+window.AdasiDropdown = AdasiDropdown;
+window.AdasiTooltip = AdasiTooltip;
+window.AdasiTabs = AdasiTabs;
 bootAdasiModals(document);
+bootAdasiDropdowns(document);
+bootAdasiTooltips(document);
+bootAdasiTabs(document);
 Alpine.data('searchableSelect', searchableSelect);
 Alpine.data('searchableFreeInput', searchableFreeInput);
 Alpine.data('adasiFileUploadComponent', adasiFileUploadComponent);
@@ -304,24 +313,7 @@ Alpine.data('adasiShell', () => ({
 
     syncSidebarTooltips() {
         this.$nextTick(() => window.requestAnimationFrame(() => {
-            const Tooltip = window.bootstrap?.Tooltip;
-            if (!Tooltip) return;
-
-            const enabled = this.viewportIsDesktop && this.desktopCollapsed;
-            document.querySelectorAll('[data-sidebar-tooltip]').forEach((element) => {
-                const instance = Tooltip.getInstance(element);
-
-                if (enabled) {
-                    Tooltip.getOrCreateInstance(element, {
-                        placement: 'right',
-                        container: document.body,
-                        customClass: 'sidebar-nav-tooltip',
-                        delay: { show: 180, hide: 60 },
-                    });
-                } else {
-                    instance?.dispose();
-                }
-            });
+            window.AdasiTooltip?.syncSidebarState?.(document);
         }));
     },
 
@@ -450,56 +442,23 @@ Alpine.data('adasiShell', () => ({
 Alpine.start();
 window.AdasiCalendar.initialize(document);
 
-const resolveDropdownParts = (node) => {
-    const container = node.closest('.dropdown, .dropup, .dropstart, .dropend, .btn-group') || node.parentElement;
-    const toggle = node.matches('[data-bs-toggle="dropdown"]')
-        ? node
-        : container?.querySelector('[data-bs-toggle="dropdown"]')
-            || (node.getAttribute('aria-labelledby') ? document.getElementById(node.getAttribute('aria-labelledby')) : null);
-    return { container, toggle };
-};
-
-const hideDropdownNode = (node) => {
-    const { container, toggle } = resolveDropdownParts(node);
-    if (toggle && window.bootstrap?.Dropdown) {
-        window.bootstrap.Dropdown.getOrCreateInstance(toggle).hide();
-        return;
-    }
-
-    node.classList.remove('show');
-    toggle?.classList.remove('show');
-    toggle?.setAttribute('aria-expanded', 'false');
-    container?.querySelector('.dropdown-menu.show')?.classList.remove('show');
-};
-
 window.AdasiDismissDropdowns = (exceptToggle = null) => {
-    document.querySelectorAll('.dropdown-menu.show, [data-bs-toggle="dropdown"].show').forEach((node) => {
-        const { toggle } = resolveDropdownParts(node);
-        if (exceptToggle && toggle === exceptToggle) return;
-        hideDropdownNode(node);
-    });
+    window.AdasiDropdown?.dismissAll?.(exceptToggle, document);
 };
 
 document.addEventListener('pointerdown', (event) => {
-    const openNodes = document.querySelectorAll('.dropdown-menu.show, [data-bs-toggle="dropdown"].show');
-    if (!openNodes.length) return;
+    const openMenus = document.querySelectorAll('[data-ui-dropdown-menu]:popover-open, .dropdown-menu:popover-open, [data-ui-dropdown-menu].show, .dropdown-menu.show');
+    if (!openMenus.length) return;
 
     const target = event.target instanceof Element ? event.target : event.target?.parentElement;
-    const keepToggles = new Set();
-    if (target) {
-        openNodes.forEach((node) => {
-            const { container, toggle } = resolveDropdownParts(node);
-            if (toggle && (container?.contains(target) || node.contains(target))) {
-                keepToggles.add(toggle);
-            }
-        });
-    }
-
-    openNodes.forEach((node) => {
-        const { container, toggle } = resolveDropdownParts(node);
-        if (toggle && keepToggles.has(toggle)) return;
-        if (!toggle && target && (container?.contains(target) || node.contains(target))) return;
-        hideDropdownNode(node);
+    openMenus.forEach((menu) => {
+        const id = menu.id;
+        const escapedId = id && typeof CSS !== 'undefined' && CSS.escape ? CSS.escape(id) : id;
+        const trigger = escapedId
+            ? document.querySelector(`[popovertarget="${escapedId}"], [data-ui-dropdown-trigger][aria-controls="${escapedId}"]`)
+            : null;
+        if (target && (menu.contains(target) || trigger?.contains(target))) return;
+        window.AdasiDropdown?.hide?.(menu, document);
     });
 }, true);
 

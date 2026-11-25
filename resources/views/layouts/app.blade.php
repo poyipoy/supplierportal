@@ -456,13 +456,7 @@
 
     <script>
         window.initAdasiTooltips = function (root = document) {
-            if (!window.bootstrap?.Tooltip) {
-                return;
-            }
-
-            root.querySelectorAll('[data-bs-toggle="tooltip"]').forEach((element) => {
-                bootstrap.Tooltip.getOrCreateInstance(element);
-            });
+            window.AdasiTooltip?.refresh?.(root);
         };
 
         document.addEventListener('DOMContentLoaded', () => window.initAdasiTooltips());
@@ -707,7 +701,7 @@
                             } else {
                                 badge.classList.add('d-none');
                             }
-                            badge.closest('button[data-bs-toggle="dropdown"]')?.setAttribute('aria-label', label);
+                            badge.closest('button[data-ui-dropdown-trigger]')?.setAttribute('aria-label', label);
                         });
 
                         if (typeof updateNotificationCategoryBadges === 'function') {
@@ -824,7 +818,9 @@
                         || link.closest('.sidebar-menu')
                         || link.hasAttribute('data-chat-drawer')
                         || link.hasAttribute('data-open-chat-conversation')
-                        || link.hasAttribute('data-bs-toggle')
+                        || link.hasAttribute('data-ui-dropdown-trigger')
+                        || link.hasAttribute('data-ui-tab')
+                        || link.hasAttribute('popovertarget')
                         || link.hasAttribute('data-ui-modal-open')
                         || link.hasAttribute('data-ui-modal-close')
                     ) {

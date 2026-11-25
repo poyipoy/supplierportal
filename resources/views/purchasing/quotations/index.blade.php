@@ -193,7 +193,7 @@
                             <th scope="col">{{ __('purchasing.copy.date_submitted') }}</th>
                             <th scope="col">
                                 {{ __('purchasing.copy.valid_until') }}
-                                <x-ui.icon name="info" class="ms-1 text-muted" data-bs-toggle="tooltip" data-bs-title="{{ __('purchasing.copy.expired_quotations_cannot_be_used_to_create_a_po_until_the_supplier_submits_a_revision') }}" />
+                                <x-ui.icon name="info" class="ms-1 text-muted" data-ui-tooltip="{{ __('purchasing.copy.expired_quotations_cannot_be_used_to_create_a_po_until_the_supplier_submits_a_revision') }}" />
                             </th>
                             <th scope="col" class="tw:text-right text-end" style="min-width: 96px;">{{ __('common.table.action') }}</th>
                         </tr>

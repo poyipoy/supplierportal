@@ -155,10 +155,10 @@
                                         </button>
                                     </form>
                                     <div class="dropdown">
-                                        <button type="button" class="ui-data-action ui-focus-ring dropdown-toggle" data-bs-toggle="dropdown" data-bs-popper-config='{"strategy":"fixed"}' aria-expanded="false" aria-label="{{ __('shipments.a11y.more_actions', ['shipment' => $shp->shipment_number]) }}">
+                                        <button type="button" class="ui-data-action ui-focus-ring dropdown-toggle" data-ui-dropdown-trigger popovertarget="dd-shp-static-{{ e($shp->hash) }}" aria-controls="dd-shp-static-{{ e($shp->hash) }}" aria-expanded="false" aria-label="{{ __('shipments.a11y.more_actions', ['shipment' => $shp->shipment_number]) }}">
                                             {{ __('shipments.copy.more') }}
                                         </button>
-                                        <ul class="dropdown-menu dropdown-menu-end">
+                                        <ul id="dd-shp-static-{{ e($shp->hash) }}" popover="auto" data-ui-dropdown-menu class="dropdown-menu dropdown-menu-end">
                                             <li><a href="{{ route('supplier.shipments.show', $shp) }}" class="dropdown-item">{{ __('shipments.copy.view_details') }}</a></li>
                                             <li><a href="{{ route('supplier.shipments.edit', $shp) }}" class="dropdown-item">{{ __('shipments.copy.edit_draft') }}</a></li>
                                             <li>

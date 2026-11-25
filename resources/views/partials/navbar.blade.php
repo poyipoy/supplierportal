@@ -90,15 +90,16 @@
                     :label="$initNotifCount === 1 ? __('js.notification.unread_one', ['count' => $initNotifCount]) : ($initNotifCount > 1 ? __('js.notification.unread_many', ['count' => $initNotifCount]) : __('js.notification.button_label'))"
                     size="sm"
                     class="topbar-icon-btn"
-                    data-bs-toggle="dropdown"
-                    data-bs-auto-close="outside"
+                    data-ui-dropdown-trigger
+                    popovertarget="topbarNotificationPopover"
+                    aria-controls="topbarNotificationPopover"
                     aria-expanded="false"
                 >
                     <x-slot:badge>
                         <span class="notif-badge topbar-counter {{ $initNotifCount > 0 ? '' : 'd-none' }}" aria-hidden="true">{{ $initNotifCount }}</span>
                     </x-slot:badge>
                 </x-ui.icon-button>
-                <div class="dropdown-menu dropdown-menu-end notification-dropdown shadow-sm border">
+                <div id="topbarNotificationPopover" popover="auto" data-ui-dropdown-menu data-ui-auto-close="outside" class="dropdown-menu dropdown-menu-end notification-dropdown shadow-sm border">
                     <div
                         class="tw:flex tw:min-h-48 tw:min-w-72 tw:items-center tw:justify-center tw:p-4 tw:text-ui-sm tw:text-on-surface-variant"
                         data-notification-summary-container
@@ -123,11 +124,11 @@
             {{-- User Dropdown --}}
             <div class="dropdown">
                 <button class="topbar-user-trigger dropdown-toggle" type="button"
-                    data-bs-toggle="dropdown" @if(config('portal_session.logout_all_devices')) data-bs-auto-close="outside" @endif aria-expanded="false" title="{{ auth()->user()->name }} ({{ auth()->user()->email }})">
+                    data-ui-dropdown-trigger popovertarget="topbarUserMenuPopover" aria-controls="topbarUserMenuPopover" aria-expanded="false" title="{{ auth()->user()->name }} ({{ auth()->user()->email }})">
                     <x-ui.user-chip :name="auth()->user()->name" class="topbar-user-chip" />
                     <span class="tw:sr-only">{{ __('navigation.open_user') }}</span>
                 </button>
-                <ul class="dropdown-menu dropdown-menu-end shadow-sm border">
+                <ul id="topbarUserMenuPopover" popover="auto" data-ui-dropdown-menu @if(config('portal_session.logout_all_devices')) data-ui-auto-close="outside" @endif class="dropdown-menu dropdown-menu-end shadow-sm border">
                     <li>
                         <div class="dropdown-item-text small text-muted tw:flex tw:items-center tw:justify-between tw:gap-2">
                             <span class="tw:truncate">{{ auth()->user()->email }}</span>
@@ -269,7 +270,7 @@
                 }
             }
 
-            document.addEventListener('show.bs.dropdown', function (event) {
+            document.addEventListener('adasi:dropdown-show', function (event) {
                 const dropdown = event.target.closest('[data-notification-dropdown]');
                 if (dropdown) {
                     loadNotificationSummary(dropdown);
@@ -277,7 +278,7 @@
             });
 
             document.addEventListener('click', function (event) {
-                const toggle = event.target.closest('[data-notification-dropdown] [data-bs-toggle="dropdown"]');
+                const toggle = event.target.closest('[data-notification-dropdown] [data-ui-dropdown-trigger]');
                 if (toggle) {
                     loadNotificationSummary(toggle.closest('[data-notification-dropdown]'));
                 }
@@ -307,7 +308,7 @@
                         badge.classList.add('d-none');
                     }
 
-                    badge.closest('button[data-bs-toggle="dropdown"]')?.setAttribute('aria-label', label);
+                    badge.closest('button[data-ui-dropdown-trigger]')?.setAttribute('aria-label', label);
                 });
             }
 
@@ -377,10 +378,10 @@
 
             function closeNotificationDropdown(item) {
                 const dropdown = item?.closest?.('[data-notification-dropdown]');
-                const toggle = dropdown?.querySelector?.('[data-bs-toggle="dropdown"]');
+                const toggle = dropdown?.querySelector?.('[data-ui-dropdown-trigger]');
 
-                if (toggle && window.bootstrap?.Dropdown) {
-                    window.bootstrap.Dropdown.getOrCreateInstance(toggle).hide();
+                if (toggle && window.AdasiDropdown) {
+                    window.AdasiDropdown.hide(toggle);
                 } else {
                     window.AdasiDismissDropdowns?.();
                 }
@@ -417,7 +418,7 @@
                 }
             }
 
-            document.addEventListener('shown.bs.tab', function (event) {
+            document.addEventListener('adasi:tab-shown', function (event) {
                 const tab = event.target.closest('[data-notification-category]');
                 if (!tab) {
                     return;
@@ -450,7 +451,7 @@
 
                 const dropdown = form.closest('.notification-dropdown');
                     const categoryInput = form.querySelector('[data-notification-category-input]');
-                    const activeTab = dropdown?.querySelector('[data-notification-category].active');
+                    const activeTab = dropdown?.querySelector('[data-notification-category].active, [data-notification-category][aria-selected="true"]');
                     const scrollPane = dropdown?.querySelector('.notification-list');
                     const scrollTop = scrollPane?.scrollTop || 0;
                     const category = activeTab?.dataset.notificationCategory || categoryInput?.value || 'all';

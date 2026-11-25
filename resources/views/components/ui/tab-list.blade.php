@@ -5,10 +5,9 @@
 ])
 
 {{--
-    Segmented pill tab triggers for Bootstrap tab panes (data-bs-toggle="tab"), styled like the
+    Segmented pill tab triggers for native AdasiTabs panes (data-ui-tab), styled like the
     price comparison and DRP paid bars. The selected look is keyed on aria-selected only. The plain
-    "active" class carries no styles; Bootstrap's Tab plugin needs it on the selected trigger to know
-    which pane to hide, and keeps both attributes in sync afterwards.
+    "active" class keeps state compatibility and pane sync via AdasiTabs.
     $tabs: list of ['id', 'label', 'icon' => ?string, 'count' => ?int, 'tone' => 'error'|'warning'|null];
     each id names its pane (#id) and its trigger (#id-tab). The tone only shows on a non-zero count.
 --}}
@@ -28,8 +27,8 @@
                 type="button"
                 role="tab"
                 id="{{ $tab['id'] }}-tab"
-                data-bs-toggle="tab"
-                data-bs-target="#{{ $tab['id'] }}"
+                data-ui-tab
+                data-ui-tab-target="#{{ $tab['id'] }}"
                 aria-controls="{{ $tab['id'] }}"
                 aria-selected="{{ $selected ? 'true' : 'false' }}"
                 @unless($selected) tabindex="-1" @endunless

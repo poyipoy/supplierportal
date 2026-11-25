@@ -5159,7 +5159,7 @@ export function bootWorkspaceShell() {
         closeTabMenu({ restoreFocus: !tabMenuOpenedByHover });
     });
 
-    document.addEventListener('show.bs.dropdown', (event) => {
+    document.addEventListener('adasi:dropdown-show', (event) => {
         const openingToggle = event.target instanceof Element ? event.target : null;
         closeTabMenu();
         window.AdasiDismissDropdowns?.(openingToggle);
@@ -5442,7 +5442,7 @@ export function bootWorkspaceShell() {
 
         const anchor = event.target?.closest?.('.top-navbar a[href]');
         if (!anchor) return;
-        if (anchor.hasAttribute('download') || anchor.getAttribute('target') === '_blank' || anchor.hasAttribute('data-chat-drawer') || anchor.dataset.bsToggle) {
+        if (anchor.hasAttribute('download') || anchor.getAttribute('target') === '_blank' || anchor.hasAttribute('data-chat-drawer') || anchor.hasAttribute('data-ui-dropdown-trigger') || anchor.hasAttribute('data-ui-tab') || anchor.hasAttribute('popovertarget') || anchor.hasAttribute('data-ui-modal-open')) {
             return;
         }
 

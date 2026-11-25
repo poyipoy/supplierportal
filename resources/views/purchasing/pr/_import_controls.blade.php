@@ -1,9 +1,9 @@
 <div class="dropdown">
-    <x-ui.button type="button" variant="outline" size="sm" class="dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+    <x-ui.button type="button" variant="outline" size="sm" class="dropdown-toggle" data-ui-dropdown-trigger popovertarget="prImportActionsMenu" aria-controls="prImportActionsMenu" aria-expanded="false">
         <x-slot:leading><x-ui.icon name="upload" /></x-slot:leading>
         {{ __('purchasing.copy.import_data') }}
     </x-ui.button>
-    <ul class="dropdown-menu dropdown-menu-end">
+    <ul id="prImportActionsMenu" popover="auto" data-ui-dropdown-menu class="dropdown-menu dropdown-menu-end">
         <li><a class="dropdown-item" href="{{ route('purchasing.requisitions.import-template') }}"
                data-pr-form-export
                data-allow-dirty="true"

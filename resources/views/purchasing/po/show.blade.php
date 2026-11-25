@@ -680,7 +680,7 @@
                                 <span>{{ __('purchasing.copy.batch_update_po_docs') }}</span>
                             </x-ui.button>
                         @endif
-                        <span class="ui-status-chip ui-status-chip--{{ $docProgressTone }}" id="docProgressBadge" data-bs-toggle="tooltip" data-bs-title="{{ $docProgress['description'] }}">
+                        <span class="ui-status-chip ui-status-chip--{{ $docProgressTone }}" id="docProgressBadge" data-ui-tooltip="{{ $docProgress['description'] }}">
                             {{ $docProgress['label'] }}
                         </span>
                     </div>
@@ -1162,11 +1162,12 @@
                     <li class="nav-item" role="presentation">
                         <button class="nav-link {{ $loop->first ? 'active' : '' }} rounded-top-1 tw:text-ui-xs tw:font-semibold"
                                 id="batch-tab-{{ $docType }}"
-                                data-bs-toggle="tab"
-                                data-bs-target="#batch-pane-{{ $docType }}"
+                                data-ui-tab
+                                data-ui-tab-target="#batch-pane-{{ $docType }}"
                                 type="button"
                                 role="tab"
                                 aria-controls="batch-pane-{{ $docType }}"
+                                @unless($loop->first) tabindex="-1" @endunless
                                 aria-selected="{{ $loop->first ? 'true' : 'false' }}">
                             <x-ui.icon name="{{ $def['icon'] }}" size="sm" class="me-1" />
                             <span>{{ $def['label'] }}</span>
@@ -1184,7 +1185,8 @@
                      id="batch-pane-{{ $docType }}"
                      role="tabpanel"
                      aria-labelledby="batch-tab-{{ $docType }}"
-                     tabindex="0">
+                     tabindex="0"
+                     @unless($loop->first) hidden @endunless>
                     <div class="tw:space-y-3">
                         <div class="tw:flex tw:items-center tw:justify-between tw:gap-2 tw:rounded-lg tw:border tw:border-outline-variant/80 tw:bg-surface-container-low tw:px-3 tw:py-2">
                             <span class="tw:text-ui-xs tw:font-semibold tw:text-on-surface ui-tabular-nums" id="batchPoDocSelectionSummary_{{ $docType }}">
@@ -2031,8 +2033,8 @@
                 syncBatchPoDialogControls();
 
                 const firstTabBtn = document.querySelector('#batchPoDocNavTabs button:first-child');
-                if (firstTabBtn && window.bootstrap && window.bootstrap.Tab) {
-                    new window.bootstrap.Tab(firstTabBtn).show();
+                if (firstTabBtn) {
+                    window.AdasiTabs?.show?.(firstTabBtn);
                 }
             }
 
@@ -2371,7 +2373,7 @@
                     if (docProgressBadge) {
                         docProgressBadge.textContent = completed + '/' + total + ' complete';
                         docProgressBadge.className = 'ui-status-chip ' + (docsComplete ? 'ui-status-chip--success' : 'ui-status-chip--warning');
-                        docProgressBadge.setAttribute('data-bs-title', docsComplete
+                        docProgressBadge.setAttribute('data-ui-tooltip', docsComplete
                             ? @json(__('purchasing.copy.all_import_documents_are_complete'))
                             : @json(__('purchasing.copy.some_import_documents_still_need_to_be_completed_or_verified')));
                     }

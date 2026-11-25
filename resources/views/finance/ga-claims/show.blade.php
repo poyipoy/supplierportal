@@ -170,20 +170,22 @@
                         <hr class="tw:border-outline-variant tw:my-2">
 
                         {{-- Request Revision Form --}}
-                        <div>
+                        <div x-data="{ revisionOpen: @js($errors->any()) }">
                             <x-ui.button
                                 type="button"
                                 variant="danger-outline"
                                 size="sm"
                                 class="w-100"
-                                data-bs-toggle="collapse"
-                                data-bs-target="#revisionCollapse"
+                                x-on:click="revisionOpen = !revisionOpen"
+                                x-bind:aria-expanded="revisionOpen.toString()"
+                                aria-expanded="{{ $errors->any() ? 'true' : 'false' }}"
+                                aria-controls="revisionCollapse"
                             >
                                 <x-ui.icon name="alert-circle" size="sm" />
                                 <span>{{ __('ga.verification.request_revision') }}</span>
                             </x-ui.button>
 
-                            <div class="collapse tw:mt-3" id="revisionCollapse">
+                            <div class="tw:mt-3" id="revisionCollapse" x-show="revisionOpen" @unless($errors->any()) x-cloak @endunless>
                                 <form method="POST" action="{{ route('finance.ga-claims.verify', $claim) }}" class="tw:space-y-2">
                                     @csrf
                                     <input type="hidden" name="approve" value="0">

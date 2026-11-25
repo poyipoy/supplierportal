@@ -57,8 +57,8 @@
                                 <div class="tw:inline-flex tw:items-center tw:gap-1">
                                     <x-ui.button :href="route('admin.announcements.edit', $ann->id)" variant="outline-primary" size="sm">{{ __('admin.copy.edit') }}</x-ui.button>
                                     <div class="dropdown">
-                                        <x-ui.button type="button" variant="outline" size="sm" class="dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" aria-label="{{ __('admin.page.more_actions', ['title' => $ann->title]) }}">{{ __('admin.copy.more') }}</x-ui.button>
-                                        <ul class="dropdown-menu dropdown-menu-end">
+                                        <x-ui.button type="button" variant="outline" size="sm" class="dropdown-toggle" data-ui-dropdown-trigger popovertarget="dd-ann-{{ $ann->id }}" aria-controls="dd-ann-{{ $ann->id }}" aria-expanded="false" aria-label="{{ __('admin.page.more_actions', ['title' => $ann->title]) }}">{{ __('admin.copy.more') }}</x-ui.button>
+                                        <ul id="dd-ann-{{ $ann->id }}" popover="auto" data-ui-dropdown-menu class="dropdown-menu dropdown-menu-end">
                                             <li><form action="{{ route('admin.announcements.toggle-publish', $ann->id) }}" method="POST">@csrf<button type="submit" class="dropdown-item">{{ $ann->published_at ? __('admin.copy.move_to_draft') : __('admin.copy.publish_announcement') }}</button></form></li>
                                             <li><hr class="dropdown-divider"></li>
                                             <li><form action="{{ route('admin.announcements.destroy', $ann->id) }}" method="POST" class="delete-announcement-form">@csrf @method('DELETE')<button type="button" class="dropdown-item text-danger btn-delete-announcement">{{ __('admin.copy.delete_announcement') }}</button></form></li>

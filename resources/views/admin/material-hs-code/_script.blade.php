@@ -540,18 +540,18 @@ const bootMaterialHsMaster = () => {
         container.appendChild(list);
     }
 
-    document.querySelectorAll('button[data-bs-target="#data-quality"]').forEach((btn) => {
-        btn.addEventListener('shown.bs.tab', loadQuality);
+    document.querySelectorAll('button[data-ui-tab-target="#data-quality"]').forEach((btn) => {
+        btn.addEventListener('adasi:tab-shown', loadQuality);
     });
-    document.querySelectorAll('button[data-bs-toggle="tab"]').forEach((btn) => {
-        btn.addEventListener('shown.bs.tab', () => {
-            history.replaceState(null, '', btn.getAttribute('data-bs-target'));
+    document.querySelectorAll('button[data-ui-tab]').forEach((btn) => {
+        btn.addEventListener('adasi:tab-shown', () => {
+            history.replaceState(null, '', btn.getAttribute('data-ui-tab-target'));
         });
     });
 
     if (location.hash) {
-        const trigger = document.querySelector(`[data-bs-target="${location.hash}"]`);
-        if (trigger) bootstrap.Tab.getOrCreateInstance(trigger).show();
+        const trigger = document.querySelector(`[data-ui-tab-target="${location.hash}"]`);
+        if (trigger) window.AdasiTabs?.show(trigger);
     }
 
     if (oldContext === 'material') {

@@ -6,13 +6,14 @@
         @foreach($notificationCategories as $key => $category)
             <button class="nav-link {{ $loop->first ? 'active' : '' }}"
                 id="notif-tab-{{ $key }}"
-                data-bs-toggle="pill"
-                data-bs-target="#notif-pane-{{ $key }}"
+                data-ui-tab
+                data-ui-tab-target="#notif-pane-{{ $key }}"
                 data-notification-category="{{ $key }}"
                 data-notification-mark-label="{{ $key === \App\Support\NotificationCategory::ALL ? __('common.notification.mark_all') : __('common.notification.mark_category', ['category' => $category['short_label']]) }}"
                 type="button"
                 role="tab"
                 aria-controls="notif-pane-{{ $key }}"
+                @unless($loop->first) tabindex="-1" @endunless
                 aria-selected="{{ $loop->first ? 'true' : 'false' }}">
                 <span class="d-flex align-items-center gap-2">
                     <x-ui.icon :name="$category['icon']" />
@@ -39,7 +40,8 @@
                 <div class="tab-pane fade {{ $loop->first ? 'show active' : '' }}"
                     id="notif-pane-{{ $key }}"
                     role="tabpanel"
-                    aria-labelledby="notif-tab-{{ $key }}">
+                    aria-labelledby="notif-tab-{{ $key }}"
+                    @unless($loop->first) hidden @endunless>
                     @forelse($navbarNotificationGroups[$key] as $notif)
                         @php
                             $notifCategoryKey = \App\Support\NotificationCategory::key($notif);

@@ -254,14 +254,15 @@
                                             <button
                                                 type="button"
                                                 class="ui-data-action ui-focus-ring dropdown-toggle"
-                                                data-bs-toggle="dropdown"
-                                                data-bs-popper-config='{"strategy":"fixed"}'
+                                                data-ui-dropdown-trigger
+                                                popovertarget="dd-loc-{{ $loc->id }}"
+                                                aria-controls="dd-loc-{{ $loc->id }}"
                                                 aria-expanded="false"
                                                 aria-label="{{ __('shipments.copy.more') }} {{ $loc->name }}"
                                             >
                                                 {{ __('shipments.copy.more') }}
                                             </button>
-                                            <ul class="dropdown-menu dropdown-menu-end">
+                                            <ul id="dd-loc-{{ $loc->id }}" popover="auto" data-ui-dropdown-menu class="dropdown-menu dropdown-menu-end">
                                                 @unless($loc->is_default)
                                                     <li>
                                                         <form method="POST" action="{{ route('supplier.goods-locations.default', $loc) }}" class="tw:m-0">

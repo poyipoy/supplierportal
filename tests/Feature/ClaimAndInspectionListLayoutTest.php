@@ -39,13 +39,13 @@ class ClaimAndInspectionListLayoutTest extends TestCase
 
             foreach ($panes as $pane => $table) {
                 $selected = $pane === $active ? 'true' : 'false';
-                $this->assertSame(1, $xpath->query('//button[@id="'.$pane.'-tab"][@role="tab"][@data-bs-toggle="tab"][@data-bs-target="#'.$pane.'"][@aria-controls="'.$pane.'"][@aria-selected="'.$selected.'"]')->length, "$locale: trigger for $pane");
+                $this->assertSame(1, $xpath->query('//button[@id="'.$pane.'-tab"][@role="tab"][@data-ui-tab][@data-ui-tab-target="#'.$pane.'"][@aria-controls="'.$pane.'"][@aria-selected="'.$selected.'"]')->length, "$locale: trigger for $pane");
                 $this->assertSame(1, $xpath->query('//div[@id="'.$content.'"]/div[@id="'.$pane.'"][@role="tabpanel"][@aria-labelledby="'.$pane.'-tab"][@tabindex="0"]')->length, "$locale: pane $pane");
                 $this->assertSame(1, $xpath->query('//div[@id="'.$pane.'"]//section[contains(@class, "ui-data-table")]//table[@id="'.$table.'"]')->length, "$locale: $table sits inside x-ui.data-table");
             }
 
-            $this->assertSame(1, $xpath->query('//button[@role="tab"][@aria-selected="true"][@data-bs-toggle="tab"]')->length, "$locale: exactly one selected page tab");
-            $this->assertSame(count($panes) - 1, $xpath->query('//button[@role="tab"][@data-bs-toggle="tab"][@aria-selected="false"][@tabindex="-1"]')->length, "$locale: inactive tabs leave the tab order");
+            $this->assertSame(1, $xpath->query('//button[@role="tab"][@aria-selected="true"][@data-ui-tab]')->length, "$locale: exactly one selected page tab");
+            $this->assertSame(count($panes) - 1, $xpath->query('//button[@role="tab"][@data-ui-tab][@aria-selected="false"][@tabindex="-1"]')->length, "$locale: inactive tabs leave the tab order");
             $this->assertSame(0, $xpath->query('//div[@id="'.$content.'"]//*[contains(@class, "table-responsive")]')->length, "$locale: no second bordered table box");
             $this->assertSame(0, $xpath->query('//*[contains(@class, "claim-nav-tabs") or contains(@class, "nav-tabs")]')->length, "$locale: no page-local tab styles");
         }
@@ -94,8 +94,7 @@ class ClaimAndInspectionListLayoutTest extends TestCase
         $this->assertSame(0, $xpath->query('//button[@id="b-tab"]//span[contains(@class, "tw:bg-warning-container")]')->length);
         $this->assertSame(1, $xpath->query('//button[@id="b-tab"]//span[contains(@class, "tw:group-aria-selected:bg-primary-foreground")]')->length);
         $this->assertSame(0, $xpath->query('//button[@id="c-tab"]//span[contains(@class, "ui-tabular-nums")]')->length, 'no count, no chip');
-        // Bootstrap's Tab plugin finds the trigger to deactivate through ".active"; without it the old
-        // pane stays visible next to the new one.
+        // Native AdasiTabs keeps ".active" in sync on triggers and panes alongside aria-selected and hidden.
         $this->assertSame(1, $xpath->query('//button[@role="tab"][contains(concat(" ", normalize-space(@class), " "), " active ")]')->length);
         $this->assertSame(1, $xpath->query('//button[@id="b-tab"][contains(concat(" ", normalize-space(@class), " "), " active ")]')->length);
     }

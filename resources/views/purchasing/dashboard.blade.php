@@ -425,7 +425,7 @@
                     <div class="mb-3">
                         <label class="form-label small fw-bold" for="exchange-rate-value">
                             {{ __('purchasing.copy.rate_to_idr') }}
-                            <x-ui.icon name="info" class="ms-1 text-muted" data-bs-toggle="tooltip" data-bs-title="{{ __('purchasing.copy.new_exchange_rate_is_saved_as_a_new_historical_record_preserving_past_snapshots') }}" />
+                            <x-ui.icon name="info" class="ms-1 text-muted" data-ui-tooltip="{{ __('purchasing.copy.new_exchange_rate_is_saved_as_a_new_historical_record_preserving_past_snapshots') }}" />
                         </label>
                         <input type="number" step="0.01" name="rate_to_idr" id="exchange-rate-value" class="form-control form-control-sm" required placeholder="16500">
                     </div>

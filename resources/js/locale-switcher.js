@@ -35,8 +35,7 @@ const TRANSLATED_ATTRIBUTES = [
     'aria-label',
     'title',
     'placeholder',
-    'data-bs-title',
-    'data-bs-original-title',
+    'data-ui-tooltip',
     'data-sidebar-tooltip',
     'data-loading-text',
     'alt',
@@ -209,10 +208,10 @@ export function morphDomTree(liveRoot, serverRoot) {
         }
     }
 
-    if (liveRoot.hasAttribute?.('data-bs-original-title')) {
-        const nextTooltip = serverRoot.getAttribute?.('data-bs-title') ?? serverRoot.getAttribute?.('title');
+    if (liveRoot.hasAttribute?.('data-ui-tooltip-stashed')) {
+        const nextTooltip = serverRoot.getAttribute?.('data-ui-tooltip') ?? serverRoot.getAttribute?.('title');
         if (nextTooltip) {
-            liveRoot.setAttribute?.('data-bs-original-title', nextTooltip);
+            liveRoot.setAttribute?.('data-ui-tooltip', nextTooltip);
         }
     }
 
@@ -500,6 +499,8 @@ export function bootLocaleSwitcher(windowRef = globalThis.window, documentRef = 
                         morphDomTree(liveRegion, serverRegion);
                     }
                 });
+
+                windowRef?.AdasiTooltip?.refresh?.(documentRef);
 
                 // Reset notification dropdown summary container if idle/loaded so next open fetches in new locale
                 const notifContainer = documentRef.querySelector?.('[data-notification-summary-container]');

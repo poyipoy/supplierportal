@@ -48,7 +48,7 @@
         </div>
 
         {{-- Tab 2: Claim History --}}
-        <div class="tab-pane fade" id="history" role="tabpanel" aria-labelledby="history-tab" tabindex="0">
+        <div class="tab-pane fade" id="history" role="tabpanel" aria-labelledby="history-tab" tabindex="0" hidden>
             <x-ui.data-table>
                 <table class="table table-hover align-middle mb-0 tw:text-ui-sm w-100" id="historyTable">
                     <thead class="table-light">
@@ -59,7 +59,7 @@
                             <th scope="col">{{ __('claims.copy.date_submitted') }}</th>
                             <th scope="col">
                                 {{ __('claims.copy.response_deadline') }}
-                                <x-ui.icon name="info" class="ms-1 text-muted" data-bs-toggle="tooltip" data-bs-title="{{ __('claims.copy.deadline_for_supplier_to_formally_respond_to_material_claims') }}" />
+                                <x-ui.icon name="info" class="ms-1 text-muted" data-ui-tooltip="{{ __('claims.copy.deadline_for_supplier_to_formally_respond_to_material_claims') }}" />
                             </th>
                             <th scope="col" class="text-center">{{ __('claims.copy.claim_status') }}</th>
                             <th scope="col" class="tw:text-right text-end" style="width: 96px;">{{ __('common.table.action') }}</th>
@@ -98,8 +98,8 @@
         }));
 
         let historyInit = false;
-        const historyTabBtn = document.querySelector('button[data-bs-target="#history"]');
-        historyTabBtn?.addEventListener('shown.bs.tab', () => {
+        const historyTabBtn = document.querySelector('button[data-ui-tab-target="#history"]');
+        historyTabBtn?.addEventListener('adasi:tab-shown', () => {
             const historyTableEl = document.getElementById('historyTable');
             if (!historyInit && historyTableEl) {
                 historyInit = true;

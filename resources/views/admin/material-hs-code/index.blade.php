@@ -103,7 +103,7 @@
             </x-ui.data-table>
         </div>
 
-        <div class="tab-pane fade" id="rules" role="tabpanel" aria-labelledby="rules-tab" tabindex="0">
+        <div class="tab-pane fade" id="rules" role="tabpanel" aria-labelledby="rules-tab" tabindex="0" hidden>
             <x-ui.data-table
                 :title="__('admin.copy.hs_code_rule_register')"
                 :description="__('admin.copy.prioritized_dimensional_rules_used_by_the_deterministic_hs_code_mapping_workflow')"
@@ -179,7 +179,7 @@
             </x-ui.data-table>
         </div>
 
-        <div class="tab-pane fade" id="data-quality" role="tabpanel" aria-labelledby="data-quality-tab" tabindex="0">
+        <div class="tab-pane fade" id="data-quality" role="tabpanel" aria-labelledby="data-quality-tab" tabindex="0" hidden>
             <div class="tw:rounded-ui-md tw:border tw:border-outline tw:bg-surface tw:p-3 tw:shell:p-4">
                 <x-ui.inline-loader id="qualityLoading" :label="__('admin.copy.analyzing_master_data')" class="tw:py-12" />
                 <div id="qualityContent" class="d-none">

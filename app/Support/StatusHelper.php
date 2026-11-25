@@ -878,7 +878,7 @@ class StatusHelper
         $escapedLabel = e($label);
         $tone = self::semanticTone($badgeClass);
         $tooltip = $description
-            ? ' data-bs-toggle="tooltip" data-bs-title="'.e($description).'"'
+            ? ' data-ui-tooltip="'.e($description).'"'
             : '';
 
         return '<span class="ui-status-chip ui-status-chip--'.$tone.'"'.$tooltip.'>'.$escapedLabel.'</span>';

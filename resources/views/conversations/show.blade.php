@@ -183,10 +183,10 @@
             <form id="chat-form" data-managed-submit onsubmit="sendMessage(event)">
                 @if(!empty($messageTemplates))
                     <div class="dropdown tw:mb-2">
-                        <button class="ui-focus-ring tw:inline-flex tw:h-7 tw:items-center tw:gap-1 tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-transparent tw:px-2.5 tw:text-ui-xs tw:font-medium tw:text-on-surface tw:hover:bg-surface-low" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <button class="ui-focus-ring tw:inline-flex tw:h-7 tw:items-center tw:gap-1 tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-transparent tw:px-2.5 tw:text-ui-xs tw:font-medium tw:text-on-surface tw:hover:bg-surface-low" type="button" data-ui-dropdown-trigger popovertarget="conversationTemplateMenu" aria-controls="conversationTemplateMenu" aria-expanded="false">
                             <x-ui.icon name="zap" />{{ __('purchasing.copy.template') }}
                         </button>
-                        <div class="dropdown-menu p-2 chat-template-menu">
+                        <div id="conversationTemplateMenu" popover="auto" data-ui-dropdown-menu class="dropdown-menu p-2 chat-template-menu">
                             @foreach($messageTemplates as $template)
                                 <button type="button" class="dropdown-item rounded small text-wrap" data-chat-template="{{ $template }}">
                                     {{ $template }}

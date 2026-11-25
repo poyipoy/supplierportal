@@ -74,7 +74,7 @@ class LogoutAllDevicesTest extends TestCase
             $response = $this->actingAs($user)->get(route('profile.edit'))->assertOk();
             if ($enabled) {
                 $response->assertSee('name="logout_all" value="1"', false)
-                    ->assertSee('data-bs-auto-close="outside"', false)
+                    ->assertSee('data-ui-auto-close="outside"', false)
                     ->assertSee(__('navigation.logout_all_devices'));
             } else {
                 $response->assertDontSee('name="logout_all"', false);

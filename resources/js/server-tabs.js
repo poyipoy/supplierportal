@@ -930,12 +930,9 @@ function updateOverpaymentBadge(container, count) {
 }
 
 function reinitTooltips(container) {
-    const Tooltip = window.bootstrap?.Tooltip;
-    if (!Tooltip) return;
-
-    container.querySelectorAll('[data-bs-toggle="tooltip"]').forEach((el) => {
-        Tooltip.getOrCreateInstance(el);
-    });
+    if (typeof window !== 'undefined') {
+        window.AdasiTooltip?.refresh?.(container);
+    }
 }
 
 function renderMmtError(target, message, retryUrl) {
@@ -1079,7 +1076,7 @@ function bindMmtWorkspaceDelegation() {
     }
     mmtDelegationBound = true;
 
-    const interactiveSelector = 'a, button, input, select, textarea, label, [role="button"], [data-bs-toggle], [data-mmt-ignore]';
+    const interactiveSelector = 'a, button, input, select, textarea, label, [role="button"], [data-ui-dropdown-trigger], [data-ui-modal-open], [data-ui-tab], [popovertarget], [data-mmt-ignore]';
 
     document.addEventListener('click', (e) => {
         if (e.defaultPrevented || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) {

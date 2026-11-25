@@ -247,7 +247,7 @@
                                     <div class="tw:font-semibold tw:text-on-surface">{{ $row['item']->material_name }}</div>
                                     <div class="tw:text-on-surface-variant tw:text-ui-xs tw:mt-0.5" data-requested-dimensions>{{ $row['dimension_display'] }}</div>
                                     @if(($row['spread_pct'] ?? 0) > 15)
-                                        <div class="small text-danger mt-1" data-bs-toggle="tooltip" title="{{ __('purchasing.copy.high_price_spread_15') }}">
+                                        <div class="small text-danger mt-1" data-ui-tooltip="{{ __('purchasing.copy.high_price_spread_15') }}">
                                             <x-ui.icon name="triangle-alert" class="me-1" />{{ __('purchasing.copy.price_spread') }} {{ isset($regionalFormatter) ? $regionalFormatter->number(number_format($row['spread_pct'], 1, ',', '.'), 'indonesian') : number_format($row['spread_pct'], 1) }}%
                                         </div>
                                     @endif

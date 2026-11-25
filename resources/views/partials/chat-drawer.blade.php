@@ -1,6 +1,7 @@
 @auth
     @if(auth()->user()->isPurchasing() || \App\Support\PortalContext::isImport(auth()->user()))
-        <div class="offcanvas offcanvas-end chat-drawer" tabindex="-1" id="chatDrawer" aria-labelledby="chatDrawerTitle">
+        <div id="chatDrawerScrim" class="chat-drawer-scrim" data-chat-drawer-close hidden></div>
+        <aside class="chat-drawer" tabindex="-1" id="chatDrawer" role="dialog" aria-modal="true" aria-labelledby="chatDrawerTitle" hidden>
             <div class="offcanvas-header tw:flex tw:items-center tw:justify-between tw:gap-3 tw:border-b tw:border-outline-variant tw:bg-surface tw:px-4 tw:py-3">
                 <div class="tw:flex tw:flex-1 tw:min-w-0 tw:items-center tw:gap-2.5">
                     <button type="button" class="ui-focus-ring tw:inline-flex tw:h-8 tw:w-8 tw:shrink-0 tw:items-center tw:justify-center tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-transparent tw:text-on-surface-variant tw:hover:bg-surface-container d-none" id="chatDrawerBack" title="{{ __('common.chat.back') }}" aria-label="{{ __('common.chat.back_lower') }}">
@@ -30,7 +31,7 @@
                     </div>
                     <button type="button"
                         class="ui-focus-ring ui-motion tw:inline-flex tw:h-8 tw:w-8 tw:items-center tw:justify-center tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-transparent tw:text-on-surface-variant tw:hover:bg-surface-container tw:hover:text-on-surface"
-                        data-bs-dismiss="offcanvas"
+                        data-chat-drawer-close
                         title="{{ __('common.actions.close') }}"
                         aria-label="{{ __('common.actions.close') }}">
                         <x-ui.icon name="x" />
@@ -59,10 +60,10 @@
                         <form id="chatDrawerForm" data-managed-submit>
                             <div class="chat-composer-tools d-flex align-items-center justify-content-between gap-2 mb-2">
                                 <div class="dropdown d-none" id="chatDrawerTemplates">
-                                    <button class="ui-focus-ring tw:inline-flex tw:h-7 tw:items-center tw:gap-1 tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-transparent tw:px-2.5 tw:text-ui-xs tw:font-medium tw:text-on-surface tw:hover:bg-surface-low" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <button class="ui-focus-ring tw:inline-flex tw:h-7 tw:items-center tw:gap-1 tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-transparent tw:px-2.5 tw:text-ui-xs tw:font-medium tw:text-on-surface tw:hover:bg-surface-low" type="button" data-ui-dropdown-trigger popovertarget="chatDrawerTemplateMenu" aria-controls="chatDrawerTemplateMenu" aria-expanded="false">
                                         <x-ui.icon name="zap" /> {{ __('common.chat.template') }}
                                     </button>
-                                    <div class="dropdown-menu p-2 chat-template-menu" id="chatDrawerTemplateMenu"></div>
+                                    <div class="dropdown-menu p-2 chat-template-menu" id="chatDrawerTemplateMenu" popover="auto" data-ui-dropdown-menu></div>
                                 </div>
                                 <div class="tw:flex-1 tw:text-end tw:text-ui-xs tw:text-on-surface-variant d-none" id="chatDrawerAttachmentList"></div>
                             </div>
@@ -81,7 +82,7 @@
                     </div>
                 </div>
             </div>
-        </div>
+        </aside>
 
         @push('scripts')
             <script>
@@ -101,7 +102,7 @@
                         muteUrlTemplate: '{{ route('conversations.mute', ['id' => '__ID__']) }}',
                     };
 
-                    const drawer = new bootstrap.Offcanvas(drawerEl);
+                    const scrimEl = document.getElementById('chatDrawerScrim');
                     const backButton = document.getElementById('chatDrawerBack');
                     const titleEl = document.getElementById('chatDrawerTitle');
                     const subtitleEl = document.getElementById('chatDrawerSubtitle');
@@ -125,6 +126,78 @@
                     const attachmentInput = document.getElementById('chatDrawerAttachments');
                     const attachmentListEl = document.getElementById('chatDrawerAttachmentList');
                     const sendButton = document.getElementById('chatDrawerSend');
+                    const drawer = (() => {
+                        let opener = null;
+                        const isOpen = () => !drawerEl.hidden;
+                        const closeTemplatePopover = () => {
+                            if (templateMenuEl?.matches?.(':popover-open') && typeof templateMenuEl.hidePopover === 'function') {
+                                try { templateMenuEl.hidePopover(); } catch {}
+                            }
+                        };
+                        const show = () => {
+                            if (isOpen()) return;
+                            opener = document.activeElement instanceof Element ? document.activeElement : null;
+                            window.AdasiDismissDropdowns?.();
+                            window.AdasiCalendar?.closeActive?.();
+                            if (scrimEl) scrimEl.hidden = false;
+                            drawerEl.hidden = false;
+                            drawerEl.classList.add('show');
+                            window.AdasiOverlayModality?.acquire?.('chatDrawer', drawerEl);
+                            requestAnimationFrame(() => {
+                                const target = (!conversationPane.classList.contains('d-none') ? inputEl : searchEl)
+                                    || drawerEl.querySelector('[data-chat-drawer-close]');
+                                target?.focus?.({ preventScroll: true });
+                            });
+                        };
+                        const hide = () => {
+                            if (!isOpen()) return;
+                            closeTemplatePopover();
+                            drawerEl.classList.remove('show');
+                            drawerEl.hidden = true;
+                            if (scrimEl) scrimEl.hidden = true;
+                            window.AdasiOverlayModality?.release?.('chatDrawer');
+                            if (opener && opener.isConnected) {
+                                opener.focus?.({ preventScroll: true });
+                            }
+                            opener = null;
+                            drawerEl.dispatchEvent(new CustomEvent('adasi:drawer-hidden', { bubbles: true }));
+                        };
+
+                        drawerEl.addEventListener('click', (event) => {
+                            if (event.target.closest?.('[data-chat-drawer-close]')) {
+                                hide();
+                            }
+                        });
+                        scrimEl?.addEventListener('click', hide);
+                        drawerEl.addEventListener('keydown', (event) => {
+                            if (!isOpen()) return;
+                            if (event.key === 'Escape') {
+                                if (templateMenuEl?.matches?.(':popover-open')) return;
+                                event.preventDefault();
+                                hide();
+                                return;
+                            }
+                            if (event.key === 'Tab') {
+                                const focusables = [...drawerEl.querySelectorAll('a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])')]
+                                    .filter((el) => !el.hidden && !el.closest('.d-none, [hidden]'));
+                                if (!focusables.length) return;
+                                const first = focusables[0];
+                                const last = focusables[focusables.length - 1];
+                                if (event.shiftKey && (document.activeElement === first || document.activeElement === drawerEl)) {
+                                    event.preventDefault();
+                                    last.focus();
+                                } else if (!event.shiftKey && document.activeElement === last) {
+                                    event.preventDefault();
+                                    first.focus();
+                                }
+                            }
+                        });
+                        window.addEventListener('adasi:dismiss-overlays', () => {
+                            if (isOpen()) hide();
+                        });
+
+                        return { show, hide };
+                    })();
                     const sendButtonDefaultHtml = sendButton.innerHTML;
                     const sendButtonDefaultDisabled = sendButton.disabled;
 
@@ -1011,7 +1084,7 @@
                         setListMode();
                         loadConversations();
                     });
-                    drawerEl.addEventListener('hidden.bs.offcanvas', () => {
+                    drawerEl.addEventListener('adasi:drawer-hidden', () => {
                         clearInterval(pollTimer);
                         if (activeConversationId) {
                             saveDraft(activeConversationId, inputEl.value);

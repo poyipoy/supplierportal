@@ -57,7 +57,7 @@
         </div>
 
         {{-- Tab 2: Inspection History --}}
-        <div class="tab-pane fade" id="history" role="tabpanel" aria-labelledby="history-tab" tabindex="0">
+        <div class="tab-pane fade" id="history" role="tabpanel" aria-labelledby="history-tab" tabindex="0" hidden>
             <div class="tw:grid tw:gap-3">
                 {{-- Filter Bar --}}
                 <x-ui.filter-bar
@@ -128,11 +128,11 @@
 
         let historyInit = false;
         let historyTable = null;
-        const historyTabBtn = document.querySelector('button[data-bs-target="#history"]');
-        const waitingTabBtn = document.querySelector('button[data-bs-target="#waiting"]');
+        const historyTabBtn = document.querySelector('button[data-ui-tab-target="#history"]');
+        const waitingTabBtn = document.querySelector('button[data-ui-tab-target="#waiting"]');
         const exportLinkEl = document.getElementById('inspectionExportLink');
 
-        historyTabBtn?.addEventListener('shown.bs.tab', () => {
+        historyTabBtn?.addEventListener('adasi:tab-shown', () => {
             exportLinkEl?.classList.remove('d-none');
 
             const historyTableEl = document.getElementById('historyTable');
@@ -163,7 +163,7 @@
             }
         });
 
-        waitingTabBtn?.addEventListener('shown.bs.tab', () => {
+        waitingTabBtn?.addEventListener('adasi:tab-shown', () => {
             exportLinkEl?.classList.add('d-none');
         });
 
@@ -196,7 +196,7 @@
 
         @if(request('status'))
             if (historyTabBtn) {
-                bootstrap.Tab.getOrCreateInstance(historyTabBtn).show();
+                window.AdasiTabs?.show?.(historyTabBtn);
             }
         @endif
     };

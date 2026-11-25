@@ -531,7 +531,7 @@
             if (link.closest('[data-server-tabs-unsaved="managed"]')) return;
 
             // Allow elements explicitly marked to bypass dirty check or modal triggers
-            if (link.closest('[data-allow-dirty="true"], [data-quotation-form-export], [data-pr-form-export], [data-bs-toggle], [data-bs-dismiss], [data-ui-modal-open], [data-ui-modal-close]')) return;
+            if (link.closest('[data-allow-dirty="true"], [data-quotation-form-export], [data-pr-form-export], [data-ui-dropdown-trigger], [data-ui-tab], [popovertarget], [data-chat-drawer-close], [data-ui-modal-open], [data-ui-modal-close]')) return;
 
             // Prevent direct browser navigation and show custom AdasiAlert
             event.preventDefault();

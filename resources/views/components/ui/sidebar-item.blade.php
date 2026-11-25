@@ -22,7 +22,7 @@
         data-sidebar-item
         data-sidebar-disabled
         data-sidebar-tooltip
-        data-bs-title="{{ $disabledHint ? $displayLabel.' — '.$disabledHint : $displayLabel }}"
+        data-ui-tooltip="{{ $disabledHint ? $displayLabel.' — '.$disabledHint : $displayLabel }}"
         {{ $attributes->class(['sidebar-link sidebar-link--disabled ui-motion ui-focus-ring']) }}
     >
         <span class="sidebar-link-icon" aria-hidden="true">
@@ -37,7 +37,7 @@
     aria-label="{{ $accessibleName }}"
     data-sidebar-item
     data-sidebar-tooltip
-    data-bs-title="{{ $displayLabel }}"
+    data-ui-tooltip="{{ $displayLabel }}"
     @if($active) aria-current="page" @endif
     {{ $attributes->class(['sidebar-link ui-motion ui-focus-ring', 'active' => $active]) }}
 >

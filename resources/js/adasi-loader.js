@@ -579,7 +579,8 @@ export function isPdfDownloadLink(link, win = globalThis.window) {
 
 export function isFullPageNavigation(link, win) {
     if ((link.target && link.target !== '_self') || link.hasAttribute('download')
-        || link.hasAttribute('data-bs-toggle') || link.hasAttribute('data-ui-modal-open')
+        || link.hasAttribute('data-ui-dropdown-trigger') || link.hasAttribute('data-ui-tab')
+        || link.hasAttribute('popovertarget') || link.hasAttribute('data-ui-modal-open')
         || link.hasAttribute('data-ui-modal-close') || link.hasAttribute('data-no-loader')
         || link.hasAttribute('data-download-pdf') || link.hasAttribute('data-pdf-download')) {
         return false;
