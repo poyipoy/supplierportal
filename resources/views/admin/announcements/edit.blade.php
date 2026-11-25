@@ -33,49 +33,49 @@
         >
             <div class="tw:grid tw:gap-4">
                 <div>
-                    <label class="form-label tw:text-ui-xs tw:font-semibold tw:text-on-surface" for="annTitle">
-                        {{ __('admin.copy.notice_title') }} <span class="text-danger">*</span>
+                    <label class="ui-label tw:text-ui-xs tw:font-semibold tw:text-on-surface" for="annTitle">
+                        {{ __('admin.copy.notice_title') }} <span class="tw:text-error">*</span>
                     </label>
                     <input
                         type="text"
                         name="title"
                         id="annTitle"
-                        class="form-control @error('title') is-invalid @enderror"
+                        class="ui-input @error('title') is-invalid @enderror"
                         value="{{ old('title', $announcement->title) }}"
                         required
                     >
                     @error('title')
-                        <div class="invalid-feedback">{{ $message }}</div>
+                        <div class="ui-field-error">{{ $message }}</div>
                     @enderror
                 </div>
 
                 <div>
-                    <label class="form-label tw:text-ui-xs tw:font-semibold tw:text-on-surface" for="annContent">
-                        {{ __('admin.copy.announcement_body_description') }} <span class="text-danger">*</span>
+                    <label class="ui-label tw:text-ui-xs tw:font-semibold tw:text-on-surface" for="annContent">
+                        {{ __('admin.copy.announcement_body_description') }} <span class="tw:text-error">*</span>
                     </label>
                     <textarea
                         name="content"
                         id="annContent"
-                        class="form-control @error('content') is-invalid @enderror"
+                        class="ui-textarea @error('content') is-invalid @enderror"
                         rows="8"
                         required
                     >{{ old('content', $announcement->content) }}</textarea>
                     @error('content')
-                        <div class="invalid-feedback">{{ $message }}</div>
+                        <div class="ui-field-error">{{ $message }}</div>
                     @enderror
                 </div>
 
                 <div class="tw:pt-2">
-                    <div class="form-check form-switch">
+                    <div class="ui-check-group">
                         <input
-                            class="form-check-input"
+                            class="ui-switch"
                             type="checkbox"
                             name="is_published"
                             id="is_published"
                             value="1"
                             {{ old('is_published', $announcement->published_at) ? 'checked' : '' }}
                         >
-                        <label class="form-check-label tw:text-ui-sm tw:font-medium tw:text-on-surface" for="is_published">
+                        <label class="tw:cursor-pointer tw:text-ui-sm tw:font-medium tw:text-on-surface" for="is_published">
                             {{ __('admin.copy.published_visible_on_user_dashboards') }}
                         </label>
                     </div>

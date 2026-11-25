@@ -63,26 +63,26 @@
 
     <x-ui.data-table :title="trans_choice('admin.audit_ui.material_count', $pr->items->count(), ['count' => $pr->items->count()])" :description="__('admin.copy.required_specifications_shapes_quantities_and_computed_weights')">
         <div class="ui-data-table__scroll tw:overflow-x-auto">
-            <table class="table table-hover align-middle tw:m-0 tw:w-full tw:text-ui-xs">
-                <thead class="table-light text-center">
+            <table class="ui-table ui-table--hover tw:align-middle tw:m-0 tw:w-full tw:text-ui-xs">
+                <thead class="tw:text-center">
                     <tr>
                         <th scope="col">{{ __('admin.copy.no') }}</th>
                         <th scope="col">HS Code</th>
                         <th scope="col">{{ __('admin.copy.material') }}</th>
                         <th scope="col">{{ __('admin.copy.shape_dimensions_mm') }}</th>
                         <th scope="col">{{ __('admin.copy.qty') }}</th>
-                        <th scope="col" class="text-end">{{ __('admin.copy.weight_unit_kg') }}</th>
-                        <th scope="col" class="text-end">{{ __('admin.copy.total_weight_kg') }}</th>
+                        <th scope="col" class="tw:text-end">{{ __('admin.copy.weight_unit_kg') }}</th>
+                        <th scope="col" class="tw:text-end">{{ __('admin.copy.total_weight_kg') }}</th>
                         <th scope="col">{{ __('admin.copy.remark') }}</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse($pr->items as $index => $item)
                         <tr>
-                            <td class="ui-tabular-nums text-center text-muted">{{ $index + 1 }}</td>
-                            <td class="ui-tabular-nums text-center fw-semibold">{{ $item->hs_code ?: '-' }}</td>
-                            <td class="fw-semibold ui-col-data-name">{{ $item->material_name }}</td>
-                            <td class="text-center">
+                            <td class="ui-tabular-nums tw:text-center tw:text-on-surface-variant">{{ $index + 1 }}</td>
+                            <td class="ui-tabular-nums tw:text-center tw:font-semibold">{{ $item->hs_code ?: '-' }}</td>
+                            <td class="tw:font-semibold ui-col-data-name">{{ $item->material_name }}</td>
+                            <td class="tw:text-center">
                                 @if($item->shape)
                                     <span class="tw:font-medium">{{ $item->shape }}</span>
                                     <div class="tw:mt-1 tw:text-on-surface-variant">{{ $item->dimension_label }}</div>
@@ -90,9 +90,9 @@
                                     -
                                 @endif
                             </td>
-                            <td class="ui-tabular-nums text-center fw-semibold">{{ number_format($item->quantity_value, 0) }}</td>
-                            <td class="ui-tabular-nums text-end">{{ \App\Support\NumberFormat::maxDecimals($item->weight_needed) }}</td>
-                            <td class="ui-tabular-nums text-end fw-semibold text-primary">{{ \App\Support\NumberFormat::maxDecimals($item->total_weight) }}</td>
+                            <td class="ui-tabular-nums tw:text-center tw:font-semibold">{{ number_format($item->quantity_value, 0) }}</td>
+                            <td class="ui-tabular-nums tw:text-end">{{ \App\Support\NumberFormat::maxDecimals($item->weight_needed) }}</td>
+                            <td class="ui-tabular-nums tw:text-end tw:font-semibold tw:text-primary">{{ \App\Support\NumberFormat::maxDecimals($item->total_weight) }}</td>
                             <td class="ui-col-data-name">{{ $item->remark ?: '-' }}</td>
                         </tr>
                     @empty

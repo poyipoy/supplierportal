@@ -41,16 +41,16 @@ const bootMaterialHsMaster = () => {
             })
         },
         columns: [
-            { data: 'DT_RowIndex', orderable: false, searchable: false, className: 'text-center text-muted' },
-            { data: 'material_code', name: 'material_code', className: 'ui-tabular-nums fw-semibold text-primary text-nowrap' },
+            { data: 'DT_RowIndex', orderable: false, searchable: false, className: 'tw:text-center tw:text-on-surface-variant' },
+            { data: 'material_code', name: 'material_code', className: 'ui-tabular-nums tw:font-semibold tw:text-primary tw:whitespace-nowrap' },
             { data: 'raw_category', name: 'raw_category', defaultContent: '-' },
             { data: 'hs_category_label', name: 'hs_category', defaultContent: '-' },
             { data: 'density_profile_label', name: 'density_profile' },
             { data: 'manufacturer_scope_label', name: 'manufacturer_scope' },
             { data: 'status_badge', name: 'is_active', searchable: false },
             { data: 'source_display', name: 'source_sheet', searchable: false },
-            { data: 'updated_date', name: 'updated_at', className: 'text-nowrap' },
-            { data: 'action', orderable: false, searchable: false, className: 'text-end text-nowrap' }
+            { data: 'updated_date', name: 'updated_at', className: 'tw:whitespace-nowrap' },
+            { data: 'action', orderable: false, searchable: false, className: 'tw:text-end tw:whitespace-nowrap' }
         ],
 
         order: []
@@ -69,16 +69,16 @@ const bootMaterialHsMaster = () => {
             })
         },
         columns: [
-            { data: 'DT_RowIndex', orderable: false, searchable: false, className: 'text-center text-muted' },
-            { data: 'hs_code', name: 'hs_code', className: 'ui-tabular-nums fw-semibold text-primary text-nowrap' },
+            { data: 'DT_RowIndex', orderable: false, searchable: false, className: 'tw:text-center tw:text-on-surface-variant' },
+            { data: 'hs_code', name: 'hs_code', className: 'ui-tabular-nums tw:font-semibold tw:text-primary tw:whitespace-nowrap' },
             { data: 'material_category_label', name: 'material_category' },
             { data: 'shape_label', name: 'shape' },
             { data: 'conditions_display', orderable: false, searchable: false },
-            { data: 'priority', name: 'priority', className: 'text-center' },
+            { data: 'priority', name: 'priority', className: 'tw:text-center' },
             { data: 'status_badge', name: 'status', searchable: false },
             { data: 'source_display', orderable: false, searchable: false },
-            { data: 'updated_date', name: 'updated_at', className: 'text-nowrap' },
-            { data: 'action', orderable: false, searchable: false, className: 'text-end text-nowrap' }
+            { data: 'updated_date', name: 'updated_at', className: 'tw:whitespace-nowrap' },
+            { data: 'action', orderable: false, searchable: false, className: 'tw:text-end tw:whitespace-nowrap' }
         ],
 
         order: []
@@ -210,8 +210,8 @@ const bootMaterialHsMaster = () => {
 
     function refreshQuality() {
         qualityLoaded = false;
-        document.getElementById('qualityLoading')?.classList.remove('d-none');
-        document.getElementById('qualityContent')?.classList.add('d-none');
+        document.getElementById('qualityLoading')?.classList.remove('tw:hidden');
+        document.getElementById('qualityContent')?.classList.add('tw:hidden');
         loadQuality();
     }
 
@@ -262,7 +262,7 @@ const bootMaterialHsMaster = () => {
         const relevant = shapeDimensions[shapeValue] || [];
         document.querySelectorAll('.rule-condition-row').forEach((rowEl) => {
             const enabled = relevant.includes(rowEl.dataset.dimension);
-            rowEl.classList.toggle('d-none', !enabled);
+            rowEl.classList.toggle('tw:hidden', !enabled);
             if (!enabled) {
                 rowEl.querySelectorAll('.condition-min, .condition-max').forEach((inputEl) => {
                     inputEl.value = '';
@@ -398,7 +398,7 @@ const bootMaterialHsMaster = () => {
 
     document.getElementById('ruleForm')?.addEventListener('submit', function (event) {
         const conditions = {};
-        document.querySelectorAll('.rule-condition-row:not(.d-none)').forEach((rowEl) => {
+        document.querySelectorAll('.rule-condition-row:not(.tw\\:hidden)').forEach((rowEl) => {
             const min = rowEl.querySelector('.condition-min')?.value ?? '';
             const max = rowEl.querySelector('.condition-max')?.value ?? '';
             if (min === '' && max === '') return;
@@ -414,17 +414,17 @@ const bootMaterialHsMaster = () => {
         if (Object.keys(conditions).length === 0) {
             event.preventDefault();
             if (errorEl) {
-                errorEl.classList.remove('d-none');
+                errorEl.classList.remove('tw:hidden');
                 errorEl.focus();
             }
             return;
         }
-        errorEl?.classList.add('d-none');
+        errorEl?.classList.add('tw:hidden');
         setValue('ruleConditionsJson', JSON.stringify(conditions));
         const submitBtn = this.querySelector('button[type="submit"]');
         if (submitBtn) {
             submitBtn.disabled = true;
-            submitBtn.querySelector('.ui-spinner')?.classList.remove('d-none');
+            submitBtn.querySelector('.ui-spinner')?.classList.remove('tw:hidden');
         }
     });
 
@@ -432,7 +432,7 @@ const bootMaterialHsMaster = () => {
         const submitBtn = this.querySelector('button[type="submit"]');
         if (submitBtn) {
             submitBtn.disabled = true;
-            submitBtn.querySelector('.ui-spinner')?.classList.remove('d-none');
+            submitBtn.querySelector('.ui-spinner')?.classList.remove('tw:hidden');
         }
     });
 
@@ -464,15 +464,15 @@ const bootMaterialHsMaster = () => {
                 renderInactiveRulesForReference(referenceNotes.inactive_rules_kept_for_reference || []);
                 renderTagList('#unusedRuleCategories', referenceNotes.rule_categories_not_used_by_materials, @json(__('admin.copy.all_active_rule_categories_are_used_by_current_materials')));
                 renderTagList('#referenceOnlyMaterials', referenceNotes.reference_only_materials, @json(__('admin.copy.none')));
-                document.getElementById('qualityLoading')?.classList.add('d-none');
-                document.getElementById('qualityError')?.classList.add('d-none');
-                document.getElementById('qualityContent')?.classList.remove('d-none');
+                document.getElementById('qualityLoading')?.classList.add('tw:hidden');
+                document.getElementById('qualityError')?.classList.add('tw:hidden');
+                document.getElementById('qualityContent')?.classList.remove('tw:hidden');
             })
             .catch(() => {
                 qualityLoaded = false;
-                document.getElementById('qualityLoading')?.classList.add('d-none');
-                document.getElementById('qualityContent')?.classList.remove('d-none');
-                document.getElementById('qualityError')?.classList.remove('d-none');
+                document.getElementById('qualityLoading')?.classList.add('tw:hidden');
+                document.getElementById('qualityContent')?.classList.remove('tw:hidden');
+                document.getElementById('qualityError')?.classList.remove('tw:hidden');
             });
     }
 
@@ -481,14 +481,14 @@ const bootMaterialHsMaster = () => {
         if (!container) return;
         container.replaceChildren();
         if (!Array.isArray(values) || values.length === 0) {
-            container.appendChild(createTextEl('span', 'text-muted').text(emptyMessage));
+            container.appendChild(createTextEl('span', 'tw:text-on-surface-variant').text(emptyMessage));
             return;
         }
 
         const list = document.createElement('ul');
-        list.className = 'list-unstyled mb-0 d-grid gap-1';
+        list.className = 'tw:m-0 tw:grid tw:list-none tw:gap-1 tw:p-0';
         values.forEach((value) => {
-            list.appendChild(createTextEl('li', 'ui-tabular-nums small').text(value));
+            list.appendChild(createTextEl('li', 'ui-tabular-nums tw:text-ui-xs').text(value));
         });
         container.appendChild(list);
     }
@@ -498,20 +498,20 @@ const bootMaterialHsMaster = () => {
         if (!container) return;
         container.replaceChildren();
         if (!items.length) {
-            container.appendChild(createTextEl('div', 'text-muted').text(@json(__('admin.copy.no_active_rules_need_review'))));
+            container.appendChild(createTextEl('div', 'tw:text-on-surface-variant').text(@json(__('admin.copy.no_active_rules_need_review'))));
             return;
         }
 
         items.forEach((item) => {
             const card = document.createElement('div');
-            card.className = 'border-top pt-3 mt-3';
+            card.className = 'tw:border-t tw:border-outline-variant tw:pt-3 tw:mt-3';
 
-            card.appendChild(createTextEl('div', 'fw-semibold').text(`${item.category} / ${item.shape}`));
-            card.appendChild(createTextEl('div', 'text-muted mt-1').text(item.message));
+            card.appendChild(createTextEl('div', 'tw:font-semibold').text(`${item.category} / ${item.shape}`));
+            card.appendChild(createTextEl('div', 'tw:text-on-surface-variant tw:mt-1').text(item.message));
 
             const codesWrap = document.createElement('div');
-            codesWrap.className = 'mt-2';
-            codesWrap.appendChild(createTextEl('span', 'small fw-semibold me-2').text(@json(__('admin.copy.hs_codes'))));
+            codesWrap.className = 'tw:mt-2';
+            codesWrap.appendChild(createTextEl('span', 'tw:text-ui-xs tw:font-semibold tw:me-2').text(@json(__('admin.copy.hs_codes'))));
             codesWrap.appendChild(document.createTextNode((item.hs_codes || []).join(', ')));
             card.appendChild(codesWrap);
 
@@ -524,16 +524,16 @@ const bootMaterialHsMaster = () => {
         if (!container) return;
         container.replaceChildren();
         if (!items.length) {
-            container.appendChild(createTextEl('span', 'text-muted').text(@json(__('admin.copy.none'))));
+            container.appendChild(createTextEl('span', 'tw:text-on-surface-variant').text(@json(__('admin.copy.none'))));
             return;
         }
 
         const list = document.createElement('ul');
-        list.className = 'list-unstyled mb-0';
+        list.className = 'tw:m-0 tw:list-none tw:p-0';
         items.forEach((item) => {
             const li = document.createElement('li');
-            li.className = 'mb-2';
-            li.appendChild(createTextEl('span', 'ui-tabular-nums me-1').text(item.hs_code));
+            li.className = 'tw:mb-2';
+            li.appendChild(createTextEl('span', 'ui-tabular-nums tw:me-1').text(item.hs_code));
             li.appendChild(document.createTextNode(item.note ? `— ${item.note}` : '— ' + @js(__('common.final_review.inactive_reference'))));
             list.appendChild(li);
         });

@@ -27,7 +27,7 @@
             <form method="GET" action="{{ route('exports.index') }}" class="tw:flex tw:flex-wrap tw:items-end tw:gap-2" aria-label="{{ __('common.filters.controls') }}">
                 <div>
                     <label for="export-filter-status" class="tw:block tw:text-ui-xs tw:font-medium tw:text-on-surface-variant">{{ __('common.export_history.filter_status') }}</label>
-                    <select id="export-filter-status" name="status" class="form-select form-select-sm">
+                    <select id="export-filter-status" name="status" class="ui-select ui-select--sm">
                         <option value="">{{ __('common.export_history.filter_all_statuses') }}</option>
                         @foreach(['queued', 'processing', 'completed', 'failed', 'cancelled'] as $statusOption)
                             <option value="{{ $statusOption }}" @selected(($statusFilter ?? null) === $statusOption)>{{ __('common.export_history.'.$statusOption) }}</option>
@@ -36,7 +36,7 @@
                 </div>
                 <div>
                     <label for="export-filter-format" class="tw:block tw:text-ui-xs tw:font-medium tw:text-on-surface-variant">{{ __('common.export_history.filter_format') }}</label>
-                    <select id="export-filter-format" name="format" class="form-select form-select-sm">
+                    <select id="export-filter-format" name="format" class="ui-select ui-select--sm">
                         <option value="">{{ __('common.export_history.filter_all_formats') }}</option>
                         <option value="xlsx" @selected(($formatFilter ?? null) === 'xlsx')>XLSX</option>
                         <option value="csv" @selected(($formatFilter ?? null) === 'csv')>CSV</option>
@@ -52,14 +52,14 @@
         </header>
         <p id="exportCenterLiveStatus" class="tw:sr-only" role="status" aria-live="polite"></p>
         <div class="ui-data-table__scroll tw:overflow-x-auto">
-            <table class="table table-hover align-middle tw:m-0 tw:w-full tw:text-ui-sm">
-                <thead class="table-light">
+            <table class="ui-table ui-table--hover tw:align-middle tw:m-0 tw:w-full tw:text-ui-sm">
+                <thead>
                     <tr>
                         <th scope="col">{{ __('common.export_history.export') }}</th>
                         <th scope="col">{{ __('common.fields.status') }}</th>
                         <th scope="col">{{ __('common.export_history.created') }}</th>
                         <th scope="col">{{ __('common.export_history.completed_expires') }}</th>
-                        <th scope="col" class="text-end">{{ __('common.export_history.actions') }}</th>
+                        <th scope="col" class="tw:text-end">{{ __('common.export_history.actions') }}</th>
                     </tr>
                 </thead>
                 <tbody id="exportJobsTableBody">
@@ -116,7 +116,7 @@
                                     -
                                 @endif
                             </td>
-                            <td class="text-end">
+                            <td class="tw:text-end">
                                 <div class="tw:inline-flex tw:flex-wrap tw:items-center tw:justify-end tw:gap-1.5">
                                     @if($item['download_url'])
                                         <a href="{{ $item['download_url'] }}" class="ui-focus-ring tw:inline-flex tw:h-8 tw:items-center tw:gap-1.5 tw:rounded-ui-sm tw:border tw:border-success/60 tw:bg-transparent tw:px-2.5 tw:text-ui-xs tw:font-medium tw:text-success tw:no-underline tw:hover:bg-success/5">
@@ -299,7 +299,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <td><span class="${badgeClass(item.status)}">${escapeHtml(statusLabel(item.status))}</span>${statusDetail}</td>
                 <td class="tw:text-ui-xs tw:text-on-surface-variant tw:whitespace-nowrap">${escapeHtml(regionalTimestamp(item.created_at))}</td>
                 <td class="tw:text-ui-xs tw:text-on-surface-variant">${completed}${expiry}</td>
-                <td class="text-end">${action}</td>
+                <td class="tw:text-end">${action}</td>
             </tr>`;
         }).join('');
     };

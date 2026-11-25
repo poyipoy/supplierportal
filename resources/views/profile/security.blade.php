@@ -7,7 +7,7 @@
 <x-account.shell active="security">
     <div class="tw:grid tw:gap-6">
         @if($user->must_change_password)
-            <div class="alert alert-warning" role="alert">{{ __('finance_controls.password_required') }}</div>
+            <x-ui.alert tone="warning">{{ __('finance_controls.password_required') }}</x-ui.alert>
         @endif
         <x-ui.page-header
             :title="__('navigation.security')"

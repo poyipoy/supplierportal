@@ -46,24 +46,24 @@
         >
             <div class="tw:grid tw:gap-4 tw:sm:grid-cols-2">
                 <div>
-                    <label class="form-label tw:text-ui-xs tw:font-semibold tw:text-on-surface" for="user-name">
-                        {{ __('admin.copy.full_name') }} <span class="text-danger">*</span>
+                    <label class="ui-label tw:text-ui-xs tw:font-semibold tw:text-on-surface" for="user-name">
+                        {{ __('admin.copy.full_name') }} <span class="tw:text-error">*</span>
                     </label>
                     <input
                         type="text"
                         name="name"
                         id="user-name"
-                        class="form-control @error('name') is-invalid @enderror"
+                        class="ui-input @error('name') is-invalid @enderror"
                         value="{{ old('name', $user->name) }}"
                         required
                     >
                     @error('name')
-                        <div class="invalid-feedback">{{ $message }}</div>
+                        <div class="ui-field-error">{{ $message }}</div>
                     @enderror
                 </div>
 
                 <div>
-                    <div class="form-label tw:text-ui-xs tw:font-semibold tw:text-on-surface">{{ __('profile.login_email') }}</div>
+                    <div class="ui-label tw:text-ui-xs tw:font-semibold tw:text-on-surface">{{ __('profile.login_email') }}</div>
                     <p class="tw:m-0 tw:break-all tw:text-ui-sm tw:font-semibold">{{ $user->email }}</p>
                     <p class="tw:m-0 tw:mt-1 tw:text-ui-xs tw:text-on-surface-variant">{{ __('profile.email_help') }}</p>
                     @error('email')
@@ -80,10 +80,10 @@
         >
             <div class="tw:grid tw:gap-4 tw:sm:grid-cols-2">
                 <div>
-                    <label class="form-label tw:text-ui-xs tw:font-semibold tw:text-on-surface" for="role-select">
-                        {{ __('admin.copy.portal_role') }} <span class="text-danger">*</span>
+                    <label class="ui-label tw:text-ui-xs tw:font-semibold tw:text-on-surface" for="role-select">
+                        {{ __('admin.copy.portal_role') }} <span class="tw:text-error">*</span>
                     </label>
-                    <select name="role" id="role-select" class="form-select @error('role') is-invalid @enderror" required>
+                    <select name="role" id="role-select" class="ui-select @error('role') is-invalid @enderror" required>
                         <option value="">{{ __('admin.copy.select_access_role') }}</option>
                         <option value="admin" {{ old('role', $user->role) == 'admin' ? 'selected' : '' }}>{{ __('admin.copy.admin_full_system_control') }}</option>
                         <option value="purchasing" {{ old('role', $user->role) == 'purchasing' ? 'selected' : '' }}>{{ __('admin.copy.purchasing_requisitions_pos') }}</option>
@@ -93,14 +93,14 @@
                         <option value="ga" {{ old('role', $user->role) == 'ga' ? 'selected' : '' }}>{{ __('admin.copy.general_affairs_claims_employees') }}</option>
                     </select>
                     @error('role')
-                        <div class="invalid-feedback">{{ $message }}</div>
+                        <div class="ui-field-error">{{ $message }}</div>
                     @enderror
                 </div>
 
                 <div class="tw:flex tw:items-center tw:pt-6">
-                    <div class="form-check form-switch">
-                        <input class="form-check-input" type="checkbox" name="is_active" id="isActive" value="1" {{ old('is_active', $user->is_active) ? 'checked' : '' }}>
-                        <label class="form-check-label tw:text-ui-sm tw:font-medium tw:text-on-surface" for="isActive">
+                    <div class="ui-check-group">
+                        <input class="ui-switch" type="checkbox" name="is_active" id="isActive" value="1" {{ old('is_active', $user->is_active) ? 'checked' : '' }}>
+                        <label class="tw:cursor-pointer tw:text-ui-sm tw:font-medium tw:text-on-surface" for="isActive">
                             {{ __('admin.copy.active_account_allowed_to_sign_in') }}
                         </label>
                     </div>
@@ -115,14 +115,14 @@
         >
             <div class="tw:grid tw:gap-4 tw:sm:grid-cols-2">
                 <div>
-                    <label class="form-label tw:text-ui-xs tw:font-semibold tw:text-on-surface" for="user-password">
+                    <label class="ui-label tw:text-ui-xs tw:font-semibold tw:text-on-surface" for="user-password">
                         {{ __('admin.copy.new_password') }}
                     </label>
                     <input
                         type="password"
                         name="password"
                         id="user-password"
-                        class="form-control @error('password') is-invalid @enderror"
+                        class="ui-input @error('password') is-invalid @enderror"
                         minlength="12"
                         maxlength="255"
                         autocomplete="new-password"
@@ -130,19 +130,19 @@
                     >
                     <small class="tw:text-ui-xs tw:text-on-surface-variant tw:mt-1 tw:block">{{ __('admin.copy.minimum_12_characters_if_updating') }}</small>
                     @error('password')
-                        <div class="invalid-feedback">{{ $message }}</div>
+                        <div class="ui-field-error">{{ $message }}</div>
                     @enderror
                 </div>
 
                 <div>
-                    <label class="form-label tw:text-ui-xs tw:font-semibold tw:text-on-surface" for="user-password-confirmation">
+                    <label class="ui-label tw:text-ui-xs tw:font-semibold tw:text-on-surface" for="user-password-confirmation">
                         {{ __('admin.copy.confirm_new_password') }}
                     </label>
                     <input
                         type="password"
                         name="password_confirmation"
                         id="user-password-confirmation"
-                        class="form-control"
+                        class="ui-input"
                         minlength="12"
                         maxlength="255"
                         autocomplete="new-password"
@@ -153,7 +153,7 @@
         </x-ui.form-section>
 
         {{-- Section 4: Supplier Profile & Business Access (Conditional) --}}
-        <div id="supplier-section" class="{{ old('role', $user->role) === 'supplier' ? '' : 'd-none' }}">
+        <div id="supplier-section" class="{{ old('role', $user->role) === 'supplier' ? '' : 'tw:hidden' }}">
             @include('admin.users.supplier-scopes')
 
             <x-ui.form-section
@@ -162,82 +162,82 @@
             >
                 <div class="tw:grid tw:gap-4 tw:sm:grid-cols-2">
                     <div>
-                        <label class="form-label tw:text-ui-xs tw:font-semibold tw:text-on-surface" for="supplier-company-name">
-                            {{ __('admin.copy.company_legal_name_pt_cv_corp') }} <span class="text-danger">*</span>
+                        <label class="ui-label tw:text-ui-xs tw:font-semibold tw:text-on-surface" for="supplier-company-name">
+                            {{ __('admin.copy.company_legal_name_pt_cv_corp') }} <span class="tw:text-error">*</span>
                         </label>
                         <input
                             type="text"
                             name="company_name"
                             id="supplier-company-name"
-                            class="form-control @error('company_name') is-invalid @enderror"
+                            class="ui-input @error('company_name') is-invalid @enderror"
                             value="{{ old('company_name', $user->supplier->company_name ?? '') }}"
                         >
                         @error('company_name')
-                            <div class="invalid-feedback">{{ $message }}</div>
+                            <div class="ui-field-error">{{ $message }}</div>
                         @enderror
                     </div>
 
                     <div>
-                        <label class="form-label tw:text-ui-xs tw:font-semibold tw:text-on-surface" for="supplier-category">
-                            {{ __('admin.copy.material_supply_category') }} <span class="text-danger">*</span>
+                        <label class="ui-label tw:text-ui-xs tw:font-semibold tw:text-on-surface" for="supplier-category">
+                            {{ __('admin.copy.material_supply_category') }} <span class="tw:text-error">*</span>
                         </label>
                         <input
                             type="text"
                             name="category"
                             id="supplier-category"
-                            class="form-control @error('category') is-invalid @enderror"
+                            class="ui-input @error('category') is-invalid @enderror"
                             value="{{ old('category', $user->supplier->category ?? '') }}"
                             placeholder="{{ __('admin.copy.e_g_special_steel_tool_steel_rods') }}"
                         >
                         @error('category')
-                            <div class="invalid-feedback">{{ $message }}</div>
+                            <div class="ui-field-error">{{ $message }}</div>
                         @enderror
                     </div>
 
                     <div>
-                        <label class="form-label tw:text-ui-xs tw:font-semibold tw:text-on-surface" for="supplier-phone">
-                            {{ __('admin.copy.phone_contact_number') }} <span class="text-danger">*</span>
+                        <label class="ui-label tw:text-ui-xs tw:font-semibold tw:text-on-surface" for="supplier-phone">
+                            {{ __('admin.copy.phone_contact_number') }} <span class="tw:text-error">*</span>
                         </label>
                         <input
                             type="text"
                             name="phone"
                             id="supplier-phone"
-                            class="form-control @error('phone') is-invalid @enderror"
+                            class="ui-input @error('phone') is-invalid @enderror"
                             value="{{ old('phone', $user->supplier->phone ?? '') }}"
                         >
                         @error('phone')
-                            <div class="invalid-feedback">{{ $message }}</div>
+                            <div class="ui-field-error">{{ $message }}</div>
                         @enderror
                     </div>
 
                     <div>
-                        <label class="form-label tw:text-ui-xs tw:font-semibold tw:text-on-surface" for="supplier-npwp">
-                            {{ __('admin.copy.tax_id_npwp') }} <span class="text-danger">*</span>
+                        <label class="ui-label tw:text-ui-xs tw:font-semibold tw:text-on-surface" for="supplier-npwp">
+                            {{ __('admin.copy.tax_id_npwp') }} <span class="tw:text-error">*</span>
                         </label>
                         <input
                             type="text"
                             name="npwp"
                             id="supplier-npwp"
-                            class="form-control @error('npwp') is-invalid @enderror"
+                            class="ui-input @error('npwp') is-invalid @enderror"
                             value="{{ old('npwp', $user->supplier->npwp ?? '') }}"
                         >
                         @error('npwp')
-                            <div class="invalid-feedback">{{ $message }}</div>
+                            <div class="ui-field-error">{{ $message }}</div>
                         @enderror
                     </div>
 
                     <div class="tw:sm:col-span-2">
-                        <label class="form-label tw:text-ui-xs tw:font-semibold tw:text-on-surface" for="supplier-address">
-                            {{ __('admin.copy.registered_office_address') }} <span class="text-danger">*</span>
+                        <label class="ui-label tw:text-ui-xs tw:font-semibold tw:text-on-surface" for="supplier-address">
+                            {{ __('admin.copy.registered_office_address') }} <span class="tw:text-error">*</span>
                         </label>
                         <textarea
                             name="address"
                             id="supplier-address"
-                            class="form-control @error('address') is-invalid @enderror"
+                            class="ui-textarea @error('address') is-invalid @enderror"
                             rows="3"
                         >{{ old('address', $user->supplier->address ?? '') }}</textarea>
                         @error('address')
-                            <div class="invalid-feedback">{{ $message }}</div>
+                            <div class="ui-field-error">{{ $message }}</div>
                         @enderror
                     </div>
                 </div>
@@ -340,13 +340,13 @@
             syncHiddenScopes(preset);
 
             if (requiresPaymentTerm && isSupplier) {
-                paymentTermContainer.classList.remove('d-none');
+                paymentTermContainer.classList.remove('tw:hidden');
                 if (paymentTermInput) {
                     paymentTermInput.removeAttribute('disabled');
                     paymentTermInput.setAttribute('required', 'required');
                 }
             } else {
-                paymentTermContainer.classList.add('d-none');
+                paymentTermContainer.classList.add('tw:hidden');
                 if (paymentTermInput) {
                     paymentTermInput.removeAttribute('required');
                     if (!isSupplier) {
@@ -362,7 +362,7 @@
             const allSupplierElements = supplierSection.querySelectorAll('input, select, textarea');
 
             if (isSupplier) {
-                supplierSection.classList.remove('d-none');
+                supplierSection.classList.remove('tw:hidden');
                 allSupplierElements.forEach(el => {
                     el.removeAttribute('disabled');
                     if (requiredSupplierFields.includes(el.name)) {
@@ -371,7 +371,7 @@
                 });
                 togglePaymentTerm();
             } else {
-                supplierSection.classList.add('d-none');
+                supplierSection.classList.add('tw:hidden');
                 allSupplierElements.forEach(el => {
                     el.setAttribute('disabled', 'disabled');
                     el.removeAttribute('required');

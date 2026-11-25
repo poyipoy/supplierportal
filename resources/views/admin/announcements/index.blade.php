@@ -25,12 +25,12 @@
                 placeholder="{{ __('admin.copy.filter_titles_on_this_page') }}"
                 aria-label="{{ __('admin.copy.filter_announcement_titles_on_this_page') }}"
                 autocomplete="off"
-                class="form-control form-control-sm ui-filter-bar__search-input"
+                class="ui-input ui-input--sm ui-filter-bar__search-input"
             />
         </x-slot:search>
         <x-slot:filters>
             <label for="announcementStatusFilter" class="tw:sr-only">{{ __('admin.copy.publication_status') }}</label>
-            <select id="announcementStatusFilter" class="form-select form-select-sm tw:w-full tw:min-w-0 tw:sm:w-44">
+            <select id="announcementStatusFilter" class="ui-select ui-select--sm tw:w-full tw:min-w-0 tw:sm:w-44">
                 <option value="">{{ __('admin.copy.all_statuses') }}</option>
                 <option value="published">{{ __('admin.copy.published') }}</option>
                 <option value="draft">{{ __('admin.copy.draft') }}</option>
@@ -43,17 +43,17 @@
 
     <x-ui.data-table :title="__('admin.copy.announcement_register')" :description="__('admin.page.announcement_count', ['count' => $announcements->total()])">
         <div class="ui-data-table__scroll tw:overflow-x-auto">
-            <table class="table table-hover align-middle tw:m-0 tw:w-full tw:text-ui-sm">
-                <thead class="table-light"><tr><th scope="col" class="text-center">{{ __('admin.copy.no') }}</th><th scope="col">{{ __('admin.copy.announcement') }}</th><th scope="col">{{ __('admin.copy.owner') }}</th><th scope="col">{{ __('admin.copy.status') }}</th><th scope="col">{{ __('admin.copy.publication_date') }}</th><th scope="col" class="text-end">{{ __('admin.copy.actions') }}</th></tr></thead>
+            <table class="ui-table ui-table--hover tw:align-middle tw:m-0 tw:w-full tw:text-ui-sm">
+                <thead><tr><th scope="col" class="tw:text-center">{{ __('admin.copy.no') }}</th><th scope="col">{{ __('admin.copy.announcement') }}</th><th scope="col">{{ __('admin.copy.owner') }}</th><th scope="col">{{ __('admin.copy.status') }}</th><th scope="col">{{ __('admin.copy.publication_date') }}</th><th scope="col" class="tw:text-end">{{ __('admin.copy.actions') }}</th></tr></thead>
                 <tbody>
                     @forelse($announcements as $i => $ann)
                         <tr data-announcement-row data-title="{{ str($ann->title)->lower() }}" data-status="{{ $ann->published_at ? 'published' : 'draft' }}">
-                            <td class="text-center text-muted">{{ $announcements->firstItem() + $i }}</td>
+                            <td class="tw:text-center tw:text-on-surface-variant">{{ $announcements->firstItem() + $i }}</td>
                             <td><div class="tw:font-semibold">{{ $ann->title }}</div><div class="tw:mt-1 tw:max-w-2xl tw:text-ui-xs tw:text-on-surface-variant">{{ \Illuminate\Support\Str::limit(strip_tags($ann->content), 110) }}</div></td>
                             <td>{{ $ann->creator->name ?? '-' }}</td>
                             <td><x-ui.status-chip :tone="$ann->published_at ? 'success' : 'neutral'">{{ $ann->published_at ? __('admin.copy.published') : __('admin.copy.draft') }}</x-ui.status-chip></td>
-                            <td class="text-nowrap">{{ $ann->published_at ? $regionalFormatter->timestamp($ann->published_at, 'datetime_comma') : '-' }}</td>
-                            <td class="text-end text-nowrap">
+                            <td class="tw:whitespace-nowrap">{{ $ann->published_at ? $regionalFormatter->timestamp($ann->published_at, 'datetime_comma') : '-' }}</td>
+                            <td class="tw:text-end tw:whitespace-nowrap">
                                 <div class="tw:inline-flex tw:items-center tw:gap-1">
                                     <x-ui.button :href="route('admin.announcements.edit', $ann->id)" variant="outline-primary" size="sm">{{ __('admin.copy.edit') }}</x-ui.button>
                                     <div class="dropdown">
@@ -61,7 +61,7 @@
                                         <ul id="dd-ann-{{ $ann->id }}" popover="auto" data-ui-dropdown-menu class="dropdown-menu dropdown-menu-end">
                                             <li><form action="{{ route('admin.announcements.toggle-publish', $ann->id) }}" method="POST">@csrf<button type="submit" class="dropdown-item">{{ $ann->published_at ? __('admin.copy.move_to_draft') : __('admin.copy.publish_announcement') }}</button></form></li>
                                             <li><hr class="dropdown-divider"></li>
-                                            <li><form action="{{ route('admin.announcements.destroy', $ann->id) }}" method="POST" class="delete-announcement-form">@csrf @method('DELETE')<button type="button" class="dropdown-item text-danger btn-delete-announcement">{{ __('admin.copy.delete_announcement') }}</button></form></li>
+                                            <li><form action="{{ route('admin.announcements.destroy', $ann->id) }}" method="POST" class="delete-announcement-form">@csrf @method('DELETE')<button type="button" class="dropdown-item tw:text-error btn-delete-announcement">{{ __('admin.copy.delete_announcement') }}</button></form></li>
                                         </ul>
                                     </div>
                                 </div>
@@ -70,7 +70,7 @@
                     @empty
                         <tr><td colspan="6"><x-ui.empty-state icon="megaphone" :title="__('admin.copy.no_announcements_yet')" :description="__('admin.copy.create_an_announcement_when_portal_wide_information_needs_to_be_shared')" /></td></tr>
                     @endforelse
-                    <tr id="announcementFilterEmpty" class="d-none"><td colspan="6"><x-ui.empty-state icon="search-x" :title="__('admin.copy.no_matching_announcements')" :description="__('admin.copy.clear_the_current_page_filters_and_try_again')" /></td></tr>
+                    <tr id="announcementFilterEmpty" class="tw:hidden"><td colspan="6"><x-ui.empty-state icon="search-x" :title="__('admin.copy.no_matching_announcements')" :description="__('admin.copy.clear_the_current_page_filters_and_try_again')" /></td></tr>
                 </tbody>
             </table>
         </div>
@@ -94,8 +94,8 @@ document.addEventListener('DOMContentLoaded', function () {
         const term = search.value.trim().toLowerCase();
         const state = status.value;
         let visible = 0;
-        rows.forEach((row) => { const matches = (!term || row.dataset.title.includes(term)) && (!state || row.dataset.status === state); row.classList.toggle('d-none', !matches); if (matches) visible += 1; });
-        empty?.classList.toggle('d-none', visible !== 0 || rows.length === 0);
+        rows.forEach((row) => { const matches = (!term || row.dataset.title.includes(term)) && (!state || row.dataset.status === state); row.classList.toggle('tw:hidden', !matches); if (matches) visible += 1; });
+        empty?.classList.toggle('tw:hidden', visible !== 0 || rows.length === 0);
     }
     window.AdasiFilterBar.bindLive('#announcementsFilterBar', {
         debounceMs: 150,

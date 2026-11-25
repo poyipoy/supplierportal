@@ -105,13 +105,13 @@
         @else
             <x-ui.data-table>
                 <div class="ui-data-table__scroll tw:overflow-x-auto">
-                    <table class="table align-middle tw:m-0 tw:w-full tw:text-ui-sm" data-maintenance-modules-table>
-                        <thead class="table-light">
+                    <table class="ui-table tw:align-middle tw:m-0 tw:w-full tw:text-ui-sm" data-maintenance-modules-table>
+                        <thead>
                             <tr>
                                 <th scope="col">{{ __('maintenance.detail.module') }}</th>
                                 <th scope="col">{{ __('maintenance.detail.module_status') }}</th>
                                 <th scope="col">{{ __('maintenance.detail.other_blockers') }}</th>
-                                <th scope="col" class="text-end">{{ __('maintenance.table.actions') }}</th>
+                                <th scope="col" class="tw:text-end">{{ __('maintenance.table.actions') }}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -151,7 +151,7 @@
                                             </ul>
                                         @endif
                                     </td>
-                                    <td class="text-end">
+                                    <td class="tw:text-end">
                                         @if($rowBlocking)
                                             <form method="POST" action="{{ route('admin.maintenance.modules.deactivate', [$record, $moduleRow->module_key]) }}" class="tw:m-0">
                                                 @csrf

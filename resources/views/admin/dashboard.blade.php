@@ -46,14 +46,14 @@
                 <x-slot:toolbar>
                     <x-ui.button type="button" size="sm" data-ui-modal-open="#kursModal"><x-ui.icon name="plus" /> {{ __('admin.copy.add_effective_rate') }}</x-ui.button>
                 </x-slot:toolbar>
-                <table class="table table-hover align-middle tw:m-0 tw:w-full tw:text-ui-sm">
-                    <thead class="table-light"><tr><th scope="col">{{ __('admin.copy.currency') }}</th><th scope="col" class="text-end">{{ __('admin.copy.current_rate_to_idr') }}</th><th scope="col">{{ __('admin.copy.effective_date') }}</th><th scope="col">{{ __('admin.copy.readiness') }}</th></tr></thead>
+                <table class="ui-table ui-table--hover tw:align-middle tw:m-0 tw:w-full tw:text-ui-sm">
+                    <thead><tr><th scope="col">{{ __('admin.copy.currency') }}</th><th scope="col" class="tw:text-end">{{ __('admin.copy.current_rate_to_idr') }}</th><th scope="col">{{ __('admin.copy.effective_date') }}</th><th scope="col">{{ __('admin.copy.readiness') }}</th></tr></thead>
                     <tbody>
                         @foreach(\App\Models\ExchangeRate::CURRENCIES as $currency)
                             @php($rate = $latestRates[$currency] ?? null)
                             <tr>
                                 <td class="ui-tabular-nums tw:font-semibold tw:text-primary">{{ $currency }}</td>
-                                <td class="ui-tabular-nums text-end tw:font-medium">{{ $rate ? 'Rp ' . $regionalFormatter->number(number_format($rate->rate_to_idr, 2, ',', '.'), 'indonesian') : '-' }}</td>
+                                <td class="ui-tabular-nums tw:text-end tw:font-medium">{{ $rate ? 'Rp ' . $regionalFormatter->number(number_format($rate->rate_to_idr, 2, ',', '.'), 'indonesian') : '-' }}</td>
                                 <td>{{ $rate?->valid_from ? $regionalFormatter->date($rate->valid_from, 'human') : '-' }}</td>
                                 <td><x-ui.status-chip :tone="$rate ? 'success' : 'warning'">{{ $rate ? __('admin.dashboard.available') : __('admin.copy.rate_required') }}</x-ui.status-chip></td>
                             </tr>
@@ -121,7 +121,7 @@
     <div class="modal-dialog modal-sm modal-dialog-centered">
         <form action="{{ route('admin.kurs.update') }}" method="POST" class="modal-content">
             @csrf
-            <div class="modal-header"><div><h2 class="modal-title fs-6 fw-bold" id="kursModalTitle">{{ __('admin.copy.add_effective_rate') }}</h2><p class="mb-0 mt-1 small text-muted">{{ __('admin.copy.the_new_value_is_appended_to_rate_history') }}</p></div><button type="button" class="btn-close" data-ui-modal-close aria-label="{{ __('admin.copy.close') }}"></button></div>
+            <div class="modal-header"><div><h2 class="modal-title tw:text-ui-base tw:font-bold" id="kursModalTitle">{{ __('admin.copy.add_effective_rate') }}</h2><p class="tw:m-0 tw:mt-1 tw:text-ui-xs tw:text-on-surface-variant">{{ __('admin.copy.the_new_value_is_appended_to_rate_history') }}</p></div><button type="button" class="btn-close" data-ui-modal-close aria-label="{{ __('admin.copy.close') }}"></button></div>
             <div class="modal-body tw:grid tw:gap-4">
                 <x-ui.select name="currency" :label="__('admin.copy.currency')" :options="\App\Models\ExchangeRate::currencyOptions()" required />
                 <x-ui.input name="rate_to_idr" type="number" :label="__('admin.copy.rate_to_idr')" step="0.01" min="0.01" :placeholder="__('admin.copy.example_16500')" required />

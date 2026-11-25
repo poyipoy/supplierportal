@@ -69,7 +69,7 @@
                         maxlength="4"
                         value="{{ is_scalar(request('annual_year')) ? request('annual_year') : '' }}"
                         placeholder="{{ __('annual_rates.filter_year') }}"
-                        class="form-control form-control-sm ui-tabular-nums tw:w-32"
+                        class="ui-input ui-input--sm ui-tabular-nums tw:w-32"
                         @disabled($annualEditing)
                     >
                 </x-slot:filters>
@@ -95,7 +95,7 @@
             <input type="hidden" name="annual_new" value="1">
             <label for="annual-new-year" class="tw:grid tw:gap-1 tw:text-ui-sm tw:font-medium">
                 {{ __('annual_rates.new_year') }}
-                <input id="annual-new-year" name="annual_new_year" type="text" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" value="{{ is_scalar(request('annual_new_year')) ? request('annual_new_year') : '' }}" class="form-control ui-tabular-nums tw:w-32" required autofocus>
+                <input id="annual-new-year" name="annual_new_year" type="text" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" value="{{ is_scalar(request('annual_new_year')) ? request('annual_new_year') : '' }}" class="ui-input ui-tabular-nums tw:w-32" required autofocus>
             </label>
             <x-ui.button type="submit" variant="outline">{{ __('annual_rates.continue') }}</x-ui.button>
             <x-ui.button :href="route($masterRoutePrefix.'.exchange-rates.index', $annualListQuery)" data-exchange-rates-link variant="ghost">{{ __('admin.copy.cancel') }}</x-ui.button>
@@ -134,13 +134,13 @@
         <x-ui.empty-state icon="badge-dollar-sign" :title="__('annual_rates.empty')" :description="__('annual_rates.empty_help')" />
     @else
         <div class="tw:relative tw:isolate tw:overflow-x-auto tw:overflow-y-hidden" tabindex="0" role="region" aria-label="{{ __('annual_rates.title') }}">
-            <table data-annual-rates-matrix class="table align-middle tw:m-0 tw:w-full tw:text-ui-sm" style="--bs-table-color: var(--md-on-surface); --bs-table-bg: var(--md-surface);">
-                <caption class="visually-hidden">{{ __('annual_rates.description') }}</caption>
+            <table data-annual-rates-matrix class="ui-table tw:align-middle tw:m-0 tw:w-full tw:text-ui-sm">
+                <caption class="tw:sr-only">{{ __('annual_rates.description') }}</caption>
                 <thead>
                     <tr>
                         <th scope="col" class="tw:sticky tw:left-0 tw:z-sticky tw:min-w-24 tw:border-r tw:border-outline-variant tw:bg-surface">{{ __('admin.copy.currency') }}</th>
                         @foreach($annualMatrixYears as $matrixYear)
-                            <th scope="col" data-annual-year="{{ $matrixYear }}" class="text-end tw:min-w-36 {{ $annualEditing && $annualEditYear === (int) $matrixYear ? 'tw:bg-primary-container tw:text-on-primary-container' : '' }}">
+                            <th scope="col" data-annual-year="{{ $matrixYear }}" class="tw:text-end tw:min-w-36 {{ $annualEditing && $annualEditYear === (int) $matrixYear ? 'tw:bg-primary-container tw:text-on-primary-container' : '' }}">
                                 @if($annualManagement)
                                     <span>{{ $matrixYear }}</span>
                                     @if($annualEditing && $annualEditYear === (int) $matrixYear)
@@ -160,10 +160,10 @@
                             <th scope="row" class="tw:sticky tw:left-0 tw:z-sticky tw:border-r tw:border-outline-variant tw:bg-surface">{{ $code }}</th>
                             @foreach($annualMatrixYears as $matrixYear)
                                 @php($annualCell = $annualRates->get($matrixYear, collect())->firstWhere('currency', $code))
-                                <td class="text-end ui-tabular-nums" @if($annualEditing && $annualEditYear === (int) $matrixYear) style="--bs-table-bg: var(--md-primary-container);" @endif>
+                                <td class="tw:text-end ui-tabular-nums {{ $annualEditing && $annualEditYear === (int) $matrixYear ? 'tw:bg-primary-container tw:text-on-primary-container' : '' }}">
                                     @if($annualEditing && $annualEditYear === (int) $matrixYear)
                                         @php($annualInputId = 'annual-rate-'.$code.'-'.$matrixYear)
-                                        <label class="visually-hidden" for="{{ $annualInputId }}">{{ __('annual_rates.rate_label', ['currency' => $code, 'year' => $matrixYear]) }}</label>
+                                        <label class="tw:sr-only" for="{{ $annualInputId }}">{{ __('annual_rates.rate_label', ['currency' => $code, 'year' => $matrixYear]) }}</label>
                                         {{-- Values come from the annual error bag only, not the default old-input lookup. --}}
                                         <input id="{{ $annualInputId }}" name="rates[{{ $code }}]" type="text" inputmode="decimal" pattern="^[0-9]+(\.[0-9]{1,4})?$" autocomplete="off" placeholder="0.0000" data-annual-rate-input data-format-number="true" data-unit="IDR" onkeydown="if (!/^[0-9.,]$/.test(event.key) && !['Backspace','Delete','Tab','Escape','Enter','ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End'].includes(event.key) && !event.ctrlKey && !event.metaKey) { event.preventDefault(); return; } if ((event.key === '.' || event.key === ',') && this.value.includes('.') && !this.value.slice(this.selectionStart, this.selectionEnd).includes('.')) { event.preventDefault(); return; } if (event.key === ',') { event.preventDefault(); var s=this.selectionStart, v=this.value; this.value=v.slice(0,s)+'.'+v.slice(this.selectionEnd); this.setSelectionRange(s+1,s+1); this.dispatchEvent(new Event('input', {bubbles:true})); }" oninput="var v=this.value.replace(/,/g,'.').replace(/[^0-9.]/g,''); var p=v.indexOf('.'); if(p!==-1){ v=v.slice(0,p+1)+v.slice(p+1).replace(/\./g,''); var d=v.split('.'); if(d[1]&&d[1].length>4) v=d[0]+'.'+d[1].slice(0,4); } if(this.value!==v) this.value=v;" value="{{ $annualInputRates[$code] }}" required aria-invalid="{{ $annualErrors->has('rates.'.$code) ? 'true' : 'false' }}" aria-describedby="annual-rate-hint{{ $annualErrors->has('rates.'.$code) ? ' '.$annualInputId.'-error' : '' }}" class="ui-motion ui-focus-ring tw:min-h-[var(--ui-control-height-md)] tw:w-full tw:min-w-32 tw:rounded-ui-sm tw:border tw:bg-surface tw:px-3 tw:py-2 tw:text-right tw:text-ui-sm tw:text-on-surface {{ $annualErrors->has('rates.'.$code) ? 'tw:border-error' : 'tw:border-outline-strong' }}" @if($code === 'USD') autofocus @endif>
                                         <x-ui.field-error :id="$annualInputId.'-error'" :messages="$annualErrors->get('rates.'.$code)" data-exchange-rates-server-error class="tw:mt-1 tw:text-left" />
@@ -184,7 +184,7 @@
                         <tr>
                             <th scope="row" class="tw:sticky tw:left-0 tw:z-sticky tw:border-r tw:border-outline-variant tw:bg-surface">{{ __('annual_rates.actions') }}</th>
                             @foreach($annualMatrixYears as $matrixYear)
-                                <td class="text-end" @if($annualEditing && $annualEditYear === (int) $matrixYear) style="--bs-table-bg: var(--md-primary-container);" @endif>
+                                <td class="tw:text-end {{ $annualEditing && $annualEditYear === (int) $matrixYear ? 'tw:bg-primary-container tw:text-on-primary-container' : '' }}">
                                     @if($annualEditing && $annualEditYear === (int) $matrixYear)
                                         <div class="tw:flex tw:flex-wrap tw:justify-end tw:gap-2">
                                             <x-ui.button type="submit" size="sm"><x-ui.icon name="save" /> {{ __('annual_rates.save_short') }}</x-ui.button>

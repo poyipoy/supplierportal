@@ -33,9 +33,9 @@ class UserController extends Controller
             return DataTables::eloquent($query)
                 ->addIndexColumn()
                 ->addColumn('name_display', function ($user) {
-                    $html = '<div class="fw-semibold text-body">'.e($user->name).'</div>';
+                    $html = '<div class="tw:font-semibold tw:text-on-surface">'.e($user->name).'</div>';
                     if ($user->role === 'supplier' && $user->supplier) {
-                        $html .= '<div class="small text-muted mt-1">'.e($user->supplier->company_name).'</div>';
+                        $html .= '<div class="tw:text-ui-xs tw:text-on-surface-variant tw:mt-1">'.e($user->supplier->company_name).'</div>';
                     }
 
                     return $html;
@@ -60,7 +60,7 @@ class UserController extends Controller
                     : '<span class="ui-status-chip ui-status-chip--neutral">'.e(__('admin.copy.not_enabled')).'</span>')
                 ->addColumn('created_date', fn ($user) => BusinessTime::format($user->created_at, 'd M Y', false))
                 ->addColumn('action', function ($user) {
-                    $html = '<div class="d-inline-flex align-items-center gap-1">'
+                    $html = '<div class="tw:inline-flex tw:items-center tw:gap-1">'
                         .RowAction::link(route('admin.users.edit', $user), __('admin.copy.edit'), 'primary', $user->name, [
                             'aria-label' => __('admin.copy.edit').' - '.__('purchasing.action_names.edit', ['name' => $user->name]),
                         ]);
@@ -68,7 +68,7 @@ class UserController extends Controller
                         $html .= '<div class="dropdown">'
                             .'<button type="button" class="ui-data-action ui-focus-ring dropdown-toggle" data-ui-dropdown-trigger popovertarget="dd-user-'.e($user->hash).'" aria-controls="dd-user-'.e($user->hash).'" aria-expanded="false" aria-label="'.e(__('purchasing.action_names.more_actions_for', ['name' => $user->name])).'">'.e(__('admin.copy.more')).'</button>'
                             .'<ul id="dd-user-'.e($user->hash).'" popover="auto" data-ui-dropdown-menu class="dropdown-menu dropdown-menu-end">'
-                            .'<li><form action="'.route('admin.users.destroy', $user).'" method="POST" class="delete-form">'.csrf_field().method_field('DELETE').'<button type="button" class="dropdown-item text-danger btn-delete">'.e(__('admin.copy.delete_user')).'</button></form></li>'
+                            .'<li><form action="'.route('admin.users.destroy', $user).'" method="POST" class="delete-form">'.csrf_field().method_field('DELETE').'<button type="button" class="dropdown-item tw:text-error btn-delete">'.e(__('admin.copy.delete_user')).'</button></form></li>'
                             .'</ul></div>';
                     }
 

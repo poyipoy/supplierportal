@@ -33,7 +33,7 @@
                 <legend class="tw:sr-only">{{ __('maintenance.fields.type') }}</legend>
                 @foreach(MaintenanceRecord::TYPES as $typeOption)
                     <label class="tw:flex tw:cursor-pointer tw:items-start tw:gap-3 tw:rounded-ui-sm tw:border tw:border-outline tw:p-3 tw:has-checked:border-primary tw:has-checked:bg-primary-container">
-                        <input type="radio" class="form-check-input tw:mt-1 tw:shrink-0" name="type" value="{{ $typeOption }}" x-model="type" @checked($type === $typeOption)>
+                        <input type="radio" class="ui-check tw:mt-1 tw:shrink-0" name="type" value="{{ $typeOption }}" x-model="type" @checked($type === $typeOption)>
                         <span>
                             <span class="tw:block tw:font-semibold tw:text-on-surface">{{ __('maintenance.types.'.$typeOption) }}</span>
                             <span class="tw:block tw:text-ui-xs tw:text-on-surface-variant">{{ __('maintenance.type_help.'.$typeOption) }}</span>
@@ -100,7 +100,7 @@
                                 @foreach($moduleKeys as $moduleKey)
                                     @php $checkboxId = 'maintenanceModule-'.str_replace('.', '-', $moduleKey); @endphp
                                     <label for="{{ $checkboxId }}" class="ui-motion tw:m-0 tw:flex tw:min-h-11 tw:cursor-pointer tw:items-center tw:gap-3 tw:rounded-ui-sm tw:border tw:border-outline tw:bg-surface tw:px-3 tw:py-2 tw:text-ui-sm tw:text-on-surface tw:hover:bg-surface-container tw:has-checked:border-primary tw:has-checked:bg-primary-container tw:has-focus-visible:ring-2 tw:has-focus-visible:ring-primary">
-                                        <input class="form-check-input tw:m-0 tw:shrink-0" type="checkbox" name="modules[]" value="{{ $moduleKey }}" id="{{ $checkboxId }}" @checked(in_array($moduleKey, $selectedModules, true))>
+                                        <input class="ui-check tw:m-0 tw:shrink-0" type="checkbox" name="modules[]" value="{{ $moduleKey }}" id="{{ $checkboxId }}" @checked(in_array($moduleKey, $selectedModules, true))>
                                         <span class="tw:min-w-0">{{ $registry->label($moduleKey) }}</span>
                                     </label>
                                 @endforeach

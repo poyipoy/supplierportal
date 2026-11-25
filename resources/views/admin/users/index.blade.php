@@ -37,12 +37,12 @@
                 placeholder="{{ __('admin.copy.search_name_or_email') }}"
                 aria-label="{{ __('admin.copy.search_users') }}"
                 autocomplete="off"
-                class="form-control form-control-sm ui-filter-bar__search-input"
+                class="ui-input ui-input--sm ui-filter-bar__search-input"
             />
         </x-slot:search>
         <x-slot:filters>
             <label for="userRoleFilter" class="tw:sr-only">{{ __('admin.copy.role') }}</label>
-            <select id="userRoleFilter" class="form-select form-select-sm tw:w-full tw:min-w-0 tw:sm:w-44">
+            <select id="userRoleFilter" class="ui-select ui-select--sm tw:w-full tw:min-w-0 tw:sm:w-44">
                 <option value="">{{ __('admin.copy.all_roles') }}</option>
                 <option value="admin">{{ __('admin.copy.admin') }}</option>
                 <option value="purchasing">{{ __('admin.copy.purchasing') }}</option>
@@ -55,7 +55,7 @@
         <x-slot:advanced>
             <div>
                 <label for="userStatusFilter" class="tw:block tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:mb-1.5">{{ __('admin.copy.account_status') }}</label>
-                <select id="userStatusFilter" class="form-select form-select-sm tw:w-full">
+                <select id="userStatusFilter" class="ui-select ui-select--sm tw:w-full">
                     <option value="">{{ __('admin.copy.all_statuses') }}</option>
                     <option value="1">{{ __('admin.copy.active') }}</option>
                     <option value="0">{{ __('admin.copy.inactive') }}</option>
@@ -71,8 +71,8 @@
         :title="__('admin.copy.user_directory')"
         :description="__('admin.copy.edit_is_the_primary_row_action_destructive_actions_remain_in_the_overflow_menu')"
     >
-        <table class="table table-hover align-middle w-100 tw:m-0 tw:text-ui-sm" id="usersTable">
-            <thead class="table-light">
+        <table class="ui-table ui-table--hover tw:align-middle tw:w-full tw:m-0 tw:text-ui-sm" id="usersTable">
+            <thead>
                 <tr>
                     <th scope="col" style="width: 50px;">{{ __('admin.copy.no') }}</th>
                     <th scope="col">{{ __('admin.copy.identity') }}</th>
@@ -81,7 +81,7 @@
                     <th scope="col">{{ __('admin.copy.status') }}</th>
                     <th scope="col">MFA</th>
                     <th scope="col">{{ __('admin.copy.registered') }}</th>
-                    <th scope="col" class="tw:text-right text-end" style="width: 140px;">{{ __('common.table.action') }}</th>
+                    <th scope="col" class="tw:text-end" style="width: 140px;">{{ __('common.table.action') }}</th>
                 </tr>
             </thead>
             <tbody></tbody>
@@ -103,14 +103,14 @@
             ajax: '{{ route("admin.users.index") }}',
             layout: { topStart: null, topEnd: null, bottomStart: 'info', bottomEnd: 'paging' },
             columns: [
-                { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false, className: 'text-center' },
+                { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false, className: 'tw:text-center' },
                 { data: 'name_display', name: 'name' },
                 { data: 'email', name: 'email' },
                 { data: 'role_badge', name: 'role' },
                 { data: 'status_badge', name: 'is_active' },
                 { data: 'mfa_badge', name: 'two_factor_confirmed_at', searchable: false, orderable: false },
                 { data: 'created_date', name: 'created_at' },
-                { data: 'action', name: 'action', orderable: false, searchable: false, className: 'text-end' }
+                { data: 'action', name: 'action', orderable: false, searchable: false, className: 'tw:text-end' }
             ],
 
             order: []

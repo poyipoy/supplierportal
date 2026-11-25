@@ -46,7 +46,7 @@
 
         <x-slot:filters>
             <label for="currencyFilter" class="tw:sr-only">{{ __('admin.copy.currency') }}</label>
-            <select name="currency" id="currencyFilter" class="form-select form-select-sm tw:w-full tw:min-w-0 tw:sm:w-44">
+            <select name="currency" id="currencyFilter" class="ui-select ui-select--sm tw:w-full tw:min-w-0 tw:sm:w-44">
                 <option value="">{{ __('admin.copy.all_currencies') }}</option>
                 @foreach(\App\Models\ExchangeRate::CURRENCIES as $currency)
                     <option value="{{ $currency }}" @selected(request('currency') === $currency)>{{ \App\Models\ExchangeRate::currencyLabel($currency) }}</option>
@@ -71,11 +71,11 @@
             : __('admin.copy.exchange_rates_count', ['count' => $rates->count(), 'total' => $rates->total()])"
     >
         <div class="ui-data-table__scroll tw:overflow-x-auto">
-            <table class="table table-hover align-middle tw:m-0 tw:w-full tw:text-ui-sm">
-                <thead class="table-light"><tr><th scope="col">{{ __('admin.copy.currency') }}</th><th scope="col" class="text-end">{{ __('admin.copy.rate_to_idr') }}</th><th scope="col">{{ __('admin.copy.effective_date') }}</th><th scope="col">{{ __('admin.copy.recorded_by') }}</th><th scope="col">{{ __('admin.copy.recorded_at') }}</th></tr></thead>
+            <table class="ui-table ui-table--hover tw:align-middle tw:m-0 tw:w-full tw:text-ui-sm">
+                <thead><tr><th scope="col">{{ __('admin.copy.currency') }}</th><th scope="col" class="tw:text-end">{{ __('admin.copy.rate_to_idr') }}</th><th scope="col">{{ __('admin.copy.effective_date') }}</th><th scope="col">{{ __('admin.copy.recorded_by') }}</th><th scope="col">{{ __('admin.copy.recorded_at') }}</th></tr></thead>
                 <tbody>
                     @forelse($rates as $rate)
-                        <tr><td class="ui-tabular-nums tw:font-semibold tw:text-primary">{{ $rate->currency }}</td><td class="ui-tabular-nums text-end tw:font-semibold">Rp {{ number_format($rate->rate_to_idr, 2, ',', '.') }}</td><td class="text-nowrap">{{ $regionalFormatter->date(\Carbon\Carbon::parse($rate->valid_from), 'human') }}</td><td>{{ $rate->creator->name ?? '-' }}</td><td class="text-nowrap tw:text-ui-xs tw:text-on-surface-variant">{{ $regionalFormatter->timestamp($rate->created_at, 'datetime_comma') }}</td></tr>
+                        <tr><td class="ui-tabular-nums tw:font-semibold tw:text-primary">{{ $rate->currency }}</td><td class="ui-tabular-nums tw:text-end tw:font-semibold">Rp {{ number_format($rate->rate_to_idr, 2, ',', '.') }}</td><td class="tw:whitespace-nowrap">{{ $regionalFormatter->date(\Carbon\Carbon::parse($rate->valid_from), 'human') }}</td><td>{{ $rate->creator->name ?? '-' }}</td><td class="tw:whitespace-nowrap tw:text-ui-xs tw:text-on-surface-variant">{{ $regionalFormatter->timestamp($rate->created_at, 'datetime_comma') }}</td></tr>
                     @empty
                         <tr><td colspan="5"><x-ui.empty-state icon="badge-dollar-sign" :title="__('admin.copy.no_exchange_rates_found')" :description="__('admin.copy.add_an_effective_rate_or_clear_the_current_filter')" /></td></tr>
                     @endforelse

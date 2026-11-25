@@ -439,16 +439,16 @@ class LocalInvoiceScopeIsolationTest extends TestCase
         $editAdminResponse = $this->actingAs($admin)->withSession(['auth.password_confirmed_at' => now()->timestamp])->get(route('admin.users.edit', $admin));
         $editAdminResponse->assertOk();
         $editAdminContent = $editAdminResponse->getContent();
-        // The supplier section should be hidden (d-none) for non-supplier
-        $this->assertMatchesRegularExpression('/id="supplier-section"[^>]*class="[^"]*d-none/', $editAdminContent);
+        // The supplier section should be hidden (tw:hidden) for non-supplier
+        $this->assertMatchesRegularExpression('/id="supplier-section"[^>]*class="[^"]*tw:hidden/', $editAdminContent);
 
         // 3. Edit form for Supplier user
         $supplier = $this->supplierWithScopes(['import']);
         $editSupplierResponse = $this->actingAs($admin)->withSession(['auth.password_confirmed_at' => now()->timestamp])->get(route('admin.users.edit', $supplier));
         $editSupplierResponse->assertOk();
         $editSupplierContent = $editSupplierResponse->getContent();
-        // The supplier section should NOT have d-none for supplier
-        $this->assertDoesNotMatchRegularExpression('/id="supplier-section"[^>]*class="[^"]*d-none/', $editSupplierContent);
+        // The supplier section should NOT have tw:hidden for supplier
+        $this->assertDoesNotMatchRegularExpression('/id="supplier-section"[^>]*class="[^"]*tw:hidden/', $editSupplierContent);
         $editSupplierPos = strpos($editSupplierContent, 'id="supplier-section"');
         $editBusinessAccessPos = strpos($editSupplierContent, 'Supplier Business Access');
         $this->assertTrue($editBusinessAccessPos > $editSupplierPos, 'Supplier Business Access must be inside supplier-section in edit view');

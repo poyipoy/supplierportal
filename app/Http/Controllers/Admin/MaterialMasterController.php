@@ -59,11 +59,11 @@ class MaterialMasterController extends Controller
 
                 $stateLabel = $material->is_active ? __('admin.copy.deactivate_material') : __('admin.copy.activate_material');
 
-                return '<div class="d-inline-flex align-items-center gap-1">'
+                return '<div class="tw:inline-flex tw:items-center tw:gap-1">'
                     .'<button type="button" class="ui-data-action ui-data-action--primary ui-focus-ring btn-edit-material" data-material="'.$payload.'" aria-label="'.e(__('purchasing.action_names.edit_material', ['name' => $material->material_code])).'">'.e(__('admin.copy.edit')).'</button>'
                     .'<div class="dropdown"><button type="button" class="ui-data-action ui-focus-ring dropdown-toggle" data-ui-dropdown-trigger popovertarget="dd-mat-'.$material->id.'" aria-controls="dd-mat-'.$material->id.'" aria-expanded="false" aria-label="'.e(__('purchasing.action_names.more_actions_for', ['name' => $material->material_code])).'">'.e(__('admin.copy.more')).'</button>'
                     .'<ul id="dd-mat-'.$material->id.'" popover="auto" data-ui-dropdown-menu class="dropdown-menu dropdown-menu-end"><li><button type="button" class="dropdown-item btn-toggle-material" data-id="'.$material->id.'" data-active="'.($material->is_active ? '0' : '1').'">'.$stateLabel.'</button></li>'
-                    .'<li><button type="button" class="dropdown-item text-danger btn-delete-material" data-id="'.$material->id.'" data-name="'.e($material->material_code).'">'.e(__('materials.master_data.delete')).'</button></li></ul></div>'
+                    .'<li><button type="button" class="dropdown-item tw:text-error btn-delete-material" data-id="'.$material->id.'" data-name="'.e($material->material_code).'">'.e(__('materials.master_data.delete')).'</button></li></ul></div>'
                     .'</div>';
             })
             ->rawColumns(['status_badge', 'action'])

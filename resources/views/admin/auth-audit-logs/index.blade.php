@@ -28,12 +28,12 @@
                 aria-label="{{ __('admin.copy.attempted_email') }}"
                 maxlength="255"
                 autocomplete="off"
-                class="form-control form-control-sm ui-filter-bar__search-input"
+                class="ui-input ui-input--sm ui-filter-bar__search-input"
             />
         </x-slot:search>
         <x-slot:filters>
             <label for="auditEvent" class="tw:sr-only">{{ __('admin.copy.event') }}</label>
-            <select name="audit_event" id="auditEvent" class="form-select form-select-sm tw:w-full tw:min-w-0 tw:sm:w-52" aria-label="{{ __('admin.copy.event') }}">
+            <select name="audit_event" id="auditEvent" class="ui-select ui-select--sm tw:w-full tw:min-w-0 tw:sm:w-52" aria-label="{{ __('admin.copy.event') }}">
                 <option value="">{{ __('admin.copy.all_events') }}</option>
                 @foreach ($events as $event)
                     <option value="{{ $event }}">{{ __('security.audit_events.'.$event) }}</option>
@@ -43,7 +43,7 @@
         <x-slot:advanced>
             <div>
                 <label for="auditUser" class="tw:block tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:mb-1.5">{{ __('admin.copy.actor') }}</label>
-                <select name="audit_user" id="auditUser" class="form-select form-select-sm tw:w-full">
+                <select name="audit_user" id="auditUser" class="ui-select ui-select--sm tw:w-full">
                     <option value="">{{ __('admin.copy.all_users') }}</option>
                     @foreach ($users as $user)
                         <option value="{{ $user->getRouteKey() }}">{{ $user->name }} - {{ $user->email }}</option>
@@ -71,8 +71,8 @@
 
     <x-ui.data-table :title="__('admin.copy.security_event_log')" :description="__('admin.copy.events_are_shown_with_actor_time_network_context_and_retained_metadata')">
         <div class="ui-data-table__scroll tw:overflow-x-auto">
-            <table id="authAuditTable" class="table table-hover align-middle w-100 tw:m-0 tw:text-ui-sm">
-                <thead class="table-light">
+            <table id="authAuditTable" class="ui-table ui-table--hover tw:align-middle tw:w-full tw:m-0 tw:text-ui-sm">
+                <thead>
                     <tr>
                         <th scope="col">{{ __('admin.copy.date_time') }}</th>
                         <th scope="col">{{ __('admin.copy.event') }}</th>
@@ -113,13 +113,13 @@
                 }
             },
             columns: [
-                {data: 'created_at', name: 'created_at', className: 'text-nowrap'},
-                {data: 'event_display', name: 'event', className: 'text-nowrap fw-medium'},
+                {data: 'created_at', name: 'created_at', className: 'tw:whitespace-nowrap'},
+                {data: 'event_display', name: 'event', className: 'tw:whitespace-nowrap tw:font-medium'},
                 {data: 'user_display', name: 'user.name', orderable: false},
                 {data: 'email_attempted', name: 'email_attempted'},
-                {data: 'ip_address', name: 'ip_address', orderable: false, className: 'ui-tabular-nums text-nowrap'},
-                {data: 'user_agent', name: 'user_agent', orderable: false, className: 'small text-muted'},
-                {data: 'metadata', name: 'metadata', orderable: false, searchable: false, className: 'small font-monospace'}
+                {data: 'ip_address', name: 'ip_address', orderable: false, className: 'ui-tabular-nums tw:whitespace-nowrap'},
+                {data: 'user_agent', name: 'user_agent', orderable: false, className: 'tw:text-ui-xs tw:text-on-surface-variant'},
+                {data: 'metadata', name: 'metadata', orderable: false, searchable: false, className: 'tw:text-ui-xs tw:font-mono'}
             ]
         });
 

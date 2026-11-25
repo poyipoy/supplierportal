@@ -18,8 +18,8 @@
         ]"
     />
 
-    <div class="tab-content" id="masterTabsContent">
-        <div class="tab-pane fade show active" id="materials" role="tabpanel" aria-labelledby="materials-tab" tabindex="0">
+    <div id="masterTabsContent">
+        <div class="active" id="materials" role="tabpanel" aria-labelledby="materials-tab" tabindex="0">
             <x-ui.data-table
                 :title="__('admin.copy.material_register')"
                 :description="__('admin.copy.searchable_operational_codes_and_their_calculation_and_hs_mapping_attributes')"
@@ -52,12 +52,12 @@
                                 placeholder="{{ __('admin.copy.search_material_code_or_category') }}"
                                 aria-label="{{ __('admin.copy.search_materials') }}"
                                 autocomplete="off"
-                                class="form-control form-control-sm ui-filter-bar__search-input"
+                                class="ui-input ui-input--sm ui-filter-bar__search-input"
                             />
                         </x-slot:search>
                         <x-slot:filters>
                             <label for="materialStatusFilter" class="tw:sr-only">{{ __('admin.copy.status') }}</label>
-                            <select id="materialStatusFilter" class="form-select form-select-sm tw:w-full tw:min-w-0 tw:sm:w-44">
+                            <select id="materialStatusFilter" class="ui-select ui-select--sm tw:w-full tw:min-w-0 tw:sm:w-44">
                                 <option value="">{{ __('admin.copy.all_statuses') }}</option>
                                 <option value="active">{{ __('admin.copy.active') }}</option>
                                 <option value="inactive">{{ __('admin.copy.inactive') }}</option>
@@ -66,7 +66,7 @@
                         <x-slot:advanced>
                             <div>
                                 <label for="materialCategoryFilter" class="tw:block tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:mb-1.5">{{ __('admin.copy.hs_category') }}</label>
-                                <select id="materialCategoryFilter" class="form-select form-select-sm tw:w-full">
+                                <select id="materialCategoryFilter" class="ui-select ui-select--sm tw:w-full">
                                     <option value="">{{ __('admin.copy.all_hs_categories') }}</option>
                                     @foreach($hsCategories as $category)
                                         <option value="{{ $category }}">{{ \App\Models\MaterialMaster::hsCategoryLabel($category) }}</option>
@@ -75,7 +75,7 @@
                             </div>
                             <div>
                                 <label for="materialDensityFilter" class="tw:block tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:mb-1.5">{{ __('admin.copy.density_profile') }}</label>
-                                <select id="materialDensityFilter" class="form-select form-select-sm tw:w-full">
+                                <select id="materialDensityFilter" class="ui-select ui-select--sm tw:w-full">
                                     <option value="">{{ __('admin.copy.all_density_profiles') }}</option>
                                     @foreach($densityProfiles as $density)
                                         <option value="{{ $density }}">{{ \App\Models\MaterialMaster::densityProfileLabel($density) }}</option>
@@ -84,7 +84,7 @@
                             </div>
                             <div>
                                 <label for="materialManufacturerFilter" class="tw:block tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:mb-1.5">{{ __('admin.copy.manufacturer_scope') }}</label>
-                                <select id="materialManufacturerFilter" class="form-select form-select-sm tw:w-full">
+                                <select id="materialManufacturerFilter" class="ui-select ui-select--sm tw:w-full">
                                     <option value="">{{ __('admin.copy.all_manufacturer_scopes') }}</option>
                                     @foreach($manufacturerScopes as $scope)
                                         <option value="{{ $scope }}">{{ \App\Models\MaterialMaster::manufacturerScopeLabel($scope) }}</option>
@@ -97,13 +97,13 @@
                         </x-slot:chips>
                     </x-ui.filter-bar>
                 </x-slot:filters>
-                <table id="materialsTable" class="table table-hover align-middle w-100 tw:m-0 tw:text-ui-sm">
-                    <thead class="table-light"><tr><th scope="col" class="text-center">{{ __('admin.copy.no') }}</th><th scope="col">{{ __('admin.copy.material_code') }}</th><th scope="col">{{ __('admin.copy.raw_category') }}</th><th scope="col">{{ __('admin.copy.hs_category') }}</th><th scope="col">{{ __('admin.copy.density') }}</th><th scope="col">{{ __('admin.copy.manufacturer') }}</th><th scope="col">{{ __('admin.copy.status') }}</th><th scope="col">{{ __('admin.copy.source') }}</th><th scope="col">{{ __('admin.copy.updated') }}</th><th scope="col" class="tw:text-right text-end">{{ __('common.table.action') }}</th></tr></thead>
+                <table id="materialsTable" class="ui-table ui-table--hover tw:align-middle tw:w-full tw:m-0 tw:text-ui-sm">
+                    <thead><tr><th scope="col" class="tw:text-center">{{ __('admin.copy.no') }}</th><th scope="col">{{ __('admin.copy.material_code') }}</th><th scope="col">{{ __('admin.copy.raw_category') }}</th><th scope="col">{{ __('admin.copy.hs_category') }}</th><th scope="col">{{ __('admin.copy.density') }}</th><th scope="col">{{ __('admin.copy.manufacturer') }}</th><th scope="col">{{ __('admin.copy.status') }}</th><th scope="col">{{ __('admin.copy.source') }}</th><th scope="col">{{ __('admin.copy.updated') }}</th><th scope="col" class="tw:text-end">{{ __('common.table.action') }}</th></tr></thead>
                 </table>
             </x-ui.data-table>
         </div>
 
-        <div class="tab-pane fade" id="rules" role="tabpanel" aria-labelledby="rules-tab" tabindex="0" hidden>
+        <div id="rules" role="tabpanel" aria-labelledby="rules-tab" tabindex="0" hidden>
             <x-ui.data-table
                 :title="__('admin.copy.hs_code_rule_register')"
                 :description="__('admin.copy.prioritized_dimensional_rules_used_by_the_deterministic_hs_code_mapping_workflow')"
@@ -136,12 +136,12 @@
                                 placeholder="{{ __('admin.copy.search_hs_code_or_category') }}"
                                 aria-label="{{ __('admin.copy.search_hs_code_rules') }}"
                                 autocomplete="off"
-                                class="form-control form-control-sm ui-filter-bar__search-input"
+                                class="ui-input ui-input--sm ui-filter-bar__search-input"
                             />
                         </x-slot:search>
                         <x-slot:filters>
                             <label for="ruleStatusFilter" class="tw:sr-only">{{ __('admin.copy.status') }}</label>
-                            <select id="ruleStatusFilter" class="form-select form-select-sm tw:w-full tw:min-w-0 tw:sm:w-44">
+                            <select id="ruleStatusFilter" class="ui-select ui-select--sm tw:w-full tw:min-w-0 tw:sm:w-44">
                                 <option value="">{{ __('admin.copy.all_statuses') }}</option>
                                 <option value="active">{{ __('admin.copy.active') }}</option>
                                 <option value="inactive">{{ __('admin.copy.inactive') }}</option>
@@ -151,7 +151,7 @@
                         <x-slot:advanced>
                             <div>
                                 <label for="ruleCategoryFilter" class="tw:block tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:mb-1.5">{{ __('admin.copy.category') }}</label>
-                                <select id="ruleCategoryFilter" class="form-select form-select-sm tw:w-full">
+                                <select id="ruleCategoryFilter" class="ui-select ui-select--sm tw:w-full">
                                     <option value="">{{ __('admin.copy.all_categories') }}</option>
                                     @foreach($hsCategories as $category)
                                         <option value="{{ $category }}">{{ \App\Models\MaterialMaster::hsCategoryLabel($category) }}</option>
@@ -160,7 +160,7 @@
                             </div>
                             <div>
                                 <label for="ruleShapeFilter" class="tw:block tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:mb-1.5">{{ __('admin.copy.shape') }}</label>
-                                <select id="ruleShapeFilter" class="form-select form-select-sm tw:w-full">
+                                <select id="ruleShapeFilter" class="ui-select ui-select--sm tw:w-full">
                                     <option value="">{{ __('admin.copy.all_shapes') }}</option>
                                     @foreach($shapes as $shape)
                                         <option value="{{ $shape }}">{{ \App\Models\PrItem::shapeLabel($shape) }}</option>
@@ -173,16 +173,16 @@
                         </x-slot:chips>
                     </x-ui.filter-bar>
                 </x-slot:filters>
-                <table id="rulesTable" class="table table-hover align-middle w-100 tw:m-0 tw:text-ui-sm">
-                    <thead class="table-light"><tr><th scope="col" class="text-center">{{ __('admin.copy.no') }}</th><th scope="col">HS Code</th><th scope="col">{{ __('admin.copy.category') }}</th><th scope="col">{{ __('admin.copy.shape') }}</th><th scope="col">{{ __('admin.copy.dimension_conditions') }}</th><th scope="col" class="text-center">{{ __('admin.copy.priority') }}</th><th scope="col">{{ __('admin.copy.status') }}</th><th scope="col">{{ __('admin.copy.source') }}</th><th scope="col">{{ __('admin.copy.updated') }}</th><th scope="col" class="tw:text-right text-end">{{ __('common.table.action') }}</th></tr></thead>
+                <table id="rulesTable" class="ui-table ui-table--hover tw:align-middle tw:w-full tw:m-0 tw:text-ui-sm">
+                    <thead><tr><th scope="col" class="tw:text-center">{{ __('admin.copy.no') }}</th><th scope="col">HS Code</th><th scope="col">{{ __('admin.copy.category') }}</th><th scope="col">{{ __('admin.copy.shape') }}</th><th scope="col">{{ __('admin.copy.dimension_conditions') }}</th><th scope="col" class="tw:text-center">{{ __('admin.copy.priority') }}</th><th scope="col">{{ __('admin.copy.status') }}</th><th scope="col">{{ __('admin.copy.source') }}</th><th scope="col">{{ __('admin.copy.updated') }}</th><th scope="col" class="tw:text-end">{{ __('common.table.action') }}</th></tr></thead>
                 </table>
             </x-ui.data-table>
         </div>
 
-        <div class="tab-pane fade" id="data-quality" role="tabpanel" aria-labelledby="data-quality-tab" tabindex="0" hidden>
+        <div id="data-quality" role="tabpanel" aria-labelledby="data-quality-tab" tabindex="0" hidden>
             <div class="tw:rounded-ui-md tw:border tw:border-outline tw:bg-surface tw:p-3 tw:shell:p-4">
                 <x-ui.inline-loader id="qualityLoading" :label="__('admin.copy.analyzing_master_data')" class="tw:py-12" />
-                <div id="qualityContent" class="d-none">
+                <div id="qualityContent" class="tw:hidden">
                     <section class="tw:overflow-hidden tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface-container" aria-labelledby="quality-summary-title">
                         <h3 id="quality-summary-title" class="tw:sr-only">{{ __('admin.copy.data_quality_summary') }}</h3>
                         <dl class="tw:m-0 tw:grid tw:grid-cols-2 tw:lg:grid-cols-5">
@@ -201,7 +201,7 @@
                         </dl>
                     </section>
 
-                    <div id="qualityError" class="d-none tw:mt-4 tw:border tw:border-error/40 tw:bg-error-container tw:p-3 tw:text-ui-sm tw:text-on-surface" role="alert">{{ __('admin.copy.data_quality_could_not_be_loaded_try_opening_this_tab_again') }}</div>
+                    <div id="qualityError" class="tw:hidden tw:mt-4 tw:border tw:border-error/40 tw:bg-error-container tw:p-3 tw:text-ui-sm tw:text-on-surface" role="alert">{{ __('admin.copy.data_quality_could_not_be_loaded_try_opening_this_tab_again') }}</div>
 
                     <div class="tw:mt-5 tw:grid tw:gap-5 tw:lg:grid-cols-[minmax(0,1.35fr)_minmax(18rem,0.8fr)]">
                         <section class="tw:min-w-0 tw:overflow-hidden tw:rounded-ui-sm tw:border tw:border-outline tw:bg-surface-container" aria-labelledby="quality-attention-title">

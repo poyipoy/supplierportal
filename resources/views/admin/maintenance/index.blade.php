@@ -148,12 +148,12 @@
                 aria-label="{{ __('maintenance.filters.search') }}"
                 maxlength="150"
                 autocomplete="off"
-                class="form-control form-control-sm ui-filter-bar__search-input"
+                class="ui-input ui-input--sm ui-filter-bar__search-input"
             />
         </x-slot:search>
         <x-slot:filters>
             <label for="maintenanceTypeFilter" class="tw:sr-only">{{ __('maintenance.filters.type') }}</label>
-            <select name="type" id="maintenanceTypeFilter" class="form-select form-select-sm tw:w-full tw:min-w-0 tw:sm:w-44" aria-label="{{ __('maintenance.filters.type') }}">
+            <select name="type" id="maintenanceTypeFilter" class="ui-select ui-select--sm tw:w-full tw:min-w-0 tw:sm:w-44" aria-label="{{ __('maintenance.filters.type') }}">
                 <option value="">{{ __('maintenance.filters.all_types') }}</option>
                 @foreach(MaintenanceRecord::TYPES as $type)
                     <option value="{{ $type }}" @selected(($filters['type'] ?? '') === $type)>{{ __('maintenance.types.'.$type) }}</option>
@@ -161,7 +161,7 @@
             </select>
 
             <label for="maintenanceStatusFilter" class="tw:sr-only">{{ __('maintenance.filters.status') }}</label>
-            <select name="status" id="maintenanceStatusFilter" class="form-select form-select-sm tw:w-full tw:min-w-0 tw:sm:w-44" aria-label="{{ __('maintenance.filters.status') }}">
+            <select name="status" id="maintenanceStatusFilter" class="ui-select ui-select--sm tw:w-full tw:min-w-0 tw:sm:w-44" aria-label="{{ __('maintenance.filters.status') }}">
                 <option value="">{{ __('maintenance.filters.all_statuses') }}</option>
                 @foreach(MaintenanceRecord::DISPLAY_STATUSES as $status)
                     <option value="{{ $status }}" @selected(($filters['status'] ?? '') === $status)>{{ StatusHelper::maintenanceLabel($status) }}</option>
@@ -169,7 +169,7 @@
             </select>
 
             <label for="maintenanceModuleFilter" class="tw:sr-only">{{ __('maintenance.filters.module') }}</label>
-            <select name="module" id="maintenanceModuleFilter" class="form-select form-select-sm tw:w-full tw:min-w-0 tw:sm:w-52" aria-label="{{ __('maintenance.filters.module') }}">
+            <select name="module" id="maintenanceModuleFilter" class="ui-select ui-select--sm tw:w-full tw:min-w-0 tw:sm:w-52" aria-label="{{ __('maintenance.filters.module') }}">
                 <option value="">{{ __('maintenance.filters.all_modules') }}</option>
                 @foreach($registry->grouped() as $scope => $moduleKeys)
                     <optgroup label="{{ $registry->scopeLabel($scope) }}">
@@ -187,14 +187,14 @@
 
     <x-ui.data-table :title="__('maintenance.table.title')" :description="trans_choice('maintenance.table.count', $records->total(), ['count' => $records->total()])">
         <div class="ui-data-table__scroll tw:overflow-x-auto">
-            <table class="table table-hover align-middle tw:m-0 tw:w-full tw:text-ui-sm" data-maintenance-table>
-                <thead class="table-light">
+            <table class="ui-table ui-table--hover tw:align-middle tw:m-0 tw:w-full tw:text-ui-sm" data-maintenance-table>
+                <thead>
                     <tr>
                         <th scope="col">{{ __('maintenance.table.record') }}</th>
                         <th scope="col">{{ __('maintenance.table.coverage') }}</th>
                         <th scope="col">{{ __('maintenance.table.window') }}</th>
                         <th scope="col">{{ __('maintenance.table.status') }}</th>
-                        <th scope="col" class="tw:text-right text-end">{{ __('common.table.action') }}</th>
+                        <th scope="col" class="tw:text-end">{{ __('common.table.action') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -227,7 +227,7 @@
                                 <div><span class="tw:text-ui-xs tw:text-on-surface-variant">{{ __('maintenance.fields.estimated_end') }}</span> {{ $maintenanceRecord->estimated_end_at ? BusinessTime::format($maintenanceRecord->estimated_end_at) : __('maintenance.table.not_set') }}</div>
                             </td>
                             <td><x-ui.status-chip :tone="StatusHelper::maintenanceTone($displayStatus)">{{ StatusHelper::maintenanceLabel($displayStatus) }}</x-ui.status-chip></td>
-                            <td class="tw:text-right text-end text-nowrap">
+                            <td class="tw:text-end tw:whitespace-nowrap">
                                 <div class="tw:inline-flex tw:items-center tw:gap-1">
                                     <x-ui.row-action
                                         :href="route('admin.maintenance.show', $maintenanceRecord)"

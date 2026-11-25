@@ -18,7 +18,7 @@
     </div>
 </div>
 <div class="ui-data-table">
-    <table class="table">
+    <table class="ui-table">
         <thead>
             <tr>
                 <th scope="col">{{ __('customization.density_sample_code') }}</th>

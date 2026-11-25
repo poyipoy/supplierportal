@@ -66,7 +66,7 @@ class SupplierRegistrationReviewController extends Controller
                         return '-';
                     }
 
-                    return e($supplier->pic_name).'<br><small class="text-muted">'.e($supplier->pic_email).' | '.e($supplier->pic_phone).'</small>';
+                    return e($supplier->pic_name).'<br><small class="tw:text-ui-xs tw:text-on-surface-variant">'.e($supplier->pic_email).' | '.e($supplier->pic_phone).'</small>';
                 })
                 ->addColumn('status_badge', function ($attempt) {
                     $tone = StatusHelper::registrationTone($attempt->status);
