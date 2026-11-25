@@ -486,7 +486,7 @@
                         <div><span class="tw:text-on-surface-variant tw:block">{{ __('local_procurement.labels.po_date') }}</span><strong class="tw:text-on-surface">{{ $invoice->localPurchaseOrder->po_date ? $regionalFormatter->date($invoice->localPurchaseOrder->po_date, 'human') : '—' }}</strong></div>
                         <div><span class="tw:text-on-surface-variant tw:block">{{ __('local_procurement.labels.po_total') }}</span><strong class="ui-tabular-nums tw:text-on-surface">Rp {{ $regionalFormatter->number(number_format($invoice->localPurchaseOrder->total_amount, 2, ',', '.'), 'indonesian') }}</strong></div>
                     </div>
-                    <div class="ui-table-scroll"><table class="ui-table ui-table--sm tw:align-middle tw:m-0 tw:text-ui-xs"><thead><tr><th>{{ __('local_invoice.detail.gr_number') }}</th><th>{{ __('local_procurement.labels.gr_date') }}</th><th class="tw:text-end">{{ __('common.fields.qty') }}</th><th scope="col">{{ __('local_procurement.labels.uom') }}</th><th>{{ __('local_invoice.labels.status') }}</th></tr></thead><tbody>
+                    <div class="ui-table-responsive"><table class="ui-table ui-table--sm tw:align-middle tw:m-0 tw:text-ui-xs"><thead><tr><th>{{ __('local_invoice.detail.gr_number') }}</th><th>{{ __('local_procurement.labels.gr_date') }}</th><th class="tw:text-end">{{ __('common.fields.qty') }}</th><th scope="col">{{ __('local_procurement.labels.uom') }}</th><th>{{ __('local_invoice.labels.status') }}</th></tr></thead><tbody>
                         @forelse($invoice->goodsReceiptHistories->sortBy('id') as $history)
                             <tr><td class="ui-tabular-nums ui-col-data-name">{{ $history->gr_number_snapshot }}</td><td>{{ $history->goodsReceipt?->gr_date ? $regionalFormatter->date($history->goodsReceipt->gr_date, 'human') : '—' }}</td><td class="tw:text-end ui-tabular-nums">{{ $history->gr_qty_snapshot !== null ? rtrim(rtrim(number_format((float) $history->gr_qty_snapshot, 4, ',', '.'), '0'), ',') : ($history->goodsReceipt?->qty !== null ? rtrim(rtrim(number_format((float) $history->goodsReceipt->qty, 4, ',', '.'), '0'), ',') : '—') }}</td><td>{{ $history->gr_uom_snapshot ?? '—' }}</td><td><x-ui.status-chip :tone="$history->state === 'RELEASED' ? 'neutral' : ($history->state === 'CONSUMED' ? 'success' : 'warning')">{{ \App\Support\StatusHelper::localFinanceLabel($history->state) }}</x-ui.status-chip></td></tr>
                         @empty
@@ -502,7 +502,7 @@
                     :title="__('local_invoice.labels.payment_history')"
                     :description="__('local_invoice.labels.bank_transfers_help')"
                 >
-                    <div class="ui-table-scroll">
+                    <div class="ui-table-responsive">
                         <table class="ui-table ui-table--sm tw:align-middle tw:m-0 tw:text-ui-xs">
                             <thead>
                                 <tr>

@@ -141,7 +141,7 @@
             :title="__('local_procurement.labels.invoice_history')"
             :description="__('local_procurement.review.invoice_po', ['po' => $purchaseOrder->po_number])"
         >
-            <div class="ui-table-scroll">
+            <div class="ui-table-responsive">
                 <table class="ui-table ui-table--hover tw:align-middle tw:m-0 tw:text-ui-xs">
                     <thead>
                         <tr>

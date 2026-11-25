@@ -233,7 +233,7 @@
                 @endif
 
                 {{-- Group Items Table --}}
-                <div class="ui-table-scroll tw:w-full tw:min-w-0 tw:max-w-full">
+                <div class="ui-table-responsive tw:w-full tw:min-w-0 tw:max-w-full">
                     <table class="ui-table ui-table--sm ui-table--hover tw:align-middle tw:m-0 tw:text-ui-xs tw:w-full">
                         <thead>
                             <tr>

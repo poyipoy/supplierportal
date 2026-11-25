@@ -48,7 +48,7 @@ function boot(payload, initialStorage = {}, storageAvailable = true, initialDens
 test('server theme is applied before styles and system theme follows OS changes', () => {
     const state = boot({ theme: 'system', density: 'comfortable', sidebarState: 'expanded', pageSize: 25, sidebarRevision: '0:0', accountId: '41' });
     assert.equal(state.root.dataset.theme, 'light');
-    assert.equal(state.root.dataset.bsTheme, 'light');
+    assert.equal(state.root.dataset.bsTheme, undefined);
     state.media.matches = true;
     state.mediaListeners[0]();
     assert.equal(state.root.dataset.theme, 'dark');
@@ -422,10 +422,12 @@ test('dark overlays form a tonal elevation ladder and dark chart series stay per
         assert.ok(ratio(value(dark, token), value(dark, '--md-surface')) >= 3, token + ' is a graphical object and needs 3:1 on the dark surface');
     }
 
-    for (const selector of ['.card', '.modal-content', '.dropdown-menu', '.popover', '.table-light', '.btn-outline-secondary', ':is(.bg-light, .bg-white)', '.badge.bg-secondary', '.badge.bg-warning', '.text-dark:not(.badge):not(.btn)']) {
-        assert.ok(css.includes(':root[data-theme="dark"] ' + selector + ' {'), 'dark adapter exists for ' + selector);
-    }
-    assert.ok(css.includes(':root[data-theme="dark"][data-accent="brand"] .btn-outline-primary {'), 'brand outline-primary adapter exists in dark');
+    const cardComponent = await readFile(new URL('../../resources/views/components/ui/card.blade.php', import.meta.url), 'utf8');
+    assert.match(cardComponent, /tw:bg-surface/, 'x-ui.card consumes --md-surface');
+    assert.match(css, /dialog\.ui-native-dialog\s*>\s*\.modal-dialog\s*>\s*\.modal-content[\s\S]*?background-color:\s*var\(--ui-dialog-bg\);/, 'native dialog consumes --ui-dialog-bg');
+    assert.match(css, /\[data-ui-dropdown-menu\]\[popover\]\s*\{[^}]*background-color:\s*var\(--ui-menu-bg\);/s, 'dropdown popover consumes --ui-menu-bg');
+    assert.match(css, /\.ui-tooltip\[popover\]\s*\{[^}]*background:\s*var\(--md-on-surface\);/s, 'tooltip popover uses inverted surface token');
+    assert.match(dark, /--ui-primary-text:\s*#A8C9F0;/, 'dark brand primary text token is readable on dark surface');
 });
 
 test('history restoration synchronizes appearance radios with saved preference values', async () => {
@@ -442,11 +444,13 @@ test('history restoration synchronizes appearance radios with saved preference v
     for (const group of Object.values(groups)) assert.deepEqual(group.map(input => input.checked), [true, false]);
 });
 
-test('slate Bootstrap hover uses a contrast-safe palette and legacy dark hover excludes slate', async () => {
+test('slate and dark primary hover tokens use contrast-safe palette without Bootstrap bridges', async () => {
     const css = await readFile(new URL('../../resources/css/app.css', import.meta.url), 'utf8');
-    assert.ok(/:root\[data-theme="dark"\]:not\(\[data-accent="slate"\]\) \.btn-primary/.test(css), 'legacy dark hover excludes slate');
-    const dark = css.slice(css.indexOf(':root[data-theme="dark"][data-accent="slate"] {'));
-    assert.match(dark.slice(0, dark.indexOf('}')), /--ui-primary-hover: #C1CDDF/);
+    assert.match(css, /\.ui-button\.tw\\:bg-primary:hover:not\(:disabled\):not\(\[aria-disabled="true"\]\)\s*\{\s*background-color:\s*var\(--ui-primary-hover\);/s, 'primary button hover uses --ui-primary-hover token');
+    const darkBrand = css.slice(css.indexOf(':root[data-theme="dark"] {'));
+    assert.match(darkBrand.slice(0, darkBrand.indexOf('}')), /--ui-primary-hover: #2B70B5;/);
+    const darkSlate = css.slice(css.indexOf(':root[data-theme="dark"][data-accent="slate"] {'));
+    assert.match(darkSlate.slice(0, darkSlate.indexOf('}')), /--ui-primary-hover: #C1CDDF/);
 });
 
 test('charts initialized by page scripts receive saved-theme chrome when the module loads', async () => {
@@ -586,13 +590,13 @@ test('preview layer accepts all five approved accents and rejects unapproved key
     assert.equal(state.root.dataset.accent, 'brand', 'restoreSaved returned to brand');
 });
 
-test('dark button hover rules are explicitly defined for indigo, teal, and violet', async () => {
+test('dark primary hover tokens are explicitly defined for indigo, teal, and violet', async () => {
     const css = await readFile(new URL('../../resources/css/app.css', import.meta.url), 'utf8');
-    assert.match(
-        css,
-        /:root\[data-theme="dark"\]\[data-accent="indigo"\] \.btn-primary,\s*:root\[data-theme="dark"\]\[data-accent="teal"\] \.btn-primary,\s*:root\[data-theme="dark"\]\[data-accent="violet"\] \.btn-primary/,
-        'dark theme hover overrides are declared for new presets'
-    );
+    for (const [accent, hoverHex] of [['indigo', '#C7D2FE'], ['teal', '#99F6E4'], ['violet', '#DDD6FE']]) {
+        const blockStart = css.indexOf(`:root[data-theme="dark"][data-accent="${accent}"] {`);
+        assert.notEqual(blockStart, -1, `dark ${accent} block exists`);
+        assert.match(css.slice(blockStart, css.indexOf('}', blockStart)), new RegExp(`--ui-primary-hover:\\s*${hoverHex};`));
+    }
 });
 
 test('shellStyle defaults to classic, supports slate live preview, rejects invalid keys, and restores saved', () => {

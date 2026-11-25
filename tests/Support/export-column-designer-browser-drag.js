@@ -3,7 +3,7 @@
 async () => {
     if (document.visibilityState !== 'visible') throw new Error('Bring the browser test tab to the foreground first.');
     const root = document.querySelector('[data-advanced-export]');
-    const modal = root.querySelector('.modal');
+    const modal = root.querySelector('dialog.ui-native-dialog, .ui-export-designer-modal, .modal');
     const wait = async (condition) => { const end = performance.now() + 7000; while (!condition()) { if (performance.now() > end) throw new Error('Not ready'); await new Promise((r) => setTimeout(r, 16)); } };
     if (!modal.open) root.querySelector('[data-export-open]').click();
     await wait(() => !root.querySelector('[data-export-submit]').disabled);

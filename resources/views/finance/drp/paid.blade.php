@@ -375,7 +375,7 @@
 
                                     @if($batch->batch_type === \App\Models\PaymentBatch::TYPE_SUPPLIER)
                                         <div class="tw:pt-3 tw:border-t tw:border-outline-variant">
-                                            <div class="ui-check-row tw:mb-2">
+                                            <div class="ui-check-group tw:mb-2">
                                                 <input class="ui-check"
                                                        type="checkbox"
                                                        id="has_adjustment_{{ $batch->id }}"

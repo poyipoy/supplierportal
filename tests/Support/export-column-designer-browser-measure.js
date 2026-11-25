@@ -3,7 +3,7 @@
 async () => {
     const root = document.querySelector('[data-advanced-export]');
     if (document.visibilityState !== 'visible') throw new Error('Bring this measured tab to the foreground first.');
-    const modal = root.querySelector('.modal');
+    const modal = root.querySelector('dialog.ui-native-dialog, .ui-export-designer-modal, .modal');
     const fixture = window.__designerMeasure;
     if (!fixture) throw new Error('Fetch and retain the real PO/quotation metadata first.');
     const size = window.__designerMeasureSize || 12;

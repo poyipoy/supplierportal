@@ -118,8 +118,6 @@
     --ui-space-8: 2rem;
 
     --ui-font-sans: "Source Sans Pro", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
-    --bs-font-sans-serif: var(--ui-font-sans);
-    --bs-body-font-family: var(--ui-font-sans);
     --ui-font-size-xs: .75rem;
     --ui-font-size-sm: .875rem;
     --ui-font-size-base: 1rem;
@@ -301,8 +299,7 @@ button:not(:disabled),
     border-block-color: var(--md-outline);
 }
 
-/* Standalone token-styled form primitives replacing Bootstrap CSS in auth views */
-.form-check-input,
+/* Standalone token-styled form primitives in auth views */
 .ui-check {
     width: 1em;
     height: 1em;
@@ -320,33 +317,32 @@ button:not(:disabled),
     flex-shrink: 0;
     transition: background-color 0.15s ease-in-out, border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
 }
-:is(.form-check-input, .ui-check)[type="checkbox"] {
+.ui-check[type="checkbox"] {
     border-radius: 0.25em;
 }
-:is(.form-check-input, .ui-check)[type="radio"] {
+.ui-check[type="radio"] {
     border-radius: 50%;
 }
-:is(.form-check-input, .ui-check):checked {
+.ui-check:checked {
     background-color: var(--md-primary);
     border-color: var(--md-primary);
 }
-:is(.form-check-input, .ui-check)[type="checkbox"]:checked {
+.ui-check[type="checkbox"]:checked {
     background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3e%3cpath fill='none' stroke='%23fff' stroke-linecap='round' stroke-linejoin='round' stroke-width='3' d='m6 10 3 3 6-6'/%3e%3c/svg%3e");
 }
-:is(.form-check-input, .ui-check)[type="radio"]:checked {
+.ui-check[type="radio"]:checked {
     background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='2' fill='%23fff'/%3e%3c/svg%3e");
 }
-:is(.form-check-input, .ui-check):focus-visible {
+.ui-check:focus-visible {
     border-color: var(--ui-input-focus);
     outline: 0;
     box-shadow: 0 0 0 0.2rem rgba(var(--md-primary-rgb), 0.25);
 }
-:is(.form-check-input, .ui-check):disabled {
+.ui-check:disabled {
     pointer-events: none;
     opacity: 0.5;
 }
 
-.form-control,
 .ui-input {
     display: block;
     width: 100%;
@@ -362,7 +358,7 @@ button:not(:disabled),
     border-radius: var(--md-shape-sm);
     transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
 }
-:is(.form-control, .ui-input):focus {
+.ui-input:focus {
     border-color: var(--ui-input-focus);
     outline: 0;
     box-shadow: 0 0 0 0.2rem rgba(var(--md-primary-rgb), 0.2);
@@ -854,10 +850,10 @@ img,
     scrollbar-width: thin;
 }
 
-:is(.form-control, .ui-input, .ui-select, .ui-textarea):not([data-async-invalid="true"]):is(:user-invalid, .user-invalid-fallback) {
+:is(.ui-input, .ui-select, .ui-textarea):not([data-async-invalid="true"]):is(:user-invalid, .user-invalid-fallback) {
     border-color: var(--md-error);
 }
-:is(.form-control, .ui-input, .ui-select, .ui-textarea):not([data-async-invalid="true"]):is(:user-invalid, .user-invalid-fallback):focus-visible {
+:is(.ui-input, .ui-select, .ui-textarea):not([data-async-invalid="true"]):is(:user-invalid, .user-invalid-fallback):focus-visible {
     border-color: var(--md-error);
     outline: 2px solid transparent;
     box-shadow: 0 0 0 0.2rem rgba(var(--md-error-rgb), 0.22);
@@ -1125,8 +1121,8 @@ html[data-auth-splash-wait="1"] .ui-page-fade {
 @media (forced-colors: active) {
     .ui-focus-ring:focus-visible,
     .lang-pill-btn:focus-visible,
-    .form-control:focus,
-    .form-control:focus-visible,
+    .ui-input:focus,
+    .ui-input:focus-visible,
     input:focus-visible,
     select:focus-visible,
     textarea:focus-visible,
@@ -1136,7 +1132,7 @@ html[data-auth-splash-wait="1"] .ui-page-fade {
         outline: 2px solid Highlight !important;
         outline-offset: 2px;
     }
-    .form-check-input {
+    .ui-check {
         appearance: auto;
         -webkit-appearance: auto;
     }

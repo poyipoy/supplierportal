@@ -175,7 +175,7 @@
         :title="__('local_procurement.labels.vendor_register_old')"
         :description="__('local_invoice.labels.company_data')"
     >
-        <div class="ui-table-scroll">
+        <div class="ui-table-responsive">
             <table class="ui-table ui-table--hover tw:align-middle tw:m-0 tw:text-ui-sm tw:w-full">
                 <thead>
                     <tr>

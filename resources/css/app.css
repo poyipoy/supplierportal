@@ -1,4 +1,4 @@
-/* Omit Preflight: Bootstrap owns resets. Keep the v3 unlayered cascade order. */
+/* Omit Preflight: Minimal ADASI document foundation owns resets; keep unlayered utility cascade order. */
 @import "tailwindcss/theme.css" prefix(tw);
 /* Self-hosted Source Sans Pro; unicode-range keeps unused subsets from downloading. */
 @import "@fontsource/source-sans-pro/400.css";
@@ -183,10 +183,8 @@
         --ui-space-5: 1.25rem;
         --ui-space-6: 1.5rem;
         --ui-space-8: 2rem;
-        /* The one portal UI typeface. Bootstrap, Tailwind tw:font-sans, alerts and charts all read this token. */
+        /* The one portal UI typeface. Tailwind tw:font-sans, ADASI Alert, and Chart.js all read this token. */
         --ui-font-sans: "Source Sans Pro", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
-        --bs-font-sans-serif: var(--ui-font-sans);
-        --bs-body-font-family: var(--ui-font-sans);
         --ui-font-size-xs: .75rem;
         --ui-font-size-sm: .875rem;
         --ui-font-size-base: 1rem;
@@ -237,6 +235,7 @@
         --ui-input-fg: var(--md-on-surface);
         --ui-input-border: var(--md-outline-strong);
         --ui-input-focus: var(--md-primary);
+        --ui-primary-hover: #184A85;
         --ui-card-bg: var(--md-surface);
         --ui-card-border: var(--md-outline);
         --ui-table-header-bg: var(--md-surface-container);
@@ -278,52 +277,6 @@
         --sidebar-link-inline-margin: 0.5rem;
         --sidebar-item-height: 40px;
         --topbar-height: 44px;
-
-        /* Bootstrap semantic adapters for the measured compatibility phase. */
-        --bs-primary: var(--md-primary);
-        --bs-primary-rgb: var(--md-primary-rgb);
-        --bs-primary-text-emphasis: var(--md-on-primary-container);
-        --bs-primary-bg-subtle: var(--md-primary-container);
-        --bs-primary-border-subtle: var(--md-outline);
-        --bs-secondary: var(--md-secondary);
-        --bs-secondary-rgb: var(--md-secondary-rgb);
-        --bs-secondary-text-emphasis: var(--md-on-secondary-container);
-        --bs-secondary-bg-subtle: var(--md-secondary-container);
-        --bs-secondary-border-subtle: var(--md-outline);
-        --bs-success: var(--md-success);
-        --bs-success-rgb: var(--md-success-rgb);
-        --bs-success-text-emphasis: var(--md-on-success-container);
-        --bs-success-bg-subtle: var(--md-success-container);
-        --bs-success-border-subtle: var(--md-outline);
-        --bs-info: var(--md-info);
-        --bs-info-rgb: var(--md-info-rgb);
-        --bs-info-text-emphasis: var(--md-on-info-container);
-        --bs-info-bg-subtle: var(--md-info-container);
-        --bs-info-border-subtle: var(--md-outline);
-        --bs-warning: var(--md-warning);
-        --bs-warning-rgb: var(--md-warning-rgb);
-        --bs-warning-text-emphasis: var(--md-on-warning-container);
-        --bs-warning-bg-subtle: var(--md-warning-container);
-        --bs-warning-border-subtle: var(--md-outline);
-        --bs-danger: var(--md-error);
-        --bs-danger-rgb: var(--md-error-rgb);
-        --bs-danger-text-emphasis: var(--md-on-error-container);
-        --bs-danger-bg-subtle: var(--md-error-container);
-        --bs-danger-border-subtle: var(--md-outline);
-        --bs-body-bg: var(--md-background);
-        --bs-body-color: var(--md-on-surface);
-        --bs-border-color: var(--md-outline);
-        --bs-secondary-color: var(--md-on-surface-variant);
-        --bs-secondary-color-rgb: var(--md-on-surface-variant-rgb);
-        --bs-secondary-bg: var(--md-surface-container);
-        --bs-secondary-bg-rgb: var(--md-surface-container-rgb);
-        --bs-tertiary-bg: var(--md-surface-container-low);
-        --bs-tertiary-bg-rgb: var(--md-surface-container-low-rgb);
-        --bs-link-color: var(--md-primary);
-        --bs-link-color-rgb: var(--md-primary-rgb);
-        --bs-link-hover-color: var(--md-on-primary-container);
-        --bs-link-hover-color-rgb: 14, 53, 102;
-        --bs-focus-ring-color: rgba(var(--md-primary-rgb), .2);
     }
 :root[data-theme="dark"] {
         color-scheme: dark;
@@ -399,30 +352,12 @@
         --ui-input-border: var(--md-outline-strong);
         --ui-success-border: #2BA86B;
         --ui-input-focus: #8FB9EA;
+        --ui-primary-hover: #2B70B5;
         --ui-table-row-stripe-bg: #222D3D;
         --ui-table-col-name-bg: #222D3D;
         --ui-table-row-hover-bg: #283548;
         --ui-calendar-range-bg: var(--md-primary-container);
         --ui-calendar-range-fg: var(--md-on-primary-container);
-        --bs-primary-text-emphasis: var(--md-on-primary-container);
-        --bs-primary-bg-subtle: var(--md-primary-container);
-        --bs-secondary-text-emphasis: var(--md-on-secondary-container);
-        --bs-secondary-bg-subtle: var(--md-secondary-container);
-        --bs-success-text-emphasis: var(--md-on-success-container);
-        --bs-success-bg-subtle: var(--md-success-container);
-        --bs-info-text-emphasis: var(--md-on-info-container);
-        --bs-info-bg-subtle: var(--md-info-container);
-        --bs-warning-text-emphasis: var(--md-on-warning-container);
-        --bs-warning-bg-subtle: var(--md-warning-container);
-        --bs-danger-text-emphasis: var(--md-on-error-container);
-        --bs-danger-bg-subtle: var(--md-error-container);
-        --bs-secondary-bg-rgb: var(--md-surface-container-rgb);
-        --bs-tertiary-bg-rgb: var(--md-surface-container-low-rgb);
-        --bs-link-color: #A8C9F0;
-        --bs-link-color-rgb: 168, 201, 240;
-        --bs-link-hover-color: #D9E9FF;
-        --bs-link-hover-color-rgb: 217, 233, 255;
-        --bs-focus-ring-color: rgba(var(--md-primary-rgb), .38);
     }
 /* Trusted accent presets. Status and chart-series tokens stay on the brand palette. */
 :root[data-accent="slate"] {
@@ -436,10 +371,6 @@
         --ui-primary-text-rgb: 71, 85, 105;
         --ui-primary-hover: #334155;
         --ui-input-focus: var(--md-primary);
-        --bs-link-color: var(--ui-primary-text);
-        --bs-link-color-rgb: var(--ui-primary-text-rgb);
-        --bs-link-hover-color: var(--md-on-primary-container);
-        --bs-link-hover-color-rgb: 30, 41, 59;
         --md-info: #1F5FA6;
         --md-info-rgb: 31, 95, 166;
         --md-on-info: #FFFFFF;
@@ -457,7 +388,6 @@
         --ui-primary-text: #AEBBD0;
         --ui-primary-text-rgb: 174, 187, 208;
         --ui-primary-hover: #C1CDDF;
-        --bs-link-hover-color-rgb: 224, 231, 241;
         --md-info-container: #1B3654;
         --md-on-info-container: #D9E9FF;
     }
@@ -472,10 +402,6 @@
         --ui-primary-text-rgb: 67, 56, 202;
         --ui-primary-hover: #3730A3;
         --ui-input-focus: var(--md-primary);
-        --bs-link-color: var(--ui-primary-text);
-        --bs-link-color-rgb: var(--ui-primary-text-rgb);
-        --bs-link-hover-color: var(--md-on-primary-container);
-        --bs-link-hover-color-rgb: 49, 46, 129;
         --md-info: #1F5FA6;
         --md-info-rgb: 31, 95, 166;
         --md-on-info: #FFFFFF;
@@ -493,7 +419,6 @@
         --ui-primary-text: #A5B4FC;
         --ui-primary-text-rgb: 165, 180, 252;
         --ui-primary-hover: #C7D2FE;
-        --bs-link-hover-color-rgb: 224, 231, 255;
         --md-info-container: #1B3654;
         --md-on-info-container: #D9E9FF;
     }
@@ -508,10 +433,6 @@
         --ui-primary-text-rgb: 15, 118, 110;
         --ui-primary-hover: #115E59;
         --ui-input-focus: var(--md-primary);
-        --bs-link-color: var(--ui-primary-text);
-        --bs-link-color-rgb: var(--ui-primary-text-rgb);
-        --bs-link-hover-color: var(--md-on-primary-container);
-        --bs-link-hover-color-rgb: 19, 78, 74;
         --md-info: #1F5FA6;
         --md-info-rgb: 31, 95, 166;
         --md-on-info: #FFFFFF;
@@ -529,7 +450,6 @@
         --ui-primary-text: #5EEAD4;
         --ui-primary-text-rgb: 94, 234, 212;
         --ui-primary-hover: #99F6E4;
-        --bs-link-hover-color-rgb: 204, 251, 241;
         --md-info-container: #1B3654;
         --md-on-info-container: #D9E9FF;
     }
@@ -544,10 +464,6 @@
         --ui-primary-text-rgb: 109, 40, 217;
         --ui-primary-hover: #5B21B6;
         --ui-input-focus: var(--md-primary);
-        --bs-link-color: var(--ui-primary-text);
-        --bs-link-color-rgb: var(--ui-primary-text-rgb);
-        --bs-link-hover-color: var(--md-on-primary-container);
-        --bs-link-hover-color-rgb: 76, 29, 149;
         --md-info: #1F5FA6;
         --md-info-rgb: 31, 95, 166;
         --md-on-info: #FFFFFF;
@@ -565,43 +481,11 @@
         --ui-primary-text: #C4B5FD;
         --ui-primary-text-rgb: 196, 181, 253;
         --ui-primary-hover: #DDD6FE;
-        --bs-link-hover-color-rgb: 237, 233, 254;
         --md-info-container: #1B3654;
         --md-on-info-container: #D9E9FF;
     }
-:root[data-accent="slate"] .btn-primary,
-    :root[data-accent="indigo"] .btn-primary,
-    :root[data-accent="teal"] .btn-primary,
-    :root[data-accent="violet"] .btn-primary {
-        --bs-btn-color: var(--md-on-primary);
-        --bs-btn-bg: var(--md-primary);
-        --bs-btn-border-color: var(--md-primary);
-        --bs-btn-hover-color: var(--md-on-primary);
-        --bs-btn-hover-bg: var(--ui-primary-hover);
-        --bs-btn-hover-border-color: var(--ui-primary-hover);
-        --bs-btn-active-color: var(--md-on-primary);
-        --bs-btn-active-bg: var(--md-primary);
-        --bs-btn-active-border-color: var(--md-primary);
-        --bs-btn-disabled-color: var(--md-on-primary);
-        --bs-btn-disabled-bg: var(--md-primary);
-        --bs-btn-disabled-border-color: var(--md-primary);
-        --bs-btn-focus-shadow-rgb: var(--md-primary-rgb);
-    }
-:root[data-accent="slate"] .btn-outline-primary,
-    :root[data-accent="indigo"] .btn-outline-primary,
-    :root[data-accent="teal"] .btn-outline-primary,
-    :root[data-accent="violet"] .btn-outline-primary {
-        --bs-btn-color: var(--ui-primary-text);
-        --bs-btn-border-color: var(--md-primary);
-        --bs-btn-hover-color: var(--md-on-primary);
-        --bs-btn-hover-bg: var(--md-primary);
-        --bs-btn-hover-border-color: var(--md-primary);
-        --bs-btn-active-color: var(--md-on-primary);
-        --bs-btn-active-bg: var(--md-primary);
-        --bs-btn-active-border-color: var(--md-primary);
-        --bs-btn-disabled-color: var(--ui-primary-text);
-        --bs-btn-disabled-border-color: var(--md-primary);
-        --bs-btn-focus-shadow-rgb: var(--md-primary-rgb);
+.ui-button.tw\:bg-primary:hover:not(:disabled):not([aria-disabled="true"]) {
+        background-color: var(--ui-primary-hover);
     }
 [data-accent-swatch="brand"] { background-color: #1F5FA6; }
 [data-accent-swatch="slate"] { background-color: #475569; }
@@ -624,25 +508,6 @@
 :root[data-theme="dark"] .tw\:text-warning {
         color: #FFD28A !important;
     }
-:root[data-theme="dark"] .text-success { color: #8BDFB1 !important; }
-:root[data-theme="dark"] .text-danger { color: #FFB4AB !important; }
-:root[data-theme="dark"] .text-warning { color: #FFD28A !important; }
-:root[data-theme="dark"] .text-info { color: #A8C9F0 !important; }
-:root[data-theme="dark"] .text-primary { color: var(--ui-primary-text) !important; }
-:root[data-theme="dark"]:not([data-accent="slate"]) .btn-primary {
-        --bs-btn-color: var(--md-on-primary);
-        --bs-btn-bg: var(--md-primary);
-        --bs-btn-border-color: var(--md-primary);
-        --bs-btn-hover-color: var(--md-on-primary);
-        --bs-btn-hover-bg: #2B70B5;
-        --bs-btn-hover-border-color: #2B70B5;
-    }
-:root[data-theme="dark"][data-accent="indigo"] .btn-primary,
-    :root[data-theme="dark"][data-accent="teal"] .btn-primary,
-    :root[data-theme="dark"][data-accent="violet"] .btn-primary {
-        --bs-btn-hover-bg: var(--ui-primary-hover);
-        --bs-btn-hover-border-color: var(--ui-primary-hover);
-    }
 :root[data-theme="dark"] .sidebar-link.active { color: var(--ui-primary-text); }
 :root[data-theme="dark"] .sidebar-link.active::before { background: var(--ui-primary-text); }
 :root[data-theme="dark"] .tw\:bg-emerald-600.tw\:text-white {
@@ -656,49 +521,125 @@
         background-color: var(--md-warning) !important;
         color: var(--md-on-warning) !important;
     }
-:root[data-theme="dark"] .btn-danger {
-        --bs-btn-color: var(--md-on-error);
-        --bs-btn-bg: var(--md-error);
-        --bs-btn-border-color: var(--md-error);
-        --bs-btn-hover-color: var(--md-on-error);
-    }
-:root[data-theme="dark"] .text-bg-primary { color: var(--md-on-primary) !important; }
-:root[data-theme="dark"] .text-bg-success { color: var(--md-on-success) !important; }
-:root[data-theme="dark"] .text-bg-danger { color: var(--md-on-error) !important; }
-:root[data-theme="dark"] .text-bg-warning { color: var(--md-on-warning) !important; }
-/* Dark elevation ladder. Bootstrap overlays default to --bs-body-bg, the lowest tone; lift them tonally instead. */
-:root[data-theme="dark"] .card {
-        --bs-card-bg: var(--ui-card-bg);
-        --bs-card-border-color: var(--md-outline-variant);
-    }
-:root[data-theme="dark"] .modal-content {
-        --bs-modal-bg: var(--ui-dialog-bg);
-        --bs-modal-border-color: var(--md-outline);
-        --bs-modal-header-border-color: var(--md-outline-variant);
-        --bs-modal-footer-border-color: var(--md-outline-variant);
-    }
-:root[data-theme="dark"] .dropdown-menu {
-        --bs-dropdown-bg: var(--ui-menu-bg);
-        --bs-dropdown-border-color: var(--md-outline);
-        --bs-dropdown-divider-bg: var(--md-outline-variant);
-        --bs-dropdown-link-color: var(--md-on-surface);
-        --bs-dropdown-link-hover-color: var(--md-on-surface);
-        --bs-dropdown-link-hover-bg: var(--md-surface-container-high);
-    }
-:root[data-theme="dark"] .popover {
-        --bs-popover-bg: var(--ui-menu-bg);
-        --bs-popover-border-color: var(--md-outline);
-    }
-/* Bootstrap "light" utilities stay light in dark mode and leave light text on a light fill (about 1.1:1). */
-:root[data-theme="dark"] :is(.bg-light, .bg-white) {
-        background-color: var(--md-surface-container) !important;
-    }
-:root[data-theme="dark"] .table-light {
-        --bs-table-color: var(--md-on-surface);
-        --bs-table-bg: var(--md-surface-container-low);
-        --bs-table-border-color: var(--md-outline-variant);
-    }
-/* Pure-token ADASI form, table, and dialog chrome classes replacing Bootstrap CSS (2B-1). */
+
+/* Minimal ADASI document foundation without Bootstrap Reboot overhead */
+*, *::before, *::after {
+    box-sizing: border-box;
+}
+html {
+    scrollbar-gutter: stable;
+}
+body {
+    margin: 0;
+    font-family: var(--ui-font-sans);
+    font-size: var(--ui-font-size-base);
+    line-height: 1.5;
+    color: var(--md-on-surface);
+    background-color: var(--md-background);
+}
+h1, h2, h3, h4, h5, h6 {
+    margin-top: 0;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    line-height: 1.25;
+}
+p, ul, ol, dl {
+    margin-top: 0;
+    margin-bottom: 1rem;
+}
+ol ol, ul ul, ol ul, ul ol {
+    margin-bottom: 0;
+}
+label {
+    display: inline-block;
+}
+img, svg {
+    vertical-align: middle;
+}
+a {
+    color: var(--md-primary);
+}
+button, input, optgroup, select, textarea {
+    margin: 0;
+    font-family: inherit;
+    font-size: inherit;
+    line-height: inherit;
+}
+button:not(:disabled),
+[type="button"]:not(:disabled),
+[type="submit"]:not(:disabled),
+[type="reset"]:not(:disabled) {
+    cursor: pointer;
+}
+[hidden]:not([hidden="until-found"]) {
+    display: none !important;
+}
+table {
+    border-collapse: collapse;
+}
+th {
+    text-align: inherit;
+    text-align: -webkit-match-parent;
+}
+thead, tbody, tfoot, tr, td, th {
+    border-color: inherit;
+    border-style: solid;
+    border-width: 0;
+}
+caption {
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+    color: var(--md-on-surface-variant);
+    text-align: left;
+}
+hr {
+    margin: 1rem 0;
+    color: inherit;
+    border: 0;
+    border-top: 1px solid var(--md-outline-variant);
+    opacity: 1;
+}
+fieldset {
+    min-width: 0;
+    padding: 0;
+    margin: 0;
+    border: 0;
+}
+small {
+    font-size: 0.875em;
+}
+code, kbd, pre, samp {
+    font-family: var(--ui-font-mono, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace);
+}
+:where(.tw\:border, .tw\:border-2, .tw\:border-4) {
+    border-style: solid;
+    border-color: var(--md-outline);
+}
+:where(.tw\:border-t, .tw\:border-t-2, .tw\:border-t-4) {
+    border-top-style: solid;
+    border-top-color: var(--md-outline);
+}
+:where(.tw\:border-b, .tw\:border-b-2, .tw\:border-b-4) {
+    border-bottom-style: solid;
+    border-bottom-color: var(--md-outline);
+}
+:where(.tw\:border-s, .tw\:border-s-2, .tw\:border-s-4) {
+    border-inline-start-style: solid;
+    border-inline-start-color: var(--md-outline);
+}
+:where(.tw\:border-e, .tw\:border-e-2, .tw\:border-e-4) {
+    border-inline-end-style: solid;
+    border-inline-end-color: var(--md-outline);
+}
+:where(.tw\:border-x, .tw\:border-x-2, .tw\:border-x-4) {
+    border-inline-style: solid;
+    border-inline-color: var(--md-outline);
+}
+:where(.tw\:border-y, .tw\:border-y-2, .tw\:border-y-4) {
+    border-block-style: solid;
+    border-block-color: var(--md-outline);
+}
+/* Pure-token ADASI form, table, and dialog chrome classes (2B-1 / 2C). */
 .ui-label {
         display: inline-block;
         margin-bottom: var(--ui-space-2);
@@ -826,6 +767,8 @@
 .ui-table > :not(caption) > * > * {
         padding: var(--ui-table-cell-block, 0.5rem) var(--ui-table-cell-inline, 0.75rem);
         border-bottom: 1px solid var(--md-outline-variant);
+        font-size: 0.8125rem;
+        vertical-align: middle;
         text-align: inherit;
     }
 .ui-table > thead > tr > th {
@@ -863,6 +806,11 @@
         border-radius: var(--md-shape-md);
         border: 1px solid var(--ui-surface-border);
         background: var(--md-surface);
+    }
+.ui-data-table .ui-table-responsive {
+        border: 0;
+        border-radius: 0;
+        background: transparent;
     }
 .btn-close {
         position: relative;
@@ -909,6 +857,44 @@
         font-weight: 700;
         color: var(--md-on-surface);
     }
+.dropdown {
+        position: relative;
+    }
+.dropdown-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        width: 100%;
+        padding: 0.375rem 0.875rem;
+        clear: both;
+        font-size: var(--ui-font-size-sm);
+        font-weight: 400;
+        color: var(--md-on-surface);
+        text-align: inherit;
+        text-decoration: none;
+        white-space: nowrap;
+        background-color: transparent;
+        border: 0;
+        cursor: pointer;
+    }
+.dropdown-item:hover,
+    .dropdown-item:focus-visible {
+        color: var(--md-on-surface);
+        background-color: var(--md-surface-container-high);
+        text-decoration: none;
+    }
+.dropdown-item.active,
+    .dropdown-item:active {
+        color: var(--md-on-primary-container);
+        background-color: var(--md-primary-container);
+        text-decoration: none;
+    }
+.dropdown-item:disabled,
+    .dropdown-item.disabled {
+        color: var(--md-on-surface-variant);
+        opacity: 0.55;
+        pointer-events: none;
+    }
 .dropdown-divider {
         height: 0;
         margin: 0.375rem 0;
@@ -922,52 +908,14 @@
         padding: 0.375rem 1rem;
         color: var(--md-on-surface-variant);
     }
-/* Bootstrap draws field borders with --bs-border-color, the hairline used for cards and tables.
-   A field's border is what shows it exists, so controls use the input token instead. */
-.form-control,
-.form-select,
-.form-check-input,
-.input-group-text {
+/* Every form control border uses the high-contrast input token (>= 3:1 light and dark). */
+.ui-input,
+.ui-select,
+.ui-textarea,
+.ui-check,
+.ui-input-group-text {
         border-color: var(--ui-input-border);
     }
-.btn-outline-secondary {
-        --bs-btn-color: var(--md-on-surface-variant);
-        --bs-btn-border-color: var(--md-outline-strong);
-        --bs-btn-disabled-color: var(--md-on-surface-variant);
-        --bs-btn-disabled-border-color: var(--md-outline-strong);
-    }
-:root[data-theme="dark"] .btn-outline-secondary {
-        --bs-btn-color: var(--md-on-surface-variant);
-        --bs-btn-border-color: var(--md-outline-strong);
-        --bs-btn-hover-color: var(--md-on-surface);
-        --bs-btn-hover-bg: var(--md-surface-container-high);
-        --bs-btn-hover-border-color: var(--md-outline-strong);
-        --bs-btn-active-color: var(--md-on-surface);
-        --bs-btn-active-bg: var(--md-surface-container-highest);
-        --bs-btn-active-border-color: var(--md-outline-strong);
-        --bs-btn-disabled-color: var(--md-on-surface-variant);
-        --bs-btn-disabled-border-color: var(--md-outline-strong);
-        --bs-btn-focus-shadow-rgb: var(--md-on-surface-variant-rgb);
-    }
-/* The four non-brand accents already map this above; the brand accent kept Bootstrap's #0d6efd (4.2:1 on dark). */
-:root[data-theme="dark"][data-accent="brand"] .btn-outline-primary {
-        --bs-btn-color: var(--ui-primary-text);
-        --bs-btn-border-color: var(--ui-primary-text);
-        --bs-btn-hover-color: var(--md-on-primary);
-        --bs-btn-hover-bg: var(--md-primary);
-        --bs-btn-hover-border-color: var(--md-primary);
-        --bs-btn-active-color: var(--md-on-primary);
-        --bs-btn-active-bg: var(--md-primary);
-        --bs-btn-active-border-color: var(--md-primary);
-        --bs-btn-disabled-color: var(--ui-primary-text);
-        --bs-btn-disabled-border-color: var(--ui-primary-text);
-        --bs-btn-focus-shadow-rgb: var(--ui-primary-text-rgb);
-    }
-/* Raw Bootstrap badges (Import status chips use x-ui.status-chip): the dark fills leave white at 1.9:1 and #212529 at 2.4:1. */
-:root[data-theme="dark"] .badge.bg-secondary { color: var(--md-on-secondary); }
-:root[data-theme="dark"] .badge.bg-warning { color: var(--md-on-warning) !important; }
-/* Notes and other .text-dark text sit on theme-aware surfaces; keep them readable when the surface is dark. */
-:root[data-theme="dark"] .text-dark:not(.badge):not(.btn) { color: var(--md-on-surface) !important; }
 /* Soft Infor-inspired charcoal-slate shell tokens avoid luminance shock and text halation against the workspace. */
 :root[data-shell="slate"] {
         --ui-shell-topbar-bg: #15191F;
@@ -1339,7 +1287,7 @@ html[data-sidebar-collapsed="true"] .sidebar .sidebar-type-text {
 .sidebar-portal-switcher:has(.dropdown-menu.show, .dropdown-menu:popover-open, [data-ui-dropdown-menu]:popover-open) {
         z-index: 40;
     }
-.sidebar-portal-switcher :is(.btn.sidebar-portal-switcher-btn, .sidebar-portal-switcher-btn) {
+.sidebar-portal-switcher .sidebar-portal-switcher-btn {
         position: relative;
         display: flex;
         align-items: center;
@@ -1361,12 +1309,12 @@ html[data-sidebar-collapsed="true"] .sidebar .sidebar-type-text {
             border-color var(--ui-motion-fast) var(--ui-easing-standard),
             box-shadow var(--ui-motion-fast) var(--ui-easing-standard);
     }
-.sidebar-portal-switcher :is(.btn.sidebar-portal-switcher-btn, .sidebar-portal-switcher-btn):hover {
+.sidebar-portal-switcher .sidebar-portal-switcher-btn:hover {
         background-color: var(--md-surface-container-low);
         border-color: rgba(var(--md-primary-rgb), 0.5);
         box-shadow: var(--ui-shadow-1);
     }
-.sidebar-portal-switcher :is(.btn.sidebar-portal-switcher-btn, .sidebar-portal-switcher-btn)[aria-expanded="true"] {
+.sidebar-portal-switcher .sidebar-portal-switcher-btn[aria-expanded="true"] {
         background-color: var(--md-surface-container-low);
         border-color: var(--md-primary);
         box-shadow: var(--ui-shadow-1);
@@ -1414,7 +1362,7 @@ html[data-sidebar-collapsed="true"] .sidebar .sidebar-type-text {
             opacity var(--ui-sidebar-motion-icon-duration) var(--ui-easing-sidebar),
             transform var(--ui-sidebar-motion-fade-duration) var(--ui-easing-sidebar);
     }
-.sidebar-portal-switcher :is(.btn.sidebar-portal-switcher-btn, .sidebar-portal-switcher-btn)[aria-expanded="true"] .sidebar-portal-switcher-chevron {
+.sidebar-portal-switcher .sidebar-portal-switcher-btn[aria-expanded="true"] .sidebar-portal-switcher-chevron {
         transform: translateY(-50%) rotate(180deg);
     }
 html[data-sidebar-collapsed="true"] .sidebar .sidebar-portal-switcher-chevron {
@@ -2228,16 +2176,16 @@ html[data-sidebar-resizing="true"] .workspace-stage__frames::after {
         background-color: var(--ui-shell-sidebar-bg);
         border-bottom-color: var(--ui-shell-sidebar-border);
     }
-:root[data-shell="slate"] .sidebar-portal-switcher :is(.btn.sidebar-portal-switcher-btn, .sidebar-portal-switcher-btn) {
+:root[data-shell="slate"] .sidebar-portal-switcher .sidebar-portal-switcher-btn {
         background-color: var(--ui-shell-sidebar-control-bg);
         border-color: var(--ui-shell-sidebar-control-border);
         color: var(--ui-shell-sidebar-active-fg);
     }
-:root[data-shell="slate"] .sidebar-portal-switcher :is(.btn.sidebar-portal-switcher-btn, .sidebar-portal-switcher-btn):hover {
+:root[data-shell="slate"] .sidebar-portal-switcher .sidebar-portal-switcher-btn:hover {
         background-color: var(--ui-shell-sidebar-hover-bg);
         border-color: var(--ui-shell-accent);
     }
-:root[data-shell="slate"] .sidebar-portal-switcher :is(.btn.sidebar-portal-switcher-btn, .sidebar-portal-switcher-btn)[aria-expanded="true"] {
+:root[data-shell="slate"] .sidebar-portal-switcher .sidebar-portal-switcher-btn[aria-expanded="true"] {
         background-color: var(--ui-shell-sidebar-active-bg);
         border-color: var(--ui-shell-accent);
     }
@@ -2567,7 +2515,7 @@ html[data-sidebar-resizing="true"] .workspace-stage__frames::after {
         gap: var(--ui-density-toolbar-right-gap, 0.5rem);
         flex-shrink: 0;
     }
-.ui-filter-bar :is(.form-control-sm, .form-select-sm) {
+.ui-filter-bar :is(.ui-input--sm, .ui-select--sm) {
         min-height: var(--ui-control-height-sm);
         font-size: var(--ui-font-size-xs);
         border-radius: var(--ui-radius-control);
@@ -3263,15 +3211,15 @@ html[data-sidebar-resizing="true"] .workspace-stage__frames::after {
         background: Highlight;
     }
 }
-:is(.form-control, .form-select, .ui-input, .ui-select, .ui-textarea):not([data-async-invalid="true"]):is(:user-invalid, .user-invalid-fallback) {
+:is(.ui-input, .ui-select, .ui-textarea):not([data-async-invalid="true"]):is(:user-invalid, .user-invalid-fallback) {
         border-color: var(--md-error);
     }
-:is(.form-control, .form-select, .ui-input, .ui-select, .ui-textarea):not([data-async-invalid="true"]):is(:user-invalid, .user-invalid-fallback):focus-visible {
+:is(.ui-input, .ui-select, .ui-textarea):not([data-async-invalid="true"]):is(:user-invalid, .user-invalid-fallback):focus-visible {
         border-color: var(--md-error);
         outline: 2px solid transparent;
         box-shadow: 0 0 0 0.2rem rgba(var(--md-error-rgb), 0.22);
     }
-:is(.form-control, .form-select, .ui-input, .ui-select, .ui-textarea)[data-validate-positive]:not([data-async-invalid="true"]):not(.is-invalid):is(:user-valid, .user-valid-fallback) {
+:is(.ui-input, .ui-select, .ui-textarea)[data-validate-positive]:not([data-async-invalid="true"]):not(.is-invalid):is(:user-valid, .user-valid-fallback) {
         border-color: var(--md-success);
     }
 .ui-spinner {
@@ -3548,17 +3496,8 @@ a.ui-record-nav__btn:active {
         outline: 2px solid transparent;
         outline-offset: var(--ui-focus-ring-offset);
     }
-.btn-check:focus-visible + .btn {
-        box-shadow:
-            0 0 0 var(--ui-focus-ring-offset) var(--md-surface),
-            0 0 0 calc(var(--ui-focus-ring-offset) + var(--ui-focus-ring-width)) var(--md-focus-ring);
-        outline: 2px solid transparent;
-        outline-offset: var(--ui-focus-ring-offset);
-        z-index: 2;
-    }
 @media (forced-colors: active) {
         .ui-focus-ring:focus-visible,
-        .btn-check:focus-visible + .btn,
         .topbar-user-trigger:focus-visible,
         .ui-record-nav__btn:focus-visible,
         .ui-switch:focus-visible,
@@ -3571,12 +3510,11 @@ a.ui-record-nav__btn:active {
         .ui-month-grid__year:focus-visible,
         .ui-month-grid__year-toggle:focus-visible,
         .ui-month-grid__year-cell:focus-visible,
-        .form-control:focus,
-        .form-control:focus-visible,
-        .form-select:focus,
-        .form-select:focus-visible,
-        .form-check-input:focus-visible,
-        .btn:focus-visible,
+        .ui-input:focus-visible,
+        .ui-select:focus-visible,
+        .ui-textarea:focus-visible,
+        .ui-check:focus-visible,
+        .ui-button:focus-visible,
         input:focus-visible,
         select:focus-visible,
         textarea:focus-visible,
@@ -3822,35 +3760,7 @@ canvas[data-adasi-chart-focusable]:focus-visible {
         transform: translateX(0);
     }
 /* Balanced Enterprise Table Foundation */
-.table {
-        border-color: var(--md-outline-variant) !important;
-        background-color: var(--md-surface);
-        color: var(--md-on-surface);
-        font-size: var(--ui-font-size-sm);
-        margin-bottom: 0;
-    }
-.table thead th {
-        background-color: var(--md-surface-container-high) !important;
-        border-bottom: 2px solid var(--md-outline-strong) !important;
-        color: var(--md-on-surface) !important;
-        font-weight: 700 !important;
-        text-transform: uppercase;
-        font-size: var(--ui-font-size-sm);
-        letter-spacing: 0.04em;
-        padding: var(--ui-density-table-head-block, 0.4375rem) var(--ui-table-cell-inline, .75rem) !important;
-        height: var(--ui-density-table-head-min, 2.125rem);
-        white-space: nowrap;
-    }
-.table td {
-        border-color: var(--md-outline-variant) !important;
-        font-size: 0.8125rem;
-        padding: var(--ui-table-cell-block, .625rem) var(--ui-table-cell-inline, .875rem) !important;
-        vertical-align: middle !important;
-    }
-.table-striped tbody tr:nth-of-type(odd) {
-        background-color: var(--md-surface-container-low) !important;
-    }
-:is(.pr-items-table, .quotation-items-table, .qc-dimension-grid, [data-annual-rates-matrix], .ui-export-designer-modal, .table-borderless, .local-import-modal) {
+:is(.pr-items-table, .quotation-items-table, .qc-dimension-grid, [data-annual-rates-matrix], .ui-export-designer-modal, .ui-table--borderless, .local-import-modal) {
         --ui-table-row-stripe-bg: var(--md-surface);
         --ui-table-col-name-bg: var(--md-surface);
     }
@@ -3858,46 +3768,17 @@ canvas[data-adasi-chart-focusable]:focus-visible {
    1. Index / List tables (without .ui-col-data-name): pure full-row alternating zebra striping on even rows.
    2. Detail / Satellite / Comparison tables (with .ui-col-data-name): consistent vertical column shading on .ui-col-data-name cells.
    :where() keeps specificity low so row hover, selection, and utility overrides still win cleanly. */
-:where(.ui-data-table table, .table):where(:not(.ui-quotation-readonly):not(.table-striped):not(:has(.ui-col-data-name))) > tbody > tr:where(:not(:has(> td[colspan]:only-child)):not(:has(> td.dt-empty)):not(.bg-primary-subtle):not(.table-primary):not(.table-light)):nth-of-type(even) > :is(td, th) {
-        --ui-table-cell-bg: var(--ui-table-row-stripe-bg);
-        --bs-table-bg: var(--ui-table-cell-bg);
-        background-color: var(--ui-table-cell-bg);
-    }
-:where(.ui-data-table table, .table) > tbody > tr:where(:not(:has(> td[colspan]:only-child)):not(:has(> td.dt-empty)):not(.bg-primary-subtle):not(.table-primary):not(.table-light)) > :is(td, th).ui-col-data-name {
-        --ui-table-cell-bg: var(--ui-table-col-name-bg);
-        --bs-table-bg: var(--ui-table-cell-bg);
-        background-color: var(--ui-table-cell-bg);
-    }
-:is(.ui-data-table table, .table.table-hover):where(:not(.ui-quotation-readonly):not(.quotation-items-table)) > tbody > tr:where(:not(:has(> td[colspan]:only-child)):not(:has(> td.dt-empty)):not(.bg-primary-subtle):not(.table-primary)):hover > :is(td, th) {
-        --ui-table-cell-bg: var(--ui-table-row-hover-bg);
-        --bs-table-bg: var(--ui-table-cell-bg);
-        background-color: var(--ui-table-cell-bg);
-    }
-:is(.ui-table--borderless) {
-        --ui-table-row-stripe-bg: var(--md-surface);
-        --ui-table-col-name-bg: var(--md-surface);
-    }
-:where(.ui-table):where(:not(.ui-table--striped):not(:has(.ui-col-data-name))) > tbody > tr:where(:not(:has(> td[colspan]:only-child)):not(:has(> td.dt-empty))):nth-of-type(even) > :is(td, th) {
+:where(.ui-data-table table, .ui-table):where(:not(.ui-quotation-readonly):not(.ui-table--striped):not(:has(.ui-col-data-name))) > tbody > tr:where(:not(:has(> td[colspan]:only-child)):not(:has(> td.dt-empty))):nth-of-type(even) > :is(td, th) {
         --ui-table-cell-bg: var(--ui-table-row-stripe-bg);
         background-color: var(--ui-table-cell-bg);
     }
-:where(.ui-table) > tbody > tr:where(:not(:has(> td[colspan]:only-child)):not(:has(> td.dt-empty))) > :is(td, th).ui-col-data-name {
+:where(.ui-data-table table, .ui-table) > tbody > tr:where(:not(:has(> td[colspan]:only-child)):not(:has(> td.dt-empty))) > :is(td, th).ui-col-data-name {
         --ui-table-cell-bg: var(--ui-table-col-name-bg);
         background-color: var(--ui-table-cell-bg);
     }
-.ui-table.ui-table--hover > tbody > tr:where(:not(:has(> td[colspan]:only-child)):not(:has(> td.dt-empty))):hover > :is(td, th) {
+:is(.ui-data-table table, .ui-table.ui-table--hover):where(:not(.ui-quotation-readonly):not(.quotation-items-table)) > tbody > tr:where(:not(:has(> td[colspan]:only-child)):not(:has(> td.dt-empty))):hover > :is(td, th) {
         --ui-table-cell-bg: var(--ui-table-row-hover-bg);
         background-color: var(--ui-table-cell-bg);
-    }
-.table-responsive {
-        border-radius: var(--md-shape-md);
-        border: 1px solid var(--ui-surface-border);
-        background: var(--md-surface);
-    }
-.ui-data-table .table-responsive {
-        border: 0;
-        border-radius: 0;
-        background: transparent;
     }
 .ui-data-table table {
         margin-top: 0;
@@ -3930,7 +3811,7 @@ canvas[data-adasi-chart-focusable]:focus-visible {
 .ui-best-price-row > td {
         background-color: rgba(187, 247, 208, 0.45) !important;
     }
-.table-hover tbody tr:hover > td.ui-best-price-cell,
+.ui-table.ui-table--hover tbody tr:hover > td.ui-best-price-cell,
 .ui-data-table table tbody tr:hover > td.ui-best-price-cell {
         background-color: #86EFAC !important;
         color: #064E3B !important;
@@ -3942,7 +3823,7 @@ canvas[data-adasi-chart-focusable]:focus-visible {
 :root[data-theme="dark"] .ui-best-price-row > td {
         background-color: rgba(20, 83, 45, 0.45) !important;
     }
-:root[data-theme="dark"] .table-hover tbody tr:hover > td.ui-best-price-cell,
+:root[data-theme="dark"] .ui-table.ui-table--hover tbody tr:hover > td.ui-best-price-cell,
 :root[data-theme="dark"] .ui-data-table table tbody tr:hover > td.ui-best-price-cell {
         background-color: #166534 !important;
         color: #DCFCE7 !important;
@@ -3974,28 +3855,12 @@ canvas[data-adasi-chart-focusable]:focus-visible {
         font-size: var(--ui-font-size-sm);
         padding: var(--ui-table-cell-block, .625rem) var(--ui-table-cell-inline, .875rem);
     }
-/* Pagination: one skin for the Laravel view (resources/views/vendor/pagination) and for
-   DataTables' Bootstrap pager. Both render ul.pagination > li.page-item > .page-link. */
+/* Pagination: one pure-token skin for the Laravel view (resources/views/vendor/pagination)
+   and for DataTables. Both render ul.pagination > li.page-item > .page-link. */
 .pagination {
-        --bs-pagination-padding-x: .625rem;
-        --bs-pagination-padding-y: 0;
-        --bs-pagination-font-size: var(--ui-font-size-xs);
-        --bs-pagination-color: var(--md-on-surface);
-        --bs-pagination-bg: var(--md-surface);
-        --bs-pagination-border-color: var(--md-outline);
-        --bs-pagination-border-radius: var(--ui-radius-control);
-        --bs-pagination-hover-color: var(--md-primary);
-        --bs-pagination-hover-bg: var(--md-surface-container);
-        --bs-pagination-hover-border-color: var(--md-outline);
-        --bs-pagination-focus-color: var(--md-primary);
-        --bs-pagination-focus-bg: var(--md-surface-container);
-        --bs-pagination-focus-box-shadow: none;
-        --bs-pagination-active-color: var(--md-on-primary);
-        --bs-pagination-active-bg: var(--md-primary);
-        --bs-pagination-active-border-color: var(--md-primary);
-        --bs-pagination-disabled-color: var(--md-on-surface-variant);
-        --bs-pagination-disabled-bg: var(--md-surface-container-low);
-        --bs-pagination-disabled-border-color: var(--md-outline-variant);
+        display: flex;
+        list-style: none;
+        padding-left: 0;
         align-items: center;
         flex-wrap: wrap;
         gap: .25rem;
@@ -4003,8 +3868,13 @@ canvas[data-adasi-chart-focusable]:focus-visible {
     }
 .pagination .page-item .page-link {
         align-items: center;
+        background-color: var(--md-surface);
+        border: 1px solid var(--md-outline);
         border-radius: var(--ui-radius-control);
+        color: var(--md-on-surface);
+        cursor: pointer;
         display: inline-flex;
+        font-size: var(--ui-font-size-xs);
         font-variant-numeric: tabular-nums;
         font-weight: 600;
         gap: .375rem;
@@ -4013,17 +3883,40 @@ canvas[data-adasi-chart-focusable]:focus-visible {
         line-height: 1;
         margin-left: 0;
         min-width: var(--ui-control-height-sm);
+        padding: 0 .625rem;
+        text-decoration: none;
         transition-duration: var(--ui-motion-fast);
         transition-property: color, background-color, border-color, box-shadow;
         transition-timing-function: var(--ui-easing-standard);
     }
+.pagination .page-item .page-link:hover {
+        color: var(--md-primary);
+        background-color: var(--md-surface-container);
+        border-color: var(--md-outline);
+        text-decoration: none;
+    }
 .pagination .page-item .page-link:focus-visible {
+        color: var(--md-primary);
+        background-color: var(--md-surface-container);
+        outline: 2px solid transparent;
+        outline-offset: var(--ui-focus-ring-offset);
         box-shadow:
             0 0 0 var(--ui-focus-ring-offset) var(--md-surface),
             0 0 0 calc(var(--ui-focus-ring-offset) + var(--ui-focus-ring-width)) var(--md-primary);
     }
 .pagination .page-item.active .page-link {
+        color: var(--md-on-primary);
+        background-color: var(--md-primary);
+        border-color: var(--md-primary);
         font-weight: 700;
+    }
+.pagination .page-item:is(.disabled) .page-link,
+.pagination .page-item .page-link:is(:disabled, .disabled) {
+        color: var(--md-on-surface-variant);
+        background-color: var(--md-surface-container-low);
+        border-color: var(--md-outline-variant);
+        pointer-events: none;
+        cursor: default;
     }
 .pagination .page-item:is([aria-hidden="true"], [id$="_ellipsis"], :has(> .ellipsis)) .page-link {
         background: transparent;
@@ -4044,22 +3937,18 @@ canvas[data-adasi-chart-focusable]:focus-visible {
         font-variant-numeric: tabular-nums;
         margin: 0;
     }
-/* DataTables: same selectors as dataTables.bootstrap5.css (loaded earlier), so source order wins. */
+/* DataTables pager alignment */
 div.dt-container div.dt-paging ul.pagination {
         justify-content: flex-end;
         margin: 0;
     }
-/* Bootstrap's -12px row margins (offset by +12px column padding) made every row wider than the scroll container. */
-.dt-container > :is(.row, .dt-layout-row) {
-        --bs-gutter-x: 0;
-    }
-/* DataTables 3 BS5 adds Bootstrap .mt-2 on every .dt-layout-row; zero it inside .ui-data-table and table rows. */
-.ui-data-table .dt-container > :is(.row, .dt-layout-row),
-.dt-container > :is(.row, .dt-layout-row).dt-layout-table {
+/* Keep DT layout rows flush inside .ui-data-table and table rows. */
+.ui-data-table .dt-container > .dt-layout-row,
+.dt-container > .dt-layout-row.dt-layout-table {
         margin-top: 0 !important;
     }
-/* Default Bootstrap layout: the bottom row holds info + pager and becomes the table footer. */
-.dt-container > :is(.row, .dt-layout-row):has(.dt-info, .dt-paging) {
+/* DataTables footer row holds info + pager inside .ui-data-table. */
+.dt-container > .dt-layout-row:has(.dt-info, .dt-paging) {
         align-items: center;
         background: var(--md-surface-container-low);
         border-top: 1px solid var(--md-outline-variant);
@@ -4069,12 +3958,12 @@ div.dt-container div.dt-paging ul.pagination {
         margin: 0 !important;
         padding: var(--ui-density-panel-block, .875rem) var(--ui-density-panel-inline, 1rem);
     }
-.dt-container > :is(.row, .dt-layout-row):has(.dt-info, .dt-paging) > * {
+.dt-container > .dt-layout-row:has(.dt-info, .dt-paging) > * {
         flex: 0 1 auto;
         padding-inline: 0;
         width: auto;
     }
-.dt-container > :is(.row, .dt-layout-row):has(.dt-info, .dt-paging) :is(.dt-info, .dt-paging) {
+.dt-container > .dt-layout-row:has(.dt-info, .dt-paging) :is(.dt-info, .dt-paging) {
         padding: 0;
     }
 .dt-container .dt-info {
@@ -4326,7 +4215,7 @@ div.dt-scroll-body > table.dataTable > :is(thead, tfoot) > tr > :is(th, td) div.
     div.dt-container div.dt-paging ul.pagination:has(> .active) > .page-item:has(> :is(.previous, .next)) {
         display: list-item;
     }
-    .dt-container > :is(.row, .dt-layout-row):has(.dt-info, .dt-paging) {
+    .dt-container > .dt-layout-row:has(.dt-info, .dt-paging) {
         justify-content: center;
         text-align: center;
     }
@@ -5515,15 +5404,15 @@ html.js [data-calendar-native-submit] {
         text-wrap: balance;
     }
 /* Clean number inputs inside data tables */
-.table input[type="number"]::-webkit-outer-spin-button,
-    .table input[type="number"]::-webkit-inner-spin-button {
+:is(.ui-data-table table, .ui-table) input[type="number"]::-webkit-outer-spin-button,
+    :is(.ui-data-table table, .ui-table) input[type="number"]::-webkit-inner-spin-button {
         -webkit-appearance: none;
         margin: 0;
     }
-.table input[type="number"] {
+:is(.ui-data-table table, .ui-table) input[type="number"] {
         -moz-appearance: textfield;
     }
-.table .form-control.is-invalid {
+:is(.ui-data-table table, .ui-table) .ui-input.is-invalid {
         background-image: none !important;
         padding-right: .5rem !important;
     }
@@ -5544,8 +5433,7 @@ html.js [data-calendar-native-submit] {
 .local-import-modal [data-recovery-refresh] { min-height: 44px; }
 .local-import-modal .modal-body { min-width: 0; }
 .local-import-modal .local-import-recheck.is-primary { background: var(--md-primary); color: var(--md-on-primary); border-color: var(--md-primary); }
-.local-import-modal :is(.table, .ui-table) { --bs-table-color: var(--md-on-surface); --bs-table-bg: transparent; --bs-table-striped-color: var(--md-on-surface); --bs-table-striped-bg: var(--md-surface-container-low); --bs-table-hover-color: var(--md-on-surface); --bs-table-hover-bg: var(--md-surface-container-high); }
-.local-import-modal :is(.table, .ui-table) thead th { color: var(--md-on-surface); background: var(--md-surface-container-high); }
+.local-import-modal .ui-table thead th { color: var(--md-on-surface); background: var(--md-surface-container-high); }
 .local-import-modal [data-recovery-list] li { min-width: 0; }
 .local-import-modal .local-import-preview-metrics { border: 0; border-bottom: 1px solid var(--md-outline-variant); border-radius: 0; padding: 0.5rem 0; }
 @media (max-width: 640px) {
@@ -5602,12 +5490,10 @@ tr[data-mmt-row-url] {
 }
 tr[data-mmt-row-url]:hover > :is(td, th) {
     --ui-table-cell-bg: var(--ui-table-row-hover-bg);
-    --bs-table-bg: var(--ui-table-cell-bg);
     background-color: var(--ui-table-cell-bg);
 }
 tr[data-mmt-row-url].is-mmt-selected > :is(td, th) {
     --ui-table-cell-bg: color-mix(in srgb, var(--md-primary) 7%, var(--md-surface));
-    --bs-table-bg: var(--ui-table-cell-bg);
     background-color: var(--ui-table-cell-bg);
 }
 @media (prefers-reduced-motion: reduce) {
@@ -5924,14 +5810,14 @@ table.dataTable thead > tr > :is(th, td):is(.dt-orderable-asc, .dt-orderable-des
 /* ==========================================================================
    Table Row Hover Eye-Friendly Styling (Item 5)
    ========================================================================== */
-:is(.ui-data-table table, .table.table-hover) > tbody > tr > :is(td, th) {
+:is(.ui-data-table table, .ui-table.ui-table--hover) > tbody > tr > :is(td, th) {
     transition: background-color 150ms ease;
 }
-:is(.ui-data-table table, .table.table-hover):not(.ui-quotation-readonly):not(.quotation-items-table) > tbody > tr:not(:has(> td[colspan]:only-child)):not(:has(> td.dt-empty)):not(.bg-primary-subtle):not(.table-primary):hover > :is(td:first-child.ui-sticky-col, th:first-child.ui-sticky-col, td:first-child.ui-table-sticky-col) {
+:is(.ui-data-table table, .ui-table.ui-table--hover):not(.ui-quotation-readonly):not(.quotation-items-table) > tbody > tr:not(:has(> td[colspan]:only-child)):not(:has(> td.dt-empty)):hover > :is(td:first-child.ui-sticky-col, th:first-child.ui-sticky-col, td:first-child.ui-table-sticky-col) {
     box-shadow: inset -1px 0 0 var(--md-outline-variant);
 }
 @media (prefers-reduced-motion: reduce) {
-    :is(.ui-data-table table, .table.table-hover) > tbody > tr > :is(td, th) {
+    :is(.ui-data-table table, .ui-table.ui-table--hover) > tbody > tr > :is(td, th) {
         transition: none;
     }
 }
@@ -7233,21 +7119,10 @@ div.dt-container div.dt-processing {
         --ui-table-cell-inline: var(--ui-density-table-cell-inline, .875rem);
         padding: var(--ui-density-page-block, 1.25rem) var(--ui-density-page-inline, 1.5rem);
     }
-    .content-area :is(.form-control-sm, .form-select-sm, .btn-group-sm > .btn, .input-group-sm > :is(.form-control, .form-select, .btn)):not(:is(table, .table, .ui-export-designer-modal) *, [class*="tw:min-h-"]) {
+    .content-area :is(.ui-input--sm, .ui-select--sm, .ui-input-group--sm > :is(.ui-input, .ui-select, .ui-button)):not(:is(table, .ui-table, .ui-export-designer-modal) *, [class*="tw:min-h-"]) {
         min-height: var(--ui-control-height-sm);
     }
-    .content-area .btn-group-sm > .btn:not(:is(table, .table, .ui-export-designer-modal) *, [class*="tw:min-h-"]) {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-    }
-    .content-area :is(.form-control, .form-select):not(textarea, select[multiple], select[size]:not([size="1"]), .form-control-sm, .form-select-sm, .form-control-lg, .form-select-lg, .form-control-color, .form-control-plaintext, [type="range"], .input-group-sm > *, :is(table, .table, .ui-export-designer-modal) *, [class*="tw:min-h-"]) {
-        min-height: var(--ui-control-height-md);
-    }
-    .content-area :is(.ui-input--sm, .ui-select--sm, .ui-input-group--sm > :is(.ui-input, .ui-select, .ui-button)):not(:is(table, .table, .ui-export-designer-modal) *, [class*="tw:min-h-"]) {
-        min-height: var(--ui-control-height-sm);
-    }
-    .content-area :is(.ui-input, .ui-select):not(textarea, select[multiple], select[size]:not([size="1"]), .ui-input--sm, .ui-select--sm, [type="range"], .ui-input-group--sm > *, :is(table, .table, .ui-export-designer-modal) *, [class*="tw:min-h-"]) {
+    .content-area :is(.ui-input, .ui-select):not(textarea, select[multiple], select[size]:not([size="1"]), .ui-input--sm, .ui-select--sm, [type="range"], .ui-input-group--sm > *, :is(table, .ui-table, .ui-export-designer-modal) *, [class*="tw:min-h-"]) {
         min-height: var(--ui-control-height-md);
     }
     /* Input matrices are functional editors, with measured legacy geometry. */
@@ -7263,11 +7138,11 @@ div.dt-container div.dt-processing {
         --ui-density-table-chip-block: 0.1875rem;
         --ui-density-row-min: 2.5rem;
     }
-    :is(.ui-data-table table, .ui-table, .table):not(.pr-items-table, .quotation-items-table, .qc-dimension-grid, [data-annual-rates-matrix]) tbody :is(td, th) :is(.ui-data-action, .ui-button:not([class*="tw:min-h-"])) {
+    :is(.ui-data-table table, .ui-table):not(.pr-items-table, .quotation-items-table, .qc-dimension-grid, [data-annual-rates-matrix]) tbody :is(td, th) :is(.ui-data-action, .ui-button:not([class*="tw:min-h-"])) {
         min-height: var(--ui-density-table-action-min, var(--ui-control-height-sm));
         padding: var(--ui-density-table-action-block, var(--ui-space-1)) var(--ui-density-table-action-inline, var(--ui-space-3));
     }
-    :is(.ui-data-table table, .ui-table, .table):not(.pr-items-table, .quotation-items-table, .qc-dimension-grid, [data-annual-rates-matrix]) tbody :is(td, th) .ui-status-chip {
+    :is(.ui-data-table table, .ui-table):not(.pr-items-table, .quotation-items-table, .qc-dimension-grid, [data-annual-rates-matrix]) tbody :is(td, th) .ui-status-chip {
         min-height: var(--ui-density-table-chip-min, 1.5rem);
         padding-block: var(--ui-density-table-chip-block, .1875rem);
     }
@@ -7334,21 +7209,16 @@ div.dt-container div.dt-processing {
             .ui-select--sm,
             .ui-input-group--sm > :is(.ui-input, .ui-select, .ui-button),
             :is(.ui-input, .ui-select):not(textarea, select[multiple], select[size]:not([size="1"]), [type="range"]),
-            .form-control-sm,
-            .form-select-sm,
-            .btn-group-sm > .btn,
-            .input-group-sm > :is(.form-control, .form-select, .btn),
-            :is(.form-control, .form-select):not(textarea, select[multiple], select[size]:not([size="1"]), .form-control-lg, .form-select-lg, .form-control-color, .form-control-plaintext, [type="range"]),
             :is(input:not([type="checkbox"], [type="radio"], [type="hidden"], [type="range"]), select:not([multiple]))[class*="ui-control-height-md"],
             .ui-searchable-free-input__input,
             .ui-date-range-trigger,
             .ui-calendar-trigger,
             .ui-time-picker__input,
             [role="combobox"][id$="-trigger"]
-        ):not(:is(table, .table, .ui-export-designer-modal) *),
+        ):not(:is(table, .ui-table, .ui-export-designer-modal) *),
         #customizationForm .ui-button,
-        .ui-density-modal :is(.ui-button, .btn), .local-import-modal :is(.ui-button, .btn) { min-height: 44px; }
-        .content-area:not(:has(.ui-account-shell)) .ui-calendar-trigger:not(:is(table, .table, .ui-export-designer-modal) *) { height: auto; }
+        .ui-density-modal .ui-button, .local-import-modal .ui-button { min-height: 44px; }
+        .content-area:not(:has(.ui-account-shell)) .ui-calendar-trigger:not(:is(table, .ui-table, .ui-export-designer-modal) *) { height: auto; }
         .ui-density-modal .btn-close, .local-import-modal .btn-close { min-width: 44px; min-height: 44px; box-sizing: border-box; }
         .ui-form-section__body, .ui-density-form-grid { gap: max(.5rem, var(--ui-density-form-gap)); }
         .ui-toolbar, .ui-toolbar__left, .ui-toolbar__right,
@@ -7397,8 +7267,7 @@ div.dt-container div.dt-processing {
     white-space: nowrap;
 }
 
-thead .ui-sticky-col-right,
-.table-light .ui-sticky-col-right {
+thead .ui-sticky-col-right {
     z-index: 4;
     background-color: var(--md-surface-container-low);
 }
@@ -7497,6 +7366,7 @@ dialog.ui-native-dialog::backdrop {
 
 dialog.ui-native-dialog > .modal-dialog {
     width: 100%;
+    min-width: 0;
     max-width: none;
     margin: 0;
     pointer-events: auto;
@@ -7505,6 +7375,7 @@ dialog.ui-native-dialog > .modal-dialog {
 dialog.ui-native-dialog > .modal-dialog > .modal-content,
 dialog.ui-native-dialog > .modal-dialog > form > .modal-content {
     width: 100%;
+    min-width: 0;
     background-color: var(--ui-dialog-bg);
     color: var(--md-on-surface);
     border: 1px solid var(--md-outline);
@@ -7563,6 +7434,7 @@ dialog.ui-native-dialog > .modal-dialog-scrollable .modal-body {
 }
 
 :where(dialog.ui-native-dialog) :where(.modal-body) {
+    min-width: 0;
     padding: var(--ui-space-4) var(--ui-space-5);
 }
 

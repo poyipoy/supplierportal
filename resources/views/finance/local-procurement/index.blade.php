@@ -212,7 +212,7 @@
             :title="__('local_procurement.list.local')"
             :description="__('local_procurement.register.po_count', ['count' => $purchaseOrders->total()])"
         >
-        <div class="ui-table-scroll">
+        <div class="ui-table-responsive">
             <table class="ui-table ui-table--hover tw:align-middle tw:m-0 tw:text-ui-sm tw:w-full">
                 <thead>
                     <tr>

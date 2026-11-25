@@ -97,7 +97,7 @@
         </x-ui.filter-bar>
         <form method="POST" action="{{ route('finance.drp.ga.create') }}">
             @csrf
-            <div class="ui-table-scroll">
+            <div class="ui-table-responsive">
                 <table class="ui-table ui-table--hover tw:align-middle tw:text-ui-sm tw:w-full">
                     <thead><tr>
                         <th scope="col">{{ __('common.actions.choose') }}</th>
@@ -137,7 +137,7 @@
         :title="__('finance.drp.ga_list')"
         :description="__('finance.drp.ga_submissions')"
     >
-        <div class="ui-table-scroll">
+        <div class="ui-table-responsive">
             <table class="ui-table ui-table--hover tw:align-middle tw:m-0 tw:text-ui-sm tw:w-full">
                 <thead>
                     <tr>

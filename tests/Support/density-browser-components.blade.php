@@ -11,20 +11,20 @@
     <x-ui.metric-card id="fixture-metric" label="Items" value="24" icon="package" />
     <x-ui.card id="fixture-card" title="Information panel"><p class="tw:m-0">Representative non-sensitive information.</p></x-ui.card>
     <x-ui.toolbar id="fixture-toolbar">
-        <x-slot:search><label for="fixture-search">Search</label><input id="fixture-search" class="form-control form-control-sm" value="Example" readonly></x-slot:search>
+        <x-slot:search><label for="fixture-search">Search</label><input id="fixture-search" class="ui-input ui-input--sm" value="Example" readonly></x-slot:search>
         <x-slot:actions><x-ui.button size="sm" variant="outline">Filter</x-ui.button></x-slot:actions>
     </x-ui.toolbar>
     <x-ui.form-section id="fixture-form" title="Form section"><x-ui.input name="fixture_field" label="Reference" value="Example" readonly /></x-ui.form-section>
     @foreach(['text', 'action'] as $kind)
         <x-ui.data-table :id="'fixture-'.$kind" :title="ucfirst($kind).' rows'">
-            <table class="table" id="fixture-{{ $kind }}-table"><thead><tr><th>Item</th><th>State</th></tr></thead><tbody>
+            <table class="ui-table" id="fixture-{{ $kind }}-table"><thead><tr><th>Item</th><th>State</th></tr></thead><tbody>
             @for($i = 1; $i <= 25; $i++)
                 <tr><td>Item {{ str_pad((string) $i, 2, '0', STR_PAD_LEFT) }}</td><td>@if($kind === 'action')<x-ui.button type="button" size="sm" variant="outline">View</x-ui.button>@else Available @endif</td></tr>
             @endfor
             </tbody></table>
         </x-ui.data-table>
     @endforeach
-    <x-ui.data-table id="fixture-explicit" density="compact" title="Explicit compact compatibility"><table class="table"><tbody><tr><td>Example</td><td>Available</td></tr></tbody></table></x-ui.data-table>
+    <x-ui.data-table id="fixture-explicit" density="compact" title="Explicit compact compatibility"><table class="ui-table"><tbody><tr><td>Example</td><td>Available</td></tr></tbody></table></x-ui.data-table>
 </div>
 @endsection
 @push('scripts')

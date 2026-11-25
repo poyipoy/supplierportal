@@ -142,6 +142,7 @@ export class AdasiModal {
         this._returnFocusEl = normalizedTrigger || fallbackFocus;
         this._activeRelatedTarget = normalizedTrigger;
         this._trackedOpen = true;
+        this._suppressNextHideEvent = false;
 
         if (typeof this.el.showModal === 'function' && this.el.isConnected !== false) {
             if (!this.el.open) {
@@ -282,6 +283,12 @@ export class AdasiModal {
     }
 
     _handleClose() {
+        // Native <dialog>.close() queues an async 'close' task; ignore stale close events if already reopened.
+        if (this.isOpen()) {
+            this._suppressNextHideEvent = false;
+            return;
+        }
+
         const doc = this._doc;
         const win = getWindow(this.el);
 

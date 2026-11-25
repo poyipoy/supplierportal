@@ -139,7 +139,7 @@
     </x-ui.filter-bar>
 
     <x-ui.data-table :title="__('finance.refund.receivable')">
-        <div class="ui-table-scroll">
+        <div class="ui-table-responsive">
             <table class="ui-table tw:align-middle tw:text-ui-sm">
                 <thead>
                     <tr>

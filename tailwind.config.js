@@ -39,7 +39,7 @@ const legacyColors = {
 /** @type {import('tailwindcss').Config} */
 export default {
     // Loaded explicitly by app.css. Sources and prefix are configured there;
-    // token values remain shared with Bootstrap and the existing design system.
+    // token values map directly to --md-* and --ui-* CSS custom properties.
     theme: {
         extend: {
             screens: {

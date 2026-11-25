@@ -2,7 +2,7 @@
 // preset/SDK adapters prevent writes to the shared DB; the report names that seam.
 async () => {
     const root = document.querySelector('[data-advanced-export][data-export-key="purchasing.po"]');
-    const modal = root.querySelector('.modal');
+    const modal = root.querySelector('dialog.ui-native-dialog, .ui-export-designer-modal, .modal');
     const cases = [];
     const assert = (name, ok, actual) => { cases.push({ name, status: ok ? 'PASS' : 'FAIL', actual }); if (!ok) throw new Error(name + ': ' + JSON.stringify(actual)); };
     const keys = () => [...root.querySelectorAll('[data-export-column]')].map((el) => el.dataset.key);

@@ -1,4 +1,4 @@
-<div class="tw:hidden tw:md:block ui-table-scroll" role="region" tabindex="0" aria-label="{{ __('js.tables.scroll_region') }}">
+<div class="tw:hidden tw:md:block ui-table-responsive" role="region" tabindex="0" aria-label="{{ __('js.tables.scroll_region') }}">
     <table class="ui-table ui-table--hover tw:align-middle tw:m-0 tw:text-ui-sm tw:w-full">
         <thead>
             @if(($portal ?? '') === 'finance')

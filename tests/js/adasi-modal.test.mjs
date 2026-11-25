@@ -228,3 +228,47 @@ test('bootAdasiModals delegates triggers, closes enclosing popovers first, and s
     doc.dispatchEvent({ type: 'click', target: closeBtn, preventDefault() {} });
     assert.equal(dialog.open, false);
 });
+
+test('AdasiModal ignores stale queued native close events delivered after dialog is reopened', () => {
+    const { doc } = createMockDoc();
+    const dialog = createMockNode('DIALOG', { id: 'asyncCloseModal', attrs: { closedby: 'any' } });
+    dialog.ownerDocument = doc;
+
+    const queuedNativeCloses = [];
+    dialog.close = function (returnValue = '') {
+        this.open = false;
+        this.returnValue = returnValue;
+        this.removeAttribute('open');
+        queuedNativeCloses.push(() => this.dispatchEvent(new Event('close')));
+    };
+
+    const events = [];
+    dialog.addEventListener('adasi:modal-show', () => events.push('show'));
+    dialog.addEventListener('adasi:modal-shown', () => events.push('shown'));
+    dialog.addEventListener('adasi:modal-hide', () => events.push('hide'));
+    dialog.addEventListener('adasi:modal-hidden', () => events.push('hidden'));
+
+    const modal = AdasiModal.getOrCreateInstance(dialog);
+    modal.show();
+    assert.equal(dialog.open, true);
+
+    modal.hide();
+    assert.equal(dialog.open, false);
+    assert.equal(queuedNativeCloses.length, 1);
+
+    // Reopen before browser flushes the queued native 'close' task.
+    modal.show();
+    assert.equal(dialog.open, true);
+    const eventsBeforeStaleClose = events.length;
+
+    // Delivering the stale native 'close' while open must not tear down the reopened dialog.
+    queuedNativeCloses.shift()();
+    assert.equal(dialog.open, true);
+    assert.equal(events.length, eventsBeforeStaleClose);
+
+    // A genuine native close (e.g. Esc after dialog closes) still emits lifecycle events cleanly.
+    dialog.open = false;
+    dialog.removeAttribute('open');
+    dialog.dispatchEvent(new Event('close'));
+    assert.deepEqual(events.slice(eventsBeforeStaleClose), ['hide', 'hidden']);
+});

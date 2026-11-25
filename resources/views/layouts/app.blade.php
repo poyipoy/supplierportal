@@ -154,7 +154,6 @@
                     const choice = previewTheme ?? savedTheme;
                     const effective = choice === 'system' ? (media.matches ? 'dark' : 'light') : choice;
                     root.dataset.theme = effective;
-                    root.dataset.bsTheme = effective;
                     window.dispatchEvent(new CustomEvent('adasi:theme-change', { detail: { theme: effective } }));
                 };
                 const applyDensity = () => {
@@ -351,9 +350,6 @@
     {{-- Favicon --}}
     <link rel="icon" href="{{ asset('assets/images/logo-adasi.png') }}" type="image/png">
 
-    {{-- Bootstrap 5 CSS --}}
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous" rel="stylesheet">
-
     {{-- SweetAlert2 CSS --}}
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.min.css" integrity="sha384-e9JoBUb50niLuTodlxX3NLZZfrt9fQkX5bihGXOGWD/7QFJoXEH37S2df8UA2ehO" crossorigin="anonymous">
 
@@ -361,7 +357,7 @@
     <link rel="stylesheet" href="{{ asset('assets/css/adasi-alert.css') }}?v={{ filemtime(public_path('assets/css/adasi-alert.css')) }}">
 
 
-    {{-- Tailwind design foundation + Alpine entry (hybrid compatibility phase) --}}
+    {{-- Tailwind design foundation + Alpine entry --}}
     @include('partials.loader-logo')
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @stack('styles')

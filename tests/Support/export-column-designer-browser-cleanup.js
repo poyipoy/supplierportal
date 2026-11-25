@@ -1,7 +1,7 @@
 // Run on the api=1 fixture with browser-resources.js installed as initScript.
 async () => {
     const root = document.querySelector('[data-advanced-export]');
-    const modal = root.querySelector('.modal');
+    const modal = root.querySelector('dialog.ui-native-dialog, .ui-export-designer-modal, .modal');
     const wait = async (condition) => {
         const deadline = performance.now() + 5000;
         while (!condition()) {
@@ -26,5 +26,5 @@ async () => {
     window.__fixtureController.destroy();
     const afterDestroy = counts();
     const stable = samples.every((sample) => ['root', 'modal', 'document', 'window', 'viewport', 'nodes'].every((key) => sample[key] === baseline[key]) && sample.frames === 0 && sample.layers === 0);
-    return { status: stable && afterDestroy.root === 0 && afterDestroy.modal === 0 && afterDestroy.window === baseline.window - 1 && afterDestroy.viewport === baseline.viewport ? 'PASS' : 'FAIL', baseline, samples, afterDestroy, scope: 'Real source modules/Blade; initialized Bootstrap baseline, exact listener/rAF/DOM counts; fade disabled for the loop, normal transitions tested separately; no forced-GC heap proof.' };
+    return { status: stable && afterDestroy.root === 0 && afterDestroy.modal === 0 && afterDestroy.window === baseline.window - 1 && afterDestroy.viewport === baseline.viewport ? 'PASS' : 'FAIL', baseline, samples, afterDestroy, scope: 'Real source modules/Blade; initialized native dialog baseline, exact listener/rAF/DOM counts; fade disabled for the loop, normal transitions tested separately; no forced-GC heap proof.' };
 }

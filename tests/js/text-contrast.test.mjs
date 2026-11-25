@@ -188,12 +188,12 @@ test('Infor LN data-name column tokens pass WCAG AA across 5 accents x 2 modes a
         assert.ok(hex(darkBlock, tokenName), `Expected 6-digit hex for ${tokenName} in :root[data-theme="dark"]`);
     }
 
-    assert.match(css, /:where\(\.ui-data-table table,\s*\.table\):where\(:not\(\.ui-quotation-readonly\):not\(\.table-striped\):not\(:has\(\.ui-col-data-name\)\)\)\s*>\s*tbody\s*>\s*tr:where\(:not\(:has\(>\s*td\[colspan\]:only-child\)\):not\(:has\(>\s*td\.dt-empty\)\):not\(\.bg-primary-subtle\):not\(\.table-primary\):not\(\.table-light\)\):nth-of-type\(even\)\s*>\s*:is\(td,\s*th\)/);
-    assert.match(css, /:where\(\.ui-data-table table,\s*\.table\)\s*>\s*tbody\s*>\s*tr:where\(:not\(:has\(>\s*td\[colspan\]:only-child\)\):not\(:has\(>\s*td\.dt-empty\)\):not\(\.bg-primary-subtle\):not\(\.table-primary\):not\(\.table-light\)\)\s*>\s*:is\(td,\s*th\)\.ui-col-data-name/);
+    assert.match(css, /:where\(\.ui-data-table table,\s*\.ui-table\):where\(:not\(\.ui-quotation-readonly\):not\(\.ui-table--striped\):not\(:has\(\.ui-col-data-name\)\)\)\s*>\s*tbody\s*>\s*tr:where\(:not\(:has\(>\s*td\[colspan\]:only-child\)\):not\(:has\(>\s*td\.dt-empty\)\)\):nth-of-type\(even\)\s*>\s*:is\(td,\s*th\)/);
+    assert.match(css, /:where\(\.ui-data-table table,\s*\.ui-table\)\s*>\s*tbody\s*>\s*tr:where\(:not\(:has\(>\s*td\[colspan\]:only-child\)\):not\(:has\(>\s*td\.dt-empty\)\)\)\s*>\s*:is\(td,\s*th\)\.ui-col-data-name/);
     assert.match(css, /\.ui-table-sticky \.ui-sticky-col\s*\{[^}]*background-color:\s*var\(--ui-table-cell-bg,\s*var\(--md-surface\)\);/s);
     assert.match(css, /\.ui-table-sticky-col\s*\{[^}]*background-color:\s*var\(--ui-table-cell-bg,\s*var\(--md-surface\)\);/s);
     assert.match(css, /\.ui-sticky-col-right\s*\{[^}]*background-color:\s*var\(--ui-table-cell-bg,\s*var\(--md-surface\)\);/s);
-    assert.match(css, /:is\(\.pr-items-table,\s*\.quotation-items-table,\s*\.qc-dimension-grid,\s*\[data-annual-rates-matrix\],\s*\.ui-export-designer-modal,\s*\.table-borderless,\s*\.local-import-modal\)\s*\{[^}]*--ui-table-row-stripe-bg:\s*var\(--md-surface\);[^}]*--ui-table-col-name-bg:\s*var\(--md-surface\);/s);
+    assert.match(css, /:is\(\.pr-items-table,\s*\.quotation-items-table,\s*\.qc-dimension-grid,\s*\[data-annual-rates-matrix\],\s*\.ui-export-designer-modal,\s*\.ui-table--borderless,\s*\.local-import-modal\)\s*\{[^}]*--ui-table-row-stripe-bg:\s*var\(--md-surface\);[^}]*--ui-table-col-name-bg:\s*var\(--md-surface\);/s);
     assert.match(css, /@media print\s*\{[^}]*--ui-table-row-stripe-bg:\s*var\(--md-surface\);[^}]*--ui-table-col-name-bg:\s*var\(--md-surface\);/s);
 
     const fgTokens = ['--md-on-surface', '--md-on-surface-variant', '--ui-primary-text', '--md-error', '--md-on-warning-container', '--md-on-success-container'];
@@ -223,10 +223,9 @@ test('control boundaries reach 3:1 and every field border uses the input token',
         }
         assert.match(block, /--ui-input-border:\s*var\(--md-outline-strong\);/, mode + ' input border token');
     }
-    const rule = css.match(/\.form-control,\s*\.form-select,\s*\.form-check-input,\s*\.input-group-text\s*\{\s*border-color:\s*var\(--ui-input-border\);/);
-    assert.ok(rule, 'Bootstrap fields use --ui-input-border instead of the --bs-border-color hairline');
+    const rule = css.match(/\.ui-input,\s*\.ui-select,\s*\.ui-textarea,\s*\.ui-check,\s*\.ui-input-group-text\s*\{\s*border-color:\s*var\(--ui-input-border\);/);
+    assert.ok(rule, 'Form fields use --ui-input-border for >= 3:1 boundary contrast');
     assert.ok(rule.index < css.indexOf('@import "tailwindcss/utilities.css"'), 'declared before utilities so tw:border-* classes still win');
-    assert.match(css, /\n\.btn-outline-secondary \{\s*--bs-btn-color: var\(--md-on-surface-variant\);/, 'light outline-secondary text uses the secondary text token');
 });
 
 test('templates never color text with outline tokens or fade it with opacity', () => {

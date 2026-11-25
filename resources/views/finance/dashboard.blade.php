@@ -212,7 +212,7 @@
                         </span>
                     </div>
 
-                    <div class="ui-table-scroll">
+                    <div class="ui-table-responsive">
                         <table class="ui-table ui-table--hover tw:align-middle tw:m-0 tw:text-ui-sm tw:w-full" aria-label="{{ __('finance.review.forecast_table') }}">
                             <thead>
                                 <tr>
@@ -282,7 +282,7 @@
             </x-ui.button>
         </x-slot:toolbar>
 
-        <div class="ui-table-scroll">
+        <div class="ui-table-responsive">
             <table class="ui-table ui-table--hover tw:align-middle tw:m-0 tw:text-ui-sm tw:w-full">
                 <thead>
                     <tr>

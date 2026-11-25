@@ -7,7 +7,7 @@ import { build } from 'vite';
 import postcss from 'postcss';
 
 // Portal typography contract: one self-hosted Source Sans Pro family behind --ui-font-sans, shared by
-// Bootstrap, Tailwind tw:font-sans, alerts and Chart.js; monospace only where characters must stay distinct.
+// the document foundation, Tailwind tw:font-sans, alerts and Chart.js; monospace only where characters must stay distinct.
 
 const root = fileURLToPath(new URL('../..', import.meta.url));
 const read = (file) => readFileSync(path.join(root, file), 'utf8');
@@ -41,16 +41,18 @@ test('Source Sans Pro is pinned and self-hosted through the Vite build', () => {
     assert.deepEqual([...new Set(faces.map((face) => face.family))], ['Source Sans Pro'], 'no other web font family is bundled');
 });
 
-test('Bootstrap, Tailwind and the root share one font token', () => {
+test('document foundation, Tailwind and the root share one font token without Bootstrap aliases', () => {
     let token = null;
-    const declarations = {};
+    const bodyFonts = [];
+    const bsFontDeclarations = [];
     ast.walkDecls((decl) => {
         if (decl.prop === '--ui-font-sans' && decl.parent.selector === ':root') token = decl.value;
-        if (['--bs-body-font-family', '--bs-font-sans-serif'].includes(decl.prop)) declarations[decl.prop] = decl.value;
+        if (decl.prop === 'font-family' && decl.parent.selector === 'body') bodyFonts.push(decl.value);
+        if (['--bs-body-font-family', '--bs-font-sans-serif'].includes(decl.prop)) bsFontDeclarations.push(decl.prop);
     });
     assert.match(token || '', /^"Source Sans Pro",/, 'Source Sans Pro leads the stack');
-    assert.equal(declarations['--bs-body-font-family'], 'var(--ui-font-sans)');
-    assert.equal(declarations['--bs-font-sans-serif'], 'var(--ui-font-sans)');
+    assert.ok(bodyFonts.length >= 1 && bodyFonts.every((value) => value === 'var(--ui-font-sans)'), 'every CSS bundle binds body to --ui-font-sans');
+    assert.deepEqual(bsFontDeclarations, [], 'no --bs-* font aliases remain in compiled CSS');
 
     for (const cssAsset of cssAssets) {
         const fontSans = [];

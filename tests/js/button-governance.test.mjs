@@ -407,19 +407,7 @@ test('JS DOM builders and non-plugin Blade views do not emit raw Bootstrap outli
         assert.match(source, /\bui-data-action\b/, `${rel} must use .ui-data-action`);
     }
 
-    const allowedPluginBootstrapButtons = new Set([
-        // Radio button groups tied to Bootstrap .btn-check toggles:
-        'resources/views/local-supplier/supplier-audits/edit.blade.php:244',
-        'resources/views/purchasing/comparison/_historical_content.blade.php:90',
-        'resources/views/purchasing/comparison/_historical_content.blade.php:93',
-        'resources/views/supplier/price-history/historical.blade.php:101',
-        'resources/views/supplier/price-history/historical.blade.php:104',
-        // Compact append buttons inside Bootstrap .input-group:
-        'resources/views/purchasing/pr/_mobile_item_editor.blade.php:94',
-        'resources/views/purchasing/shipments/show.blade.php:328',
-        'resources/views/supplier/shipments/create.blade.php:382',
-        'resources/views/supplier/shipments/show.blade.php:383',
-    ]);
+    const allowedPluginBootstrapButtons = new Set();
 
     const rogueBootstrapBtns = [];
     for (const file of walkBladeFiles(viewsRoot)) {

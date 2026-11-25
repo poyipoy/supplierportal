@@ -811,11 +811,9 @@ try {
     // 5. Dark Mode Screenshot
     await evaluate(`(() => {
         document.documentElement.dataset.theme = 'dark';
-        document.documentElement.dataset.bsTheme = 'dark';
         document.querySelectorAll('iframe[data-workspace-frame]').forEach(f => {
             try {
                 f.contentDocument.documentElement.dataset.theme = 'dark';
-                f.contentDocument.documentElement.dataset.bsTheme = 'dark';
             } catch {}
         });
     })()`);
@@ -824,11 +822,9 @@ try {
     await writeFile(path.join(artifacts, 'ws-shell-v2-1366-dark.png'), Buffer.from(shotDark.data, 'base64'));
     await evaluate(`(() => {
         document.documentElement.dataset.theme = 'light';
-        document.documentElement.dataset.bsTheme = 'light';
         document.querySelectorAll('iframe[data-workspace-frame]').forEach(f => {
             try {
                 f.contentDocument.documentElement.dataset.theme = 'light';
-                f.contentDocument.documentElement.dataset.bsTheme = 'light';
             } catch {}
         });
     })()`);

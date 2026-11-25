@@ -79,7 +79,7 @@ test('Preflight and global forms resets stay absent from the compiled applicatio
     }
     assert.equal(allRules.some(rule => rule.selector.includes('*') && rule.nodes.some(node => node.prop === 'padding' && node.value === '0')), false);
     assert.equal(allRules.some(rule => /^(input|textarea|select)(?:,|$)/.test(rule.selector) && rule.nodes.some(node => node.prop === 'appearance' && node.value === 'none')), false);
-    assert.equal(allRules.some(rule => rule.nodes.some(node => node.prop?.startsWith('border') && node.prop.endsWith('-style') && node.value === 'var(--tw-border-style)')), false, 'Width-only utilities must preserve the existing Bootstrap/UA border style');
+    assert.equal(allRules.some(rule => rule.nodes.some(node => node.prop?.startsWith('border') && node.prop.endsWith('-style') && node.value === 'var(--tw-border-style)')), false, 'Width-only utilities must preserve the existing foundation/UA border style');
 });
 
 test('DOM selectors target prefixed classes without treating the colon as a pseudo-class', () => {
@@ -89,15 +89,17 @@ test('DOM selectors target prefixed classes without treating the colon as a pseu
     }
 });
 
-test('auth bundle enforces [hidden] display:none !important so author display classes like .ui-spinner stay hidden', () => {
-    const authCssAsset = cssAssets.find(asset => /(?:^|\/)auth-[^/]+\.css$/.test(asset.fileName));
-    assert.ok(authCssAsset, 'Compiled auth CSS asset must exist');
-    const authAst = postcss.parse(String(authCssAsset.source));
-    let hasHiddenOverride = false;
-    authAst.walkRules(rule => {
-        if (rule.selector.includes('[hidden]') && rule.nodes.some(node => node.prop === 'display' && node.value === 'none' && node.important)) {
-            hasHiddenOverride = true;
-        }
-    });
-    assert.equal(hasHiddenOverride, true, 'Compiled auth CSS must enforce [hidden] { display: none !important } without Bootstrap Reboot');
+test('app and auth bundles enforce [hidden] display:none !important so author display classes like .ui-spinner stay hidden', () => {
+    for (const pattern of [/(?:^|\/)app-[^/]+\.css$/, /(?:^|\/)auth-[^/]+\.css$/]) {
+        const cssAsset = cssAssets.find(asset => pattern.test(asset.fileName));
+        assert.ok(cssAsset, `Compiled CSS asset matching ${pattern} must exist`);
+        const assetAst = postcss.parse(String(cssAsset.source));
+        let hasHiddenOverride = false;
+        assetAst.walkRules(rule => {
+            if (rule.selector.includes('[hidden]') && rule.nodes.some(node => node.prop === 'display' && node.value === 'none' && node.important)) {
+                hasHiddenOverride = true;
+            }
+        });
+        assert.equal(hasHiddenOverride, true, `${cssAsset.fileName} must enforce [hidden] { display: none !important } without Bootstrap Reboot`);
+    }
 });

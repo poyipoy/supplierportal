@@ -170,7 +170,7 @@
                         @endif
                     </div>
 
-                    <div class="ui-table-scroll">
+                    <div class="ui-table-responsive">
                         <table class="ui-table ui-table--sm tw:align-middle tw:m-0 tw:text-ui-xs tw:w-full">
                             <thead><tr><th>{{ __('local_invoice.detail.gr_number') }}</th><th>{{ __('local_invoice.labels.date') }}</th><th class="tw:text-end">{{ __('common.fields.qty') }}</th><th scope="col">{{ __('local_procurement.labels.uom') }}</th><th class="tw:text-end">{{ __('local_invoice.three_way_match.gr_amount') }}</th><th>{{ __('local_invoice.labels.status') }}</th></tr></thead>
                             <tbody>

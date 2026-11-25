@@ -794,9 +794,11 @@
                                 <p id="invoiceRecoveryReasonHint" class="tw:mt-1 tw:mb-0 tw:text-ui-xs tw:text-on-surface-variant">{{ __('local_invoice.recovery.reason_hint') }}</p>
                                 @error('recovery_reason')<div id="invoiceRecoveryReasonError" class="ui-field-error">{{ $message }}</div>@enderror
                             </div>
-                            <div class="ui-check-row" data-async-error-anchor>
-                                <input id="invoiceBusinessDocumentValid" name="business_document_valid" type="checkbox" value="1" required @checked(old('business_document_valid')) class="ui-check @error('business_document_valid') is-invalid @enderror" @error('business_document_valid') aria-invalid="true" aria-describedby="invoiceBusinessDocumentValidError" @enderror>
-                                <label for="invoiceBusinessDocumentValid" class="ui-check-label tw:text-ui-xs">{{ __('local_invoice.recovery.confirm_business_document') }}</label>
+                            <div data-async-error-anchor>
+                                <div class="ui-check-group">
+                                    <input id="invoiceBusinessDocumentValid" name="business_document_valid" type="checkbox" value="1" required @checked(old('business_document_valid')) class="ui-check @error('business_document_valid') is-invalid @enderror" @error('business_document_valid') aria-invalid="true" aria-describedby="invoiceBusinessDocumentValidError" @enderror>
+                                    <label for="invoiceBusinessDocumentValid" class="ui-check-label tw:text-ui-xs">{{ __('local_invoice.recovery.confirm_business_document') }}</label>
+                                </div>
                                 @error('business_document_valid')<div id="invoiceBusinessDocumentValidError" class="ui-field-error">{{ $message }}</div>@enderror
                             </div>
                         </div>

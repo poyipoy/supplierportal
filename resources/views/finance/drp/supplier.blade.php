@@ -124,7 +124,7 @@
         <form method="POST" action="{{ route('finance.drp.supplier.create') }}">
             @csrf
             <div class="tw:space-y-4">
-                <div class="ui-table-scroll">
+                <div class="ui-table-responsive">
                     <table class="ui-table ui-table--hover tw:align-middle tw:m-0 tw:text-ui-sm tw:w-full">
                         <thead>
                             <tr>
@@ -223,7 +223,7 @@
             </x-ui.button>
         </x-slot:toolbar>
 
-        <div class="ui-table-scroll">
+        <div class="ui-table-responsive">
             <table class="ui-table ui-table--hover tw:align-middle tw:m-0 tw:text-ui-sm tw:w-full" id="drpBatchTable">
                 <thead>
                     <tr>

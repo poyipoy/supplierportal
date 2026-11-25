@@ -28,7 +28,7 @@
     @if($mtcFiles->isEmpty())
         <p class="tw:m-0 tw:text-ui-xs tw:text-on-surface-variant">{{ __('shipments.mtc.none') }}</p>
     @else
-        <div class="ui-table-scroll">
+        <div class="ui-table-responsive">
             <table class="ui-table ui-table--sm tw:align-middle tw:m-0 tw:text-ui-xs">
                 <caption class="tw:sr-only">{{ __('shipments.mtc.section_title') }}</caption>
                 <thead>

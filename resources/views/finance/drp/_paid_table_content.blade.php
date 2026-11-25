@@ -17,7 +17,7 @@
             <span id="exportTransferCountPaid" class="tw:hidden tw:ml-1.5 tw:inline-flex tw:items-center tw:justify-center tw:rounded-full tw:bg-white/20 tw:text-white tw:text-[10px] tw:font-bold tw:px-1.5 tw:py-0.5"></span>
         </x-ui.button>
     </x-slot:toolbar>
-    <div class="ui-table-scroll tw:border-0 tw:bg-transparent tw:rounded-none tw:w-full tw:min-w-0">
+    <div class="ui-table-responsive tw:border-0 tw:bg-transparent tw:rounded-none tw:w-full tw:min-w-0">
         <table class="ui-table ui-table--hover tw:align-middle tw:m-0 tw:text-ui-sm tw:w-full">
             <thead>
                 <tr>

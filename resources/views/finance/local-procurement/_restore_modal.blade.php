@@ -27,9 +27,11 @@
                     <p id="{{ $recoveryId }}Hint" class="tw:text-ui-xs tw:text-on-surface-variant tw:mt-1">{{ __('local_procurement.recovery.reason_hint') }}</p>
                     @if($recoveryBag->has('reason'))<div id="{{ $recoveryId }}ReasonError" data-recovery-error class="ui-field-error">{{ $recoveryBag->first('reason') }}</div>@endif
                 </div>
-                <div class="ui-check-row">
-                    <input id="{{ $recoveryId }}Confirm" type="checkbox" name="business_document_valid" value="1" required class="ui-check {{ $recoveryBag->has('business_document_valid') ? 'is-invalid' : '' }}" @checked($hasRecoveryErrors && old('business_document_valid')) @if($recoveryBag->has('business_document_valid')) aria-invalid="true" aria-describedby="{{ $recoveryId }}ConfirmError" @endif>
-                    <label class="ui-check-label tw:text-ui-sm" for="{{ $recoveryId }}Confirm">{{ __('local_procurement.recovery.confirm_business_document') }}</label>
+                <div>
+                    <div class="ui-check-group">
+                        <input id="{{ $recoveryId }}Confirm" type="checkbox" name="business_document_valid" value="1" required class="ui-check {{ $recoveryBag->has('business_document_valid') ? 'is-invalid' : '' }}" @checked($hasRecoveryErrors && old('business_document_valid')) @if($recoveryBag->has('business_document_valid')) aria-invalid="true" aria-describedby="{{ $recoveryId }}ConfirmError" @endif>
+                        <label class="ui-check-label tw:text-ui-sm" for="{{ $recoveryId }}Confirm">{{ __('local_procurement.recovery.confirm_business_document') }}</label>
+                    </div>
                     @if($recoveryBag->has('business_document_valid'))<div id="{{ $recoveryId }}ConfirmError" data-recovery-error class="ui-field-error">{{ $recoveryBag->first('business_document_valid') }}</div>@endif
                 </div>
             </div>

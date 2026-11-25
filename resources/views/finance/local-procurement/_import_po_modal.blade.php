@@ -103,7 +103,7 @@
                             </div>
                             <span class="tw:text-[11px] tw:text-on-surface-variant" id="localPoImportRowCount"></span>
                         </div>
-                        <div class="local-po-import-preview-scroll ui-table-scroll tw:border tw:border-outline-variant tw:rounded-ui-md">
+                        <div class="local-po-import-preview-scroll ui-table-responsive tw:border tw:border-outline-variant tw:rounded-ui-md">
                             <table class="ui-table ui-table--sm ui-table--striped ui-table--hover tw:align-middle tw:mb-0 tw:text-ui-xs">
                                 <thead class="tw:sticky tw:top-0">
                                     <tr>

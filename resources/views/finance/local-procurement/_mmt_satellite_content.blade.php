@@ -8,7 +8,7 @@
     @if($goodsReceipts->isEmpty())
         <x-ui.empty-state icon="package-check" :title="__('local_procurement.mmt.empty.goods_receipts')" class="tw:py-6" />
     @else
-        <div class="ui-table-scroll">
+        <div class="ui-table-responsive">
             <table class="ui-table ui-table--hover tw:align-middle tw:m-0 tw:text-ui-xs tw:w-full">
                 <thead>
                     <tr>
@@ -41,7 +41,7 @@
     @if($invoices->isEmpty())
         <x-ui.empty-state icon="receipt" :title="__('local_procurement.mmt.empty.invoices')" class="tw:py-6" />
     @else
-        <div class="ui-table-scroll">
+        <div class="ui-table-responsive">
             <table class="ui-table ui-table--hover tw:align-middle tw:m-0 tw:text-ui-xs tw:w-full">
                 <thead>
                     <tr>
@@ -85,7 +85,7 @@
     @if($documents->isEmpty())
         <x-ui.empty-state icon="file-text" :title="__('local_procurement.mmt.empty.documents')" class="tw:py-6" />
     @else
-        <div class="ui-table-scroll">
+        <div class="ui-table-responsive">
             <table class="ui-table ui-table--hover tw:align-middle tw:m-0 tw:text-ui-xs tw:w-full">
                 <thead>
                     <tr>

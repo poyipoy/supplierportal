@@ -125,7 +125,7 @@ foreach (['en', 'id'] as $locale) {
         $loader = view('partials.loader-logo')->render();
         $css = '/build/'.$manifest['resources/css/app.css']['file'];
         $js = '/build/'.$manifest['resources/js/app.js']['file'];
-        $html = '<!doctype html><html lang="'.$locale.'" data-theme="light"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="csrf-token" content="fixture-only"><title>Column Designer Fixture</title><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"><link rel="stylesheet" href="'.$css.'"></head><body>'.$component.$loader.'<script type="module" src="'.$js.'"></script></body></html>';
+        $html = '<!doctype html><html lang="'.$locale.'" data-theme="light"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="csrf-token" content="fixture-only"><title>Column Designer Fixture</title><link rel="stylesheet" href="'.$css.'"></head><body>'.$component.$loader.'<script type="module" src="'.$js.'"></script></body></html>';
         file_put_contents($output.'/'.$key.'-'.$locale.'.html', $html);
     }
     $poHtml = file_get_contents($output.'/purchasing.po-'.$locale.'.html');

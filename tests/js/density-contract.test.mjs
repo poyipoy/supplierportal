@@ -33,7 +33,7 @@ test('table headers, row actions, status chips, sidebar headings, and workspace 
     assert.deepEqual(extractPxSteps('--ui-density-sessionbar-min'), [48, 46, 44, 42, 40]);
     assert.deepEqual(extractPxSteps('--ui-density-session-min'), [43, 41, 39, 37, 35]);
 
-    assert.match(css, /\.table thead th\s*\{[^}]*var\(--ui-density-table-head-block,\s*0\.4375rem\)/s);
+    assert.match(css, /\.ui-table\s*>\s*thead\s*>\s*tr\s*>\s*th\s*\{[^}]*var\(--ui-density-table-head-block,\s*0\.4375rem\)/s);
     assert.match(css, /\.ui-data-table table thead th\s*\{[^}]*var\(--ui-density-table-head-block,\s*0\.4375rem\)/s);
     assert.match(css, /--ui-density-table-action-min,\s*var\(--ui-control-height-sm\)/);
     assert.match(css, /--ui-density-table-chip-min,\s*1\.5rem/);

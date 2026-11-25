@@ -127,7 +127,7 @@
         :title="__('ga.list.heading')"
         :description="__('finance.ga.verification_help')"
     >
-        <div class="ui-table-scroll">
+        <div class="ui-table-responsive">
             <table class="ui-table ui-table--hover tw:align-middle tw:m-0 tw:text-ui-xs tw:w-full">
                 <thead>
                     <tr>

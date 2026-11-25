@@ -49,8 +49,8 @@ BLADE);
     {
         $content = file_get_contents(resource_path('views/finance/local-procurement/form.blade.php'));
 
-        $this->assertStringContainsString('<label for="supplier_id" class="form-label tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:mb-0">', $content);
-        $this->assertStringContainsString('<label for="local_po_date" class="form-label tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:mb-0">', $content);
+        $this->assertStringContainsString('<label for="supplier_id" class="ui-label tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:mb-0">', $content);
+        $this->assertStringContainsString('<label for="local_po_date" class="ui-label tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:mb-0">', $content);
         $this->assertStringContainsString('id="local_po_date"', $content);
         $this->assertStringContainsString('size="sm"', $content);
     }

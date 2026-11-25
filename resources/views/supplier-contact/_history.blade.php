@@ -6,7 +6,7 @@
     @if($requests->isEmpty())
         <p class="tw:m-0 tw:px-4 tw:py-6 tw:text-ui-sm tw:text-on-surface-variant">{{ __('supplier_contact.profile.history_empty') }}</p>
     @else
-        <div class="ui-table-scroll">
+        <div class="ui-table-responsive">
             <table class="ui-table tw:align-middle tw:m-0 tw:text-ui-sm">
                 <caption class="tw:sr-only">{{ __('supplier_contact.common.history_title') }}</caption>
                 <thead>

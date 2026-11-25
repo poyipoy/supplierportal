@@ -35,8 +35,8 @@ export default defineConfig(({ mode }) => ({
                     }
                 },
                 Declaration(declaration) {
-                    // With Preflight disabled, v3 width utilities preserved the
-                    // Bootstrap/UA border style. v4 must not turn them all solid.
+                    // With Preflight disabled, v3 width utilities preserved the minimal
+                    // ADASI foundation/UA border style. v4 must not turn them all solid.
                     if (declaration.prop.startsWith('border') && declaration.prop.endsWith('-style')
                         && declaration.value === 'var(--tw-border-style)') {
                         declaration.remove();
