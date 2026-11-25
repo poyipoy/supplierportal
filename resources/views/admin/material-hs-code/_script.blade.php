@@ -107,63 +107,113 @@ const bootMaterialHsMaster = () => {
         onFilterChange: () => rulesTable.search(document.getElementById('ruleSearch')?.value || '').ajax.reload(),
     });
 
-    function setMethod($input, method) {
+    function setMethod(inputEl, method) {
+        if (!inputEl) return;
         if (method) {
-            $input.attr('name', '_method').val(method);
+            inputEl.setAttribute('name', '_method');
+            inputEl.value = method;
         } else {
-            $input.removeAttr('name').val('');
+            inputEl.removeAttribute('name');
+            inputEl.value = '';
         }
     }
 
+    function setValue(id, value) {
+        const el = document.getElementById(id);
+        if (el) el.value = value ?? '';
+    }
+
+    function setText(id, text) {
+        const el = document.getElementById(id);
+        if (el) el.textContent = String(text ?? '');
+    }
+
+    function setChecked(id, checked) {
+        const el = document.getElementById(id);
+        if (el) el.checked = Boolean(checked);
+    }
+
+    const createTextEl = (tag, className = '') => ({
+        text(value) {
+            const el = document.createElement(tag);
+            if (className) el.className = className;
+            el.textContent = String(value ?? '');
+            return el;
+        },
+    });
+
+    async function sendMasterRequest(url, { method = 'GET', data = null } = {}) {
+        const headers = {
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+        };
+        const options = {
+            method,
+            headers,
+            credentials: 'same-origin',
+        };
+
+        if (method !== 'GET') {
+            headers['X-CSRF-TOKEN'] = csrfToken;
+            if (data) {
+                const params = new URLSearchParams();
+                Object.entries(data).forEach(([key, value]) => {
+                    params.append(key, value === null || value === undefined ? '' : String(value));
+                });
+                options.body = params;
+            }
+        }
+
+        const response = await fetch(url, options);
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            throw Object.assign(new Error(`HTTP ${response.status}`), {
+                status: response.status,
+                responseJSON: payload,
+            });
+        }
+
+        return payload;
+    }
+
     function resetMaterialForm() {
-        document.getElementById('materialForm').reset();
-        $('#materialForm').attr('action', materialStoreUrl);
-        setMethod($('#materialFormMethod'), null);
-        $('#materialRecordId').val('');
-        $('#materialModalTitle').text(@json(__('admin.copy.add_material')));
-        $('#materialActive').prop('checked', true);
-        $('#materialDensity').val('steel');
-        $('#materialManufacturer').val('unknown');
+        const form = document.getElementById('materialForm');
+        form?.reset();
+        form?.setAttribute('action', materialStoreUrl);
+        setMethod(document.getElementById('materialFormMethod'), null);
+        setValue('materialRecordId', '');
+        setText('materialModalTitle', @json(__('admin.copy.add_material')));
+        setChecked('materialActive', true);
+        setValue('materialDensity', 'steel');
+        setValue('materialManufacturer', 'unknown');
     }
 
     function editMaterial(material) {
         resetMaterialForm();
-        $('#materialForm').attr('action', materialUpdateUrl.replace('/0', `/${material.id}`));
-        setMethod($('#materialFormMethod'), 'PUT');
-        $('#materialRecordId').val(material.id);
-        $('#materialModalTitle').text(@json(__('admin.copy.edit_material')));
-        $('#materialCode').val(material.material_code || '');
-        $('#materialRawCategory').val(material.raw_category || '');
-        $('#materialHsCategory').val(material.hs_category || '');
-        $('#materialDensity').val(material.density_profile || 'steel');
-        $('#materialManufacturer').val(material.manufacturer_scope || 'unknown');
-        $('#materialActive').prop('checked', material.is_active === true || material.is_active === 1);
+        document.getElementById('materialForm')?.setAttribute('action', materialUpdateUrl.replace('/0', `/${material.id}`));
+        setMethod(document.getElementById('materialFormMethod'), 'PUT');
+        setValue('materialRecordId', material.id);
+        setText('materialModalTitle', @json(__('admin.copy.edit_material')));
+        setValue('materialCode', material.material_code || '');
+        setValue('materialRawCategory', material.raw_category || '');
+        setValue('materialHsCategory', material.hs_category || '');
+        setValue('materialDensity', material.density_profile || 'steel');
+        setValue('materialManufacturer', material.manufacturer_scope || 'unknown');
+        setChecked('materialActive', material.is_active === true || material.is_active === 1);
         materialModal.show();
     }
 
-    $('#btnAddMaterial').on('click', () => { resetMaterialForm(); materialModal.show(); });
-    $(document).on('click', '.btn-edit-material', function () { editMaterial(JSON.parse($(this).attr('data-material'))); });
+    document.getElementById('btnAddMaterial')?.addEventListener('click', () => {
+        resetMaterialForm();
+        materialModal.show();
+    });
 
     function refreshQuality() {
         qualityLoaded = false;
-        $('#qualityLoading').removeClass('d-none');
-        $('#qualityContent').addClass('d-none');
+        document.getElementById('qualityLoading')?.classList.remove('d-none');
+        document.getElementById('qualityContent')?.classList.add('d-none');
         loadQuality();
     }
-
-    $(document).on('click', '.btn-toggle-material', function () {
-        const button = $(this);
-        $.ajax({
-            url: materialStatusUrl.replace('/0/', `/${button.data('id')}/`),
-            method: 'POST',
-            data: { _token: csrfToken, _method: 'PATCH', is_active: button.data('active') }
-        }).done(() => {
-            materialsTable.ajax.reload(null, false);
-            refreshQuality();
-            AdasiToast.success(@json(__('admin.copy.material_status_updated')));
-        })
-          .fail(showAjaxError);
-    });
 
     // Q3 guarded hard delete. A referenced record is refused by the server
     // (422, audited); offer deactivation instead.
@@ -175,20 +225,20 @@ const bootMaterialHsMaster = () => {
             confirmTone: 'danger'
         }, true).then((result) => {
             if (!result.isConfirmed) return;
-            $.ajax({ url, method: 'POST', data: { _token: csrfToken, _method: 'DELETE' } })
-                .done((response) => {
+            sendMasterRequest(url, { method: 'POST', data: { _token: csrfToken, _method: 'DELETE' } })
+                .then((response) => {
                     table.ajax.reload(null, false);
                     refreshQuality();
                     AdasiToast.success(response.message);
                 })
-                .fail((xhr) => {
-                    if (xhr.status !== 422 || !xhr.responseJSON?.message) {
-                        showAjaxError(xhr);
+                .catch((err) => {
+                    if (err?.status !== 422 || !err.responseJSON?.message) {
+                        showAjaxError(err);
                         return;
                     }
                     AdasiAlert.confirm({
                         title: @json(__('materials.master_data.delete_refused_title')),
-                        text: xhr.responseJSON.message,
+                        text: err.responseJSON.message,
                         confirmText: @json(__('materials.master_data.deactivate_instead')),
                         confirmTone: 'primary'
                     }).then((choice) => { if (choice.isConfirmed) deactivate(); });
@@ -196,38 +246,27 @@ const bootMaterialHsMaster = () => {
         });
     }
 
-    $(document).on('click', '.btn-delete-material', function () {
-        const button = $(this);
-        deleteMasterRecord(materialDestroyUrl.replace(/\/0$/, `/${button.data('id')}`), String(button.data('name')), materialsTable, () => {
-            $.ajax({ url: materialStatusUrl.replace('/0/', `/${button.data('id')}/`), method: 'POST', data: { _token: csrfToken, _method: 'PATCH', is_active: 0 } })
-                .done(() => { materialsTable.ajax.reload(null, false); refreshQuality(); AdasiToast.success(@json(__('admin.copy.material_status_updated'))); })
-                .fail(showAjaxError);
-        });
-    });
-
-    $(document).on('click', '.btn-delete-rule', function () {
-        const button = $(this);
-        deleteMasterRecord(ruleDestroyUrl.replace(/\/0$/, `/${button.data('id')}`), String(button.data('name')), rulesTable, () => {
-            $.ajax({ url: ruleStatusUrl.replace('/0/', `/${button.data('id')}/`), method: 'POST', data: { _token: csrfToken, _method: 'PATCH', status: 'inactive' } })
-                .done(() => { rulesTable.ajax.reload(null, false); refreshQuality(); AdasiToast.success(@json(__('admin.copy.hs_code_rule_status_updated'))); })
-                .fail(showAjaxError);
-        });
-    });
-
     function resetRuleConditions() {
-        $('.rule-condition-row').each(function () {
-            $(this).find('.condition-min, .condition-max').val('');
-            $(this).find('.condition-min-inclusive, .condition-max-inclusive').prop('checked', true);
+        document.querySelectorAll('.rule-condition-row').forEach((rowEl) => {
+            rowEl.querySelectorAll('.condition-min, .condition-max').forEach((inputEl) => {
+                inputEl.value = '';
+            });
+            rowEl.querySelectorAll('.condition-min-inclusive, .condition-max-inclusive').forEach((checkEl) => {
+                checkEl.checked = true;
+            });
         });
     }
 
     function applyRuleShape() {
-        const relevant = shapeDimensions[$('#ruleShape').val()] || [];
-        $('.rule-condition-row').each(function () {
-            const enabled = relevant.includes($(this).data('dimension'));
-            $(this).toggleClass('d-none', !enabled);
+        const shapeValue = document.getElementById('ruleShape')?.value || '';
+        const relevant = shapeDimensions[shapeValue] || [];
+        document.querySelectorAll('.rule-condition-row').forEach((rowEl) => {
+            const enabled = relevant.includes(rowEl.dataset.dimension);
+            rowEl.classList.toggle('d-none', !enabled);
             if (!enabled) {
-                $(this).find('.condition-min, .condition-max').val('');
+                rowEl.querySelectorAll('.condition-min, .condition-max').forEach((inputEl) => {
+                    inputEl.value = '';
+                });
             }
         });
     }
@@ -235,170 +274,280 @@ const bootMaterialHsMaster = () => {
     function populateConditions(conditions) {
         resetRuleConditions();
         Object.entries(conditions || {}).forEach(([dimension, bounds]) => {
-            const $row = $(`.rule-condition-row[data-dimension="${dimension}"]`);
-            $row.find('.condition-min').val(bounds.min ?? '');
-            $row.find('.condition-max').val(bounds.max ?? '');
-            $row.find('.condition-min-inclusive').prop('checked', bounds.min_inclusive !== false);
-            $row.find('.condition-max-inclusive').prop('checked', bounds.max_inclusive !== false);
+            const rowEl = document.querySelector(`.rule-condition-row[data-dimension="${CSS.escape(dimension)}"]`);
+            if (!rowEl) return;
+            const minInput = rowEl.querySelector('.condition-min');
+            const maxInput = rowEl.querySelector('.condition-max');
+            const minCheck = rowEl.querySelector('.condition-min-inclusive');
+            const maxCheck = rowEl.querySelector('.condition-max-inclusive');
+            if (minInput) minInput.value = bounds.min ?? '';
+            if (maxInput) maxInput.value = bounds.max ?? '';
+            if (minCheck) minCheck.checked = bounds.min_inclusive !== false;
+            if (maxCheck) maxCheck.checked = bounds.max_inclusive !== false;
         });
     }
 
     function resetRuleForm() {
-        document.getElementById('ruleForm').reset();
-        $('#ruleForm').attr('action', ruleStoreUrl);
-        setMethod($('#ruleFormMethod'), null);
-        $('#ruleRecordId').val('');
-        $('#ruleModalTitle').text(@json(__('admin.copy.add_hs_code_rule')));
-        $('#rulePriority').val(100);
-        $('#ruleStatus').val('active');
+        const form = document.getElementById('ruleForm');
+        form?.reset();
+        form?.setAttribute('action', ruleStoreUrl);
+        setMethod(document.getElementById('ruleFormMethod'), null);
+        setValue('ruleRecordId', '');
+        setText('ruleModalTitle', @json(__('admin.copy.add_hs_code_rule')));
+        setValue('rulePriority', 100);
+        setValue('ruleStatus', 'active');
         resetRuleConditions();
         applyRuleShape();
     }
 
     function editRule(rule) {
         resetRuleForm();
-        $('#ruleForm').attr('action', ruleUpdateUrl.replace('/0', `/${rule.id}`));
-        setMethod($('#ruleFormMethod'), 'PUT');
-        $('#ruleRecordId').val(rule.id);
-        $('#ruleModalTitle').text(@json(__('admin.copy.edit_hs_code_rule')));
-        $('#ruleHsCode').val(rule.hs_code || '');
-        $('#ruleCategory').val(rule.material_category);
-        $('#ruleShape').val(rule.shape);
-        $('#rulePriority').val(rule.priority || 100);
-        $('#ruleStatus').val(rule.status || 'inactive');
-        $('#ruleNotes').val(rule.notes || '');
+        document.getElementById('ruleForm')?.setAttribute('action', ruleUpdateUrl.replace('/0', `/${rule.id}`));
+        setMethod(document.getElementById('ruleFormMethod'), 'PUT');
+        setValue('ruleRecordId', rule.id);
+        setText('ruleModalTitle', @json(__('admin.copy.edit_hs_code_rule')));
+        setValue('ruleHsCode', rule.hs_code || '');
+        setValue('ruleCategory', rule.material_category);
+        setValue('ruleShape', rule.shape);
+        setValue('rulePriority', rule.priority || 100);
+        setValue('ruleStatus', rule.status || 'inactive');
+        setValue('ruleNotes', rule.notes || '');
         applyRuleShape();
         populateConditions(rule.conditions || {});
         ruleModal.show();
     }
 
-    $('#btnAddRule').on('click', () => { resetRuleForm(); ruleModal.show(); });
-    $('#ruleShape').on('change', applyRuleShape);
-    $(document).on('click', '.btn-edit-rule', function () { editRule(JSON.parse($(this).attr('data-rule'))); });
+    document.getElementById('btnAddRule')?.addEventListener('click', () => {
+        resetRuleForm();
+        ruleModal.show();
+    });
+    document.getElementById('ruleShape')?.addEventListener('change', applyRuleShape);
 
-    $('#ruleForm').on('submit', function (event) {
-        const conditions = {};
-        $('.rule-condition-row:not(.d-none)').each(function () {
-            const min = $(this).find('.condition-min').val();
-            const max = $(this).find('.condition-max').val();
-            if (min === '' && max === '') return;
-            conditions[$(this).data('dimension')] = {
-                min: min === '' ? null : Number(min),
-                min_inclusive: $(this).find('.condition-min-inclusive').is(':checked'),
-                max: max === '' ? null : Number(max),
-                max_inclusive: $(this).find('.condition-max-inclusive').is(':checked')
-            };
-        });
-        if (Object.keys(conditions).length === 0) {
-            event.preventDefault();
-            $('#ruleConditionError').removeClass('d-none').trigger('focus');
+    document.addEventListener('click', (e) => {
+        const target = e.target;
+
+        const editMatBtn = target.closest('.btn-edit-material');
+        if (editMatBtn) {
+            editMaterial(JSON.parse(editMatBtn.getAttribute('data-material')));
             return;
         }
-        $('#ruleConditionError').addClass('d-none');
-        $('#ruleConditionsJson').val(JSON.stringify(conditions));
-        $(this).find('button[type="submit"]').prop('disabled', true).find('.ui-spinner').removeClass('d-none');
+
+        const toggleMatBtn = target.closest('.btn-toggle-material');
+        if (toggleMatBtn) {
+            sendMasterRequest(materialStatusUrl.replace('/0/', `/${toggleMatBtn.dataset.id}/`), {
+                method: 'POST',
+                data: { _token: csrfToken, _method: 'PATCH', is_active: toggleMatBtn.dataset.active }
+            }).then(() => {
+                materialsTable.ajax.reload(null, false);
+                refreshQuality();
+                AdasiToast.success(@json(__('admin.copy.material_status_updated')));
+            }).catch(showAjaxError);
+            return;
+        }
+
+        const deleteMatBtn = target.closest('.btn-delete-material');
+        if (deleteMatBtn) {
+            const matId = deleteMatBtn.dataset.id;
+            deleteMasterRecord(materialDestroyUrl.replace(/\/0$/, `/${matId}`), String(deleteMatBtn.dataset.name), materialsTable, () => {
+                sendMasterRequest(materialStatusUrl.replace('/0/', `/${matId}/`), {
+                    method: 'POST',
+                    data: { _token: csrfToken, _method: 'PATCH', is_active: 0 }
+                }).then(() => {
+                    materialsTable.ajax.reload(null, false);
+                    refreshQuality();
+                    AdasiToast.success(@json(__('admin.copy.material_status_updated')));
+                }).catch(showAjaxError);
+            });
+            return;
+        }
+
+        const editRuleBtn = target.closest('.btn-edit-rule');
+        if (editRuleBtn) {
+            editRule(JSON.parse(editRuleBtn.getAttribute('data-rule')));
+            return;
+        }
+
+        const toggleRuleBtn = target.closest('.btn-toggle-rule');
+        if (toggleRuleBtn) {
+            sendMasterRequest(ruleStatusUrl.replace('/0/', `/${toggleRuleBtn.dataset.id}/`), {
+                method: 'POST',
+                data: { _token: csrfToken, _method: 'PATCH', status: toggleRuleBtn.dataset.status }
+            }).then(() => {
+                rulesTable.ajax.reload(null, false);
+                refreshQuality();
+                AdasiToast.success(@json(__('admin.copy.hs_code_rule_status_updated')));
+            }).catch(showAjaxError);
+            return;
+        }
+
+        const deleteRuleBtn = target.closest('.btn-delete-rule');
+        if (deleteRuleBtn) {
+            const ruleId = deleteRuleBtn.dataset.id;
+            deleteMasterRecord(ruleDestroyUrl.replace(/\/0$/, `/${ruleId}`), String(deleteRuleBtn.dataset.name), rulesTable, () => {
+                sendMasterRequest(ruleStatusUrl.replace('/0/', `/${ruleId}/`), {
+                    method: 'POST',
+                    data: { _token: csrfToken, _method: 'PATCH', status: 'inactive' }
+                }).then(() => {
+                    rulesTable.ajax.reload(null, false);
+                    refreshQuality();
+                    AdasiToast.success(@json(__('admin.copy.hs_code_rule_status_updated')));
+                }).catch(showAjaxError);
+            });
+        }
     });
 
-    $('#materialForm').on('submit', function () {
-        $(this).find('button[type="submit"]').prop('disabled', true).find('.ui-spinner').removeClass('d-none');
+    document.getElementById('ruleForm')?.addEventListener('submit', function (event) {
+        const conditions = {};
+        document.querySelectorAll('.rule-condition-row:not(.d-none)').forEach((rowEl) => {
+            const min = rowEl.querySelector('.condition-min')?.value ?? '';
+            const max = rowEl.querySelector('.condition-max')?.value ?? '';
+            if (min === '' && max === '') return;
+            conditions[rowEl.dataset.dimension] = {
+                min: min === '' ? null : Number(min),
+                min_inclusive: Boolean(rowEl.querySelector('.condition-min-inclusive')?.checked),
+                max: max === '' ? null : Number(max),
+                max_inclusive: Boolean(rowEl.querySelector('.condition-max-inclusive')?.checked),
+            };
+        });
+
+        const errorEl = document.getElementById('ruleConditionError');
+        if (Object.keys(conditions).length === 0) {
+            event.preventDefault();
+            if (errorEl) {
+                errorEl.classList.remove('d-none');
+                errorEl.focus();
+            }
+            return;
+        }
+        errorEl?.classList.add('d-none');
+        setValue('ruleConditionsJson', JSON.stringify(conditions));
+        const submitBtn = this.querySelector('button[type="submit"]');
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.querySelector('.ui-spinner')?.classList.remove('d-none');
+        }
     });
 
-    $(document).on('click', '.btn-toggle-rule', function () {
-        const button = $(this);
-        $.ajax({
-            url: ruleStatusUrl.replace('/0/', `/${button.data('id')}/`),
-            method: 'POST',
-            data: { _token: csrfToken, _method: 'PATCH', status: button.data('status') }
-        }).done(() => {
-            rulesTable.ajax.reload(null, false);
-            refreshQuality();
-            AdasiToast.success(@json(__('admin.copy.hs_code_rule_status_updated')));
-        })
-          .fail(showAjaxError);
+    document.getElementById('materialForm')?.addEventListener('submit', function () {
+        const submitBtn = this.querySelector('button[type="submit"]');
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.querySelector('.ui-spinner')?.classList.remove('d-none');
+        }
     });
 
-    function showAjaxError(xhr) {
-        const errors = xhr.responseJSON?.errors || {};
+    function showAjaxError(err) {
+        const errors = err?.responseJSON?.errors || {};
         const first = Object.values(errors)[0];
-        AdasiToast.error(Array.isArray(first) ? first[0] : (first || xhr.responseJSON?.message || @json(__('admin.copy.request_failed'))));
+        AdasiToast.error(Array.isArray(first) ? first[0] : (first || err?.responseJSON?.message || @json(__('admin.copy.request_failed'))));
     }
 
     function loadQuality() {
         if (qualityLoaded) return;
         qualityLoaded = true;
-        $.getJSON(@json(route($masterRoutePrefix.'.master-data-quality.index'))).done((report) => {
-            const summary = report.summary || {};
-            const attention = report.needs_attention || {};
-            const referenceNotes = report.reference_notes || {};
-            $('#qualityMaterials').text(summary.materials ?? 0);
-            $('#qualityMapped').text(summary.materials_with_hs_mapping ?? 0);
-            $('#qualityNeedsMapping').text(summary.materials_needing_hs_mapping ?? 0);
-            $('#qualityActiveRules').text(summary.active_hs_rules ?? 0);
-            $('#qualityNeedsReview').text(summary.rules_needing_review ?? 0);
-            renderTagList('#unmappedMaterials', attention.materials_without_hs_mapping, @json(__('admin.copy.all_materials_have_an_hs_mapping')));
-            renderTagList('#categoriesWithoutRules', attention.categories_without_active_hs_rules, @json(__('admin.copy.every_mapped_category_has_an_active_hs_rule')));
-            renderRulesNeedingReview(attention.rules_needing_review || []);
+        sendMasterRequest(@json(route($masterRoutePrefix.'.master-data-quality.index')))
+            .then((report) => {
+                const summary = report.summary || {};
+                const attention = report.needs_attention || {};
+                const referenceNotes = report.reference_notes || {};
+                setText('qualityMaterials', summary.materials ?? 0);
+                setText('qualityMapped', summary.materials_with_hs_mapping ?? 0);
+                setText('qualityNeedsMapping', summary.materials_needing_hs_mapping ?? 0);
+                setText('qualityActiveRules', summary.active_hs_rules ?? 0);
+                setText('qualityNeedsReview', summary.rules_needing_review ?? 0);
+                renderTagList('#unmappedMaterials', attention.materials_without_hs_mapping, @json(__('admin.copy.all_materials_have_an_hs_mapping')));
+                renderTagList('#categoriesWithoutRules', attention.categories_without_active_hs_rules, @json(__('admin.copy.every_mapped_category_has_an_active_hs_rule')));
+                renderRulesNeedingReview(attention.rules_needing_review || []);
 
-            const duplicateCoverage = referenceNotes.duplicate_rule_coverage || {};
-            $('#duplicateRuleCoverage').text(duplicateCoverage.message || @json(__('admin.copy.no_duplicate_rule_coverage_was_found')));
-            renderInactiveRulesForReference(referenceNotes.inactive_rules_kept_for_reference || []);
-            renderTagList('#unusedRuleCategories', referenceNotes.rule_categories_not_used_by_materials, @json(__('admin.copy.all_active_rule_categories_are_used_by_current_materials')));
-            renderTagList('#referenceOnlyMaterials', referenceNotes.reference_only_materials, 'None.');
-            $('#qualityLoading').addClass('d-none');
-            $('#qualityError').addClass('d-none');
-            $('#qualityContent').removeClass('d-none');
-        }).fail(() => {
-            qualityLoaded = false;
-            $('#qualityLoading').addClass('d-none');
-            $('#qualityContent').removeClass('d-none');
-            $('#qualityError').removeClass('d-none');
-        });
+                const duplicateCoverage = referenceNotes.duplicate_rule_coverage || {};
+                setText('duplicateRuleCoverage', duplicateCoverage.message || @json(__('admin.copy.no_duplicate_rule_coverage_was_found')));
+                renderInactiveRulesForReference(referenceNotes.inactive_rules_kept_for_reference || []);
+                renderTagList('#unusedRuleCategories', referenceNotes.rule_categories_not_used_by_materials, @json(__('admin.copy.all_active_rule_categories_are_used_by_current_materials')));
+                renderTagList('#referenceOnlyMaterials', referenceNotes.reference_only_materials, @json(__('admin.copy.none')));
+                document.getElementById('qualityLoading')?.classList.add('d-none');
+                document.getElementById('qualityError')?.classList.add('d-none');
+                document.getElementById('qualityContent')?.classList.remove('d-none');
+            })
+            .catch(() => {
+                qualityLoaded = false;
+                document.getElementById('qualityLoading')?.classList.add('d-none');
+                document.getElementById('qualityContent')?.classList.remove('d-none');
+                document.getElementById('qualityError')?.classList.remove('d-none');
+            });
     }
 
     function renderTagList(selector, values, emptyMessage) {
-        const $container = $(selector).empty();
+        const container = document.querySelector(selector);
+        if (!container) return;
+        container.replaceChildren();
         if (!Array.isArray(values) || values.length === 0) {
-            $('<span class="text-muted">').text(emptyMessage).appendTo($container);
+            container.appendChild(createTextEl('span', 'text-muted').text(emptyMessage));
             return;
         }
 
-        const $list = $('<ul class="list-unstyled mb-0 d-grid gap-1">');
-        values.forEach((value) => $('<li class="ui-tabular-nums small">').text(value).appendTo($list));
-        $list.appendTo($container);
+        const list = document.createElement('ul');
+        list.className = 'list-unstyled mb-0 d-grid gap-1';
+        values.forEach((value) => {
+            list.appendChild(createTextEl('li', 'ui-tabular-nums small').text(value));
+        });
+        container.appendChild(list);
     }
 
     function renderRulesNeedingReview(items) {
-        const $container = $('#rulesNeedingReview').empty();
+        const container = document.getElementById('rulesNeedingReview');
+        if (!container) return;
+        container.replaceChildren();
         if (!items.length) {
-            $('<div class="text-muted">').text(@json(__('admin.copy.no_active_rules_need_review'))).appendTo($container);
+            container.appendChild(createTextEl('div', 'text-muted').text(@json(__('admin.copy.no_active_rules_need_review'))));
             return;
         }
 
         items.forEach((item) => {
-            const $item = $('<div class="border-top pt-3 mt-3">');
-            $('<div class="fw-semibold">').text(`${item.category} / ${item.shape}`).appendTo($item);
-            $('<div class="text-muted mt-1">').text(item.message).appendTo($item);
-            $('<div class="mt-2">').append($('<span class="small fw-semibold me-2">').text(@json(__('admin.copy.hs_codes'))), document.createTextNode((item.hs_codes || []).join(', '))).appendTo($item);
-            $item.appendTo($container);
+            const card = document.createElement('div');
+            card.className = 'border-top pt-3 mt-3';
+
+            card.appendChild(createTextEl('div', 'fw-semibold').text(`${item.category} / ${item.shape}`));
+            card.appendChild(createTextEl('div', 'text-muted mt-1').text(item.message));
+
+            const codesWrap = document.createElement('div');
+            codesWrap.className = 'mt-2';
+            codesWrap.appendChild(createTextEl('span', 'small fw-semibold me-2').text(@json(__('admin.copy.hs_codes'))));
+            codesWrap.appendChild(document.createTextNode((item.hs_codes || []).join(', ')));
+            card.appendChild(codesWrap);
+
+            container.appendChild(card);
         });
     }
 
     function renderInactiveRulesForReference(items) {
-        const $container = $('#inactiveRulesForReference').empty();
+        const container = document.getElementById('inactiveRulesForReference');
+        if (!container) return;
+        container.replaceChildren();
         if (!items.length) {
-            $('<span class="text-muted">').text(@json(__('admin.copy.none'))).appendTo($container);
+            container.appendChild(createTextEl('span', 'text-muted').text(@json(__('admin.copy.none'))));
             return;
         }
 
-        const $list = $('<ul class="list-unstyled mb-0">');
-        items.forEach((item) => $('<li class="mb-2">')
-            .append($('<span class="ui-tabular-nums me-1">').text(item.hs_code), document.createTextNode(item.note ? `— ${item.note}` : '— ' + @js(__('common.final_review.inactive_reference'))))
-            .appendTo($list));
-        $list.appendTo($container);
+        const list = document.createElement('ul');
+        list.className = 'list-unstyled mb-0';
+        items.forEach((item) => {
+            const li = document.createElement('li');
+            li.className = 'mb-2';
+            li.appendChild(createTextEl('span', 'ui-tabular-nums me-1').text(item.hs_code));
+            li.appendChild(document.createTextNode(item.note ? `— ${item.note}` : '— ' + @js(__('common.final_review.inactive_reference'))));
+            list.appendChild(li);
+        });
+        container.appendChild(list);
     }
 
-    $('button[data-bs-target="#data-quality"]').on('shown.bs.tab', loadQuality);
-    $('button[data-bs-toggle="tab"]').on('shown.bs.tab', function () { history.replaceState(null, '', $(this).attr('data-bs-target')); });
+    document.querySelectorAll('button[data-bs-target="#data-quality"]').forEach((btn) => {
+        btn.addEventListener('shown.bs.tab', loadQuality);
+    });
+    document.querySelectorAll('button[data-bs-toggle="tab"]').forEach((btn) => {
+        btn.addEventListener('shown.bs.tab', () => {
+            history.replaceState(null, '', btn.getAttribute('data-bs-target'));
+        });
+    });
 
     if (location.hash) {
         const trigger = document.querySelector(`[data-bs-target="${location.hash}"]`);
@@ -407,25 +556,25 @@ const bootMaterialHsMaster = () => {
 
     if (oldContext === 'material') {
         if (oldInput.record_id) {
-            $('#materialForm').attr('action', materialUpdateUrl.replace('/0', `/${oldInput.record_id}`));
-            setMethod($('#materialFormMethod'), 'PUT');
-            $('#materialModalTitle').text(@json(__('admin.copy.edit_material')));
+            document.getElementById('materialForm')?.setAttribute('action', materialUpdateUrl.replace('/0', `/${oldInput.record_id}`));
+            setMethod(document.getElementById('materialFormMethod'), 'PUT');
+            setText('materialModalTitle', @json(__('admin.copy.edit_material')));
         }
-        $('#materialHsCategory').val(oldInput.hs_category || '');
-        $('#materialDensity').val(oldInput.density_profile || 'steel');
-        $('#materialManufacturer').val(oldInput.manufacturer_scope || 'unknown');
-        $('#materialActive').prop('checked', String(oldInput.is_active) === '1');
+        setValue('materialHsCategory', oldInput.hs_category || '');
+        setValue('materialDensity', oldInput.density_profile || 'steel');
+        setValue('materialManufacturer', oldInput.manufacturer_scope || 'unknown');
+        setChecked('materialActive', String(oldInput.is_active) === '1');
         materialModal.show();
     } else if (oldContext === 'rule') {
         if (oldInput.record_id) {
-            $('#ruleForm').attr('action', ruleUpdateUrl.replace('/0', `/${oldInput.record_id}`));
-            setMethod($('#ruleFormMethod'), 'PUT');
-            $('#ruleModalTitle').text(@json(__('admin.copy.edit_hs_code_rule')));
+            document.getElementById('ruleForm')?.setAttribute('action', ruleUpdateUrl.replace('/0', `/${oldInput.record_id}`));
+            setMethod(document.getElementById('ruleFormMethod'), 'PUT');
+            setText('ruleModalTitle', @json(__('admin.copy.edit_hs_code_rule')));
         }
-        $('#ruleCategory').val(oldInput.material_category);
-        $('#ruleShape').val(oldInput.shape);
-        $('#rulePriority').val(oldInput.priority || 100);
-        $('#ruleStatus').val(oldInput.status || 'inactive');
+        setValue('ruleCategory', oldInput.material_category);
+        setValue('ruleShape', oldInput.shape);
+        setValue('rulePriority', oldInput.priority || 100);
+        setValue('ruleStatus', oldInput.status || 'inactive');
         applyRuleShape();
         try { populateConditions(JSON.parse(oldInput.conditions_json || '{}')); } catch (error) {}
         ruleModal.show();

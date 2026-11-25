@@ -1442,6 +1442,7 @@
 <script>
     const currencyRates = @json($currencyRates);
     const quotationImportPreviewUrl = @json(route('supplier.quotations.import-preview', $pr));
+    const quotationCsrfToken = @json(csrf_token());
     // UI hint only; the server enforces the effective surplus flag.
     const quotationSurplusOffersAllowed = @json($surplusOffersAllowed);
     let quotationImportRows = [];
@@ -1459,8 +1460,24 @@
         notes: '.quotation-item-notes'
     };
 
+    function resolveQuotationGroup(group) {
+        if (group instanceof Element) {
+            return group;
+        }
+        if (group && !(group instanceof Element) && group[0] instanceof Element) {
+            return group[0];
+        }
+        return null;
+    }
+
+    function dispatchFieldInputAndChange(input) {
+        if (!input) return;
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+
     function quotationRowForPrItem(prItemId) {
-        return $(`.quotation-item-group[data-pr-item-id="${String(prItemId)}"]`).first();
+        return document.querySelector(`.quotation-item-group[data-pr-item-id="${CSS.escape(String(prItemId))}"]`);
     }
 
     function importedLengthValue(row) {
@@ -1492,114 +1509,159 @@
         const errors = Array.isArray(payload.errors) ? payload.errors : [];
         const rows = Array.isArray(payload.rows) ? payload.rows : [];
 
-        $('#quotationImportResult').removeClass('d-none');
-        $('#quotationImportSummary').text(
-            window.AdasiI18n.t('supplier.js.import_summary', { total: summary.total || 0, valid: summary.valid || 0, invalid: summary.invalid || 0 })
-        );
+        document.getElementById('quotationImportResult')?.classList.remove('d-none');
+        const summaryEl = document.getElementById('quotationImportSummary');
+        if (summaryEl) {
+            summaryEl.textContent = window.AdasiI18n.t('supplier.js.import_summary', {
+                total: summary.total || 0,
+                valid: summary.valid || 0,
+                invalid: summary.invalid || 0,
+            });
+        }
 
-        const $warnings = $('#quotationImportWarnings').empty();
-        warnings.forEach((warning) => $('<li>').text(formatQuotationImportMessage(warning)).appendTo($warnings));
-        $('#quotationImportWarningsPanel').toggleClass('d-none', warnings.length === 0);
+        const warningsEl = document.getElementById('quotationImportWarnings');
+        if (warningsEl) {
+            warningsEl.replaceChildren();
+            warnings.forEach((warning) => {
+                const li = document.createElement('li');
+                li.textContent = formatQuotationImportMessage(warning);
+                warningsEl.appendChild(li);
+            });
+        }
+        document.getElementById('quotationImportWarningsPanel')?.classList.toggle('d-none', warnings.length === 0);
 
-        const $errors = $('#quotationImportErrors').empty();
-        errors.forEach((error) => $('<li>').text(formatQuotationImportMessage(error)).appendTo($errors));
-        $('#quotationImportErrorsPanel').toggleClass('d-none', errors.length === 0);
+        const errorsEl = document.getElementById('quotationImportErrors');
+        if (errorsEl) {
+            errorsEl.replaceChildren();
+            errors.forEach((error) => {
+                const li = document.createElement('li');
+                li.textContent = formatQuotationImportMessage(error);
+                errorsEl.appendChild(li);
+            });
+        }
+        document.getElementById('quotationImportErrorsPanel')?.classList.toggle('d-none', errors.length === 0);
 
-        const $preview = $('#quotationImportPreviewBody').empty();
+        const previewEl = document.getElementById('quotationImportPreviewBody');
         // Material comes from this form's own PR rows, never from the uploaded file.
-        const materialFor = (prItemId) => $(`input[name$="[pr_item_id]"]`)
-            .filter((_, input) => String(input.value) === String(prItemId))
-            .closest('.quotation-sticky-material').find('.fw-bold').first().text().trim() || '-';
-        rows.forEach((row) => {
-            const $tableRow = $('<tr>');
-            [
-                row.pr_item_id,
-                materialFor(row.pr_item_id),
-                row.available_thickness ?? '-',
-                row.available_width ?? '-',
-                row.available_d_outer ?? '-',
-                row.available_d_inner ?? '-',
-                importedLengthValue(row) || '-',
-                row.available_qty ?? '-',
-                row.offered_weight_per_unit ?? '-',
-                row.price_per_kg ?? '-',
-                row.notes ?? '-',
-                row.is_available === false ? @js(__('supplier.copy.not_available')) : @js(__('supplier.copy.available'))
-            ].forEach((value) => $('<td>').text(value).appendTo($tableRow));
-            $tableRow.appendTo($preview);
-        });
-        $('#quotationImportPreviewPanel').toggleClass('d-none', rows.length === 0);
+        const materialFor = (prItemId) => {
+            const matchingInput = Array.from(document.querySelectorAll('input[name$="[pr_item_id]"]'))
+                .find((input) => String(input.value) === String(prItemId));
+            const label = matchingInput
+                ?.closest('.quotation-sticky-material')
+                ?.querySelector('.fw-bold')
+                ?.textContent
+                ?.trim();
+            return label || '-';
+        };
+
+        if (previewEl) {
+            previewEl.replaceChildren();
+            rows.forEach((row) => {
+                const tableRow = document.createElement('tr');
+                [
+                    row.pr_item_id,
+                    materialFor(row.pr_item_id),
+                    row.available_thickness ?? '-',
+                    row.available_width ?? '-',
+                    row.available_d_outer ?? '-',
+                    row.available_d_inner ?? '-',
+                    importedLengthValue(row) || '-',
+                    row.available_qty ?? '-',
+                    row.offered_weight_per_unit ?? '-',
+                    row.price_per_kg ?? '-',
+                    row.notes ?? '-',
+                    row.is_available === false ? @js(__('supplier.copy.not_available')) : @js(__('supplier.copy.available'))
+                ].forEach((value) => {
+                    const td = document.createElement('td');
+                    td.textContent = value;
+                    tableRow.appendChild(td);
+                });
+                previewEl.appendChild(tableRow);
+            });
+        }
+        document.getElementById('quotationImportPreviewPanel')?.classList.toggle('d-none', rows.length === 0);
 
         quotationImportRows = payload.success === true ? rows : [];
-        $('#btnApplyQuotationImport').prop('disabled', payload.success !== true || rows.length === 0);
+        const applyBtn = document.getElementById('btnApplyQuotationImport');
+        if (applyBtn) applyBtn.disabled = payload.success !== true || rows.length === 0;
     }
 
     function setQuotationImportBusy(isBusy) {
         quotationImportRequestInFlight = isBusy;
-        $('#btnParseQuotationImport').prop('disabled', isBusy);
-        $('#quotationImportFile, #quotationImportMode').prop('disabled', isBusy);
-        $('#quotationImportSpinner').toggleClass('d-none', !isBusy);
+        const parseBtn = document.getElementById('btnParseQuotationImport');
+        const fileEl = document.getElementById('quotationImportFile');
+        const modeEl = document.getElementById('quotationImportMode');
+        if (parseBtn) parseBtn.disabled = isBusy;
+        if (fileEl) fileEl.disabled = isBusy;
+        if (modeEl) modeEl.disabled = isBusy;
+        document.getElementById('quotationImportSpinner')?.classList.toggle('d-none', !isBusy);
     }
 
-    function parseQuotationImport() {
+    async function parseQuotationImport() {
         if (quotationImportRequestInFlight) {
             return;
         }
 
         const fileInput = document.getElementById('quotationImportFile');
-        const file = fileInput.files[0];
+        const file = fileInput?.files[0];
         if (!file) {
-            fileInput.setCustomValidity(@json(__('supplier.copy.select_an_xlsx_xls_or_csv_file_before_continuing')));
-            fileInput.reportValidity();
+            fileInput?.setCustomValidity(@json(__('supplier.copy.select_an_xlsx_xls_or_csv_file_before_continuing')));
+            fileInput?.reportValidity();
             return;
         }
         fileInput.setCustomValidity('');
 
         const formData = new FormData();
-        formData.append('_token', @json(csrf_token()));
+        formData.append('_token', quotationCsrfToken);
         formData.append('import_file', file);
         quotationImportRows = [];
-        $('#btnApplyQuotationImport').prop('disabled', true);
+        const applyBtn = document.getElementById('btnApplyQuotationImport');
+        if (applyBtn) applyBtn.disabled = true;
         setQuotationImportBusy(true);
 
-        $.ajax({
-            url: quotationImportPreviewUrl,
-            method: 'POST',
-            data: formData,
-            processData: false,
-            contentType: false,
-            headers: {
-                'Accept': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest'
-            }
-        }).done((payload) => {
-            renderQuotationImportResult(payload);
-        }).fail((xhr) => {
-            if (xhr.status === 409) {
+        const fallbackErrorPayload = {
+            success: false,
+            rows: [],
+            warnings: [],
+            summary: { total: 0, valid: 0, invalid: 0 },
+            errors: [{ row: null, column: 'import_file', message: @json(__('supplier.copy.the_spreadsheet_could_not_be_processed')) }]
+        };
+
+        try {
+            const response = await fetch(quotationImportPreviewUrl, {
+                method: 'POST',
+                body: formData,
+                credentials: 'same-origin',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': quotationCsrfToken,
+                },
+            });
+            const payload = await response.json().catch(() => null);
+
+            if (response.status === 409) {
                 const formEl = document.getElementById('quotationForm');
                 formEl?.dispatchEvent(new CustomEvent('adasi:form-conflict', {
                     bubbles: true,
                     cancelable: true,
-                    detail: { status: 409, data: xhr.responseJSON || {}, form: formEl },
+                    detail: { status: 409, data: payload || {}, form: formEl },
                 }));
                 return;
             }
-            renderQuotationImportResult(xhr.responseJSON || {
-                success: false,
-                rows: [],
-                warnings: [],
-                summary: { total: 0, valid: 0, invalid: 0 },
-                errors: [{ row: null, column: 'import_file', message: @json(__('supplier.copy.the_spreadsheet_could_not_be_processed')) }]
-            });
-        }).always(() => {
+
+            renderQuotationImportResult((response.ok && payload) ? payload : (payload || fallbackErrorPayload));
+        } catch (error) {
+            renderQuotationImportResult(fallbackErrorPayload);
+        } finally {
             setQuotationImportBusy(false);
-        });
+        }
     }
 
     function quotationImportWouldOverwrite() {
         return quotationImportRows.some((row) => {
-            const $formRow = quotationRowForPrItem(row.pr_item_id);
-            if ($formRow.length === 0) {
+            const formRow = quotationRowForPrItem(row.pr_item_id);
+            if (!formRow) {
                 return false;
             }
 
@@ -1611,27 +1673,30 @@
                     }
                 }
 
-                const $input = $formRow.find(selector);
-                if ($input.length === 0) {
+                const input = formRow.querySelector(selector);
+                if (!input) {
                     return false;
                 }
 
-                const current = String($input.val() ?? '').trim();
+                const current = String(input.value ?? '').trim();
                 const incomingValue = field === 'available_length_input' ? importedLengthValue(row) : row[field];
                 const incoming = String(incomingValue ?? '').trim();
                 return current !== '' && current !== incoming;
             });
 
             const importedAvailable = row.is_available !== false;
-            const currentAvailable = $formRow.find('.item-availability-input').val() !== '0';
+            const currentAvailable = formRow.querySelector('.item-availability-input')?.value !== '0';
 
             return fieldWouldChange || importedAvailable !== currentAvailable;
         });
     }
 
-    function quotationGroupHasOfferValues($group) {
+    function quotationGroupHasOfferValues(group) {
+        const groupEl = resolveQuotationGroup(group);
+        if (!groupEl) return false;
+
         return Object.values(quotationImportFieldSelectors).some((selector) => {
-            const value = $group.find(selector).first().val();
+            const value = groupEl.querySelector(selector)?.value;
             return value !== undefined && String(value).trim() !== '';
         });
     }
@@ -1641,15 +1706,15 @@
         const importedItems = quotationImportRows.length;
 
         quotationImportRows.forEach((row) => {
-            const $formRow = quotationRowForPrItem(row.pr_item_id);
-            if ($formRow.length === 0) {
+            const formRow = quotationRowForPrItem(row.pr_item_id);
+            if (!formRow) {
                 return;
             }
 
             const importedAvailable = row.is_available !== false;
-            const canApplyAvailability = mode === 'replace' || !quotationGroupHasOfferValues($formRow);
+            const canApplyAvailability = mode === 'replace' || !quotationGroupHasOfferValues(formRow);
             if (canApplyAvailability) {
-                setItemUnavailable($formRow, !importedAvailable);
+                setItemUnavailable(formRow, !importedAvailable);
                 changedFields++;
             }
 
@@ -1659,15 +1724,15 @@
                     return;
                 }
 
-                const $input = $formRow.find(selector);
-                if ($input.length === 0) {
+                const inputs = formRow.querySelectorAll(selector);
+                if (inputs.length === 0) {
                     return;
                 }
 
                 const incoming = field === 'available_length_input'
                     ? importedLengthValue(row)
                     : (row[field] ?? '');
-                const current = String($input.val() ?? '').trim();
+                const current = String(inputs[0].value ?? '').trim();
                 const incomingText = String(incoming).trim();
                 const shouldApply = mode === 'replace'
                     || (current === '' && incomingText !== '');
@@ -1676,34 +1741,38 @@
                     return;
                 }
 
-                $input.val(incoming).trigger('input').trigger('change');
+                inputs.forEach((input) => {
+                    input.value = incoming;
+                    dispatchFieldInputAndChange(input);
+                });
                 changedFields++;
             });
 
             // Explicitly handle offered_weight_per_unit without wiping out auto-calculated weight
             const rawImportedWeight = row.offered_weight_per_unit;
             const hasExplicitWeight = rawImportedWeight !== null && rawImportedWeight !== undefined && String(rawImportedWeight).trim() !== '';
-            const $weightInput = $formRow.find('.offered-weight-input');
+            const weightInput = formRow.querySelector('.offered-weight-input');
 
             if (hasExplicitWeight) {
                 const incomingWeight = String(rawImportedWeight).trim();
-                const currentWeight = String($weightInput.val() ?? '').trim();
+                const currentWeight = String(weightInput?.value ?? '').trim();
                 if (mode === 'replace' || currentWeight === '') {
-                    $weightInput.val(incomingWeight);
-                    setFieldValidity($weightInput, true);
-                    $formRow.find('.offered-weight-manual-override').val('1');
+                    if (weightInput) weightInput.value = incomingWeight;
+                    setFieldValidity(weightInput, true);
+                    const manualOverrideEl = formRow.querySelector('.offered-weight-manual-override');
+                    if (manualOverrideEl) manualOverrideEl.value = '1';
                     changedFields++;
                 }
             } else if (importedAvailable) {
-                const currentWeight = String($weightInput.val() ?? '').trim();
+                const currentWeight = String(weightInput?.value ?? '').trim();
                 if (mode === 'replace' || currentWeight === '') {
-                    autoCalculateOfferWeight($formRow);
+                    autoCalculateOfferWeight(formRow);
                 }
             }
 
-            updateOfferRowState($formRow);
-            updateOfferWeightState($formRow);
-            recalculateQuotationRow($formRow);
+            updateOfferRowState(formRow);
+            updateOfferWeightState(formRow);
+            recalculateQuotationRow(formRow);
         });
 
         recalculateQuotationTotals();
@@ -1723,7 +1792,7 @@
             return;
         }
 
-        const mode = $('#quotationImportMode').val();
+        const mode = document.getElementById('quotationImportMode')?.value || 'fill_empty';
         if (mode === 'replace' && quotationImportWouldOverwrite()) {
             AdasiAlert.confirmDanger({
                 title: @json(__('supplier.copy.replace_existing_item_values')),
@@ -1742,7 +1811,7 @@
     }
 
     function selectedCurrency() {
-        return $('#quotationCurrency').val() || '';
+        return document.getElementById('quotationCurrency')?.value || '';
     }
 
     function selectedRate() {
@@ -1798,26 +1867,30 @@
             : normalizeEditableNumber(parsed.exact);
     }
 
-    function itemIsUnavailable($group) {
-        return $group.find('.item-availability-input').val() === '0';
+    function itemIsUnavailable(group) {
+        const groupEl = resolveQuotationGroup(group);
+        return groupEl?.querySelector('.item-availability-input')?.value === '0';
     }
 
-    function setFieldValidity($input, valid, message = '') {
-        const input = $input?.[0];
-        if (!input) return;
-        input.setCustomValidity(valid ? '' : message);
-        $input.toggleClass('is-invalid', !valid);
+    function setFieldValidity(input, valid, message = '') {
+        const inputEl = input instanceof Element ? input : (input?.[0] instanceof Element ? input[0] : null);
+        if (!inputEl) return;
+        inputEl.setCustomValidity(valid ? '' : message);
+        inputEl.classList.toggle('is-invalid', !valid);
     }
 
-    function validateOfferQuantity($group, requireValue = false) {
-        const $input = $group.find('[data-availability-field="qty"]');
-        if (!$input.length || itemIsUnavailable($group)) {
-            setFieldValidity($input, true);
+    function validateOfferQuantity(group, requireValue = false) {
+        const groupEl = resolveQuotationGroup(group);
+        if (!groupEl) return true;
+
+        const inputEl = groupEl.querySelector('[data-availability-field="qty"]');
+        if (!inputEl || itemIsUnavailable(groupEl)) {
+            setFieldValidity(inputEl, true);
             return true;
         }
 
-        const raw = String($input.val() ?? '').trim();
-        const requested = Number($group.data('requested-qty'));
+        const raw = String(inputEl.value ?? '').trim();
+        const requested = Number(groupEl.dataset.requestedQty);
         const value = Number(raw);
         let message = '';
 
@@ -1829,26 +1902,28 @@
             message = window.AdasiI18n.t('supplier.js.offer_limit', { requested });
         }
 
-        setFieldValidity($input, message === '', message);
-        $group.find('.offer-qty-feedback').text(message);
+        setFieldValidity(inputEl, message === '', message);
+        const feedbackEl = groupEl.querySelector('.offer-qty-feedback');
+        if (feedbackEl) feedbackEl.textContent = message;
         return message === '';
     }
 
-    function autoCalculateOfferWeight($group) {
-        if (itemIsUnavailable($group)) return;
+    function autoCalculateOfferWeight(group) {
+        const groupEl = resolveQuotationGroup(group);
+        if (!groupEl || itemIsUnavailable(groupEl)) return;
 
-        const shape = $group.data('shape');
-        const densityProfile = $group.data('density-profile') || 'steel';
+        const shape = groupEl.dataset.shape;
+        const densityProfile = groupEl.dataset.densityProfile || 'steel';
         const isAluminium = densityProfile === 'aluminium';
         const flatFactor = isAluminium ? 0.00273 : 0.00785;
         const roundFactor = 0.006167;
 
-        const thickness = Number($group.find('[data-availability-field="thickness"]').val()) || 0;
-        const width = Number($group.find('[data-availability-field="width"]').val()) || 0;
-        const dOuter = Number($group.find('[data-availability-field="d_outer"]').val()) || 0;
-        const dInner = Number($group.find('[data-availability-field="d_inner"]').val()) || 0;
+        const thickness = Number(groupEl.querySelector('[data-availability-field="thickness"]')?.value) || 0;
+        const width = Number(groupEl.querySelector('[data-availability-field="width"]')?.value) || 0;
+        const dOuter = Number(groupEl.querySelector('[data-availability-field="d_outer"]')?.value) || 0;
+        const dInner = Number(groupEl.querySelector('[data-availability-field="d_inner"]')?.value) || 0;
 
-        const parsedLength = parseOfferLength($group.find('.offer-length-input').val());
+        const parsedLength = parseOfferLength(groupEl.querySelector('.offer-length-input')?.value);
         let length = 0;
         let isRange = false;
 
@@ -1881,33 +1956,40 @@
 
         if (calculatedWeight !== null && Number.isFinite(calculatedWeight) && calculatedWeight > 0) {
             const rounded = Number(calculatedWeight.toFixed(4));
-            const $weightInput = $group.find('.offered-weight-input');
-            $weightInput.val(rounded);
-            setFieldValidity($weightInput, true);
-            $group.find('.offered-weight-manual-override').val(isRange ? '1' : '0');
-            updateOfferWeightState($group);
-            recalculateQuotationRow($group);
+            const weightInput = groupEl.querySelector('.offered-weight-input');
+            if (weightInput) weightInput.value = String(rounded);
+            setFieldValidity(weightInput, true);
+            const manualOverrideEl = groupEl.querySelector('.offered-weight-manual-override');
+            if (manualOverrideEl) manualOverrideEl.value = isRange ? '1' : '0';
+            updateOfferWeightState(groupEl);
+            recalculateQuotationRow(groupEl);
         }
     }
 
-    function updateOfferWeightState($group) {
-        const parsedLength = parseOfferLength($group.find('.offer-length-input').val());
-        const isEstimated = parsedLength.isRange
-            || $group.find('.offered-weight-manual-override').val() === '1';
+    function updateOfferWeightState(group) {
+        const groupEl = resolveQuotationGroup(group);
+        if (!groupEl) return false;
 
-        $group.find('.offer-weight-indicator').toggleClass('d-none', itemIsUnavailable($group) || !isEstimated);
+        const parsedLength = parseOfferLength(groupEl.querySelector('.offer-length-input')?.value);
+        const isEstimated = parsedLength.isRange
+            || groupEl.querySelector('.offered-weight-manual-override')?.value === '1';
+
+        groupEl.querySelector('.offer-weight-indicator')?.classList.toggle('d-none', itemIsUnavailable(groupEl) || !isEstimated);
         return isEstimated;
     }
 
-    function validateOfferLength($group) {
-        const $input = $group.find('.offer-length-input');
-        if (!$input.length || itemIsUnavailable($group)) {
-            setFieldValidity($input, true);
-            updateOfferWeightState($group);
+    function validateOfferLength(group) {
+        const groupEl = resolveQuotationGroup(group);
+        if (!groupEl) return true;
+
+        const inputEl = groupEl.querySelector('.offer-length-input');
+        if (!inputEl || itemIsUnavailable(groupEl)) {
+            setFieldValidity(inputEl, true);
+            updateOfferWeightState(groupEl);
             return true;
         }
 
-        const parsed = parseOfferLength($input.val());
+        const parsed = parseOfferLength(inputEl.value);
         let message = '';
         if (!parsed.valid) {
             message = parsed.reason === 'reversed'
@@ -1915,88 +1997,137 @@
                 : @json(__('supplier.copy.enter_one_length_e_g_2300_or_a_range_from_minimum_to_maximum_e_g_2300_2500'));
         }
 
-        setFieldValidity($input, parsed.valid, message);
-        $group.find('.offer-length-feedback').text(message);
+        setFieldValidity(inputEl, parsed.valid, message);
+        const feedbackEl = groupEl.querySelector('.offer-length-feedback');
+        if (feedbackEl) feedbackEl.textContent = message;
         if (parsed.valid && parsed.isRange) {
-            $group.find('.offered-weight-manual-override').val('1');
+            const manualOverrideEl = groupEl.querySelector('.offered-weight-manual-override');
+            if (manualOverrideEl) manualOverrideEl.value = '1';
         }
-        updateOfferWeightState($group);
+        updateOfferWeightState(groupEl);
         return parsed.valid;
     }
 
     function isAllItemsUnavailable() {
-        const $groups = $('.quotation-item-group');
-        return $groups.length > 0 && $groups.toArray().every((group) => itemIsUnavailable($(group)));
+        const groups = document.querySelectorAll('.quotation-item-group');
+        return groups.length > 0 && Array.from(groups).every((groupEl) => itemIsUnavailable(groupEl));
     }
 
     function refreshCurrencyState() {
         const currency = selectedCurrency();
-        $('.currency-label').text(currency || '-');
-        $('#currencyWarningLabel').text(currency || '-');
+        document.querySelectorAll('.currency-label').forEach((el) => {
+            el.textContent = currency || '-';
+        });
+        const warningLabelEl = document.getElementById('currencyWarningLabel');
+        if (warningLabelEl) warningLabelEl.textContent = currency || '-';
         const allUnavailable = isAllItemsUnavailable();
-        $('#currencyRateWarning').toggleClass('d-none', allUnavailable || !currency || selectedRate() > 0);
+        document.getElementById('currencyRateWarning')?.classList.toggle('d-none', allUnavailable || !currency || selectedRate() > 0);
         calculateTotal();
+    }
+
+    function setQuotationPickerState(pickerEl, inputEls, disabled, restoreRequired = false) {
+        inputEls.forEach((inputEl) => {
+            if (disabled) {
+                inputEl.removeAttribute('required');
+                inputEl.classList.remove('is-invalid');
+                inputEl.disabled = true;
+                inputEl.setAttribute('aria-disabled', 'true');
+            } else {
+                if (restoreRequired) {
+                    inputEl.setAttribute('required', 'required');
+                }
+                inputEl.disabled = false;
+                inputEl.removeAttribute('aria-disabled');
+            }
+        });
+
+        pickerEl?.querySelectorAll('[data-calendar-trigger]').forEach((triggerEl) => {
+            triggerEl.disabled = disabled;
+            if (disabled) {
+                triggerEl.setAttribute('aria-disabled', 'true');
+                triggerEl.setAttribute('tabindex', '-1');
+            } else {
+                triggerEl.removeAttribute('aria-disabled');
+                triggerEl.removeAttribute('tabindex');
+            }
+        });
+
+        if (pickerEl) {
+            if (disabled) {
+                pickerEl.setAttribute('data-calendar-required', 'false');
+                pickerEl.setAttribute('data-calendar-disabled', 'true');
+                pickerEl.classList.add('is-disabled');
+                pickerEl.dispatchEvent(new CustomEvent('adasi:calendar-close'));
+            } else {
+                if (restoreRequired) {
+                    pickerEl.setAttribute('data-calendar-required', 'true');
+                }
+                pickerEl.setAttribute('data-calendar-disabled', 'false');
+                pickerEl.classList.remove('is-disabled');
+            }
+            pickerEl.querySelectorAll('[class~="tw:text-error"]').forEach((errEl) => {
+                errEl.classList.toggle('d-none', disabled);
+            });
+        }
     }
 
     function updateCommercialTermsState() {
         const allUnavailable = isAllItemsUnavailable();
-        const $currency = $('#quotationCurrency');
-        const $deliveryInput = $('[name="estimated_delivery"]');
-        const $deliveryPicker = $deliveryInput.closest('[data-adasi-date-picker]');
-        const $deliveryTrigger = $deliveryPicker.find('[data-calendar-trigger]');
-        const $paymentTerms = $('[name="payment_terms"]');
-        const $paymentTermsGroup = $paymentTerms.closest('div');
-        const $validityPeriod = $('#validityPeriod, [name="validity_period"]');
-        const $validityPicker = $validityPeriod.closest('[data-adasi-date-picker]');
-        const $validityTrigger = $validityPicker.find('[data-calendar-trigger]');
-        const $rateWarning = $('#currencyRateWarning');
-        const $termsNotice = $('#allUnavailableTermsNotice');
+        const currencyEl = document.getElementById('quotationCurrency');
+        const deliveryInputs = Array.from(document.querySelectorAll('[name="estimated_delivery"]'));
+        const deliveryPicker = deliveryInputs[0]?.closest('[data-adasi-date-picker]') || null;
+        const paymentTermsEls = Array.from(document.querySelectorAll('[name="payment_terms"]'));
+        const paymentTermsGroup = paymentTermsEls[0]?.closest('div') || null;
+        const validityInputs = Array.from(document.querySelectorAll('#validityPeriod, [name="validity_period"]'));
+        const validityPicker = validityInputs[0]?.closest('[data-adasi-date-picker]') || null;
+        const rateWarningEl = document.getElementById('currencyRateWarning');
+        const termsNoticeEl = document.getElementById('allUnavailableTermsNotice');
 
         if (allUnavailable) {
-            $currency.removeAttr('required').removeClass('is-invalid');
+            if (currencyEl) {
+                currencyEl.removeAttribute('required');
+                currencyEl.classList.remove('is-invalid');
+            }
 
-            // Estimated Delivery: disable input and trigger, remove validation, hide asterisks
-            $deliveryInput.removeAttr('required').removeClass('is-invalid').prop('disabled', true).attr('aria-disabled', 'true');
-            $deliveryTrigger.prop('disabled', true).attr('aria-disabled', 'true').attr('tabindex', '-1');
-            $deliveryPicker.attr('data-calendar-required', 'false').attr('data-calendar-disabled', 'true').addClass('is-disabled');
-            $deliveryPicker.find('[class~="tw:text-error"]').addClass('d-none');
-            $deliveryPicker[0]?.dispatchEvent(new CustomEvent('adasi:calendar-close'));
+            // Estimated Delivery & Validity Period pickers
+            setQuotationPickerState(deliveryPicker, deliveryInputs, true);
+            setQuotationPickerState(validityPicker, validityInputs, true);
+            validityPicker?.querySelector('#validityPeriod-help')?.classList.add('tw:opacity-40');
 
             // Payment Terms: disable textarea, remove validation, hide asterisks
-            $paymentTerms.removeAttr('required').removeClass('is-invalid').prop('disabled', true).attr('aria-disabled', 'true').addClass('tw:bg-surface-container tw:opacity-50 tw:cursor-not-allowed');
-            $paymentTermsGroup.find('[class~="tw:text-error"]').addClass('d-none');
+            paymentTermsEls.forEach((el) => {
+                el.removeAttribute('required');
+                el.classList.remove('is-invalid');
+                el.disabled = true;
+                el.setAttribute('aria-disabled', 'true');
+                el.classList.add('tw:bg-surface-container', 'tw:opacity-50', 'tw:cursor-not-allowed');
+            });
+            paymentTermsGroup?.querySelectorAll('[class~="tw:text-error"]').forEach((errEl) => {
+                errEl.classList.add('d-none');
+            });
 
-            // Validity Period: disable input and trigger, remove validation, hide asterisks
-            $validityPeriod.removeAttr('required').removeClass('is-invalid').prop('disabled', true).attr('aria-disabled', 'true');
-            $validityTrigger.prop('disabled', true).attr('aria-disabled', 'true').attr('tabindex', '-1');
-            $validityPicker.attr('data-calendar-required', 'false').attr('data-calendar-disabled', 'true').addClass('is-disabled');
-            $validityPicker.find('[class~="tw:text-error"]').addClass('d-none');
-            $validityPicker.find('#validityPeriod-help').addClass('tw:opacity-40');
-            $validityPicker[0]?.dispatchEvent(new CustomEvent('adasi:calendar-close'));
-
-            $rateWarning.addClass('d-none');
-            $termsNotice.removeClass('d-none');
+            rateWarningEl?.classList.add('d-none');
+            termsNoticeEl?.classList.remove('d-none');
         } else {
-            $currency.attr('required', 'required');
+            currencyEl?.setAttribute('required', 'required');
 
-            // Estimated Delivery: enable input and trigger, restore validation, show asterisks
-            $deliveryInput.attr('required', 'required').prop('disabled', false).removeAttr('aria-disabled');
-            $deliveryTrigger.prop('disabled', false).removeAttr('aria-disabled').removeAttr('tabindex');
-            $deliveryPicker.attr('data-calendar-required', 'true').attr('data-calendar-disabled', 'false').removeClass('is-disabled');
-            $deliveryPicker.find('[class~="tw:text-error"]').removeClass('d-none');
+            // Estimated Delivery & Validity Period pickers
+            setQuotationPickerState(deliveryPicker, deliveryInputs, false, true);
+            setQuotationPickerState(validityPicker, validityInputs, false, false);
+            validityPicker?.querySelector('#validityPeriod-help')?.classList.remove('tw:opacity-40');
 
             // Payment Terms: enable textarea, restore validation, show asterisks
-            $paymentTerms.attr('required', 'required').prop('disabled', false).removeAttr('aria-disabled').removeClass('tw:bg-surface-container tw:opacity-50 tw:cursor-not-allowed');
-            $paymentTermsGroup.find('[class~="tw:text-error"]').removeClass('d-none');
+            paymentTermsEls.forEach((el) => {
+                el.setAttribute('required', 'required');
+                el.disabled = false;
+                el.removeAttribute('aria-disabled');
+                el.classList.remove('tw:bg-surface-container', 'tw:opacity-50', 'tw:cursor-not-allowed');
+            });
+            paymentTermsGroup?.querySelectorAll('[class~="tw:text-error"]').forEach((errEl) => {
+                errEl.classList.remove('d-none');
+            });
 
-            // Validity Period: enable input and trigger, restore validation, show asterisks
-            $validityPeriod.prop('disabled', false).removeAttr('aria-disabled');
-            $validityTrigger.prop('disabled', false).removeAttr('aria-disabled').removeAttr('tabindex');
-            $validityPicker.attr('data-calendar-disabled', 'false').removeClass('is-disabled');
-            $validityPicker.find('[class~="tw:text-error"]').removeClass('d-none');
-            $validityPicker.find('#validityPeriod-help').removeClass('tw:opacity-40');
-
-            $termsNotice.addClass('d-none');
+            termsNoticeEl?.classList.add('d-none');
             refreshCurrencyState();
         }
     }
@@ -2005,69 +2136,98 @@
     window.refreshCurrencyState = refreshCurrencyState;
     window.updateCommercialTermsState = updateCommercialTermsState;
 
-    function setItemUnavailable($group, unavailable) {
-        $group.find('.item-availability-input').val(unavailable ? '0' : '1');
-        $group.find('.item-not-available-toggle').prop('checked', unavailable);
-        $group.find('.quotation-offer-row').toggleClass('is-unavailable', unavailable);
-        $group.find('.offer-disable-when-unavailable').prop('disabled', unavailable).attr('aria-disabled', unavailable ? 'true' : 'false');
-        $group.find('.mtc-file-label').attr('aria-disabled', unavailable ? 'true' : 'false');
+    function setItemUnavailable(group, unavailable) {
+        const groupEl = resolveQuotationGroup(group);
+        if (!groupEl) return;
 
-        const $toggleBtn = $group.find('.availability-toggle');
-        $toggleBtn
-            .toggleClass('is-available', !unavailable)
-            .toggleClass('is-unavailable', unavailable)
-            .attr('aria-checked', unavailable ? 'false' : 'true');
-        $toggleBtn.find('.item-availability-label').text(unavailable ? @js(__('supplier.copy.not_available')) : @js(__('supplier.copy.available')));
+        groupEl.querySelectorAll('.item-availability-input').forEach((el) => {
+            el.value = unavailable ? '0' : '1';
+        });
+        groupEl.querySelectorAll('.item-not-available-toggle').forEach((el) => {
+            el.checked = unavailable;
+        });
+        groupEl.querySelectorAll('.quotation-offer-row').forEach((el) => {
+            el.classList.toggle('is-unavailable', unavailable);
+        });
+        groupEl.querySelectorAll('.offer-disable-when-unavailable').forEach((el) => {
+            el.disabled = unavailable;
+            el.setAttribute('aria-disabled', unavailable ? 'true' : 'false');
+        });
+        groupEl.querySelectorAll('.mtc-file-label').forEach((el) => {
+            el.setAttribute('aria-disabled', unavailable ? 'true' : 'false');
+        });
 
         const iconSvg = unavailable
             ? '<svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>'
             : '<svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
-        $toggleBtn.find('.availability-toggle__icon').html(iconSvg);
 
-        $group.find('.quotation-item-notes').attr(
-            'placeholder',
-            unavailable
-                ? @json(__('supplier.copy.e_g_out_of_stock_earliest_rolling_schedule_next_quarter'))
-                : @json(__('supplier.copy.e_g_mill_tolerance_0_5mm_prime_grade_mtc_included'))
-        );
-        $group.find('.quotation-notes-trigger').prop('disabled', unavailable).attr('aria-disabled', unavailable ? 'true' : 'false');
-        $group.find('.quotation-notes-draft').attr(
-            'placeholder',
-            unavailable
-                ? @json(__('supplier.copy.e_g_out_of_stock_earliest_rolling_schedule_next_quarter'))
-                : @json(__('supplier.copy.e_g_mill_tolerance_0_5mm_prime_grade_mtc_included'))
-        );
+        groupEl.querySelectorAll('.availability-toggle').forEach((toggleBtn) => {
+            toggleBtn.classList.toggle('is-available', !unavailable);
+            toggleBtn.classList.toggle('is-unavailable', unavailable);
+            toggleBtn.setAttribute('aria-checked', unavailable ? 'false' : 'true');
+            const labelEl = toggleBtn.querySelector('.item-availability-label');
+            if (labelEl) {
+                labelEl.textContent = unavailable ? @js(__('supplier.copy.not_available')) : @js(__('supplier.copy.available'));
+            }
+            const iconWrap = toggleBtn.querySelector('.availability-toggle__icon');
+            if (iconWrap) iconWrap.innerHTML = iconSvg;
+        });
+
+        const placeholderText = unavailable
+            ? @json(__('supplier.copy.e_g_out_of_stock_earliest_rolling_schedule_next_quarter'))
+            : @json(__('supplier.copy.e_g_mill_tolerance_0_5mm_prime_grade_mtc_included'));
+
+        groupEl.querySelectorAll('.quotation-item-notes, .quotation-notes-draft').forEach((el) => {
+            el.setAttribute('placeholder', placeholderText);
+        });
+        groupEl.querySelectorAll('.quotation-notes-trigger').forEach((el) => {
+            el.disabled = unavailable;
+            el.setAttribute('aria-disabled', unavailable ? 'true' : 'false');
+        });
 
         if (unavailable) {
-            $group.find('.offer-disable-when-unavailable').each(function() {
-                this.setCustomValidity?.('');
-                $(this).removeClass('is-invalid');
+            groupEl.querySelectorAll('.offer-disable-when-unavailable').forEach((el) => {
+                el.setCustomValidity?.('');
+                el.classList.remove('is-invalid');
             });
-            $group.find('.offer-qty-feedback, .offer-length-feedback').text('');
+            groupEl.querySelectorAll('.offer-qty-feedback, .offer-length-feedback').forEach((el) => {
+                el.textContent = '';
+            });
         }
 
-        updateOfferWeightState($group);
-        recalculateQuotationRow($group);
+        updateOfferWeightState(groupEl);
+        recalculateQuotationRow(groupEl);
         updateCommercialTermsState();
     }
 
-    function updateOfferRowState($group) {
-        setItemUnavailable($group, itemIsUnavailable($group));
-        validateOfferQuantity($group);
-        validateOfferLength($group);
+    function updateOfferRowState(group) {
+        const groupEl = resolveQuotationGroup(group);
+        if (!groupEl) return;
+        setItemUnavailable(groupEl, itemIsUnavailable(groupEl));
+        validateOfferQuantity(groupEl);
+        validateOfferLength(groupEl);
     }
 
-    function recalculateQuotationRow($group) {
-        const unavailable = itemIsUnavailable($group);
-        const price = Number($group.find('.price-input').val());
-        const requestedTotalWeight = Number($group.data('requested-total-weight')) || 0;
-        const offeredQty = Number($group.find('[data-availability-field="qty"]').val());
-        const offeredWeight = Number($group.find('.offered-weight-input').val());
+    function recalculateQuotationRow(group) {
+        const groupEl = resolveQuotationGroup(group);
+        if (!groupEl) return { amount: 0, idr: 0 };
+
+        const unavailable = itemIsUnavailable(groupEl);
+        const price = Number(groupEl.querySelector('.price-input')?.value);
+        const requestedTotalWeight = Number(groupEl.dataset.requestedTotalWeight) || 0;
+        const offeredQty = Number(groupEl.querySelector('[data-availability-field="qty"]')?.value);
+        const offeredWeight = Number(groupEl.querySelector('.offered-weight-input')?.value);
         const rate = selectedRate();
 
+        const setGroupDisplay = (selector, text) => {
+            groupEl.querySelectorAll(selector).forEach((el) => {
+                el.textContent = text;
+            });
+        };
+
         if (unavailable) {
-            $group.find('.requested-price-display, .requested-amount-display, .offer-total-weight-display, .offer-amount-display').text('—');
-            $group.find('.requested-idr-display, .offer-idr-display').text('');
+            setGroupDisplay('.requested-price-display, .requested-amount-display, .offer-total-weight-display, .offer-amount-display', '—');
+            setGroupDisplay('.requested-idr-display, .offer-idr-display', '');
             return { amount: 0, idr: 0 };
         }
 
@@ -2079,10 +2239,10 @@
         const requestedAmount = hasPrice ? requestedTotalWeight * price : null;
         const offerAmount = hasPrice && offerTotalWeight !== null ? offerTotalWeight * price : null;
 
-        $group.find('.requested-price-display').text(hasPrice ? formatMaxTwo(price) : '—');
-        $group.find('.requested-amount-display').text(requestedAmount === null ? '—' : formatMaxTwo(requestedAmount));
-        $group.find('.offer-total-weight-display').text(offerTotalWeight === null ? '—' : formatMaxTwo(offerTotalWeight));
-        $group.find('.offer-amount-display').text(offerAmount === null ? '—' : formatMaxTwo(offerAmount));
+        setGroupDisplay('.requested-price-display', hasPrice ? formatMaxTwo(price) : '—');
+        setGroupDisplay('.requested-amount-display', requestedAmount === null ? '—' : formatMaxTwo(requestedAmount));
+        setGroupDisplay('.offer-total-weight-display', offerTotalWeight === null ? '—' : formatMaxTwo(offerTotalWeight));
+        setGroupDisplay('.offer-amount-display', offerAmount === null ? '—' : formatMaxTwo(offerAmount));
 
         return {
             qty: Number.isInteger(offeredQty) && offeredQty > 0 ? offeredQty : 0,
@@ -2098,17 +2258,20 @@
         let totalKg = 0;
         let totalAmount = 0;
         let totalIdr = 0;
-        $('.quotation-item-group').each(function() {
-            const totals = recalculateQuotationRow($(this));
+        document.querySelectorAll('.quotation-item-group').forEach((groupEl) => {
+            const totals = recalculateQuotationRow(groupEl);
             totalQty += totals.qty ?? 0;
             totalKg += totals.kg ?? 0;
             totalAmount += totals.amount;
             totalIdr += totals.idr;
         });
 
-        $('#totalOfferedQty').text(formatMaxTwo(totalQty));
-        $('#totalOfferedKg').text(formatMaxTwo(totalKg));
-        $('#totalAmount').text(formatMaxTwo(totalAmount));
+        const totalQtyEl = document.getElementById('totalOfferedQty');
+        const totalKgEl = document.getElementById('totalOfferedKg');
+        const totalAmountEl = document.getElementById('totalAmount');
+        if (totalQtyEl) totalQtyEl.textContent = formatMaxTwo(totalQty);
+        if (totalKgEl) totalKgEl.textContent = formatMaxTwo(totalKg);
+        if (totalAmountEl) totalAmountEl.textContent = formatMaxTwo(totalAmount);
     }
 
     function calculateTotal() {
@@ -2127,12 +2290,9 @@
 
     function copyButtonElement(candidate) {
         const button = candidate?.currentTarget || candidate;
+        const resolved = button instanceof Element ? button : (button?.[0] instanceof Element ? button[0] : null);
 
-        if (button?.jquery) {
-            return button[0] || null;
-        }
-
-        return button && typeof button.closest === 'function' ? button : null;
+        return resolved && typeof resolved.closest === 'function' ? resolved : null;
     }
 
     function normalizedRequestedValue(rawValue) {
@@ -2161,8 +2321,7 @@
             return false;
         }
 
-        const $group = $(row);
-        setItemUnavailable($group, false);
+        setItemUnavailable(row, false);
         let copied = false;
 
         Object.entries(requestedValueAttributes).forEach(([field, attribute]) => {
@@ -2181,17 +2340,17 @@
             }
 
             input.value = value;
-            input.dispatchEvent(new Event('input', { bubbles: true }));
-            input.dispatchEvent(new Event('change', { bubbles: true }));
+            dispatchFieldInputAndChange(input);
             copied = true;
         });
 
         if (copied) {
-            $group.find('.offered-weight-manual-override').val('0');
-            validateOfferQuantity($group);
-            validateOfferLength($group);
-            updateOfferWeightState($group);
-            recalculateQuotationRow($group);
+            const overrideInput = row.querySelector('.offered-weight-manual-override');
+            if (overrideInput) overrideInput.value = '0';
+            validateOfferQuantity(row);
+            validateOfferLength(row);
+            updateOfferWeightState(row);
+            recalculateQuotationRow(row);
             row.classList.add('availability-copied');
             setTimeout(() => row.classList.remove('availability-copied'), 900);
         }
@@ -2254,442 +2413,744 @@
         }
     });
 
-    $(document).ready(function() {
+    function positionQuotationNotesPopover(popoverEl, triggerEl) {
+        if (!popoverEl || popoverEl.hidden) return;
+
+        const resolvedTrigger = triggerEl || popoverEl.closest('td')?.querySelector('[data-notes-trigger]');
+        if (!resolvedTrigger) return;
+
+        const rect = resolvedTrigger.getBoundingClientRect();
+        if (rect.width === 0 && rect.height === 0) {
+            popoverEl.hidden = true;
+            return;
+        }
+
+        const scrollContainer = popoverEl.closest('.quotation-table-scroll');
+        if (scrollContainer) {
+            const containerRect = scrollContainer.getBoundingClientRect();
+            if (rect.right < containerRect.left + 10 || rect.left > containerRect.right - 10) {
+                popoverEl.hidden = true;
+                resolvedTrigger.setAttribute('aria-expanded', 'false');
+                return;
+            }
+        }
+
+        if (rect.bottom < 0 || rect.top > window.innerHeight) {
+            popoverEl.hidden = true;
+            resolvedTrigger.setAttribute('aria-expanded', 'false');
+            return;
+        }
+
+        const viewportPadding = 8;
+        const gap = 4;
+        const popoverWidth = Math.min(320, Math.max(280, window.innerWidth - (viewportPadding * 2)));
+        const popoverHeight = Math.min(popoverEl.offsetHeight || popoverEl.scrollHeight || 230, 280);
+
+        const fitsBelow = rect.bottom + gap + popoverHeight <= window.innerHeight - viewportPadding;
+        const fitsAbove = rect.top - gap - popoverHeight >= viewportPadding;
+        const opensAbove = !fitsBelow && fitsAbove;
+
+        let top;
+        if (opensAbove) {
+            top = Math.max(viewportPadding, rect.top - gap - popoverHeight);
+        } else {
+            top = Math.min(window.innerHeight - popoverHeight - viewportPadding, rect.bottom + gap);
+        }
+
+        let left = rect.right - popoverWidth;
+        if (left < viewportPadding) {
+            left = Math.max(viewportPadding, rect.left);
+        }
+        if (left + popoverWidth > window.innerWidth - viewportPadding) {
+            left = Math.max(viewportPadding, window.innerWidth - popoverWidth - viewportPadding);
+        }
+
+        Object.assign(popoverEl.style, {
+            position: 'fixed',
+            top: `${Math.round(top)}px`,
+            left: `${Math.round(left)}px`,
+            bottom: 'auto',
+            right: 'auto',
+            width: `${popoverWidth}px`,
+            zIndex: '1080',
+        });
+    }
+
+    function repositionVisibleNotesPopovers() {
+        document.querySelectorAll('[data-notes-popover]:not([hidden])').forEach((popoverEl) => {
+            const triggerEl = popoverEl.closest('td')?.querySelector('[data-notes-trigger]');
+            if (triggerEl) {
+                positionQuotationNotesPopover(popoverEl, triggerEl);
+            }
+        });
+    }
+
+    function closeAllQuotationNotesPopovers() {
+        document.querySelectorAll('[data-notes-popover]').forEach((el) => {
+            el.hidden = true;
+        });
+        document.querySelectorAll('[data-notes-trigger]').forEach((el) => {
+            el.setAttribute('aria-expanded', 'false');
+        });
+    }
+
+    function syncQuotationNotesTriggerUi(cell, val) {
+        if (!cell) return;
+        const trigger = cell.querySelector('[data-notes-trigger]');
+        const triggerText = trigger?.querySelector('.quotation-notes-trigger__text');
+        if (!trigger) return;
+
+        if (val) {
+            if (triggerText) triggerText.textContent = val;
+            trigger.classList.add('has-notes');
+            trigger.setAttribute('title', val);
+            if (!trigger.querySelector('.quotation-notes-trigger__badge')) {
+                const badge = document.createElement('span');
+                badge.className = 'quotation-notes-trigger__badge';
+                badge.setAttribute('aria-hidden', 'true');
+                badge.setAttribute('title', @js(__('common.final_review.note_entered')));
+                trigger.appendChild(badge);
+            }
+        } else {
+            if (triggerText) triggerText.textContent = @json(__('supplier.copy.add_note'));
+            trigger.classList.remove('has-notes');
+            trigger.setAttribute('title', @json(__('supplier.copy.click_to_add_notes')));
+            trigger.querySelector('.quotation-notes-trigger__badge')?.remove();
+        }
+    }
+
+    function validateQuotationRows(requireCompleteOffer) {
+        let valid = true;
+        let firstInvalid = null;
+
+        document.querySelectorAll('.quotation-item-group').forEach((groupEl) => {
+            if (itemIsUnavailable(groupEl)) return;
+
+            if (!validateOfferQuantity(groupEl, requireCompleteOffer)) valid = false;
+            if (!validateOfferLength(groupEl)) valid = false;
+
+            const priceEl = groupEl.querySelector('.price-input');
+            const price = Number(priceEl?.value);
+            const priceValid = String(priceEl?.value ?? '').trim() !== '' && Number.isFinite(price) && price > 0;
+            setFieldValidity(priceEl, priceValid, @json(__('supplier.copy.price_kg_must_be_greater_than_zero_for_an_available_item')));
+            if (!priceValid) valid = false;
+
+            const weightEl = groupEl.querySelector('.offered-weight-input');
+            const weightRaw = String(weightEl?.value ?? '').trim();
+            const weight = Number(weightRaw);
+            const weightValid = !requireCompleteOffer || (weightRaw !== '' && Number.isFinite(weight) && weight > 0);
+            setFieldValidity(weightEl, weightValid, @json(__('supplier.copy.offer_kg_unit_is_required_and_must_be_greater_than_zero_for_a_final_available_offer')));
+            if (!weightValid) valid = false;
+
+            if (!firstInvalid) {
+                firstInvalid = groupEl.querySelector('.is-invalid') || null;
+            }
+        });
+
+        if (!valid) {
+            firstInvalid?.focus();
+            firstInvalid?.reportValidity?.();
+        }
+
+        return valid;
+    }
+
+    function submitForm(action) {
+        if (action === 'submitted') {
+            confirmSubmit();
+            return;
+        }
+
+        if (!validateQuotationRows(false)) {
+            return;
+        }
+
+        const form = document.getElementById('quotationForm');
+        const activeBtn = document.getElementById('btnSaveDraft');
+        if (form && activeBtn) {
+            form._lastClickedButton = activeBtn;
+        }
+        const actionEl = document.getElementById('formAction');
+        if (actionEl) actionEl.value = action;
+        if (form && typeof form.requestSubmit === 'function') {
+            form.requestSubmit();
+        } else {
+            form?.submit();
+        }
+    }
+
+    function confirmSubmit() {
+        const allUnavailable = isAllItemsUnavailable();
+        const formEl = document.getElementById('quotationForm');
+
+        if (!allUnavailable && formEl) {
+            let isValid = true;
+            formEl.querySelectorAll('input[required], select[required], [data-calendar-required="true"] [data-calendar-native-input], #validityPeriod').forEach((el) => {
+                if (!el.value) {
+                    isValid = false;
+                    el.classList.add('is-invalid');
+                } else {
+                    el.classList.remove('is-invalid');
+                }
+            });
+
+            if (!isValid || !validateQuotationRows(true)) {
+                const firstInvalid = formEl.querySelector('.is-invalid');
+                const calendarTrigger = firstInvalid?.closest('[data-adasi-date-picker], [data-adasi-date-range]')?.querySelector('[data-calendar-trigger], [data-calendar-boundary]');
+                (calendarTrigger || firstInvalid)?.focus();
+                firstInvalid?.reportValidity?.();
+                return;
+            }
+
+            if (!formEl.checkValidity()) {
+                formEl.reportValidity();
+                return;
+            }
+        }
+
+        AdasiAlert.confirm({
+            title: allUnavailable
+                ? @json(__('supplier.copy.submit_quotation_with_all_requested_items_marked_not_available'))
+                : @js($quotation?->status === 'revision_requested' ? __('supplier.copy.resubmit_quotation') : __('supplier.copy.send_final_quotation')),
+            text: allUnavailable
+                ? @json(__('supplier.copy.requested_rows_remain_visible_but_this_quotation_contains_no_available_commercial_offer_lines'))
+                : @js($quotation?->status === 'revision_requested' ? __('supplier.copy.the_revised_quotation_will_be_sent_back_to_purchasing_for_evaluation') : __('supplier.copy.submitted_quotations_cannot_be_modified_after_sending')),
+            type: 'warning',
+            confirmText: @js($quotation?->status === 'revision_requested' ? __('supplier.copy.resubmit_quotation') : __('supplier.copy.submit_final_quotation')),
+            cancelText: @json(__('supplier.copy.cancel'))
+        }).then((result) => {
+            if (result.isConfirmed) {
+                const submitBtn = document.getElementById('btnSubmitQuotation');
+                if (formEl && submitBtn) {
+                    formEl._lastClickedButton = submitBtn;
+                }
+                const actionEl = document.getElementById('formAction');
+                if (actionEl) actionEl.value = 'submitted';
+                if (formEl && typeof formEl.requestSubmit === 'function') {
+                    formEl.requestSubmit();
+                } else {
+                    formEl?.submit();
+                }
+            }
+        });
+    }
+
+    // Auto-save logic (session-scoped to prevent persistent localStorage residue on shared devices)
+    const prId = '{{ $pr->hash }}';
+    const draftUserId = @json((int) auth()->id());
+    const draftKey = 'quotation_draft_' + draftUserId + '_' + prId;
+    let quotationAvailabilityLocked = false;
+
+    function clearQuotationDraftStorage() {
+        try { sessionStorage.removeItem(draftKey); } catch (error) { /* Storage may be blocked. */ }
+        try { localStorage.removeItem(draftKey); } catch (error) { /* Storage may be blocked. */ }
+    }
+
+    function saveDraft() {
+        if (quotationAvailabilityLocked) {
+            return;
+        }
+        const badgeEl = document.getElementById('autoSaveBadge');
+        if (badgeEl) {
+            badgeEl.classList.remove('d-none', 'ui-status-chip--success', 'ui-status-chip--error');
+            badgeEl.classList.add('ui-status-chip--neutral');
+            const spinner = document.createElement('span');
+            spinner.className = 'ui-spinner me-1';
+            spinner.setAttribute('aria-hidden', 'true');
+            badgeEl.replaceChildren(spinner, document.createTextNode(@json(__('supplier.audit_ui.saving'))));
+        }
+
+        try {
+            const formEl = document.getElementById('quotationForm');
+            const data = {};
+            if (formEl) {
+                for (const [name, value] of new FormData(formEl).entries()) {
+                    if (typeof value === 'string' && name !== '_token' && name !== 'action') {
+                        data[name] = value;
+                    }
+                }
+            }
+            sessionStorage.setItem(draftKey, JSON.stringify(data));
+            try { localStorage.removeItem(draftKey); } catch (error) { /* Storage may be blocked. */ }
+
+            setTimeout(() => {
+                if (!badgeEl) return;
+                badgeEl.classList.remove('ui-status-chip--neutral');
+                badgeEl.classList.add('ui-status-chip--success');
+                badgeEl.textContent = @json(__('supplier.copy.draft_saved'));
+                setTimeout(() => {
+                    badgeEl.classList.add('d-none');
+                }, 2000);
+            }, 300);
+        } catch (e) {
+            if (!badgeEl) return;
+            badgeEl.classList.remove('ui-status-chip--neutral', 'ui-status-chip--success');
+            badgeEl.classList.add('ui-status-chip--error');
+            badgeEl.textContent = @json(__('supplier.copy.save_failed'));
+        }
+    }
+
+    function loadDraft() {
+        let saved;
+        try { localStorage.removeItem(draftKey); } catch (error) { /* Purge legacy persistent draft. */ }
+        try { saved = sessionStorage.getItem(draftKey); } catch (error) { return; }
+        if (!saved) {
+            return;
+        }
+
+        let data;
+        try { data = JSON.parse(saved); } catch (error) { return; }
+        for (const key in data) {
+            const val = data[key];
+            if (typeof val !== 'string') continue;
+            document.querySelectorAll(`[name="${CSS.escape(key)}"]`).forEach((element) => {
+                if (element.type !== 'file' && !element.value) {
+                    element.value = val;
+                }
+            });
+        }
+
+        document.querySelectorAll('.quotation-item-group').forEach((groupEl) => {
+            setItemUnavailable(groupEl, itemIsUnavailable(groupEl));
+            validateOfferQuantity(groupEl);
+            validateOfferLength(groupEl);
+        });
+        recalculateQuotationTotals();
+
+        const badgeEl = document.getElementById('autoSaveBadge');
+        if (badgeEl) {
+            badgeEl.classList.remove('d-none', 'ui-status-chip--error', 'ui-status-chip--neutral');
+            badgeEl.classList.add('ui-status-chip--success');
+            badgeEl.textContent = @json(__('supplier.copy.draft_restored'));
+            setTimeout(() => badgeEl.classList.add('d-none'), 3000);
+        }
+    }
+
+    function bootSupplierQuotationCreate() {
         const importModeDescriptions = {
             fill_empty: @json(__('supplier.copy.only_fills_offer_fields_that_are_still_empty_existing_values_entered_in_the_form_are_preserved')),
             replace: @json(__('supplier.copy.replaces_the_matching_offer_fields_for_the_same_pr_items_using_values_from_the_spreadsheet_it_does_n')),
         };
+        const importModeEl = document.getElementById('quotationImportMode');
+        const importModeHelpEl = document.getElementById('quotationImportModeHelp');
         const updateQuotationImportModeHelp = () => {
-            $('#quotationImportModeHelp').text(importModeDescriptions[$('#quotationImportMode').val()] || '');
+            if (importModeHelpEl && importModeEl) {
+                importModeHelpEl.textContent = importModeDescriptions[importModeEl.value] || '';
+            }
         };
 
-        $('#btnParseQuotationImport').on('click', parseQuotationImport);
-        $('#btnApplyQuotationImport').on('click', applyQuotationImport);
-        $('#quotationImportMode').on('change', updateQuotationImportModeHelp);
+        document.getElementById('btnParseQuotationImport')?.addEventListener('click', parseQuotationImport);
+        document.getElementById('btnApplyQuotationImport')?.addEventListener('click', applyQuotationImport);
+        importModeEl?.addEventListener('change', updateQuotationImportModeHelp);
         updateQuotationImportModeHelp();
-        $(document).on('change', '.mtc-file-input', function() {
-            const fileName = this.files?.[0]?.name;
-            const $container = $(this).closest('[data-mtc-container]');
-            const $card = $container.find('[data-mtc-card]');
-            const $empty = $container.find('[data-mtc-empty]');
-            const $fileName = $container.find('.mtc-file-name');
-            const defaultName = $fileName.data('default-name');
 
-            if (fileName) {
-                $container.find('.mtc-copy-attachment-id').val('');
-                $container.find('.mtc-keep-existing-attachment').val('0');
-                $fileName.text(fileName).attr('title', fileName);
-                $empty.addClass('d-none');
-                $card.removeClass('d-none');
-                $container.find('[data-mtc-server-link]').addClass('d-none');
-            } else if ($container.find('.mtc-copy-attachment-id').val()) {
-                // If a copy attachment ID was set, keep card visible
-                $empty.addClass('d-none');
-                $card.removeClass('d-none');
-            } else if (defaultName && $container.find('.mtc-keep-existing-attachment').val() === '1') {
-                $fileName.text(defaultName).attr('title', defaultName);
-                $empty.addClass('d-none');
-                $card.removeClass('d-none');
-                $container.find('[data-mtc-server-link]').removeClass('d-none');
-            } else {
-                $fileName.text('').removeAttr('title');
-                $card.addClass('d-none');
-                $empty.removeClass('d-none');
-            }
-        });
-
-        $(document).on('click', '[data-mtc-remove]', function(e) {
-            e.preventDefault();
-            const $container = $(this).closest('[data-mtc-container]');
-            const $input = $container.find('.mtc-file-input');
-            const $fileName = $container.find('.mtc-file-name');
-            $input.val('');
-            $container.find('.mtc-copy-attachment-id').val('');
-            $container.find('.mtc-keep-existing-attachment').val('0');
-            $fileName.data('default-name', '').removeAttr('data-default-name').text('').removeAttr('title');
-            $container.find('[data-mtc-card]').addClass('d-none');
-            $container.find('[data-mtc-empty]').removeClass('d-none');
-        });
-
-        // Quick Apply / Copy MTC to multiple items
-        $(document).on('click', '[data-mtc-apply]', function(e) {
-            e.preventDefault();
-            const mode = $(this).data('mtc-apply'); // 'same_material' or 'all_available'
-            const $sourceContainer = $(this).closest('[data-mtc-container]');
-            const $sourceGroup = $sourceContainer.closest('.quotation-item-group');
-            const sourceMaterialName = ($sourceGroup.data('material-name') || '').toString().trim();
-            const sourceInput = $sourceContainer.find('.mtc-file-input')[0];
-            const sourceFile = sourceInput?.files?.[0] || null;
-            const sourceAttachmentId = $sourceContainer.find('.mtc-copy-attachment-id').val() || $sourceContainer.attr('data-existing-attachment-id') || null;
-            const sourceFileName = $sourceContainer.find('.mtc-file-name').text().trim();
-            const sourceServerLink = $sourceContainer.find('[data-mtc-server-link]').attr('href') || null;
-
-            if (!sourceFile && !sourceAttachmentId) {
-                if (window.AdasiToast) {
-                    AdasiToast.error(@json(__('supplier.copy.please_upload_or_select_an_mtc_file_first_before_copying')));
-                }
-                return;
-            }
-
-            // Find all candidate target groups
-            const $allGroups = $('.quotation-item-group');
-            const targetList = [];
-
-            $allGroups.each(function() {
-                const $targetGroup = $(this);
-                // Exclude source group
-                if ($targetGroup[0] === $sourceGroup[0]) return;
-
-                // Check availability: must be available
-                const isAvailable = $targetGroup.find('.item-availability-input').val() === '1' && !$targetGroup.hasClass('is-unavailable');
-                if (!isAvailable) return;
-
-                // Check material match for 'same_material' mode
-                const targetMaterialName = ($targetGroup.data('material-name') || '').toString().trim();
-                if (mode === 'same_material') {
-                    if (targetMaterialName.toLowerCase() !== sourceMaterialName.toLowerCase()) {
-                        return;
-                    }
-                }
-
-                const $targetContainer = $targetGroup.find('[data-mtc-container]');
-                const targetInput = $targetContainer.find('.mtc-file-input')[0];
-                const hasExistingFile = (targetInput?.files && targetInput.files.length > 0) ||
-                    $targetContainer.find('.mtc-copy-attachment-id').val() !== '' ||
-                    (!$targetContainer.find('[data-mtc-card]').hasClass('d-none') && $targetContainer.find('.mtc-file-name').text().trim() !== '');
-
-                targetList.push({
-                    $group: $targetGroup,
-                    $container: $targetContainer,
-                    input: targetInput,
-                    hasExistingFile: hasExistingFile,
-                });
-            });
-
-            if (targetList.length === 0) {
-                if (window.AdasiToast) {
-                    const msg = mode === 'same_material'
-                        ? @js(__('common.final_review.no_same_material')).replace(':material', sourceMaterialName)
-                        : @json(__('supplier.copy.no_other_available_items_found'));
-                    AdasiToast.info(msg);
-                }
-                return;
-            }
-
-            const overwriteTargets = targetList.filter(t => t.hasExistingFile);
-
-            const executeApply = () => {
-                let appliedCount = 0;
-                targetList.forEach(target => {
-                    const $tCont = target.$container;
-                    const tInput = target.input;
-
-                    if (sourceFile) {
-                        try {
-                            const dt = new DataTransfer();
-                            dt.items.add(sourceFile);
-                            tInput.files = dt.files;
-                            $tCont.find('.mtc-copy-attachment-id').val('');
-                            $tCont.find('.mtc-keep-existing-attachment').val('0');
-                            $(tInput).trigger('change');
-                            appliedCount++;
-                        } catch (err) {
-                            window.AdasiDebug?.error('DataTransfer copy failed:', err);
-                        }
-                    } else if (sourceAttachmentId) {
-                        if (tInput) tInput.value = '';
-                        $tCont.find('.mtc-copy-attachment-id').val(sourceAttachmentId);
-                        $tCont.find('.mtc-keep-existing-attachment').val('0');
-
-                        const $tFileName = $tCont.find('.mtc-file-name');
-                        $tFileName.text(sourceFileName).attr('title', sourceFileName);
-                        $tCont.find('[data-mtc-empty]').addClass('d-none');
-                        $tCont.find('[data-mtc-card]').removeClass('d-none');
-
-                        const $tServerLink = $tCont.find('[data-mtc-server-link]');
-                        if (sourceServerLink) {
-                            if ($tServerLink.length) {
-                                $tServerLink.attr('href', sourceServerLink).removeClass('d-none');
-                            } else {
-                                $tCont.find('.mtc-file-card__actions').prepend(
-                                    '<a href="' + sourceServerLink + '" class="mtc-file-action-link" target="_blank" rel="noopener" title="View attached file" data-mtc-server-link>' +
-                                    '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-external-link"><path d="M15 3h6v6"></path><path d="M10 14 21 3"></path><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path></svg>' +
-                                    ' <span>View</span></a>'
-                                );
-                            }
-                        }
-                        appliedCount++;
-                    }
-                });
-
-                if (window.AdasiToast) {
-                    AdasiToast.success(window.AdasiI18n.choice('supplier.js.mtc_applied', appliedCount));
-                }
-            };
-
-            if (overwriteTargets.length > 0) {
-                if (window.AdasiAlert && typeof window.AdasiAlert.confirm === 'function') {
-                    AdasiAlert.confirm({
-                        title: @json(__('supplier.copy.overwrite_existing_mtc_files')),
-                        text: window.AdasiI18n.t('supplier.js.mtc_overwrite_file', { count: overwriteTargets.length, file: sourceFileName }),
-                        type: 'warning',
-                        confirmText: window.AdasiI18n.t('supplier.js.overwrite_confirm'),
-                        cancelText: @json(__('supplier.copy.cancel'))
-                    }).then((result) => {
-                        if (result.isConfirmed) {
-                            executeApply();
-                        }
-                    });
-                } else {
-                    if (confirm(window.AdasiI18n.t('supplier.js.mtc_overwrite', { count: overwriteTargets.length }))) {
-                        executeApply();
-                    }
-                }
-            } else {
-                executeApply();
-            }
-        });
-
-        // Notes popover handlers & positioning
-        function positionQuotationNotesPopover($popover, trigger) {
-            if (!$popover || !$popover.length || $popover.prop('hidden')) return;
-
-            const triggerEl = trigger || $popover.closest('td').find('[data-notes-trigger]')[0];
-            if (!triggerEl) return;
-
-            const rect = triggerEl.getBoundingClientRect();
-            if (rect.width === 0 && rect.height === 0) {
-                $popover.prop('hidden', true);
-                return;
-            }
-
-            const $scrollContainer = $popover.closest('.quotation-table-scroll');
-            if ($scrollContainer.length) {
-                const containerRect = $scrollContainer[0].getBoundingClientRect();
-                if (rect.right < containerRect.left + 10 || rect.left > containerRect.right - 10) {
-                    $popover.prop('hidden', true);
-                    $(triggerEl).attr('aria-expanded', 'false');
-                    return;
-                }
-            }
-
-            if (rect.bottom < 0 || rect.top > window.innerHeight) {
-                $popover.prop('hidden', true);
-                $(triggerEl).attr('aria-expanded', 'false');
-                return;
-            }
-
-            const viewportPadding = 8;
-            const gap = 4;
-            const popoverWidth = Math.min(320, Math.max(280, window.innerWidth - (viewportPadding * 2)));
-            const popoverHeight = Math.min($popover.outerHeight() || $popover[0].scrollHeight || 230, 280);
-
-            const fitsBelow = rect.bottom + gap + popoverHeight <= window.innerHeight - viewportPadding;
-            const fitsAbove = rect.top - gap - popoverHeight >= viewportPadding;
-            const opensAbove = !fitsBelow && fitsAbove;
-
-            let top;
-            if (opensAbove) {
-                top = Math.max(viewportPadding, rect.top - gap - popoverHeight);
-            } else {
-                top = Math.min(window.innerHeight - popoverHeight - viewportPadding, rect.bottom + gap);
-            }
-
-            let left = rect.right - popoverWidth;
-            if (left < viewportPadding) {
-                left = Math.max(viewportPadding, rect.left);
-            }
-            if (left + popoverWidth > window.innerWidth - viewportPadding) {
-                left = Math.max(viewportPadding, window.innerWidth - popoverWidth - viewportPadding);
-            }
-
-            $popover.css({
-                position: 'fixed',
-                top: `${Math.round(top)}px`,
-                left: `${Math.round(left)}px`,
-                bottom: 'auto',
-                right: 'auto',
-                width: `${popoverWidth}px`,
-                zIndex: 1080,
-            });
-        }
-
-        function repositionVisibleNotesPopovers() {
-            $('[data-notes-popover]:not([hidden])').each(function() {
-                const $popover = $(this);
-                const $trigger = $popover.closest('td').find('[data-notes-trigger]');
-                if ($trigger.length) {
-                    positionQuotationNotesPopover($popover, $trigger[0]);
-                }
-            });
-        }
-
-        $(window).on('resize', repositionVisibleNotesPopovers);
+        window.addEventListener('resize', repositionVisibleNotesPopovers);
         document.addEventListener('scroll', repositionVisibleNotesPopovers, true);
 
-        $(document).on('click', '[data-notes-trigger]', function(e) {
-            e.stopPropagation();
-            const $cell = $(this).closest('td');
-            const $popover = $cell.find('[data-notes-popover]');
-            const isVisible = !$popover.prop('hidden');
-
-            $('[data-notes-popover]').prop('hidden', true);
-            $('[data-notes-trigger]').attr('aria-expanded', 'false');
-
-            if (!isVisible) {
-                const currentVal = $cell.find('.quotation-item-notes').val();
-                $cell.find('.quotation-notes-draft').val(currentVal);
-
-                $popover.prop('hidden', false);
-                $(this).attr('aria-expanded', 'true');
-                positionQuotationNotesPopover($popover, this);
-                $cell.find('.quotation-notes-draft').focus();
-            }
-        });
-
-        $(document).on('click', '[data-notes-save]', function(e) {
-            e.stopPropagation();
-            const $cell = $(this).closest('td');
-            const $popover = $cell.find('[data-notes-popover]');
-            const draftVal = $cell.find('.quotation-notes-draft').val().trim();
-            const $realInput = $cell.find('.quotation-item-notes');
-            const $trigger = $cell.find('[data-notes-trigger]');
-            const $triggerText = $trigger.find('.quotation-notes-trigger__text');
-
-            $realInput.val(draftVal).trigger('input').trigger('change');
-
-            if (draftVal) {
-                $triggerText.text(draftVal);
-                $trigger.addClass('has-notes').attr('title', draftVal);
-                if (!$trigger.find('.quotation-notes-trigger__badge').length) {
-                    $trigger.append($('<span class="quotation-notes-trigger__badge" aria-hidden="true"></span>').attr('title', @js(__('common.final_review.note_entered'))));
-                }
-            } else {
-                $triggerText.text(@json(__('supplier.copy.add_note')));
-                $trigger.removeClass('has-notes').attr('title', @json(__('supplier.copy.click_to_add_notes')));
-                $trigger.find('.quotation-notes-trigger__badge').remove();
-            }
-
-            $popover.prop('hidden', true);
-            $trigger.attr('aria-expanded', 'false');
-        });
-
-        $(document).on('click', '[data-notes-cancel]', function(e) {
-            e.stopPropagation();
-            const $cell = $(this).closest('td');
-            $cell.find('[data-notes-popover]').prop('hidden', true);
-            $cell.find('[data-notes-trigger]').attr('aria-expanded', 'false').focus();
-        });
-
-        $(document).on('change input', '.quotation-item-notes', function() {
-            const val = $(this).val().trim();
-            const $cell = $(this).closest('td');
-            const $trigger = $cell.find('[data-notes-trigger]');
-            const $triggerText = $trigger.find('.quotation-notes-trigger__text');
-            if (val) {
-                $triggerText.text(val);
-                $trigger.addClass('has-notes').attr('title', val);
-                if (!$trigger.find('.quotation-notes-trigger__badge').length) {
-                    $trigger.append($('<span class="quotation-notes-trigger__badge" aria-hidden="true"></span>').attr('title', @js(__('common.final_review.note_entered'))));
-                }
-            } else {
-                $triggerText.text(@json(__('supplier.copy.add_note')));
-                $trigger.removeClass('has-notes').attr('title', @json(__('supplier.copy.click_to_add_notes')));
-                $trigger.find('.quotation-notes-trigger__badge').remove();
-            }
-        });
-
-        $(document).on('click', function(e) {
-            if (!$(e.target).closest('[data-notes-popover], [data-notes-trigger]').length) {
-                $('[data-notes-popover]').prop('hidden', true);
-                $('[data-notes-trigger]').attr('aria-expanded', 'false');
-            }
-        });
-
-        $(document).on('keydown', function(e) {
+        document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
-                $('[data-notes-popover]').prop('hidden', true);
-                $('[data-notes-trigger]').attr('aria-expanded', 'false');
+                closeAllQuotationNotesPopovers();
             }
         });
 
-        $('#quotationImportModal').on('hidden.bs.modal', function() {
+        document.addEventListener('click', (e) => {
+            const target = e.target;
+            if (!(target instanceof Element)) return;
+
+            const mtcRemoveBtn = target.closest('[data-mtc-remove]');
+            if (mtcRemoveBtn) {
+                e.preventDefault();
+                const container = mtcRemoveBtn.closest('[data-mtc-container]');
+                const input = container?.querySelector('.mtc-file-input');
+                const fileNameEl = container?.querySelector('.mtc-file-name');
+                const copyInput = container?.querySelector('.mtc-copy-attachment-id');
+                const keepInput = container?.querySelector('.mtc-keep-existing-attachment');
+                if (input) input.value = '';
+                if (copyInput) copyInput.value = '';
+                if (keepInput) keepInput.value = '0';
+                if (fileNameEl) {
+                    delete fileNameEl.dataset.defaultName;
+                    fileNameEl.removeAttribute('data-default-name');
+                    fileNameEl.textContent = '';
+                    fileNameEl.removeAttribute('title');
+                }
+                container?.querySelector('[data-mtc-card]')?.classList.add('d-none');
+                container?.querySelector('[data-mtc-empty]')?.classList.remove('d-none');
+                return;
+            }
+
+            const mtcApplyBtn = target.closest('[data-mtc-apply]');
+            if (mtcApplyBtn) {
+                e.preventDefault();
+                const mode = mtcApplyBtn.dataset.mtcApply; // 'same_material' or 'all_available'
+                const sourceContainer = mtcApplyBtn.closest('[data-mtc-container]');
+                const sourceGroup = sourceContainer?.closest('.quotation-item-group');
+                const sourceMaterialName = String(sourceGroup?.dataset.materialName || '').trim();
+                const sourceInput = sourceContainer?.querySelector('.mtc-file-input');
+                const sourceFile = sourceInput?.files?.[0] || null;
+                const sourceAttachmentId = sourceContainer?.querySelector('.mtc-copy-attachment-id')?.value
+                    || sourceContainer?.getAttribute('data-existing-attachment-id')
+                    || null;
+                const sourceFileName = String(sourceContainer?.querySelector('.mtc-file-name')?.textContent || '').trim();
+                const sourceServerLink = sourceContainer?.querySelector('[data-mtc-server-link]')?.getAttribute('href') || null;
+
+                if (!sourceFile && !sourceAttachmentId) {
+                    if (window.AdasiToast) {
+                        AdasiToast.error(@json(__('supplier.copy.please_upload_or_select_an_mtc_file_first_before_copying')));
+                    }
+                    return;
+                }
+
+                const targetList = [];
+                document.querySelectorAll('.quotation-item-group').forEach((targetGroup) => {
+                    if (targetGroup === sourceGroup) return;
+
+                    const isAvailable = targetGroup.querySelector('.item-availability-input')?.value === '1'
+                        && !targetGroup.classList.contains('is-unavailable');
+                    if (!isAvailable) return;
+
+                    const targetMaterialName = String(targetGroup.dataset.materialName || '').trim();
+                    if (mode === 'same_material' && targetMaterialName.toLowerCase() !== sourceMaterialName.toLowerCase()) {
+                        return;
+                    }
+
+                    const targetContainer = targetGroup.querySelector('[data-mtc-container]');
+                    const targetInput = targetContainer?.querySelector('.mtc-file-input') || null;
+                    const hasExistingFile = (targetInput?.files && targetInput.files.length > 0)
+                        || (targetContainer?.querySelector('.mtc-copy-attachment-id')?.value || '') !== ''
+                        || (!targetContainer?.querySelector('[data-mtc-card]')?.classList.contains('d-none')
+                            && String(targetContainer?.querySelector('.mtc-file-name')?.textContent || '').trim() !== '');
+
+                    targetList.push({
+                        group: targetGroup,
+                        container: targetContainer,
+                        input: targetInput,
+                        hasExistingFile,
+                    });
+                });
+
+                if (targetList.length === 0) {
+                    if (window.AdasiToast) {
+                        const msg = mode === 'same_material'
+                            ? @js(__('common.final_review.no_same_material')).replace(':material', sourceMaterialName)
+                            : @json(__('supplier.copy.no_other_available_items_found'));
+                        AdasiToast.info(msg);
+                    }
+                    return;
+                }
+
+                const overwriteTargets = targetList.filter((t) => t.hasExistingFile);
+
+                const executeApply = () => {
+                    let appliedCount = 0;
+                    targetList.forEach((itemTarget) => {
+                        const tCont = itemTarget.container;
+                        const tInput = itemTarget.input;
+
+                        if (sourceFile && tInput) {
+                            try {
+                                const dt = new DataTransfer();
+                                dt.items.add(sourceFile);
+                                tInput.files = dt.files;
+                                const copyInput = tCont?.querySelector('.mtc-copy-attachment-id');
+                                const keepInput = tCont?.querySelector('.mtc-keep-existing-attachment');
+                                if (copyInput) copyInput.value = '';
+                                if (keepInput) keepInput.value = '0';
+                                tInput.dispatchEvent(new Event('change', { bubbles: true }));
+                                appliedCount++;
+                            } catch (err) {
+                                window.AdasiDebug?.error('DataTransfer copy failed:', err);
+                            }
+                        } else if (sourceAttachmentId) {
+                            if (tInput) tInput.value = '';
+                            const copyInput = tCont?.querySelector('.mtc-copy-attachment-id');
+                            const keepInput = tCont?.querySelector('.mtc-keep-existing-attachment');
+                            if (copyInput) copyInput.value = sourceAttachmentId;
+                            if (keepInput) keepInput.value = '0';
+
+                            const tFileName = tCont?.querySelector('.mtc-file-name');
+                            if (tFileName) {
+                                tFileName.textContent = sourceFileName;
+                                tFileName.setAttribute('title', sourceFileName);
+                            }
+                            tCont?.querySelector('[data-mtc-empty]')?.classList.add('d-none');
+                            tCont?.querySelector('[data-mtc-card]')?.classList.remove('d-none');
+
+                            const tServerLink = tCont?.querySelector('[data-mtc-server-link]');
+                            if (sourceServerLink) {
+                                if (tServerLink) {
+                                    tServerLink.setAttribute('href', sourceServerLink);
+                                    tServerLink.classList.remove('d-none');
+                                } else {
+                                    const actionsEl = tCont?.querySelector('.mtc-file-card__actions');
+                                    if (actionsEl) {
+                                        const linkEl = document.createElement('a');
+                                        linkEl.href = sourceServerLink;
+                                        linkEl.className = 'mtc-file-action-link';
+                                        linkEl.target = '_blank';
+                                        linkEl.rel = 'noopener';
+                                        linkEl.title = 'View attached file';
+                                        linkEl.setAttribute('data-mtc-server-link', '');
+                                        linkEl.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-external-link"><path d="M15 3h6v6"></path><path d="M10 14 21 3"></path><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path></svg> <span>View</span>';
+                                        actionsEl.prepend(linkEl);
+                                    }
+                                }
+                            }
+                            appliedCount++;
+                        }
+                    });
+
+                    if (window.AdasiToast) {
+                        AdasiToast.success(window.AdasiI18n.choice('supplier.js.mtc_applied', appliedCount));
+                    }
+                };
+
+                if (overwriteTargets.length > 0) {
+                    if (window.AdasiAlert && typeof window.AdasiAlert.confirm === 'function') {
+                        AdasiAlert.confirm({
+                            title: @json(__('supplier.copy.overwrite_existing_mtc_files')),
+                            text: window.AdasiI18n.t('supplier.js.mtc_overwrite_file', { count: overwriteTargets.length, file: sourceFileName }),
+                            type: 'warning',
+                            confirmText: window.AdasiI18n.t('supplier.js.overwrite_confirm'),
+                            cancelText: @json(__('supplier.copy.cancel'))
+                        }).then((result) => {
+                            if (result.isConfirmed) {
+                                executeApply();
+                            }
+                        });
+                    } else if (confirm(window.AdasiI18n.t('supplier.js.mtc_overwrite', { count: overwriteTargets.length }))) {
+                        executeApply();
+                    }
+                } else {
+                    executeApply();
+                }
+                return;
+            }
+
+            const notesTrigger = target.closest('[data-notes-trigger]');
+            if (notesTrigger) {
+                const cell = notesTrigger.closest('td');
+                const popover = cell?.querySelector('[data-notes-popover]');
+                if (!cell || !popover) return;
+                const isVisible = !popover.hidden;
+
+                closeAllQuotationNotesPopovers();
+
+                if (!isVisible) {
+                    const currentVal = cell.querySelector('.quotation-item-notes')?.value || '';
+                    const draftInput = cell.querySelector('.quotation-notes-draft');
+                    if (draftInput) draftInput.value = currentVal;
+
+                    popover.hidden = false;
+                    notesTrigger.setAttribute('aria-expanded', 'true');
+                    positionQuotationNotesPopover(popover, notesTrigger);
+                    draftInput?.focus();
+                }
+                return;
+            }
+
+            const notesSave = target.closest('[data-notes-save]');
+            if (notesSave) {
+                const cell = notesSave.closest('td');
+                const popover = cell?.querySelector('[data-notes-popover]');
+                const draftVal = String(cell?.querySelector('.quotation-notes-draft')?.value || '').trim();
+                const realInput = cell?.querySelector('.quotation-item-notes');
+                const trigger = cell?.querySelector('[data-notes-trigger]');
+
+                if (realInput) {
+                    realInput.value = draftVal;
+                    dispatchFieldInputAndChange(realInput);
+                }
+                syncQuotationNotesTriggerUi(cell, draftVal);
+
+                if (popover) popover.hidden = true;
+                trigger?.setAttribute('aria-expanded', 'false');
+                return;
+            }
+
+            const notesCancel = target.closest('[data-notes-cancel]');
+            if (notesCancel) {
+                const cell = notesCancel.closest('td');
+                const popover = cell?.querySelector('[data-notes-popover]');
+                const trigger = cell?.querySelector('[data-notes-trigger]');
+                if (popover) popover.hidden = true;
+                if (trigger) {
+                    trigger.setAttribute('aria-expanded', 'false');
+                    trigger.focus();
+                }
+                return;
+            }
+
+            if (!target.closest('[data-notes-popover], [data-notes-trigger]')) {
+                closeAllQuotationNotesPopovers();
+            }
+
+            const availabilityToggle = target.closest('[data-availability-toggle]');
+            if (availabilityToggle) {
+                e.preventDefault();
+                const groupEl = availabilityToggle.closest('.quotation-item-group');
+                const checkbox = groupEl?.querySelector('.item-not-available-toggle');
+                const newUnavailable = !Boolean(checkbox?.checked);
+                if (checkbox) checkbox.checked = newUnavailable;
+                setItemUnavailable(groupEl, newUnavailable);
+                recalculateQuotationTotals();
+                updateCommercialTermsState();
+            }
+        });
+
+        document.addEventListener('change', (e) => {
+            const target = e.target;
+            if (!(target instanceof Element)) return;
+
+            const mtcInput = target.closest('.mtc-file-input');
+            if (mtcInput) {
+                const fileName = mtcInput.files?.[0]?.name;
+                const container = mtcInput.closest('[data-mtc-container]');
+                const card = container?.querySelector('[data-mtc-card]');
+                const empty = container?.querySelector('[data-mtc-empty]');
+                const fileNameEl = container?.querySelector('.mtc-file-name');
+                const defaultName = fileNameEl?.dataset.defaultName;
+                const copyInput = container?.querySelector('.mtc-copy-attachment-id');
+                const keepInput = container?.querySelector('.mtc-keep-existing-attachment');
+                const serverLinkEl = container?.querySelector('[data-mtc-server-link]');
+
+                if (fileName) {
+                    if (copyInput) copyInput.value = '';
+                    if (keepInput) keepInput.value = '0';
+                    if (fileNameEl) {
+                        fileNameEl.textContent = fileName;
+                        fileNameEl.setAttribute('title', fileName);
+                    }
+                    empty?.classList.add('d-none');
+                    card?.classList.remove('d-none');
+                    serverLinkEl?.classList.add('d-none');
+                } else if (copyInput?.value) {
+                    // If a copy attachment ID was set, keep card visible
+                    empty?.classList.add('d-none');
+                    card?.classList.remove('d-none');
+                } else if (defaultName && keepInput?.value === '1') {
+                    if (fileNameEl) {
+                        fileNameEl.textContent = defaultName;
+                        fileNameEl.setAttribute('title', defaultName);
+                    }
+                    empty?.classList.add('d-none');
+                    card?.classList.remove('d-none');
+                    serverLinkEl?.classList.remove('d-none');
+                } else {
+                    if (fileNameEl) {
+                        fileNameEl.textContent = '';
+                        fileNameEl.removeAttribute('title');
+                    }
+                    card?.classList.add('d-none');
+                    empty?.classList.remove('d-none');
+                }
+                return;
+            }
+
+            if (target.closest('.quotation-item-notes')) {
+                syncQuotationNotesTriggerUi(target.closest('td'), String(target.value || '').trim());
+                return;
+            }
+
+            if (target.closest('.price-input, [data-availability-field="qty"]')) {
+                const groupEl = target.closest('.quotation-item-group');
+                validateOfferQuantity(groupEl);
+                recalculateQuotationTotals();
+                return;
+            }
+
+            if (target.closest('[data-availability-field="thickness"], [data-availability-field="width"], [data-availability-field="d_outer"], [data-availability-field="d_inner"]')) {
+                const groupEl = target.closest('.quotation-item-group');
+                autoCalculateOfferWeight(groupEl);
+                recalculateQuotationTotals();
+                return;
+            }
+
+            if (target.closest('.item-not-available-toggle')) {
+                setItemUnavailable(target.closest('.quotation-item-group'), target.checked);
+                recalculateQuotationTotals();
+                updateCommercialTermsState();
+            }
+        });
+
+        document.addEventListener('input', (e) => {
+            const target = e.target;
+            if (!(target instanceof Element)) return;
+
+            if (target.closest('.quotation-item-notes')) {
+                syncQuotationNotesTriggerUi(target.closest('td'), String(target.value || '').trim());
+                return;
+            }
+
+            if (target.closest('.price-input, [data-availability-field="qty"]')) {
+                const groupEl = target.closest('.quotation-item-group');
+                validateOfferQuantity(groupEl);
+                recalculateQuotationTotals();
+                return;
+            }
+
+            if (target.closest('[data-availability-field="thickness"], [data-availability-field="width"], [data-availability-field="d_outer"], [data-availability-field="d_inner"]')) {
+                const groupEl = target.closest('.quotation-item-group');
+                autoCalculateOfferWeight(groupEl);
+                recalculateQuotationTotals();
+                return;
+            }
+
+            if (target.closest('.offered-weight-input')) {
+                const groupEl = target.closest('.quotation-item-group');
+                const overrideEl = groupEl?.querySelector('.offered-weight-manual-override');
+                if (overrideEl) overrideEl.value = '1';
+                updateOfferWeightState(groupEl);
+                recalculateQuotationTotals();
+                return;
+            }
+
+            if (target.closest('.offer-length-input')) {
+                const groupEl = target.closest('.quotation-item-group');
+                validateOfferLength(groupEl);
+                autoCalculateOfferWeight(groupEl);
+                recalculateQuotationTotals();
+            }
+        });
+
+        document.addEventListener('focusout', (e) => {
+            const lengthInput = e.target?.closest?.('.offer-length-input');
+            if (!lengthInput) return;
+            const groupEl = lengthInput.closest('.quotation-item-group');
+            const parsed = parseOfferLength(lengthInput.value);
+            if (parsed.valid && !parsed.empty) {
+                lengthInput.value = formatOfferLength(parsed);
+            }
+            validateOfferLength(groupEl);
+            autoCalculateOfferWeight(groupEl);
+            recalculateQuotationTotals();
+        });
+
+        document.getElementById('quotationImportModal')?.addEventListener('hidden.bs.modal', () => {
             if (quotationImportRequestInFlight) {
                 return;
             }
 
-            document.getElementById('quotationImportFile').value = '';
-            $('#quotationImportMode').val('fill_empty');
+            const fileInput = document.getElementById('quotationImportFile');
+            if (fileInput) fileInput.value = '';
+            if (importModeEl) importModeEl.value = 'fill_empty';
             updateQuotationImportModeHelp();
-            $('#quotationImportResult').addClass('d-none');
-            $('#quotationImportWarnings, #quotationImportErrors, #quotationImportPreviewBody').empty();
-            $('#btnApplyQuotationImport').prop('disabled', true);
+            document.getElementById('quotationImportResult')?.classList.add('d-none');
+            document.getElementById('quotationImportWarnings')?.replaceChildren();
+            document.getElementById('quotationImportErrors')?.replaceChildren();
+            document.getElementById('quotationImportPreviewBody')?.replaceChildren();
+            const applyBtn = document.getElementById('btnApplyQuotationImport');
+            if (applyBtn) applyBtn.disabled = true;
             quotationImportRows = [];
         });
 
-        $('#quotationCurrency').on('change', refreshCurrencyState);
-
-        $(document).on('input change', '.price-input, [data-availability-field="qty"]', function() {
-            const $group = $(this).closest('.quotation-item-group');
-            validateOfferQuantity($group);
-            recalculateQuotationTotals();
-        });
-
-        $(document).on('input change', '[data-availability-field="thickness"], [data-availability-field="width"], [data-availability-field="d_outer"], [data-availability-field="d_inner"]', function() {
-            const $group = $(this).closest('.quotation-item-group');
-            autoCalculateOfferWeight($group);
-            recalculateQuotationTotals();
-        });
-
-        $(document).on('input', '.offered-weight-input', function() {
-            const $group = $(this).closest('.quotation-item-group');
-            $group.find('.offered-weight-manual-override').val('1');
-            updateOfferWeightState($group);
-            recalculateQuotationTotals();
-        });
-
-        $(document).on('input', '.offer-length-input', function() {
-            const $group = $(this).closest('.quotation-item-group');
-            validateOfferLength($group);
-            autoCalculateOfferWeight($group);
-            recalculateQuotationTotals();
-        });
-
-        $(document).on('blur', '.offer-length-input', function() {
-            const $group = $(this).closest('.quotation-item-group');
-            const parsed = parseOfferLength($(this).val());
-            if (parsed.valid && !parsed.empty) {
-                $(this).val(formatOfferLength(parsed));
-            }
-            validateOfferLength($group);
-            autoCalculateOfferWeight($group);
-            recalculateQuotationTotals();
-        });
-
-        $(document).on('click', '[data-availability-toggle]', function(e) {
-            e.preventDefault();
-            const $group = $(this).closest('.quotation-item-group');
-            const $checkbox = $group.find('.item-not-available-toggle');
-            const currentlyUnavailable = $checkbox.is(':checked');
-            const newUnavailable = !currentlyUnavailable;
-            $checkbox.prop('checked', newUnavailable);
-            setItemUnavailable($group, newUnavailable);
-            recalculateQuotationTotals();
-            updateCommercialTermsState();
-        });
-
-        $(document).on('change', '.item-not-available-toggle', function() {
-            setItemUnavailable($(this).closest('.quotation-item-group'), this.checked);
-            recalculateQuotationTotals();
-            updateCommercialTermsState();
-        });
+        document.getElementById('quotationCurrency')?.addEventListener('change', refreshCurrencyState);
 
         refreshCurrencyState();
-        $('.quotation-item-group').each(function() {
-            const $group = $(this);
-            setItemUnavailable($group, itemIsUnavailable($group));
-            validateOfferQuantity($group);
-            validateOfferLength($group);
+        document.querySelectorAll('.quotation-item-group').forEach((groupEl) => {
+            setItemUnavailable(groupEl, itemIsUnavailable(groupEl));
+            validateOfferQuantity(groupEl);
+            validateOfferLength(groupEl);
         });
         recalculateQuotationTotals();
         updateCommercialTermsState();
@@ -2728,190 +3189,7 @@
                 }
             });
         }
-    });
 
-    function validateQuotationRows(requireCompleteOffer) {
-        let valid = true;
-        let firstInvalid = null;
-
-        $('.quotation-item-group').each(function() {
-            const $group = $(this);
-            if (itemIsUnavailable($group)) return;
-
-            if (!validateOfferQuantity($group, requireCompleteOffer)) valid = false;
-            if (!validateOfferLength($group)) valid = false;
-
-            const $price = $group.find('.price-input');
-            const price = Number($price.val());
-            const priceValid = String($price.val() ?? '').trim() !== '' && Number.isFinite(price) && price > 0;
-            setFieldValidity($price, priceValid, @json(__('supplier.copy.price_kg_must_be_greater_than_zero_for_an_available_item')));
-            if (!priceValid) valid = false;
-
-            const $weight = $group.find('.offered-weight-input');
-            const weightRaw = String($weight.val() ?? '').trim();
-            const weight = Number(weightRaw);
-            const weightValid = !requireCompleteOffer || (weightRaw !== '' && Number.isFinite(weight) && weight > 0);
-            setFieldValidity($weight, weightValid, @json(__('supplier.copy.offer_kg_unit_is_required_and_must_be_greater_than_zero_for_a_final_available_offer')));
-            if (!weightValid) valid = false;
-
-            if (!firstInvalid) {
-                firstInvalid = $group.find('.is-invalid').first()[0] || null;
-            }
-        });
-
-        if (!valid) {
-            firstInvalid?.focus();
-            firstInvalid?.reportValidity?.();
-        }
-
-        return valid;
-    }
-
-    function submitForm(action) {
-        if (action === 'submitted') {
-            confirmSubmit();
-            return;
-        }
-
-        if (!validateQuotationRows(false)) {
-            return;
-        }
-
-        const form = document.getElementById('quotationForm');
-        const activeBtn = document.getElementById('btnSaveDraft');
-        if (form && activeBtn) {
-            form._lastClickedButton = activeBtn;
-        }
-        $('#formAction').val(action);
-        if (form && typeof form.requestSubmit === 'function') {
-            form.requestSubmit();
-        } else {
-            form.submit();
-        }
-    }
-
-    function confirmSubmit() {
-        const allUnavailable = isAllItemsUnavailable();
-
-        if (!allUnavailable) {
-            let isValid = true;
-            $('#quotationForm').find('input[required], select[required], [data-calendar-required="true"] [data-calendar-native-input], #validityPeriod').each(function() {
-                if (!$(this).val()) {
-                    isValid = false;
-                    $(this).addClass('is-invalid');
-                } else {
-                    $(this).removeClass('is-invalid');
-                }
-            });
-
-            if (!isValid || !validateQuotationRows(true)) {
-                const firstInvalid = document.querySelector('#quotationForm .is-invalid');
-                const calendarTrigger = firstInvalid?.closest('[data-adasi-date-picker], [data-adasi-date-range]')?.querySelector('[data-calendar-trigger], [data-calendar-boundary]');
-                (calendarTrigger || firstInvalid)?.focus();
-                firstInvalid?.reportValidity?.();
-                return;
-            }
-
-            const form = document.getElementById('quotationForm');
-            if (form && !form.checkValidity()) {
-                form.reportValidity();
-                return;
-            }
-        }
-
-        const form = document.getElementById('quotationForm');
-
-        AdasiAlert.confirm({
-            title: allUnavailable
-                ? @json(__('supplier.copy.submit_quotation_with_all_requested_items_marked_not_available'))
-                : @js($quotation?->status === 'revision_requested' ? __('supplier.copy.resubmit_quotation') : __('supplier.copy.send_final_quotation')),
-            text: allUnavailable
-                ? @json(__('supplier.copy.requested_rows_remain_visible_but_this_quotation_contains_no_available_commercial_offer_lines'))
-                : @js($quotation?->status === 'revision_requested' ? __('supplier.copy.the_revised_quotation_will_be_sent_back_to_purchasing_for_evaluation') : __('supplier.copy.submitted_quotations_cannot_be_modified_after_sending')),
-            type: 'warning',
-            confirmText: @js($quotation?->status === 'revision_requested' ? __('supplier.copy.resubmit_quotation') : __('supplier.copy.submit_final_quotation')),
-            cancelText: @json(__('supplier.copy.cancel'))
-        }).then((result) => {
-            if (result.isConfirmed) {
-                const submitBtn = document.getElementById('btnSubmitQuotation');
-                if (form && submitBtn) {
-                    form._lastClickedButton = submitBtn;
-                }
-                $('#formAction').val('submitted');
-                if (form && typeof form.requestSubmit === 'function') {
-                    form.requestSubmit();
-                } else {
-                    form.submit();
-                }
-            }
-        });
-    }
-
-    // Auto-save logic (session-scoped to prevent persistent localStorage residue on shared devices)
-    const prId = '{{ $pr->hash }}';
-    const draftUserId = @json((int) auth()->id());
-    const draftKey = 'quotation_draft_' + draftUserId + '_' + prId;
-    let quotationAvailabilityLocked = false;
-
-    function clearQuotationDraftStorage() {
-        try { sessionStorage.removeItem(draftKey); } catch (error) { /* Storage may be blocked. */ }
-        try { localStorage.removeItem(draftKey); } catch (error) { /* Storage may be blocked. */ }
-    }
-
-    function saveDraft() {
-        if (quotationAvailabilityLocked) {
-            return;
-        }
-        $('#autoSaveBadge').removeClass('d-none ui-status-chip--success').addClass('ui-status-chip--neutral').html('<span class="ui-spinner me-1" aria-hidden="true"></span>' + @json(__('supplier.audit_ui.saving')));
-        
-        try {
-            const formData = $('#quotationForm').serializeArray();
-            const data = {};
-            $(formData).each(function(index, obj) {
-                if(obj.name !== '_token' && obj.name !== 'action') {
-                    data[obj.name] = obj.value;
-                }
-            });
-            sessionStorage.setItem(draftKey, JSON.stringify(data));
-            try { localStorage.removeItem(draftKey); } catch (error) { /* Storage may be blocked. */ }
-
-            setTimeout(() => {
-                $('#autoSaveBadge').removeClass('ui-status-chip--neutral').addClass('ui-status-chip--success').text(@json(__('supplier.copy.draft_saved')));
-                setTimeout(() => {
-                    $('#autoSaveBadge').addClass('d-none');
-                }, 2000);
-            }, 300);
-        } catch (e) {
-            $('#autoSaveBadge').removeClass('ui-status-chip--neutral ui-status-chip--success').addClass('ui-status-chip--error').text(@json(__('supplier.copy.save_failed')));
-        }
-    }
-
-    function loadDraft() {
-        let saved;
-        try { localStorage.removeItem(draftKey); } catch (error) { /* Purge legacy persistent draft. */ }
-        try { saved = sessionStorage.getItem(draftKey); } catch (error) { return; }
-        if(saved) {
-            let data;
-            try { data = JSON.parse(saved); } catch (error) { return; }
-            for(const key in data) {
-                const element = $(`[name="${key}"]`);
-                if(element.length > 0 && !element.val()) {
-                    element.val(data[key]);
-                }
-            }
-            $('.quotation-item-group').each(function() {
-                const $group = $(this);
-                setItemUnavailable($group, itemIsUnavailable($group));
-                validateOfferQuantity($group);
-                validateOfferLength($group);
-            });
-            recalculateQuotationTotals();
-            $('#autoSaveBadge').removeClass('d-none ui-status-chip--error ui-status-chip--neutral').addClass('ui-status-chip--success').text(@json(__('supplier.copy.draft_restored')));
-            setTimeout(() => $('#autoSaveBadge').addClass('d-none'), 3000);
-        }
-    }
-
-    $(document).ready(function() {
         loadDraft();
 
         let isDirty = false;
@@ -2928,17 +3206,20 @@
             isDirty = false;
             clearQuotationDraftStorage();
         });
-        $('#quotationForm input, #quotationForm select, #quotationForm textarea').on('input change', function() {
-            if (quotationAvailabilityLocked) {
+
+        const handleQuotationDraftDirty = (e) => {
+            if (!e.target?.matches('input, select, textarea') || quotationAvailabilityLocked) {
                 return;
             }
             isDirty = true;
             window.AdasiUnsaved?.markDirty?.();
             clearTimeout(autoSaveTimer);
             autoSaveTimer = setTimeout(saveDraft, 1200);
-        });
+        };
+        quotationFormEl?.addEventListener('input', handleQuotationDraftDirty);
+        quotationFormEl?.addEventListener('change', handleQuotationDraftDirty);
 
-        $('#quotationForm').on('submit', function() {
+        quotationFormEl?.addEventListener('submit', () => {
             clearTimeout(autoSaveTimer);
             isDirty = false;
             window.AdasiUnsaved?.markClean?.();
@@ -2946,6 +3227,12 @@
                 clearQuotationDraftStorage();
             }
         });
-    });
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', bootSupplierQuotationCreate, { once: true });
+    } else {
+        bootSupplierQuotationCreate();
+    }
 </script>
 @endpush
