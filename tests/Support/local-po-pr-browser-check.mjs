@@ -128,12 +128,12 @@ try{
             findings.push({locale,theme,width,page,prVisible:true,noOverflow:true,keyboard:page==='invoice-create'});
         }
         await command('Page.navigate',{url:`${origin}/fixtures/${locale}-finance-index.html`});
-        await until(`document.querySelector('[data-local-import=PO]')?.dataset.initialized==='true'&&Boolean(window.bootstrap?.Modal)`);
-        await evaluate(`document.documentElement.dataset.theme=${JSON.stringify(theme)};window.bootstrap.Modal.getOrCreateInstance(document.getElementById('localPoImportModal')).show()`);
+        await until(`document.querySelector('[data-local-import=PO]')?.dataset.initialized==='true'&&Boolean(window.AdasiModal)`);
+        await evaluate(`document.documentElement.dataset.theme=${JSON.stringify(theme)};window.AdasiModal.getOrCreateInstance(document.getElementById('localPoImportModal')).show()`);
         await until(`document.querySelector('#localPoImportModal [data-recovery-follow-up-list] button')`);
         await evaluate(`document.querySelector('#localPoImportModal [data-recovery-follow-up-list] button').click()`);
         await until(`document.getElementById('localPoImportToken').value==='pr-token'&&!document.getElementById('btnConfirmLocalPoImport').disabled`);
-        await until(`document.getElementById('localPoImportModal').getAttribute('aria-modal')==='true'`);
+        await until(`document.getElementById('localPoImportModal').open && document.getElementById('localPoImportModal').matches(':modal')`);
         await delay(350);
         assert.ok(await evaluate(`document.getElementById('localPoImportPreviewBody').textContent.includes('PR-TEST-01')`));
         const ax=await command('Accessibility.getFullAXTree');assert.ok(ax.nodes.some(n=>n.role?.value==='dialog'&&n.name?.value));

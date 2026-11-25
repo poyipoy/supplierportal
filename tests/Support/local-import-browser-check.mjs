@@ -140,7 +140,7 @@ async function until(expression, timeout = 25000) {
         await sleep(100);
     }
     await screenshot('failure');
-    console.log(await evaluate("JSON.stringify({ ready:document.readyState, jq:typeof window.jQuery, dt:typeof window.jQuery?.fn?.dataTable, initialized:document.querySelector('[data-gr-table]')?.dataset.initialized, first:document.querySelector('#poGoodsReceiptsTable tbody tr td')?.textContent, text:document.body.textContent.slice(-400) })"));
+    console.log(await evaluate("JSON.stringify({ ready:document.readyState, dt:typeof window.DataTable, modal:typeof window.AdasiModal, initialized:document.querySelector('[data-gr-table]')?.dataset.initialized, first:document.querySelector('#poGoodsReceiptsTable tbody tr td')?.textContent, text:document.body.textContent.slice(-400) })"));
     throw new Error(`Browser condition timed out: ${expression}; errors: ${JSON.stringify(browserErrors)}`);
 }
 async function screenshot(name) {
@@ -181,8 +181,8 @@ try {
                 status = 'QUEUED'; phase = 'QUEUED'; kind = 'GR';
                 await command('Emulation.setDeviceMetricsOverride', { width, height: 950, deviceScaleFactor: 1, mobile: false });
                 await command('Page.navigate', { url: `${origin}/fixtures/${locale}-imports.html` });
-                await until("document.querySelector('[data-local-import=GR]')?.dataset.initialized === 'true' && Boolean(window.bootstrap?.Modal)");
-                await evaluate(`document.documentElement.dataset.theme=${JSON.stringify(theme)}; window.bootstrap.Modal.getOrCreateInstance(document.getElementById('localGrImportModal')).show()`);
+                await until("document.querySelector('[data-local-import=GR]')?.dataset.initialized === 'true' && Boolean(window.AdasiModal)");
+                await evaluate(`document.documentElement.dataset.theme=${JSON.stringify(theme)}; window.AdasiModal.getOrCreateInstance(document.getElementById('localGrImportModal')).show()`);
                 await until("Boolean(document.querySelector('#localGrImportModal [data-recovery-list] button'))");
                 await evaluate("document.querySelector('#localGrImportModal [data-recovery-list] button').click()");
                 await until("Boolean(document.querySelector('#localGrImportModal [role=progressbar]'))");
@@ -222,12 +222,12 @@ try {
                 await command('Emulation.setEmulatedMedia', { features: [] });
                 await command('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Escape', code: 'Escape', windowsVirtualKeyCode: 27 });
                 await command('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Escape', code: 'Escape', windowsVirtualKeyCode: 27 });
-                await until("!document.getElementById('localGrImportModal').classList.contains('show')");
+                await until("!document.getElementById('localGrImportModal').open");
                 findings.push({ area: 'GR modal', locale, theme, width, queuedUnknown: true, savingPercent: 66, noOverflow: true, accessibleProgress: true, reducedMotion: true, escape: true });
                 console.log(`PASS modal ${locale} ${theme} ${width}`);
                 if (width === 1440) {
                     kind = 'PO'; status = 'QUEUED'; phase = 'QUEUED';
-                    await evaluate("window.bootstrap.Modal.getOrCreateInstance(document.getElementById('localPoImportModal')).show()");
+                    await evaluate("window.AdasiModal.getOrCreateInstance(document.getElementById('localPoImportModal')).show()");
                     await until("Boolean(document.querySelector('#localPoImportModal [data-recovery-list] button'))");
                     await evaluate("document.querySelector('#localPoImportModal [data-recovery-list] button').click()");
                     await until("Boolean(document.querySelector('#localPoImportModal .modal-header [role=progressbar]'))");
@@ -242,8 +242,8 @@ try {
                     assert.equal(reflow.scrollable, 'auto');
                     assert.ok(reflow.maxHeight <= 237);
                     await screenshot(`${locale}-${theme}-400-percent-reflow`);
-                    await evaluate("window.bootstrap.Modal.getOrCreateInstance(document.getElementById('localPoImportModal')).hide()");
-                    await until("!document.getElementById('localPoImportModal').classList.contains('show')");
+                    await evaluate("window.AdasiModal.getOrCreateInstance(document.getElementById('localPoImportModal')).hide()");
+                    await until("!document.getElementById('localPoImportModal').open");
                     findings.push({ area:'PO modal', locale, theme, width, queuedUnknown:true, savingPercent:66, reflow400:true });
                     console.log(`PASS PO modal ${locale} ${theme}, including 400% reflow`);
                 }
@@ -252,23 +252,23 @@ try {
         for (audience of ['finance', 'purchasing', 'supplier']) {
             await command('Emulation.setDeviceMetricsOverride', { width: 1440, height: 950, deviceScaleFactor: 1, mobile: false });
             await command('Page.navigate', { url: `${origin}/fixtures/${locale}-${audience}-detail.html` });
-            await until("document.querySelector('[data-gr-table]')?.dataset.initialized === 'true' && Boolean(window.jQuery('#poGoodsReceiptsTable').DataTable().ajax.json()) && window.jQuery('#poGoodsReceiptsTable').DataTable().ready() && document.querySelector('#poGoodsReceiptsTable tbody tr td')?.textContent.trim() === '1'");
-            await evaluate("void window.jQuery('#poGoodsReceiptsTable').DataTable().page(1).draw('page')");
+            await until("document.querySelector('[data-gr-table]')?.dataset.initialized === 'true' && Boolean(new window.DataTable('#poGoodsReceiptsTable').ajax.json()) && new window.DataTable('#poGoodsReceiptsTable').ready() && document.querySelector('#poGoodsReceiptsTable tbody tr td')?.textContent.trim() === '1'");
+            await evaluate("void new window.DataTable('#poGoodsReceiptsTable').page(1).draw('page')");
             await until("document.querySelector('#poGoodsReceiptsTable tbody tr td')?.textContent.trim() === '26'");
             if (audience !== 'supplier') {
                 await evaluate("document.querySelector('[data-gr-edit]').click()");
-                await until("document.getElementById('editPoGrModal').classList.contains('show') && !window.bootstrap.Modal.getInstance(document.getElementById('editPoGrModal'))._isTransitioning");
+                await until("document.getElementById('editPoGrModal').open");
                 assert.ok(await evaluate("document.querySelector('[data-gr-edit-form] [name=gr_number]').value.startsWith('UI-GR-')"));
                 assert.equal(await evaluate("document.querySelector('[data-gr-edit-form] [name=qty]').value"), '1.125');
                 assert.ok(await evaluate("document.querySelector('[data-gr-edit-form]').action.includes('/goods-receipts/')"));
-                await evaluate("window.bootstrap.Modal.getOrCreateInstance(document.getElementById('editPoGrModal')).hide()");
-                await until("!document.getElementById('editPoGrModal').classList.contains('show')");
+                await evaluate("window.AdasiModal.getOrCreateInstance(document.getElementById('editPoGrModal')).hide()");
+                await until("!document.getElementById('editPoGrModal').open");
                 await until("document.activeElement?.hasAttribute('data-gr-edit')");
                 await evaluate("document.querySelector('[data-gr-cancel]').click()");
-                await until("document.getElementById('cancelPoGrModal').classList.contains('show') && !window.bootstrap.Modal.getInstance(document.getElementById('cancelPoGrModal'))._isTransitioning");
+                await until("document.getElementById('cancelPoGrModal').open");
                 assert.ok(await evaluate("document.querySelector('[data-gr-cancel-form]').action.includes('/cancel')"));
-                await evaluate("window.bootstrap.Modal.getOrCreateInstance(document.getElementById('cancelPoGrModal')).hide()");
-                await until("getComputedStyle(document.getElementById('cancelPoGrModal')).display === 'none'");
+                await evaluate("window.AdasiModal.getOrCreateInstance(document.getElementById('cancelPoGrModal')).hide()");
+                await until("!document.getElementById('cancelPoGrModal').open");
             } else {
                 assert.equal(await evaluate("document.querySelectorAll('[data-gr-edit], [data-gr-cancel]').length"), 0);
             }

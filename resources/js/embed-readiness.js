@@ -373,7 +373,6 @@ export function bootEmbedReadiness(win = globalThis.window) {
     }
 
     let dtBound = false;
-    let jqPrefilterBound = false;
 
     const onTableProcessing = (_event, settings, busy) => {
         if (isAjaxDataTable(settings)) {
@@ -428,29 +427,6 @@ export function bootEmbedReadiness(win = globalThis.window) {
         const existingTables = win.DataTable?.tables?.();
         if (Array.isArray(existingTables)) {
             existingTables.forEach(bindTableProcessing);
-        }
-
-        if (!jqPrefilterBound && typeof win.jQuery?.ajaxPrefilter === 'function') {
-            jqPrefilterBound = true;
-            win.jQuery.ajaxPrefilter((options, _original, jqXHR) => {
-                const method = String(options?.type || options?.method || 'GET').toUpperCase();
-                const isDt = Boolean(
-                    typeof options?.data === 'string' && /(?:^|&)draw=\d+/.test(options.data)
-                    || (options?.data && typeof options.data === 'object' && Object.prototype.hasOwnProperty.call(options.data, 'draw')),
-                );
-                if (isDt) return;
-
-                let absUrl = '';
-                try {
-                    absUrl = options?.url ? new URL(options.url, win.location.href).toString() : '';
-                } catch {
-                    absUrl = '';
-                }
-                const reqId = `jq-${++reqSeq}`;
-                if (controller.onRequestStart(reqId, { url: absUrl, method })) {
-                    jqXHR?.always?.(() => controller.onRequestEnd(reqId));
-                }
-            });
         }
     };
 

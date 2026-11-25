@@ -31,7 +31,7 @@ async () => {
     };
     window.AdasiAsyncExport = { ...sdkOriginal, startExport: async (form, options) => { exports.push(structuredClone(options.body)); return false; } };
     try {
-        if (!modal.classList.contains('show')) root.querySelector('[data-export-open]').click();
+        if (!modal.open) root.querySelector('[data-export-open]').click();
         await wait(() => !root.querySelector('[data-export-submit]').disabled);
         button('reset').click(); expect('Reset is exact server defaults (10 of 12)', defaults);
         const moveButtons = [...root.querySelectorAll('[data-column-command="move-left"],[data-column-command="move-right"]')];
@@ -76,7 +76,7 @@ async () => {
         assert('Resize closes menu and restores invoker focus', menu.hidden && document.activeElement === button('menu'), { hidden: menu.hidden, focus: document.activeElement?.dataset.columnCommand });
         button('menu').click();
         document.activeElement.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
-        assert('First Escape closes menu only', menu.hidden && modal.classList.contains('show'), { menuHidden: menu.hidden, modalOpen: modal.classList.contains('show') });
+        assert('First Escape closes menu only', menu.hidden && modal.open, { menuHidden: menu.hidden, modalOpen: modal.open });
         pick('po_number'); document.activeElement.dispatchEvent(new KeyboardEvent('keydown', { key: 'End', bubbles: true, cancelable: true }));
         assert('Keyboard End selects last visible header', document.activeElement?.dataset.key === 'currency', document.activeElement?.dataset.key);
         document.activeElement.dispatchEvent(new KeyboardEvent('keydown', { key: 'Home', bubbles: true, cancelable: true }));
@@ -84,9 +84,9 @@ async () => {
         document.activeElement.dispatchEvent(new KeyboardEvent('keydown', { key: 'F10', shiftKey: true, bubbles: true, cancelable: true }));
         assert('Keyboard context menu focuses a command', !menu.hidden && menu.contains(document.activeElement), document.activeElement?.dataset.columnCommand);
         document.activeElement.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
-        bootstrap.Modal.getOrCreateInstance(modal).hide(); await wait(() => !modal.classList.contains('show') && !document.querySelector('.modal-backdrop'));
+        window.AdasiModal.getOrCreateInstance(modal).hide(); await wait(() => !modal.open);
         assert('Close restores actual opener', document.activeElement === root.querySelector('[data-export-open]'), document.activeElement?.id);
-        root.querySelector('[data-export-quick]').click(); await wait(() => exports.length === 2 && modal.classList.contains('show') && !root.querySelector('[data-export-submit]').disabled);
+        root.querySelector('[data-export-quick]').click(); await wait(() => exports.length === 2 && modal.open && !root.querySelector('[data-export-submit]').disabled);
         assert('Quick uses identical serialized personal default', JSON.stringify(exports[1].options) === JSON.stringify(exports[0].options), exports[1].options);
         button('reset').click(); expect('Reset after preset restores defaults only', defaults);
         root.querySelector('.modal-body').scrollTop = 0;

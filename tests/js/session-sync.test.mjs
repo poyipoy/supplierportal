@@ -11,7 +11,7 @@ const DECLINED = { isConfirmed: false, isDismissed: true, dismiss: 'cancel' };
 const REPLACED = { isConfirmed: false, isDismissed: true };
 const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
 
-function fixture({ session = { crossTab: true, cleanup: false, userId: 41 }, login = null, broadcast = true, blocked = false, initialStorage = [], channelFailure = null, answers = [DECLINED], dirty = false, fetchImpl = null, jquery = null, dom = null, alertRunsPreConfirm = true, embed = false, parentWin = null, topWin = null, iframes = [] } = {}) {
+function fixture({ session = { crossTab: true, cleanup: false, userId: 41 }, login = null, broadcast = true, blocked = false, initialStorage = [], channelFailure = null, answers = [DECLINED], dirty = false, fetchImpl = null, dom = null, alertRunsPreConfirm = true, embed = false, parentWin = null, topWin = null, iframes = [] } = {}) {
     const win = new EventTarget();
     const doc = Object.assign(new EventTarget(), {
         documentElement: { dataset: embed ? { workspaceEmbed: 'true' } : {} },
@@ -46,7 +46,6 @@ function fixture({ session = { crossTab: true, cleanup: false, userId: 41 }, log
         },
         AdasiUnsaved: { isDirty: () => dirty, setSubmitting: (value) => submitting.push(value) },
         ...(fetchImpl ? { fetch: fetchImpl } : {}),
-        ...(jquery ? { jQuery: jquery } : {}),
         Echo: { disconnect: () => { disconnects++; } },
         BroadcastChannel: broadcast ? class extends EventTarget {
             constructor(name) { super(); if (channelFailure === 'constructor') throw Error('blocked channel'); assert.equal(name, SESSION_CHANNEL); channel = this; }
@@ -407,74 +406,89 @@ test('observers are not installed when cross-tab handling is off or for guests',
     assert.equal(guest.win.fetch, fetchImpl);
 });
 
-function jqueryStub() {
+function dtDomStub() {
     const handlers = {};
-    const prefilters = [];
     const dataTableExt = { errMode: 'alert' };
-    const stub = Object.assign(() => ({ on: (name, handler) => { handlers[name] = handler; } }), {
-        fn: { dataTable: { ext: dataTableExt } },
-        ajaxPrefilter: (filter) => prefilters.push(filter),
-    });
-    return { stub, handlers, prefilters, dataTableExt };
+    const DataTable = {
+        ajax: { defaults: { headers: { 'X-CSRF-TOKEN': 'old-token' } } },
+        ext: dataTableExt,
+        Dom: {
+            s: () => ({
+                on: (names, handler) => {
+                    for (const name of String(names).split(/\s+/).filter(Boolean)) {
+                        handlers[name] = handler;
+                    }
+                },
+                off: () => {},
+            }),
+        },
+    };
+    return { DataTable, handlers, dataTableExt };
 }
 
-test('jQuery ajax completions (DataTables, legacy pages) that report an ended session open the dialog', () => {
-    const { stub, handlers } = jqueryStub();
-    const f = fixture({ jquery: stub });
-    handlers.ajaxComplete({}, { status: 200 }, {});
-    handlers.ajaxComplete({}, { status: 401 }, { crossDomain: true });
+test('DataTables 3 xhr.dt completions that report an ended same-origin session open the dialog', () => {
+    const stub = dtDomStub();
+    const f = fixture();
+    f.win.DataTable = stub.DataTable;
+    bootSessionSync(f.win, f.doc);
+    stub.handlers['xhr.dt']({}, { ajax: { url: '/purchasing/purchase-orders' } }, null, { status: 200 });
+    stub.handlers['xhr.dt']({}, { ajax: { url: 'https://elsewhere.example.test/table' } }, null, { status: 401 });
     assert.equal(f.prompts.length, 0);
-    handlers.ajaxComplete({}, { status: 401 }, { crossDomain: false });
+    stub.handlers['xhr.dt']({}, { ajax: { url: '/purchasing/purchase-orders' } }, null, { status: 401 });
     assert.equal(f.prompts.length, 1);
 });
 
 test('DataTables 3 native XHR events (xhr.dt, dt-error.dt, preXhr.dt) detect expired sessions once and swap retired CSRF tokens', async () => {
     const server = statusServer({ status: 200, body: { authenticated: true, user_id: 41, csrf_token: 'new-token' } });
-    const { stub, handlers } = jqueryStub();
-    const f = fixture({ session: RESUMABLE, answers: [CONFIRMED], dom: tokenDom(), fetchImpl: server.impl, jquery: stub });
-    f.win.DataTable = { ajax: { defaults: { headers: { 'X-CSRF-TOKEN': 'old-token' } } }, ext: { errMode: 'alert' } };
+    const stub = dtDomStub();
+    const f = fixture({ session: RESUMABLE, answers: [CONFIRMED], dom: tokenDom(), fetchImpl: server.impl });
+    f.win.DataTable = stub.DataTable;
+    bootSessionSync(f.win, f.doc);
 
     // Cross-origin DataTables response is ignored.
-    handlers['xhr.dt']({}, { ajax: { url: 'https://elsewhere.example.test/table' } }, null, { status: 401 });
+    stub.handlers['xhr.dt']({}, { ajax: { url: 'https://elsewhere.example.test/table' } }, null, { status: 401 });
     assert.equal(f.prompts.length, 0);
 
-    // Same-origin 401 on xhr.dt opens reconnect once; duplicate ajaxComplete/dt-error.dt for same XHR is deduplicated.
+    // Same-origin 401 on xhr.dt opens reconnect once; duplicate dt-error.dt for same XHR is deduplicated.
     const dtXhr = { status: 401 };
-    handlers['xhr.dt']({}, { ajax: { url: '/purchasing/purchase-orders' }, jqXHR: dtXhr }, null, dtXhr);
-    handlers.ajaxComplete({}, dtXhr, { crossDomain: false });
-    handlers['dt-error.dt']({}, { ajax: { url: '/purchasing/purchase-orders' }, jqXHR: dtXhr }, 7, 'Ajax error');
+    stub.handlers['xhr.dt']({}, { ajax: { url: '/purchasing/purchase-orders' }, jqXHR: dtXhr }, null, dtXhr);
+    stub.handlers['dt-error.dt']({}, { ajax: { url: '/purchasing/purchase-orders' }, jqXHR: dtXhr }, 7, 'Ajax error');
     assert.equal(f.prompts.length, 1);
     await flush();
 
     // After restore, DataTable.ajax.defaults.headers and preXhr.dt same-origin headers/data swap retired token.
     assert.equal(f.win.DataTable.ajax.defaults.headers['X-CSRF-TOKEN'], 'new-token');
     const sameOriginOpts = { url: '/purchasing/purchase-orders', headers: { 'X-CSRF-TOKEN': 'old-token' }, data: { _token: 'old-token', draw: 2 } };
-    handlers['preXhr.dt']({}, {}, sameOriginOpts.data, sameOriginOpts);
+    stub.handlers['preXhr.dt']({}, {}, sameOriginOpts.data, sameOriginOpts);
     assert.equal(sameOriginOpts.headers['X-CSRF-TOKEN'], 'new-token');
     assert.equal(sameOriginOpts.data._token, 'new-token');
 
     const crossOriginOpts = { url: 'https://elsewhere.example.test/table', headers: { 'X-CSRF-TOKEN': 'old-token' }, data: { _token: 'old-token' } };
-    handlers['preXhr.dt']({}, {}, crossOriginOpts.data, crossOriginOpts);
+    stub.handlers['preXhr.dt']({}, {}, crossOriginOpts.data, crossOriginOpts);
     assert.equal(crossOriginOpts.headers['X-CSRF-TOKEN'], 'old-token');
     assert.equal(crossOriginOpts.data._token, 'old-token');
 });
 
 test('DataTables raises no alert of its own for an ended session but still reports other errors', () => {
-    const { stub, dataTableExt } = jqueryStub();
-    const f = fixture({ jquery: stub });
+    const stub = dtDomStub();
+    const f = fixture();
+    f.win.DataTable = stub.DataTable;
+    bootSessionSync(f.win, f.doc);
     const alerts = [];
     f.win.alert = (message) => alerts.push(message);
-    assert.equal(typeof dataTableExt.errMode, 'function');
-    dataTableExt.errMode({ jqXHR: { status: 401 } }, 7, 'DataTables warning: Ajax error');
-    dataTableExt.errMode({ jqXHR: { status: 419 } }, 7, 'DataTables warning: Ajax error');
+    assert.equal(typeof stub.dataTableExt.errMode, 'function');
+    stub.dataTableExt.errMode({ jqXHR: { status: 401 } }, 7, 'DataTables warning: Ajax error');
+    stub.dataTableExt.errMode({ jqXHR: { status: 419 } }, 7, 'DataTables warning: Ajax error');
     assert.deepEqual(alerts, []);
-    dataTableExt.errMode({ jqXHR: { status: 500 } }, 7, 'DataTables warning: boom');
-    dataTableExt.errMode(undefined, 1, 'DataTables warning: no settings');
+    stub.dataTableExt.errMode({ jqXHR: { status: 500 } }, 7, 'DataTables warning: boom');
+    stub.dataTableExt.errMode(undefined, 1, 'DataTables warning: no settings');
     assert.deepEqual(alerts, ['DataTables warning: boom', 'DataTables warning: no settings']);
 
-    const own = jqueryStub();
+    const own = dtDomStub();
     own.dataTableExt.errMode = 'none';
-    fixture({ jquery: own.stub });
+    const ownFixture = fixture();
+    ownFixture.win.DataTable = own.DataTable;
+    bootSessionSync(ownFixture.win, ownFixture.doc);
     assert.equal(own.dataTableExt.errMode, 'none', 'a page that handles table errors itself is left alone');
 });
 
@@ -540,8 +554,7 @@ test('reconnect restores a live session in place without navigating or asking fo
 
 test('requests still carrying the old token from inline scripts are sent with the restored one', async () => {
     const server = statusServer({ status: 200, body: { authenticated: true, user_id: 41, csrf_token: 'new-token' } });
-    const { stub, prefilters } = jqueryStub();
-    const f = fixture({ session: RESUMABLE, answers: [CONFIRMED], dom: tokenDom(), fetchImpl: server.impl, jquery: stub });
+    const f = fixture({ session: RESUMABLE, answers: [CONFIRMED], dom: tokenDom(), fetchImpl: server.impl });
     f.win.Echo.connector = { options: { auth: { headers: { 'X-CSRF-TOKEN': 'old-token' } } } };
     f.api.handleActionResponse({ status: 419 });
     await flush();
@@ -559,13 +572,6 @@ test('requests still carrying the old token from inline scripts are sent with th
     await f.win.fetch('/x', { method: 'POST', headers: unrelated });
     assert.equal(unrelated['X-CSRF-TOKEN'], 'some-other-value', 'only tokens this page held are swapped');
     assert.equal(f.win.Echo.connector.options.auth.headers['X-CSRF-TOKEN'], 'new-token');
-
-    const options = { crossDomain: false, headers: { 'X-CSRF-TOKEN': 'old-token' }, data: 'a=1&_token=old-token&b=2' };
-    prefilters[0](options);
-    assert.deepEqual(options, { crossDomain: false, headers: { 'X-CSRF-TOKEN': 'new-token' }, data: 'a=1&_token=new-token&b=2' });
-    const cross = { crossDomain: true, headers: { 'X-CSRF-TOKEN': 'old-token' }, data: '_token=old-token' };
-    prefilters[0](cross);
-    assert.deepEqual(cross, { crossDomain: true, headers: { 'X-CSRF-TOKEN': 'old-token' }, data: '_token=old-token' });
 });
 
 test('a session that cannot be restored navigates to the current page for login or to a same-origin code challenge', async () => {
@@ -1197,8 +1203,10 @@ test('probeSessionStatus deduplicates concurrent probes and classifies authentic
 });
 
 test('DataTables 3 custom ajax.error still triggers session-expired modal on 401/419 even before any CSRF rotation', () => {
-    const { stub, handlers } = jqueryStub();
-    const f = fixture({ jquery: stub });
+    const stub = dtDomStub();
+    const f = fixture();
+    f.win.DataTable = stub.DataTable;
+    bootSessionSync(f.win, f.doc);
     const customCalls = [];
     const customErrorFn = (xhr, textStatus, errThrown) => {
         customCalls.push({ status: xhr?.status, textStatus, errThrown });
@@ -1210,7 +1218,7 @@ test('DataTables 3 custom ajax.error still triggers session-expired modal on 401
         error: customErrorFn,
     };
     const settings = { ajax: { url: ajaxOpts401.url, error: customErrorFn } };
-    handlers['preXhr.dt']({}, settings, {}, ajaxOpts401);
+    stub.handlers['preXhr.dt']({}, settings, {}, ajaxOpts401);
 
     const xhr401 = { status: 401, getResponseHeader: () => null };
     settings.jqXHR = xhr401;
@@ -1223,7 +1231,7 @@ test('DataTables 3 custom ajax.error still triggers session-expired modal on 401
 
     // Non-session HTTP 500 on same-origin custom ajax.error must still run customErrorFn without prompting.
     const ajaxOpts500 = { url: ajaxOpts401.url, error: customErrorFn };
-    handlers['preXhr.dt']({}, settings, {}, ajaxOpts500);
+    stub.handlers['preXhr.dt']({}, settings, {}, ajaxOpts500);
     const xhr500 = { status: 500, getResponseHeader: () => null };
     settings.jqXHR = xhr500;
     ajaxOpts500.error(xhr500, 'error', 'Internal Server Error');
@@ -1235,7 +1243,7 @@ test('DataTables 3 custom ajax.error still triggers session-expired modal on 401
     // Cross-origin 401 must be ignored by session-sync and invoke customErrorFn normally.
     const ajaxOptsCross = { url: 'https://elsewhere.example.test/data', error: customErrorFn };
     const crossSettings = { ajax: { url: ajaxOptsCross.url, error: customErrorFn } };
-    handlers['preXhr.dt']({}, crossSettings, {}, ajaxOptsCross);
+    stub.handlers['preXhr.dt']({}, crossSettings, {}, ajaxOptsCross);
     const xhrCross401 = { status: 401, getResponseHeader: () => null };
     crossSettings.jqXHR = xhrCross401;
     ajaxOptsCross.error(xhrCross401, 'error', 'Unauthorized');

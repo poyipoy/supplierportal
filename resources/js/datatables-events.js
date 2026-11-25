@@ -22,11 +22,6 @@ export function onDataTableEvent(target, eventNames, handler, win = globalThis.w
         return;
     }
 
-    if (typeof resolvedWin?.jQuery === 'function') {
-        resolvedWin.jQuery(target)?.on?.(eventNames, handler);
-        return;
-    }
-
     if (typeof target.addEventListener !== 'function') {
         return;
     }
@@ -66,16 +61,6 @@ export function offDataTableEvent(target, eventNames, handler, win = globalThis.
             domTarget.off(eventNames, handler);
         } else {
             domTarget.off(eventNames);
-        }
-        return;
-    }
-
-    if (typeof resolvedWin?.jQuery === 'function') {
-        const jqTarget = resolvedWin.jQuery(target);
-        if (handler) {
-            jqTarget?.off?.(eventNames, handler);
-        } else {
-            jqTarget?.off?.(eventNames);
         }
         return;
     }

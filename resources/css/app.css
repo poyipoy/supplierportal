@@ -5115,10 +5115,6 @@ html.js [data-calendar-native-submit] {
     .local-import-modal .local-import-review-summary p { font-size: 1rem; line-height: 1.5; }
     .local-import-modal .modal-footer { justify-content: flex-end; }
 }
-@media (max-height: 480px) {
-    .local-import-modal .modal-dialog-scrollable .modal-content { overflow-y: auto; }
-    .local-import-modal .modal-dialog-scrollable .modal-body { overflow: visible; flex: 0 0 auto; }
-}
 @keyframes local-import-progress { from { transform: translateX(-100%); } to { transform: translateX(300%); } }
 @media (prefers-reduced-motion: reduce) {
     .local-import-progress-fill { transition: none; }
@@ -7096,6 +7092,18 @@ dialog.ui-native-dialog > .modal-dialog-scrollable .modal-body {
     min-height: 0;
     overflow-y: auto;
     overscroll-behavior-y: contain;
+}
+
+@media (max-height: 480px) {
+    dialog.ui-native-dialog.local-import-modal > .modal-dialog-scrollable > .modal-content {
+        overflow-y: auto;
+        overflow-x: hidden;
+    }
+
+    dialog.ui-native-dialog.local-import-modal > .modal-dialog-scrollable .modal-body {
+        overflow: visible;
+        flex: 0 0 auto;
+    }
 }
 
 :where(dialog.ui-native-dialog) :where(.modal-header) {

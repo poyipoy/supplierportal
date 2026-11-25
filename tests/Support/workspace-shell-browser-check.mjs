@@ -372,7 +372,6 @@ try {
                         && d.querySelector('#main-content')
                         && !d.querySelector('#adasiLoader.active')
                         && !d.querySelector('.dt-container.is-loading')
-                        && (!w?.jQuery || w.jQuery.active === 0)
                         && (!w?.AdasiEmbedReadiness || w.AdasiEmbedReadiness.isReady)
                     );
                 } catch {
@@ -387,15 +386,13 @@ try {
                     let ready = null;
                     let hasMain = false;
                     let loaderActive = false;
-                    let jqActive = null;
                     try {
                         href = f?.contentWindow?.location?.href || null;
                         ready = f?.contentDocument?.readyState || null;
                         hasMain = Boolean(f?.contentDocument?.querySelector('#main-content'));
                         loaderActive = Boolean(f?.contentDocument?.querySelector('#adasiLoader.active'));
-                        jqActive = f?.contentWindow?.jQuery?.active ?? null;
                     } catch {}
-                    return { id: p.dataset.workspacePanel, hidden: p.hidden, ariaBusy: p.getAttribute('aria-busy'), src: f?.src, ready, href, hasMain, loaderActive, jqActive };
+                    return { id: p.dataset.workspacePanel, hidden: p.hidden, ariaBusy: p.getAttribute('aria-busy'), src: f?.src, ready, href, hasMain, loaderActive };
                 });
                 const prGrp = document.querySelector('[data-workspace-module="requisitions"]')?.outerHTML?.slice(0, 300);
                 return { panels, activeGroup: document.querySelector('.workspace-session-group.is-active')?.dataset.workspaceGroup, activeTab: document.querySelector('.workspace-session.is-active')?.dataset.workspaceSession, prGrp };
@@ -926,7 +923,7 @@ try {
     assert.equal(afterMouseClickHide.op, '0');
     await recordFinding('5b_hover_only_close_button_wcag_and_isolation', { restCloseState, childHoverState, afterMouseClickHide });
 
-    // Cross-boundary outside-click dismissal + data-bs-auto-close="outside" preservation
+    // Cross-boundary outside-click dismissal + data-ui-auto-close="outside" preservation
     const userTriggerPt = await evaluate(`(() => {
         const r = document.querySelector('.topbar-user-trigger')?.getBoundingClientRect();
         return r ? { x: r.left + r.width / 2, y: r.top + r.height / 2 } : null;

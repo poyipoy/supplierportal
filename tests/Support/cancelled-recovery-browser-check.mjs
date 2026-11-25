@@ -65,7 +65,7 @@ async function evaluate(expression) {
 async function until(expression) {
     const deadline = Date.now() + 25000;
     while (Date.now() < deadline) { if (await evaluate(expression)) return; await sleep(100); }
-    console.log(await evaluate("JSON.stringify({ready:document.readyState,url:location.href,bootstrap:typeof window.bootstrap,jq:typeof window.jQuery,dt:typeof window.jQuery?.fn?.dataTable,table:document.querySelector('[data-gr-table]')?.dataset,resources:performance.getEntriesByType('resource').map(r=>r.name)})"));
+    console.log(await evaluate("JSON.stringify({ready:document.readyState,url:location.href,modal:typeof window.AdasiModal,dt:typeof window.DataTable,table:document.querySelector('[data-gr-table]')?.dataset,resources:performance.getEntriesByType('resource').map(r=>r.name)})"));
     throw new Error(`Timed out: ${expression}; ${JSON.stringify(errors)}`);
 }
 async function key(name, code) {
@@ -115,9 +115,9 @@ try {
                 const id = kind === 'po' ? 'restorePoModal' : 'restorePoGrModal';
                 await command('Emulation.setDeviceMetricsOverride', { width: 375, height: 850, deviceScaleFactor: 1, mobile: false });
                 await command('Page.navigate', { url: `${origin}/fixtures/${locale}-${kind}.html` });
-                await until("Boolean(window.bootstrap?.Modal) && document.querySelector('[data-gr-table]')?.dataset.initialized === 'true'");
+                await until("Boolean(window.AdasiModal) && document.querySelector('[data-gr-table]')?.dataset.initialized === 'true'");
                 if (kind === 'gr') await until("Boolean(document.querySelector('[data-gr-restore]'))");
-                const selector = kind === 'po' ? '[data-bs-target="#restorePoModal"]' : '[data-gr-restore]';
+                const selector = kind === 'po' ? '[data-ui-modal-open="#restorePoModal"]' : '[data-gr-restore]';
                 await evaluate(`document.documentElement.dataset.theme=${JSON.stringify(theme)}; document.querySelector(${JSON.stringify(selector)}).click()`);
                 await until(`document.activeElement?.id === '${id}Reason'`);
                 const layout = await evaluate(`(() => { const m=document.querySelector('#${id} .modal-content'); const r=m.getBoundingClientRect(); return {left:r.left,right:r.right,width:innerWidth,overflow:m.scrollWidth>m.clientWidth+1}; })()`);
@@ -141,8 +141,8 @@ try {
                 const reflow = await evaluate(`(() => { const m=document.querySelector('#${id} .modal-content'); const r=m.getBoundingClientRect();return {overflow:m.scrollWidth>m.clientWidth+1,height:r.height,bottom:r.bottom,viewport:innerHeight};})()`);
                 assert.ok(!reflow.overflow && reflow.height<=reflow.viewport && reflow.bottom<=reflow.viewport+1,JSON.stringify(reflow));
                 await key('Escape', 27);
-                await until(`!document.getElementById('${id}').classList.contains('show')`);
-                await until(kind === 'po' ? "document.activeElement?.getAttribute('data-bs-target') === '#restorePoModal'" : "document.activeElement?.hasAttribute('data-gr-restore') || document.activeElement?.id === 'poGrStatusFilter'");
+                await until(`!document.getElementById('${id}').open`);
+                await until(kind === 'po' ? "document.activeElement?.getAttribute('data-ui-modal-open') === '#restorePoModal'" : "document.activeElement?.hasAttribute('data-gr-restore') || document.activeElement?.id === 'poGrStatusFilter'");
                 findings.push({ locale, theme, kind, keyboard: true, focusReturn: true, invalidBlocked: true, contrast,reflow400:true });
                 console.log(`PASS ${locale} ${theme} ${kind}`);
             }

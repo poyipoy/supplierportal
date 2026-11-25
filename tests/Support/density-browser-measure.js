@@ -28,7 +28,7 @@ async () => {
     XMLHttpRequest.prototype.send=function(...args){requests++;return originalXhr.apply(this,args);};
     Storage.prototype.setItem=function(...args){storageWrites++;return originalStorage.apply(this,args);};
     const draw=()=>redraws++;
-    window.jQuery?.(document).on('draw.dt.densityQA',draw);
+    window.AdasiDataTableEvents?.on(document,'draw.dt.densityQA',draw);
     const longTasks=[];
     const observer=new PerformanceObserver(list=>longTasks.push(...list.getEntries().map(e=>({start:e.startTime,duration:e.duration}))));
     observer.observe({type:'longtask',buffered:false});
@@ -52,6 +52,6 @@ async () => {
     } finally {
         document.documentElement.style.scrollBehavior = originalScrollBehavior;
         window.fetch=originalFetch;XMLHttpRequest.prototype.send=originalXhr;Storage.prototype.setItem=originalStorage;
-        window.jQuery?.(document).off('draw.dt.densityQA',draw);observer.disconnect();
+        window.AdasiDataTableEvents?.off(document,'draw.dt.densityQA',draw);observer.disconnect();
     }
 }

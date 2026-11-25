@@ -699,17 +699,6 @@ export function bootAdasiLoader(win = globalThis.window) {
     loader.setTableBusy = (wrapper, busy, optionsOrTranslate) => setTableBusy(wrapper, busy, optionsOrTranslate);
     loader.createInlineLoader = (label, options = {}) => createInlineLoader(label, options, win.document);
 
-    const $ = win.jQuery;
-    if (typeof $?.ajaxPrefilter === 'function') {
-        // jQuery AJAX. Background requests opt out with `global: false` (existing convention);
-        // DataTables shows an inline indicator on its own table instead of blocking the screen.
-        $.ajaxPrefilter((options, original, jqXHR) => {
-            if (options.global === false || isDataTableRequest(options)) return;
-            const token = loader.show();
-            jqXHR.always(() => loader.hide(token));
-        });
-    }
-
     const chainAjaxComplete = (ajaxOpts, callback) => {
         if (!ajaxOpts || typeof ajaxOpts !== 'object' || ajaxOpts.complete?.adasiLoaderWrapped) return;
         const prev = ajaxOpts.complete;

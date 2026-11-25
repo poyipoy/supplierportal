@@ -2612,17 +2612,6 @@ test('bootEmbedReadiness tracks DataTables 3 native XMLHttpRequest, api.table().
             store.set(name, list);
         }
     };
-    const jq = Object.assign((target) => {
-        const store = target === tableNode ? tableHandlers : docHandlers;
-        return {
-            off: () => ({ on: (names, fn) => registerHandler(store, target, names, fn) }),
-            on: (names, fn) => registerHandler(store, target, names, fn),
-        };
-    }, {
-        ajaxPrefilter: () => {},
-        fn: {},
-    });
-
     const readyEvents = [];
     const doc = {
         readyState: 'complete',
@@ -2633,13 +2622,21 @@ test('bootEmbedReadiness tracks DataTables 3 native XMLHttpRequest, api.table().
         document: doc,
         top: {},
         location: { origin: ORIGIN, href: `${ORIGIN}/purchasing/purchase-orders?_embed=1` },
-        jQuery: jq,
         DataTable: {
             Api: class FakeApi {
                 constructor(s) { this._s = s; }
                 table() { return { container: () => container }; }
             },
             tables: (opts) => (opts?.api ? { settings: () => [dtSettings] } : [tableNode]),
+            Dom: {
+                s: (target) => {
+                    const store = target === tableNode ? tableHandlers : docHandlers;
+                    return {
+                        off: () => ({ on: (names, fn) => registerHandler(store, target, names, fn) }),
+                        on: (names, fn) => registerHandler(store, target, names, fn),
+                    };
+                },
+            },
         },
         CustomEvent: class FakeCustomEvent { constructor(type) { this.type = type; } },
         dispatchEvent: (ev) => readyEvents.push(ev.type),
@@ -2649,7 +2646,6 @@ test('bootEmbedReadiness tracks DataTables 3 native XMLHttpRequest, api.table().
         requestAnimationFrame: (fn) => setTimeout(fn, 0),
     };
     win.self = win;
-    jq.fn.dataTable = win.DataTable;
 
     const readiness = bootEmbedReadiness(win);
     assert.ok(readiness, 'bootEmbedReadiness must boot inside an embedded iframe');
@@ -2688,17 +2684,6 @@ test('bootEmbedReadiness settles when a DT 3 table with custom ajax.error fails 
             store.set(name, list);
         }
     };
-    const jq = Object.assign((target) => {
-        const store = target === tableNode ? tableHandlers : docHandlers;
-        return {
-            off: () => ({ on: (names, fn) => registerHandler(store, names, fn) }),
-            on: (names, fn) => registerHandler(store, names, fn),
-        };
-    }, {
-        ajaxPrefilter: () => {},
-        fn: {},
-    });
-
     const readyEvents = [];
     const doc = {
         readyState: 'complete',
@@ -2709,13 +2694,21 @@ test('bootEmbedReadiness settles when a DT 3 table with custom ajax.error fails 
         document: doc,
         top: {},
         location: { origin: ORIGIN, href: `${ORIGIN}/purchasing/comparison/vs-best?_embed=1` },
-        jQuery: jq,
         DataTable: {
             Api: class FakeApi {
                 constructor(s) { this._s = s; }
                 table() { return { container: () => container }; }
             },
             tables: (opts) => (opts?.api ? { settings: () => [] } : []),
+            Dom: {
+                s: (target) => {
+                    const store = target === tableNode ? tableHandlers : docHandlers;
+                    return {
+                        off: () => ({ on: (names, fn) => registerHandler(store, names, fn) }),
+                        on: (names, fn) => registerHandler(store, names, fn),
+                    };
+                },
+            },
         },
         CustomEvent: class FakeCustomEvent { constructor(type) { this.type = type; } },
         dispatchEvent: (ev) => readyEvents.push(ev.type),
@@ -2725,7 +2718,6 @@ test('bootEmbedReadiness settles when a DT 3 table with custom ajax.error fails 
         requestAnimationFrame: (fn) => setTimeout(fn, 0),
     };
     win.self = win;
-    jq.fn.dataTable = win.DataTable;
 
     const readiness = bootEmbedReadiness(win);
     assert.ok(readiness);

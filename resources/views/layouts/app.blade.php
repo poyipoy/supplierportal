@@ -451,9 +451,6 @@
         <x-ui.image-lightbox />
     @endif
 
-    {{-- Bootstrap 5 JS Bundle --}}
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
-
     <script>
         window.initAdasiTooltips = function (root = document) {
             window.AdasiTooltip?.refresh?.(root);
@@ -481,9 +478,6 @@
             }
         });
     </script>
-
-    {{-- jQuery --}}
-    <script src="https://code.jquery.com/jquery-4.1.0.min.js" integrity="sha384-UGSi5euAzE1p4sK41+yKs3vtdPcidmaW6fY2NUITZkjIPyMVUUYB/BV4A5Oa8uu2" crossorigin="anonymous"></script>
 
     @hasSection('uses-datatables')
         {{-- DataTables JS (only on pages that initialize a DataTable) --}}
@@ -627,14 +621,6 @@
                         headers: mergeHeaders(input instanceof Request ? input.headers : null, init.headers),
                     });
                 };
-            }
-
-            if (window.jQuery) {
-                $.ajaxPrefilter((options, originalOptions, jqXHR) => {
-                    if (isInternalUrl(options.url || window.location.href)) {
-                        jqXHR.setRequestHeader(headerName, headerValue);
-                    }
-                });
             }
 
             if (window.DataTable?.Dom?.s) {

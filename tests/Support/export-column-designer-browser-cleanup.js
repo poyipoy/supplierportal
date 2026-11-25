@@ -15,12 +15,12 @@ async () => {
         await wait(() => !root.querySelector('[data-export-submit]').disabled);
         root.querySelector('[data-column-command="menu"]').click();
         document.activeElement.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
-        bootstrap.Modal.getOrCreateInstance(modal).hide();
-        await wait(() => !document.querySelector('.modal-backdrop'));
+        window.AdasiModal.getOrCreateInstance(modal).hide();
+        await wait(() => !modal.open);
     };
     await wait(() => Boolean(window.__fixtureController));
     modal.classList.remove('fade'); // Same lifecycle, without animation wait time.
-    await cycle(); // Bootstrap's one instance per root is initialized once.
+    await cycle(); // Native dialog controller is initialized once.
     const baseline = counts(); const samples = [];
     for (let i = 0; i < 60; i++) { await cycle(); if (i === 29 || i === 59) samples.push({ cycle: i + 1, ...counts() }); }
     window.__fixtureController.destroy();

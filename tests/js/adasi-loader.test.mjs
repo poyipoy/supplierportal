@@ -859,23 +859,23 @@ test('bootAdasiLoader clears .is-loading and aria-busy on failed DT 3 requests e
             store.set(name, list);
         }
     };
-    const jq = Object.assign((target) => {
-        const store = target === tableNode ? tableHandlers : docHandlers;
-        return {
-            off: () => ({ on: (names, fn) => registerHandler(store, names, fn) }),
-            on: (names, fn) => registerHandler(store, names, fn),
-        };
-    }, {
-        ajaxPrefilter: () => {},
-        fn: {},
-    });
-
     class FakeApi {
         constructor(s) { this._s = s; }
         table() { return { container: () => container }; }
     }
-    const DataTable = { Api: FakeApi, tables: () => [tableNode] };
-    jq.fn.dataTable = DataTable;
+    const DataTable = {
+        Api: FakeApi,
+        tables: () => [tableNode],
+        Dom: {
+            s: (target) => {
+                const store = target === tableNode ? tableHandlers : docHandlers;
+                return {
+                    off: () => ({ on: (names, fn) => registerHandler(store, names, fn) }),
+                    on: (names, fn) => registerHandler(store, names, fn),
+                };
+            },
+        },
+    };
 
     doc.addEventListener = () => {};
     doc.querySelector = () => null;
@@ -883,7 +883,6 @@ test('bootAdasiLoader clears .is-loading and aria-busy on failed DT 3 requests e
         document: doc,
         Element: class FakeElement {},
         DataTable,
-        jQuery: jq,
         setTimeout,
         clearTimeout,
         performance: { now: () => 0 },

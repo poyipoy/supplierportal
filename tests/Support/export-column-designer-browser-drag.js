@@ -5,7 +5,7 @@ async () => {
     const root = document.querySelector('[data-advanced-export]');
     const modal = root.querySelector('.modal');
     const wait = async (condition) => { const end = performance.now() + 7000; while (!condition()) { if (performance.now() > end) throw new Error('Not ready'); await new Promise((r) => setTimeout(r, 16)); } };
-    if (!modal.classList.contains('show')) root.querySelector('[data-export-open]').click();
+    if (!modal.open) root.querySelector('[data-export-open]').click();
     await wait(() => !root.querySelector('[data-export-submit]').disabled);
     root.querySelector('[data-column-command="reset"]').click();
     root.querySelector('[data-column-designer]').scrollIntoView({ block: 'start' });
@@ -31,7 +31,7 @@ async () => {
         document.activeElement.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
         const stopped = scroll.scrollLeft;
         await new Promise((r) => setTimeout(r, 100));
-        check('Escape cancels drag, stops rAF and keeps modal/order', scroll.scrollLeft === stopped && modal.classList.contains('show') && !root.querySelector('.is-drag-source,.is-drop-before,.is-drop-after') && JSON.stringify(keys()) === JSON.stringify(original), { scrollLeft: scroll.scrollLeft, keys: keys() });
+        check('Escape cancels drag, stops rAF and keeps modal/order', scroll.scrollLeft === stopped && modal.open && !root.querySelector('.is-drag-source,.is-drop-before,.is-drop-after') && JSON.stringify(keys()) === JSON.stringify(original), { scrollLeft: scroll.scrollLeft, keys: keys() });
         const move = start(original[3]); const first = host.children[0].getBoundingClientRect();
         host.children[0].dispatchEvent(new DragEvent('drop', { bubbles: true, cancelable: true, clientX: first.left + 2, clientY: first.top + 10, dataTransfer: move }));
         const expected = [original[3], ...original.filter((k) => k !== original[3])];

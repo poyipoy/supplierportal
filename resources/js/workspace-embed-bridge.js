@@ -285,7 +285,7 @@ export function bootWorkspaceEmbedBridge() {
         shell.notifyDirty(window, Boolean(event?.detail?.dirty));
     });
 
-    // Propagate AJAX mutations (`fetch` & `jQuery`) to sibling tabs for freshness,
+    // Propagate AJAX mutations (`fetch`) to sibling tabs for freshness,
     // excluding read-only live calculators and preview endpoints.
     if (window.fetch) {
         const prevFetch = window.fetch.bind(window);
@@ -299,16 +299,6 @@ export function bootWorkspaceEmbedBridge() {
             }
             return response;
         };
-    }
-
-    if (window.jQuery) {
-        window.jQuery(document).ajaxSuccess((_event, _xhr, settings) => {
-            const method = String(settings?.type || 'GET').toUpperCase();
-            const absUrl = settings?.url ? toAbsoluteUrl(settings.url) : window.location.href;
-            if (!['GET', 'HEAD', 'OPTIONS'].includes(method) && !isNonMutatingPostUrl(absUrl, origin)) {
-                shell.notifyMutation(window);
-            }
-        });
     }
 
     // Mirror theme/density/accent changes to parent & sibling iframes cleanly.

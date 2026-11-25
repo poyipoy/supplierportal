@@ -35,9 +35,11 @@ const server = createServer(async (request, response) => {
         if (url.pathname.startsWith('/fixtures/')) {
             response.setHeader('Content-Type', 'text/html');
             const manifest = JSON.parse(await readFile(path.join(project, 'public/build/manifest.json'), 'utf8'));
+            const portalFormsEntry = Object.values(manifest).find((entry) => entry.name === 'portal-forms')?.file || 'assets/portal-forms.js';
             const html = await readFile(path.join(fixtures, path.basename(url.pathname)), 'utf8');
             response.end(html.replace(/\/build\/assets\/app-[\w-]+\.js/g, '/build/'+manifest['resources/js/app.js'].file)
-                .replace(/\/build\/assets\/app-[\w-]+\.css/g,'/build/'+manifest['resources/css/app.css'].file)); return;
+                .replace(/\/build\/assets\/app-[\w-]+\.css/g,'/build/'+manifest['resources/css/app.css'].file)
+                .replace(/\/build\/assets\/portal-forms-[\w-]+\.js/g,'/build/'+portalFormsEntry)); return;
         }
         const file = path.resolve(project, 'public', url.pathname.slice(1));
         if (file.startsWith(path.resolve(project, 'public') + path.sep) && existsSync(file)) {
@@ -75,7 +77,7 @@ async function evaluate(expression) {
 async function until(expression) {
     const deadline = Date.now() + 25000;
     while (Date.now() < deadline) { if (await evaluate(expression)) return; await sleep(100); }
-    console.log(await evaluate("JSON.stringify({ready:document.readyState,url:location.href,bootstrap:typeof window.bootstrap,jq:typeof window.jQuery,dt:typeof window.jQuery?.fn?.dataTable,table:document.querySelector('[data-gr-table]')?.dataset,resources:performance.getEntriesByType('resource').map(r=>r.name)})"));
+    console.log(await evaluate("JSON.stringify({ready:document.readyState,url:location.href,modal:typeof window.AdasiModal,dt:typeof window.DataTable,table:document.querySelector('[data-gr-table]')?.dataset,resources:performance.getEntriesByType('resource').map(r=>r.name)})"));
     throw new Error(`Timed out: ${expression}; ${JSON.stringify(errors)}`);
 }
 async function key(name, code) {
@@ -127,8 +129,8 @@ try {
         const name=kind==='PO'?'Po':'Gr',id='local'+name+'ImportModal';
         await command('Emulation.setDeviceMetricsOverride',{width,height:950,deviceScaleFactor:1,mobile:false});
         await command('Page.navigate',{url:`${origin}/fixtures/${locale}-imports.html`});
-        await until(`document.querySelector('[data-local-import=${kind}]')?.dataset.initialized === 'true' && Boolean(window.bootstrap?.Modal)`);
-        await evaluate(`document.documentElement.dataset.theme=${JSON.stringify(theme)};window.bootstrap.Modal.getOrCreateInstance(document.getElementById('${id}')).show()`);
+        await until(`document.querySelector('[data-local-import=${kind}]')?.dataset.initialized === 'true' && Boolean(window.AdasiModal)`);
+        await evaluate(`document.documentElement.dataset.theme=${JSON.stringify(theme)};window.AdasiModal.getOrCreateInstance(document.getElementById('${id}')).show()`);
         await until(`document.querySelector('#${id} [data-recovery-processing-list] button')`);
         assert.equal(await evaluate(`document.querySelector('#${id} [data-recovery-slots]').textContent`),locale==='en'?'1 of 2 import slots in use':'1 dari 2 slot import terpakai');
         await evaluate(`document.querySelector('#${id} [data-recovery-processing-list] button').click()`);
@@ -167,10 +169,10 @@ try {
         assert.equal(await evaluate(`getComputedStyle(document.querySelector('#${id} .local-import-progress-fill')).transitionDuration`),'0s');
         status='COMPLETED';
         await until(`document.getElementById('local${name}ImportSummaryTitle').textContent===${JSON.stringify(locale==='en'?'Completed':'Selesai')}`);
-        assert.equal(await evaluate(`document.getElementById('${id}').classList.contains('show')`),true);
+        assert.equal(await evaluate(`Boolean(document.getElementById('${id}').open)`),true);
         assert.ok(await evaluate(`document.querySelector('#${id} .modal-footer').textContent.includes(${JSON.stringify(locale==='en'?'View import results':'Lihat hasil impor')})`));
         await command('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]});
-        await key('Escape',27);await until(`!document.getElementById('${id}').classList.contains('show')`);
+        await key('Escape',27);await until(`!document.getElementById('${id}').open`);
         findings.push({locale,theme,width,kind,recheck:true,errorLink:true,slots:true,keyboard:true,reflow400:true,completedNoReload:true,textContrast,tableContrast,reducedMotion:true});console.log(`PASS ${locale} ${theme} ${width} ${kind}`);
     }
     if (errors.length) console.log(await evaluate("JSON.stringify([...document.querySelectorAll('template')].filter(t=>!t.content.firstElementChild).map(t=>({for:t.getAttribute('x-for'),if:t.getAttribute('x-if'),html:t.outerHTML.slice(0,300)})))"));

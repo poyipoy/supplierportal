@@ -147,7 +147,7 @@ class FrontendAssetLoadingTest extends TestCase
                 $assets[$url] = true;
             }
         }
-        $this->assertCount(11, $assets);
+        $this->assertCount(9, $assets);
         $this->assertSame([], preg_grep('~/@fontsource/~', array_keys($assets)), 'web fonts are bundled by Vite, not loaded from a CDN');
         $this->assertArrayHasKey('https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.min.js', $assets);
     }
@@ -163,7 +163,8 @@ class FrontendAssetLoadingTest extends TestCase
             ->get(route('purchasing.dashboard'))
             ->assertOk()
             ->assertDontSee('cdn.datatables.net/3.1.5', false)
-            ->assertSee('code.jquery.com/jquery-4.1.0.min.js', false);
+            ->assertDontSee('code.jquery.com/jquery-4.1.0.min.js', false)
+            ->assertDontSee('bootstrap.bundle.min.js', false);
 
         $this->actingAs($purchasing)
             ->get(route('purchasing.requisitions.index'))

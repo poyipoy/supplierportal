@@ -265,7 +265,7 @@ async function until(expression, timeout = 20000) {
         if (await evaluate(expression)) return;
         await sleep(60);
     }
-    const diag = await evaluate('({path:location.pathname,readyState:document.readyState,title:document.title,h1:document.querySelector("h1")?.textContent?.trim(),main:Boolean(document.querySelector("#main-content")),alpine:typeof window.Alpine,jq:Boolean(window.jQuery),dt:Boolean(window.jQuery?.fn?.dataTable),wrappers:document.querySelectorAll(".dt-container").length,tables:document.querySelectorAll("table").length,shell:document.documentElement.dataset.workspaceShell})');
+    const diag = await evaluate('({path:location.pathname,readyState:document.readyState,title:document.title,h1:document.querySelector("h1")?.textContent?.trim(),main:Boolean(document.querySelector("#main-content")),alpine:typeof window.Alpine,dt:Boolean(window.DataTable),wrappers:document.querySelectorAll(".dt-container").length,tables:document.querySelectorAll("table").length,shell:document.documentElement.dataset.workspaceShell})');
     throw new Error(`Browser condition timed out: ${expression}; ${JSON.stringify(diag)}`);
 }
 
@@ -803,7 +803,7 @@ echo json_encode([
     assert.equal(drpCheck.missingScope, 0);
     recordPass('drp-supplier-sortable-headers-scope-and-axe', { ...drpCheck, axePasses: drpAxe.passes });
 
-    // Sign in as disposable admin user to audit live jQuery DataTables page (/admin/users).
+    // Sign in as disposable admin user to audit live DataTables 3 page (/admin/users).
     await command('Network.clearBrowserCookies');
     await navigate(routes.login);
     await until('Boolean(document.querySelector("#email"))');
@@ -815,7 +815,7 @@ echo json_encode([
     await until('location.pathname !== ' + JSON.stringify(routes.login) + ' && Boolean(document.querySelector("#main-content"))', 25000);
 
     await navigate(routes.adminUsers + '?_mwg_shell=off');
-    await until('Boolean(document.querySelector("#main-content")) && Boolean(window.jQuery?.fn?.dataTable) && document.querySelectorAll(".dt-container").length > 0', 25000);
+    await until('Boolean(document.querySelector("#main-content")) && Boolean(window.DataTable) && document.querySelectorAll(".dt-container").length > 0', 25000);
     await sleep(500);
     const dtAxe = await runAxeAudit('admin-users-datatables');
     const dtCheck = await evaluate(`(() => {

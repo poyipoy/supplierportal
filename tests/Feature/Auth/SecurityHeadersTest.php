@@ -31,8 +31,7 @@ class SecurityHeadersTest extends TestCase
         $this->assertStringContainsString("'unsafe-eval'", $policy);
         $this->assertStringContainsString("'nonce-", $policy);
         $this->assertStringContainsString('https://cdn.jsdelivr.net', $policy);
-        $this->assertStringContainsString("connect-src 'self' ws: wss: https://challenges.cloudflare.com https://*.pusher.com wss://*.pusher.com https://cdn.jsdelivr.net", $policy);
-        $this->assertStringContainsString('https://cdn.jsdelivr.net', $policy);
+        $this->assertStringNotContainsString('https://code.jquery.com', $policy);
         $this->assertStringContainsString("connect-src 'self' ws: wss: https://challenges.cloudflare.com https://*.pusher.com wss://*.pusher.com https://cdn.jsdelivr.net", $policy);
         $this->assertStringContainsString("frame-src 'self' https://challenges.cloudflare.com", $policy);
         $this->assertStringContainsString("frame-ancestors 'none'", $policy);

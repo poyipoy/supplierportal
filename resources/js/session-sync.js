@@ -336,7 +336,7 @@ function observeDataTables(win, doc, { onActionResponse, onServerTouch }, tokens
         return !ajaxUrl || isSameOrigin(win, ajaxUrl);
     };
 
-    // DataTables 3 uses native XMLHttpRequest directly (bypassing jQuery.ajax), so observe .dt events without jQuery.
+    // DataTables 3 uses native XMLHttpRequest directly, so observe .dt events via DataTables 3.
     onDataTableEvent(doc, 'xhr.dt', (_event, settings, _json, xhr) => {
         handleXhrResponse(xhr || settings?.jqXHR, !isSameOriginDataTable(settings));
     }, win);
@@ -368,42 +368,10 @@ function observeDataTables(win, doc, { onActionResponse, onServerTouch }, tokens
     }, win);
 }
 
-function observeJQuery(win, doc, { onActionResponse, onServerTouch }, tokens, handledXhrs) {
-    if (typeof win.jQuery !== 'function') return;
-    const handleXhrResponse = (xhr, isCrossDomain) => {
-        if (isCrossDomain === true || !xhr || typeof xhr !== 'object') return;
-        if (handledXhrs.has(xhr)) return;
-        handledXhrs.add(xhr);
-        if (sessionExpiredByResponse(xhr)) {
-            onActionResponse(xhr);
-        } else if (typeof xhr.status === 'number' && xhr.status > 0 && xhr.status < 400) {
-            onServerTouch();
-        }
-    };
-
-    win.jQuery(doc).on('ajaxComplete', (event, xhr, settings) => {
-        handleXhrResponse(xhr, settings?.crossDomain === true);
-    });
-    // Prefilters run after jQuery serialised `data` and decided `crossDomain`, before headers are sent.
-    win.jQuery.ajaxPrefilter?.((options) => {
-        if (tokens.retired.size === 0 || options?.crossDomain === true) return;
-        replaceRetiredHeader(options.headers, tokens.retired, tokens.current);
-        if (typeof options.data === 'string') {
-            options.data = options.data.replace(/(^|&)_token=([^&]*)/g, (match, lead, value) => {
-                let decoded;
-                try { decoded = decodeURIComponent(value.replace(/\+/g, ' ')); } catch { return match; }
-                return tokens.retired.has(decoded) ? `${lead}_token=${encodeURIComponent(tokens.current)}` : match;
-            });
-        } else {
-            replaceRetiredField(options.data, tokens.retired, tokens.current);
-        }
-    });
-}
-
 // DataTables alerts "Ajax error" on any failed request, which would stack a raw browser alert
 // on top of the reconnect dialog. Pages that set their own errMode keep it.
 function guardDataTables(win) {
-    const ext = win.DataTable?.ext || win.jQuery?.fn?.dataTable?.ext;
+    const ext = win.DataTable?.ext;
     if (!ext || ext.errMode !== 'alert') return;
     ext.errMode = (settings, techNote, message) => {
         if (sessionExpiredByResponse(settings?.jqXHR)) return;
@@ -1114,7 +1082,6 @@ export function bootSessionSync(win, doc) {
             onServerTouch: recordServerTouch,
         };
         observeDataTables(win, doc, callbacks, tokens, handledXhrs);
-        observeJQuery(win, doc, callbacks, tokens, handledXhrs);
         guardDataTables(win);
     }
 

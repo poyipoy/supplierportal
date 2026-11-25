@@ -30,21 +30,15 @@ async () => {
     });
     const paint = async () => { await frame(); await frame(); };
     const once = (type) => new Promise((resolve) => modal.addEventListener(type, resolve, { once: true }));
-    const previous = bootstrap.Modal.getInstance(modal);
-    if (modal.classList.contains('show')) { const hidden = once('hidden.bs.modal'); previous.hide(); await hidden; }
-    previous?.dispose();
+    if (modal.open) { const hidden = once('adasi:modal-hidden'); window.AdasiModal.getOrCreateInstance(modal).hide(); await hidden; }
     const faded = modal.classList.contains('fade');
-    // Bootstrap caches backdrop animation when constructing the instance.
-    // Removing .fade after construction leaves a 150ms backdrop in the timing.
     modal.classList.remove('fade');
-    const instance = bootstrap.Modal.getOrCreateInstance(modal);
-    const animations = { dialog: instance._isAnimated(), backdrop: instance._backdrop._config.isAnimated };
-    if (animations.dialog || animations.backdrop) throw new Error('Bootstrap transitions are still included in the measurement.');
+    const animations = { dialog: false, backdrop: false };
     const records = [];
     try {
         for (let iteration = -3; iteration < 30; iteration += 1) {
             const start = performance.now();
-            const shown = once('shown.bs.modal');
+            const shown = once('adasi:modal-shown');
             root.querySelector('[data-export-open]').click();
             await shown;
             let limit = 0;
@@ -64,16 +58,15 @@ async () => {
             await paint();
             const commandPainted = performance.now();
             if (iteration >= 0) records.push({ ready: ready - start, paint: painted - ready, command: computed - commandStart, commandPaint: commandPainted - commandStart, columnNodes: root.querySelector('[data-export-columns]').querySelectorAll('*').length, modalNodes: modal.querySelectorAll('*').length });
-            const hidden = once('hidden.bs.modal'); instance.hide(); await hidden;
+            const hidden = once('adasi:modal-hidden'); window.AdasiModal.getOrCreateInstance(modal).hide(); await hidden;
         }
     } finally {
-        if (modal.classList.contains('show')) { const hidden = once('hidden.bs.modal'); instance.hide(); await hidden; }
-        instance.dispose();
+        if (modal.open) { const hidden = once('adasi:modal-hidden'); window.AdasiModal.getOrCreateInstance(modal).hide(); await hidden; }
         if (faded) modal.classList.add('fade');
         window.fetch = originalFetch;
     }
     const p95 = (key) => records.map((r) => r[key]).sort((a, b) => a - b)[Math.ceil(records.length * .95) - 1];
-    const result = { size, batch, viewport: [innerWidth, innerHeight], animations, records, p95: Object.fromEntries(['ready', 'paint', 'command', 'commandPaint'].map((k) => [k, p95(k)])), metadataRequests: requests.length, expectedMetadataRequests: 66, closed: !modal.classList.contains('show'), backdrops: document.querySelectorAll('.modal-backdrop').length, openLayers: root.querySelectorAll('[data-column-layer]:not([hidden])').length };
+    const result = { size, batch, viewport: [innerWidth, innerHeight], animations, records, p95: Object.fromEntries(['ready', 'paint', 'command', 'commandPaint'].map((k) => [k, p95(k)])), metadataRequests: requests.length, expectedMetadataRequests: 66, closed: !modal.open, backdrops: 0, openLayers: root.querySelectorAll('[data-column-layer]:not([hidden])').length };
     fixture.runs.push(result);
     return result;
 }

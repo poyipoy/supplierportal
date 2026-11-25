@@ -597,26 +597,23 @@ test('syncLocaleInPlace refreshes DataTables 3 .dt-info, .dt-search label, .dt-l
         };
     }
 
-    const jq = Object.assign((target) => ({
-        off: () => ({
-            on: (name, fn) => {
-                if (target === tableNode) tableHandlers.set(name, fn);
-            },
-        }),
-        on: (name, fn) => {
-            if (target === tableNode) tableHandlers.set(name, fn);
-        },
-    }), {
-        extend: (_deep, target, source) => Object.assign(target, source),
-        fn: {},
-    });
-
     const DataTable = {
         defaults: { language: {} },
         Api: FakeApi,
         tables: () => ({ settings: () => [dtSettings] }),
+        Dom: {
+            s: (target) => ({
+                off: () => ({
+                    on: (name, fn) => {
+                        if (target === tableNode) tableHandlers.set(name, fn);
+                    },
+                }),
+                on: (name, fn) => {
+                    if (target === tableNode) tableHandlers.set(name, fn);
+                },
+            }),
+        },
     };
-    jq.fn.dataTable = DataTable;
 
     const doc = {
         documentElement: { lang: 'en' },
@@ -626,7 +623,6 @@ test('syncLocaleInPlace refreshes DataTables 3 .dt-info, .dt-search label, .dt-l
         addEventListener: () => {},
     };
     const win = Object.assign(new EventTarget(), {
-        jQuery: jq,
         DataTable,
         CustomEvent: class { constructor(type, init) { this.type = type; this.detail = init?.detail; } },
         location: { href: 'https://portal.example.test/purchasing/requisitions', origin: 'https://portal.example.test' },
@@ -705,21 +701,23 @@ test('syncLocaleInPlace propagates data-pagination-label and re-syncs .dt-length
         };
     }
 
-    const jq = Object.assign((target) => ({
-        off: () => ({
-            on: (name, fn) => {
-                if (target === tableNode) tableHandlers.set(name, fn);
-            },
-        }),
-        on: (name, fn) => {
-            if (target === tableNode) tableHandlers.set(name, fn);
+    const DataTable = {
+        defaults: { language: {} },
+        Api: FakeApi,
+        tables: () => ({ settings: () => [dtSettings] }),
+        Dom: {
+            s: (target) => ({
+                off: () => ({
+                    on: (name, fn) => {
+                        if (target === tableNode) tableHandlers.set(name, fn);
+                    },
+                }),
+                on: (name, fn) => {
+                    if (target === tableNode) tableHandlers.set(name, fn);
+                },
+            }),
         },
-    }), {
-        extend: (_deep, target, source) => Object.assign(target, source),
-        fn: {},
-    });
-    const DataTable = { defaults: { language: {} }, Api: FakeApi, tables: () => ({ settings: () => [dtSettings] }) };
-    jq.fn.dataTable = DataTable;
+    };
 
     const doc = Object.assign(new EventTarget(), {
         documentElement: { lang: 'en', dataset: { paginationLabel: 'Pagination Navigation' } },
@@ -728,7 +726,6 @@ test('syncLocaleInPlace propagates data-pagination-label and re-syncs .dt-length
         querySelectorAll: () => [],
     });
     const win = Object.assign(new EventTarget(), {
-        jQuery: jq,
         DataTable,
         CustomEvent: class { constructor(type, init) { this.type = type; this.detail = init?.detail; } },
         DOMParser: class {
