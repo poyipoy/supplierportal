@@ -11,7 +11,7 @@
 @endphp
 
 @if($errors->any())
-    <div class="alert alert-danger tw:mb-6" role="alert">
+    <div class="tw:rounded-ui-md tw:border tw:border-error/40 tw:bg-error-container tw:text-error-container-foreground tw:p-3.5 tw:text-ui-sm tw:mb-6" role="alert">
         <div class="tw:flex tw:items-center tw:gap-2 tw:font-semibold">
             <x-ui.icon name="alert-circle" size="sm" />
             <span>{{ $errors->first() }}</span>
@@ -257,10 +257,10 @@
                                                 $gmailUrl = 'https://mail.google.com/mail/?view=cm&fs=1&to=' . rawurlencode($adasiFinanceEmail) . '&su=' . rawurlencode($mailSubject) . '&body=' . rawurlencode($mailBody);
                                                 $outlookUrl = 'https://outlook.office.com/mail/deeplink/compose?to=' . rawurlencode($adasiFinanceEmail) . '&subject=' . rawurlencode($mailSubject) . '&body=' . rawurlencode($mailBody);
                                             @endphp
-                                            <textarea id="email-draft-text-{{ $invoice->id }}" class="d-none" aria-hidden="true">{{ $fullDraftText }}</textarea>
+                                            <textarea id="email-draft-text-{{ $invoice->id }}" class="tw:hidden" aria-hidden="true">{{ $fullDraftText }}</textarea>
                                             <div class="dropdown tw:inline-block">
                                                 <button type="button"
-                                                    class="tw:inline-flex tw:items-center tw:gap-1.5 tw:px-2 tw:py-1 tw:rounded-ui-sm tw:text-ui-xs tw:font-semibold tw:bg-primary/10 tw:hover:bg-primary/20 tw:text-primary dark:tw-text-primary-light tw:transition-colors"
+                                                    class="tw:inline-flex tw:items-center tw:gap-1.5 tw:px-2 tw:py-1 tw:rounded-ui-sm tw:text-ui-xs tw:font-semibold tw:bg-primary/10 tw:hover:bg-primary/20 tw:text-primary tw:transition-colors"
                                                     data-ui-dropdown-trigger
                                                     popovertarget="dd-inv-email-{{ $invoice->id }}"
                                                     aria-controls="dd-inv-email-{{ $invoice->id }}"
@@ -270,7 +270,7 @@
                                                     <span>{{ __('common.fields.email') }}</span>
                                                     <x-ui.icon name="chevron-down" size="xs" class="tw:w-3 tw:h-3 tw:shrink-0 tw:opacity-70" />
                                                 </button>
-                                                <ul id="dd-inv-email-{{ $invoice->id }}" popover="auto" data-ui-dropdown-menu class="dropdown-menu shadow-sm tw:text-ui-xs tw:border tw:border-outline-variant tw:rounded-ui-md tw:py-1 tw:min-w-[220px] z-[1060]">
+                                                <ul id="dd-inv-email-{{ $invoice->id }}" popover="auto" data-ui-dropdown-menu class="dropdown-menu tw:shadow-sm tw:text-ui-xs tw:border tw:border-outline-variant tw:rounded-ui-md tw:py-1 tw:min-w-[220px] tw:z-dropdown">
                                                     <li>
                                                         <a class="dropdown-item tw:flex tw:items-center tw:gap-2 tw:py-1.5 tw:px-3 tw:text-on-surface tw:hover:bg-surface-container"
                                                             href="{{ $gmailUrl }}"
@@ -296,7 +296,7 @@
                                                             <span>{{ __('local_invoice.refund_contact.email_app') }}</span>
                                                         </a>
                                                     </li>
-                                                    <li><hr class="dropdown-divider my-1 tw:border-outline-variant/60"></li>
+                                                    <li><hr class="dropdown-divider tw:my-1 tw:border-outline-variant/60"></li>
                                                     <li>
                                                         <button type="button"
                                                             class="dropdown-item tw:flex tw:items-center tw:gap-2 tw:py-1.5 tw:px-3 tw:text-on-surface tw:hover:bg-surface-container tw:w-full tw:text-left"
@@ -486,9 +486,9 @@
                         <div><span class="tw:text-on-surface-variant tw:block">{{ __('local_procurement.labels.po_date') }}</span><strong class="tw:text-on-surface">{{ $invoice->localPurchaseOrder->po_date ? $regionalFormatter->date($invoice->localPurchaseOrder->po_date, 'human') : '—' }}</strong></div>
                         <div><span class="tw:text-on-surface-variant tw:block">{{ __('local_procurement.labels.po_total') }}</span><strong class="ui-tabular-nums tw:text-on-surface">Rp {{ $regionalFormatter->number(number_format($invoice->localPurchaseOrder->total_amount, 2, ',', '.'), 'indonesian') }}</strong></div>
                     </div>
-                    <div class="table-responsive"><table class="table table-sm align-middle tw:m-0 tw:text-ui-xs"><thead><tr><th>{{ __('local_invoice.detail.gr_number') }}</th><th>{{ __('local_procurement.labels.gr_date') }}</th><th class="text-end">{{ __('common.fields.qty') }}</th><th scope="col">{{ __('local_procurement.labels.uom') }}</th><th>{{ __('local_invoice.labels.status') }}</th></tr></thead><tbody>
+                    <div class="ui-table-scroll"><table class="ui-table ui-table--sm tw:align-middle tw:m-0 tw:text-ui-xs"><thead><tr><th>{{ __('local_invoice.detail.gr_number') }}</th><th>{{ __('local_procurement.labels.gr_date') }}</th><th class="tw:text-end">{{ __('common.fields.qty') }}</th><th scope="col">{{ __('local_procurement.labels.uom') }}</th><th>{{ __('local_invoice.labels.status') }}</th></tr></thead><tbody>
                         @forelse($invoice->goodsReceiptHistories->sortBy('id') as $history)
-                            <tr><td class="ui-tabular-nums ui-col-data-name">{{ $history->gr_number_snapshot }}</td><td>{{ $history->goodsReceipt?->gr_date ? $regionalFormatter->date($history->goodsReceipt->gr_date, 'human') : '—' }}</td><td class="text-end ui-tabular-nums">{{ $history->gr_qty_snapshot !== null ? rtrim(rtrim(number_format((float) $history->gr_qty_snapshot, 4, ',', '.'), '0'), ',') : ($history->goodsReceipt?->qty !== null ? rtrim(rtrim(number_format((float) $history->goodsReceipt->qty, 4, ',', '.'), '0'), ',') : '—') }}</td><td>{{ $history->gr_uom_snapshot ?? '—' }}</td><td><x-ui.status-chip :tone="$history->state === 'RELEASED' ? 'neutral' : ($history->state === 'CONSUMED' ? 'success' : 'warning')">{{ \App\Support\StatusHelper::localFinanceLabel($history->state) }}</x-ui.status-chip></td></tr>
+                            <tr><td class="ui-tabular-nums ui-col-data-name">{{ $history->gr_number_snapshot }}</td><td>{{ $history->goodsReceipt?->gr_date ? $regionalFormatter->date($history->goodsReceipt->gr_date, 'human') : '—' }}</td><td class="tw:text-end ui-tabular-nums">{{ $history->gr_qty_snapshot !== null ? rtrim(rtrim(number_format((float) $history->gr_qty_snapshot, 4, ',', '.'), '0'), ',') : ($history->goodsReceipt?->qty !== null ? rtrim(rtrim(number_format((float) $history->goodsReceipt->qty, 4, ',', '.'), '0'), ',') : '—') }}</td><td>{{ $history->gr_uom_snapshot ?? '—' }}</td><td><x-ui.status-chip :tone="$history->state === 'RELEASED' ? 'neutral' : ($history->state === 'CONSUMED' ? 'success' : 'warning')">{{ \App\Support\StatusHelper::localFinanceLabel($history->state) }}</x-ui.status-chip></td></tr>
                         @empty
                             <tr><td colspan="5" class="tw:text-center tw:text-on-surface-variant">{{ __('local_procurement.empty.gr_history') }}</td></tr>
                         @endforelse
@@ -502,15 +502,15 @@
                     :title="__('local_invoice.labels.payment_history')"
                     :description="__('local_invoice.labels.bank_transfers_help')"
                 >
-                    <div class="table-responsive">
-                        <table class="table table-sm align-middle tw:m-0 tw:text-ui-xs">
+                    <div class="ui-table-scroll">
+                        <table class="ui-table ui-table--sm tw:align-middle tw:m-0 tw:text-ui-xs">
                             <thead>
                                 <tr>
                                     <th>#</th>
                                     <th>{{ __('finance.payment.transfer_date') }}</th>
                                     <th>{{ __('local_invoice.labels.transfer_type') }}</th>
                                     <th>{{ __('local_invoice.detail.bank_reference') }}</th>
-                                    <th class="text-end">{{ __('local_invoice.detail.received_amount') }}</th>
+                                    <th class="tw:text-end">{{ __('local_invoice.detail.received_amount') }}</th>
                                     <th>{{ __('local_invoice.detail.remarks') }}</th>
                                 </tr>
                             </thead>
@@ -531,7 +531,7 @@
                                             @endif
                                         </td>
                                         <td class="ui-tabular-nums tw:font-semibold">{{ $transfer->transfer_reference }}</td>
-                                        <td class="text-end ui-tabular-nums tw:font-bold tw:text-success">
+                                        <td class="tw:text-end ui-tabular-nums tw:font-bold tw:text-success">
                                             Rp {{ $regionalFormatter->number(number_format((float) $transfer->amount, 0, ',', '.'), 'indonesian') }}
                                         </td>
                                         <td class="tw:text-on-surface-variant ui-col-data-name">
@@ -543,7 +543,7 @@
                             <tfoot>
                                 <tr class="tw:border-t tw:border-outline-variant tw:bg-surface-container-low">
                                     <th colspan="4" class="tw:font-bold">{{ __('local_invoice.labels.total_received') }}:</th>
-                                    <th class="text-end ui-tabular-nums tw:font-bold tw:text-ui-sm tw:text-success">
+                                    <th class="tw:text-end ui-tabular-nums tw:font-bold tw:text-ui-sm tw:text-success">
                                         Rp {{ $regionalFormatter->number(number_format((float) $payment->actual_paid_total, 0, ',', '.'), 'indonesian') }}
                                     </th>
                                     <th>
@@ -582,7 +582,7 @@
                                     <div class="tw:flex tw:items-center tw:gap-2">
                                         <span class="tw:font-bold tw:text-ui-xs tw:text-on-surface">{{ __('local_invoice.detail.revision', ['number' => $rev->revision_number]) }}</span>
                                         @if($rev->revision_number === $invoice->revision_number)
-                                            <span class="tw:px-2 tw-py-0.2 tw:rounded-full tw:text-[10px] tw:font-semibold tw:bg-primary/10 tw:text-primary">{{ __('local_invoice.labels.active') }}</span>
+                                            <span class="tw:px-2 tw:py-0.5 tw:rounded-full tw:text-[10px] tw:font-semibold tw:bg-primary/10 tw:text-primary">{{ __('local_invoice.labels.active') }}</span>
                                         @endif
                                     </div>
                                     <span class="tw:text-ui-xs tw:text-on-surface-variant">{{ $regionalFormatter->timestamp($rev->created_at, 'datetime_comma') }}</span>
@@ -686,12 +686,12 @@
 
                                         @if(in_array($action, ['request-revision', 'reject', 'physical-verification', 'schedule-payment', 'complete-payment']))
                                             <div class="tw:mb-2">
-                                                <label for="notes-{{ $action }}" class="form-label tw:text-[11px] tw:text-on-surface-variant">
+                                                <label for="notes-{{ $action }}" class="ui-label tw:text-[11px] tw:text-on-surface-variant">
                                                     {{ __(in_array($action, ['request-revision', 'reject']) ? 'local_invoice.closure.notes_required' : 'local_invoice.closure.notes_optional') }}
-                                                    @if(in_array($action, ['request-revision', 'reject'])) <span class="text-danger">*</span> @endif
+                                                    @if(in_array($action, ['request-revision', 'reject'])) <span class="tw:text-error">*</span> @endif
                                                 </label>
                                                 <textarea
-                                                    class="form-control form-control-sm"
+                                                    class="ui-textarea tw:text-ui-xs tw:px-2 tw:py-1"
                                                     id="notes-{{ $action }}"
                                                     name="notes"
                                                     rows="2"
@@ -704,8 +704,8 @@
 
                                         @if($action === 'schedule-payment')
                                             <div class="tw:mb-3">
-                                                <label for="scheduled-payment-date" class="form-label tw:text-[11px] tw:text-on-surface-variant">
-                                                    {{ __('common.final_review.payment_schedule_date') }} <span class="text-danger">*</span>
+                                                <label for="scheduled-payment-date" class="ui-label tw:text-[11px] tw:text-on-surface-variant">
+                                                    {{ __('common.final_review.payment_schedule_date') }} <span class="tw:text-error">*</span>
                                                 </label>
                                                 <x-ui.date-picker
                                                     name="scheduled_payment_date"
@@ -720,7 +720,7 @@
                                             type="submit"
                                             :variant="$btnVariant"
                                             size="sm"
-                                            class="w-100 tw:shadow-xs"
+                                            class="tw:w-full tw:shadow-xs"
                                         >
                                             @if($isPositive) <x-ui.icon name="check" size="sm" />
                                             @elseif($isWarning) <x-ui.icon name="file-edit" size="sm" />

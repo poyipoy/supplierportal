@@ -173,7 +173,7 @@
                         @endif
                     </div>
 
-                    <div class="tw:flex tw:flex-wrap tw:items-center tw:gap-4 text-end">
+                    <div class="tw:flex tw:flex-wrap tw:items-center tw:gap-4 tw:text-end">
                         <div>
                             <span class="tw:text-[11px] tw:text-on-surface-variant tw:block">{{ __('finance.drp_surface.net_transfer') }}</span>
                             <span class="ui-tabular-nums tw:font-bold tw:text-ui-base tw:text-primary">
@@ -233,17 +233,17 @@
                 @endif
 
                 {{-- Group Items Table --}}
-                <div class="table-responsive tw:w-full tw:min-w-0 tw:max-w-full">
-                    <table class="table table-sm table-hover align-middle tw:m-0 tw:text-ui-xs w-100">
-                        <thead class="table-light">
+                <div class="ui-table-scroll tw:w-full tw:min-w-0 tw:max-w-full">
+                    <table class="ui-table ui-table--sm ui-table--hover tw:align-middle tw:m-0 tw:text-ui-xs tw:w-full">
+                        <thead>
                             <tr>
                                 <th scope="col">{{ __('finance.drp_ui.document_reference') }}</th>
                                 <th scope="col">{{ __('local_procurement.labels.po_description') }}</th>
-                                <th scope="col" class="text-end">{{ __('finance.drp_ui.dpp_amount') }}</th>
-                                <th scope="col" class="text-end">{{ __('finance.drp_ui.ppn_amount') }}</th>
-                                <th scope="col" class="text-end">{{ __('local_invoice.labels.total_amount') }}</th>
+                                <th scope="col" class="tw:text-end">{{ __('finance.drp_ui.dpp_amount') }}</th>
+                                <th scope="col" class="tw:text-end">{{ __('finance.drp_ui.ppn_amount') }}</th>
+                                <th scope="col" class="tw:text-end">{{ __('local_invoice.labels.total_amount') }}</th>
                                 <th scope="col">{{ __('finance.drp.item_status') }}</th>
-                                <th scope="col" class="text-end">{{ __('local_invoice.labels.actions') }}</th>
+                                <th scope="col" class="tw:text-end">{{ __('local_invoice.labels.actions') }}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -261,9 +261,9 @@
                                             {{ $item->item_reference }}
                                         @endif
                                     </td>
-                                    <td class="text-end ui-tabular-nums">Rp {{ $regionalFormatter->money($item->subtotal_amount, 0) }}</td>
-                                    <td class="text-end ui-tabular-nums">Rp {{ $regionalFormatter->money($item->tax_amount, 0) }}</td>
-                                    <td class="text-end ui-tabular-nums tw:font-bold tw:text-on-surface">
+                                    <td class="tw:text-end ui-tabular-nums">Rp {{ $regionalFormatter->money($item->subtotal_amount, 0) }}</td>
+                                    <td class="tw:text-end ui-tabular-nums">Rp {{ $regionalFormatter->money($item->tax_amount, 0) }}</td>
+                                    <td class="tw:text-end ui-tabular-nums tw:font-bold tw:text-on-surface">
                                         Rp {{ $regionalFormatter->money($item->total_amount, 0) }}
                                     </td>
                                     <td>
@@ -320,7 +320,7 @@
                                             </x-ui.status-chip>
                                         @endif
                                     </td>
-                                    <td class="text-end">
+                                    <td class="tw:text-end">
                                         @if($batch->batch_type === \App\Models\PaymentBatch::TYPE_SUPPLIER && $item->status === \App\Models\PaymentItem::STATUS_ACTIVE)
                                             @if($item->localInvoiceVoucher)
                                                 <div class="tw:inline-flex tw:items-center tw:gap-1.5">
@@ -376,9 +376,9 @@
                                             <p class="tw:text-ui-xs tw:text-on-surface-variant">
                                                 {{ __('finance.drp_ui.remove_help', ['reference' => $item->item_reference]) }}
                                             </p>
-                                            <div class="mb-3">
-                                                <label class="form-label tw:text-ui-xs tw:font-semibold">{{ __('finance.drp_ui.remove_reason') }} <span class="text-danger">*</span></label>
-                                                <textarea name="reason" class="form-control form-control-sm" rows="2" required placeholder="{{ __('finance.drp_ui.remove_example') }}"></textarea>
+                                            <div class="tw:mb-3">
+                                                <label class="ui-label tw:text-ui-xs tw:font-semibold">{{ __('finance.drp_ui.remove_reason') }} <span class="tw:text-error">*</span></label>
+                                                <textarea name="reason" class="ui-textarea tw:text-ui-xs tw:px-2 tw:py-1" rows="2" required placeholder="{{ __('finance.drp_ui.remove_example') }}"></textarea>
                                             </div>
                                         </div>
                                         <div class="modal-footer">
@@ -405,12 +405,12 @@
                                     <button type="button" class="btn-close" data-ui-modal-close aria-label="{{ __('local_invoice.actions.close') }}"></button>
                                 </div>
                                 <div class="modal-body">
-                                    <div class="mb-3">
-                                        <label class="form-label tw:text-ui-xs tw:font-semibold">{{ __('finance.drp_ui.voucher_number') }} <span class="text-danger">*</span></label>
-                                        <input type="text" name="voucher_number" class="form-control form-control-sm" value="{{ $group->voucher_number ?? 'VC/'.now()->format('ym').'/'.str_pad($group->id, 4, '0', STR_PAD_LEFT) }}" required>
+                                    <div class="tw:mb-3">
+                                        <label class="ui-label tw:text-ui-xs tw:font-semibold">{{ __('finance.drp_ui.voucher_number') }} <span class="tw:text-error">*</span></label>
+                                        <input type="text" name="voucher_number" class="ui-input ui-input--sm" value="{{ $group->voucher_number ?? 'VC/'.now()->format('ym').'/'.str_pad($group->id, 4, '0', STR_PAD_LEFT) }}" required>
                                     </div>
-                                    <div class="mb-3">
-                                        <label class="form-label tw:text-ui-xs tw:font-semibold">{{ __('finance.voucher.date') }} <span class="text-danger">*</span></label>
+                                    <div class="tw:mb-3">
+                                        <label class="ui-label tw:text-ui-xs tw:font-semibold">{{ __('finance.voucher.date') }} <span class="tw:text-error">*</span></label>
                                         <x-ui.date-picker
                                             id="voucher_date_{{ $group->id }}"
                                             name="voucher_date"
@@ -443,13 +443,13 @@
                                         <button type="button" class="btn-close" data-ui-modal-close aria-label="{{ __('local_invoice.actions.close') }}"></button>
                                     </div>
                                     <div class="modal-body">
-                                        <div class="mb-3">
-                                            <label class="form-label tw:text-ui-xs tw:font-semibold">{{ __('finance.drp_ui.fee_value') }} <span class="text-danger">*</span></label>
-                                            <input type="number" step="0.01" name="bank_fee" class="form-control form-control-sm" value="{{ $group->bank_fee }}" required>
+                                        <div class="tw:mb-3">
+                                            <label class="ui-label tw:text-ui-xs tw:font-semibold">{{ __('finance.drp_ui.fee_value') }} <span class="tw:text-error">*</span></label>
+                                            <input type="number" step="0.01" name="bank_fee" class="ui-input ui-input--sm" value="{{ $group->bank_fee }}" required>
                                         </div>
-                                        <div class="mb-3">
-                                            <label class="form-label tw:text-ui-xs tw:font-semibold">{{ __('finance.payment.actual_reason') }} <span class="text-danger">*</span></label>
-                                            <textarea name="reason" class="form-control form-control-sm" rows="2" required placeholder="{{ __('finance.drp_surface.fee_example') }}"></textarea>
+                                        <div class="tw:mb-3">
+                                            <label class="ui-label tw:text-ui-xs tw:font-semibold">{{ __('finance.payment.actual_reason') }} <span class="tw:text-error">*</span></label>
+                                            <textarea name="reason" class="ui-textarea tw:text-ui-xs tw:px-2 tw:py-1" rows="2" required placeholder="{{ __('finance.drp_surface.fee_example') }}"></textarea>
                                         </div>
                                     </div>
                                     <div class="modal-footer">
@@ -473,16 +473,16 @@
                     @csrf
                     <div class="modal-content">
                         <div class="modal-header">
-                            <h5 class="modal-title tw:text-ui-sm tw:font-bold text-danger" id="cancelBatchModalTitle">{{ __('finance.drp.cancel_full') }}</h5>
+                            <h5 class="modal-title tw:text-ui-sm tw:font-bold tw:text-error" id="cancelBatchModalTitle">{{ __('finance.drp.cancel_full') }}</h5>
                             <button type="button" class="btn-close" data-ui-modal-close aria-label="{{ __('local_invoice.actions.close') }}"></button>
                         </div>
                         <div class="modal-body">
                             <p class="tw:text-ui-xs tw:text-on-surface-variant">
                                 {{ __('finance.drp_ui.cancel_help', ['number' => $batch->batch_number]) }}
                             </p>
-                            <div class="mb-3">
-                                <label class="form-label tw:text-ui-xs tw:font-semibold">{{ __('finance.drp.cancel_reason') }} <span class="text-danger">*</span></label>
-                                <textarea name="reason" class="form-control form-control-sm" rows="3" required placeholder="{{ __('finance.drp_ui.cancel_example') }}"></textarea>
+                            <div class="tw:mb-3">
+                                <label class="ui-label tw:text-ui-xs tw:font-semibold">{{ __('finance.drp.cancel_reason') }} <span class="tw:text-error">*</span></label>
+                                <textarea name="reason" class="ui-textarea tw:text-ui-xs tw:px-2 tw:py-1" rows="3" required placeholder="{{ __('finance.drp_ui.cancel_example') }}"></textarea>
                             </div>
                         </div>
                         <div class="modal-footer">

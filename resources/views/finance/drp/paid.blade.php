@@ -26,7 +26,7 @@
                 <x-ui.icon name="alert-circle" size="sm" class="{{ ($openOverpaymentsCount ?? 0) > 0 ? 'tw:text-amber-500' : '' }}" />
                 <span>{{ __('finance.refund.title') }}</span>
                 @if(($openOverpaymentsCount ?? 0) > 0)
-                    <span class="tw:inline-flex tw:items-center tw:justify-center tw:rounded-full tw:bg-amber-500 tw:text-white tw:text-[10px] tw:font-bold tw:px-1.5 tw-py-0.2 ui-tabular-nums" data-overpayment-count>
+                    <span class="tw:inline-flex tw:items-center tw:justify-center tw:rounded-full tw:bg-amber-500 tw:text-white tw:text-[10px] tw:font-bold tw:px-1.5 tw:py-0.5 ui-tabular-nums" data-overpayment-count>
                         {{ $openOverpaymentsCount }}
                     </span>
                 @endif
@@ -81,7 +81,7 @@
         <nav class="tw:inline-flex tw:items-center tw:gap-1.5 tw:rounded-ui-md tw:border tw:border-outline tw:bg-surface-container tw:p-1.5 tw:shadow-none" aria-label="{{ __('finance.drp_surface.settlement_tabs') }}">
             <a
                 href="{{ route('finance.drp.paid.index', array_merge(request()->query(), ['tab' => 'unpaid'])) }}"
-                class="ui-focus-ring ui-motion tw:inline-flex tw:items-center tw:gap-2 tw:rounded-ui-sm tw:px-3.5 tw:py-1.5 tw:text-ui-xs tw:font-semibold tw:no-underline {{ $tab === 'unpaid' ? 'tw:bg-primary tw:text-primary-foreground tw-shadow-xs' : 'tw:text-on-surface-variant tw:hover:bg-surface tw:hover:text-on-surface' }}"
+                class="ui-focus-ring ui-motion tw:inline-flex tw:items-center tw:gap-2 tw:rounded-ui-sm tw:px-3.5 tw:py-1.5 tw:text-ui-xs tw:font-semibold tw:no-underline {{ $tab === 'unpaid' ? 'tw:bg-primary tw:text-primary-foreground tw:shadow-xs' : 'tw:text-on-surface-variant tw:hover:bg-surface tw:hover:text-on-surface' }}"
                 data-server-tab
                 data-tab-name="unpaid"
             >
@@ -93,7 +93,7 @@
             </a>
             <a
                 href="{{ route('finance.drp.paid.index', array_merge(request()->query(), ['tab' => 'paid'])) }}"
-                class="ui-focus-ring ui-motion tw:inline-flex tw:items-center tw:gap-2 tw:rounded-ui-sm tw:px-3.5 tw:py-1.5 tw:text-ui-xs tw:font-semibold tw:no-underline {{ $tab === 'paid' ? 'tw:bg-primary tw:text-primary-foreground tw-shadow-xs' : 'tw:text-on-surface-variant tw:hover:bg-surface tw:hover:text-on-surface' }}"
+                class="ui-focus-ring ui-motion tw:inline-flex tw:items-center tw:gap-2 tw:rounded-ui-sm tw:px-3.5 tw:py-1.5 tw:text-ui-xs tw:font-semibold tw:no-underline {{ $tab === 'paid' ? 'tw:bg-primary tw:text-primary-foreground tw:shadow-xs' : 'tw:text-on-surface-variant tw:hover:bg-surface tw:hover:text-on-surface' }}"
                 data-server-tab
                 data-tab-name="paid"
             >
@@ -105,7 +105,7 @@
             </a>
             <a
                 href="{{ route('finance.drp.paid.index', array_merge(request()->query(), ['tab' => 'all'])) }}"
-                class="ui-focus-ring ui-motion tw:inline-flex tw:items-center tw:gap-2 tw:rounded-ui-sm tw:px-3.5 tw:py-1.5 tw:text-ui-xs tw:font-semibold tw:no-underline {{ $tab === 'all' ? 'tw:bg-primary tw:text-primary-foreground tw-shadow-xs' : 'tw:text-on-surface-variant tw:hover:bg-surface tw:hover:text-on-surface' }}"
+                class="ui-focus-ring ui-motion tw:inline-flex tw:items-center tw:gap-2 tw:rounded-ui-sm tw:px-3.5 tw:py-1.5 tw:text-ui-xs tw:font-semibold tw:no-underline {{ $tab === 'all' ? 'tw:bg-primary tw:text-primary-foreground tw:shadow-xs' : 'tw:text-on-surface-variant tw:hover:bg-surface tw:hover:text-on-surface' }}"
                 data-server-tab
                 data-tab-name="all"
             >
@@ -206,7 +206,7 @@
                 id="drp-paid-search"
                 value="{{ $q }}"
                 placeholder="{{ __('finance.drp.filter_placeholder') }}"
-                class="form-control form-control-sm ui-filter-bar__search-input"
+                class="ui-input ui-input--sm ui-filter-bar__search-input"
                 maxlength="100"
                 autocomplete="off"
             >
@@ -214,7 +214,7 @@
 
         <x-slot:filters>
             <label for="drp-type" class="tw:sr-only">{{ __('finance.drp.type') }}</label>
-            <select id="drp-type" name="type" class="form-select form-select-sm tw:w-full tw:min-w-0 tw:sm:w-40">
+            <select id="drp-type" name="type" class="ui-select ui-select--sm tw:w-full tw:min-w-0 tw:sm:w-40">
                 <option value="">{{ __('local_invoice.labels.all_types') }}</option>
                 <option value="SUPPLIER" @selected($type === 'SUPPLIER')>{{ __('local_invoice.labels.supplier') }}</option>
                 <option value="GA" @selected($type === 'GA')>{{ __('navigation.general_affairs') }}</option>
@@ -224,7 +224,7 @@
         <x-slot:advanced>
             <div>
                 <label for="drp-overpayment-status" class="tw:block tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:mb-1.5">{{ __('finance.drp_surface.overpayment_status') }}</label>
-                <select id="drp-overpayment-status" name="overpayment_status" class="form-select form-select-sm tw:w-full">
+                <select id="drp-overpayment-status" name="overpayment_status" class="ui-select ui-select--sm tw:w-full">
                     <option value="all" @selected(($overpaymentStatus ?? 'all') === 'all')>{{ __('finance.refund.all') }}</option>
                     <option value="has_overpayment" @selected(($overpaymentStatus ?? '') === 'has_overpayment')>{{ __('local_invoice.labels.overpayment') }}</option>
                     <option value="open" @selected(($overpaymentStatus ?? '') === 'open')>{{ __('local_invoice.filters.refund_open') }}</option>
@@ -347,13 +347,13 @@
                                     </div>
 
                                     <div>
-                                        <label class="form-label tw:text-ui-xs tw:font-semibold">
-                                            {{ __('finance.drp_ui.reference_label') }} <span class="text-danger">*</span>
+                                        <label class="ui-label tw:text-ui-xs tw:font-semibold">
+                                            {{ __('finance.drp_ui.reference_label') }} <span class="tw:text-error">*</span>
                                         </label>
                                         <input
                                             type="text"
                                             name="transfer_reference"
-                                            class="form-control form-control-sm"
+                                            class="ui-input ui-input--sm"
                                             placeholder="{{ __('finance.drp_ui.reference_example') }}"
                                             required
                                             maxlength="100"
@@ -361,12 +361,12 @@
                                     </div>
 
                                     <div>
-                                        <label class="form-label tw:text-ui-xs tw:font-semibold">
+                                        <label class="ui-label tw:text-ui-xs tw:font-semibold">
                                             {{ __('finance.payment.settlement_notes') }}
                                         </label>
                                         <textarea
                                             name="payment_notes"
-                                            class="form-control form-control-sm"
+                                            class="ui-textarea tw:text-ui-xs tw:px-2 tw:py-1"
                                             rows="2"
                                             placeholder="{{ __('finance.drp_ui.notes_example') }}"
                                             maxlength="1000"
@@ -375,13 +375,13 @@
 
                                     @if($batch->batch_type === \App\Models\PaymentBatch::TYPE_SUPPLIER)
                                         <div class="tw:pt-3 tw:border-t tw:border-outline-variant">
-                                            <div class="form-check tw:mb-2">
-                                                <input class="form-check-input"
+                                            <div class="ui-check-row tw:mb-2">
+                                                <input class="ui-check"
                                                        type="checkbox"
                                                        id="has_adjustment_{{ $batch->id }}"
                                                        x-model="hasAdjustment"
                                                 >
-                                                <label class="form-check-label tw:text-ui-xs tw:font-semibold tw:text-on-surface" for="has_adjustment_{{ $batch->id }}">
+                                                <label class="ui-check-label tw:text-ui-xs tw:font-semibold tw:text-on-surface" for="has_adjustment_{{ $batch->id }}">
                                                     {{ __('finance.payment.actual_adjustment') }}
                                                 </label>
                                             </div>
@@ -459,7 +459,7 @@
                                                                                 <div class="tw:flex tw:items-center tw:gap-1.5">
                                                                                     <span class="tw:font-semibold tw:text-ui-xs tw:text-on-surface">{{ $group->payee_name }}</span>
                                                                                     @if($isCorrectionRequired)
-                                                                                        <span class="tw:inline-flex tw:items-center tw:px-1.5 tw-py-0.2 tw:rounded-sm tw:text-[10px] tw:font-semibold tw:bg-warning/10 tw:text-warning-container-foreground">
+                                                                                        <span class="tw:inline-flex tw:items-center tw:px-1.5 tw:py-0.5 tw:rounded-sm tw:text-[10px] tw:font-semibold tw:bg-warning/10 tw:text-warning-container-foreground">
                                                                                             {{ __('finance.drp_ui.underpaid') }}
                                                                                         </span>
                                                                                     @endif
@@ -493,9 +493,9 @@
                                                                             </div>
                                                                         </div>
 
-                                                                        <div class="row g-2 align-items-end">
-                                                                            <div class="col-12 col-md-6">
-                                                                                <label class="form-label tw:text-[11px] tw:font-semibold mb-1">
+                                                                        <div class="tw:grid tw:grid-cols-1 tw:md:grid-cols-2 tw:gap-2 tw:items-end">
+                                                                            <div>
+                                                                                <label class="ui-label tw:text-[11px] tw:font-semibold tw:mb-1">
                                                                                     {{ $isCorrectionRequired ? __('finance.drp_ui.remaining_transfer') : __('finance.drp_ui.actual_transfer') }}
                                                                                 </label>
                                                                                 <input
@@ -504,12 +504,12 @@
                                                                                     min="0.01"
                                                                                     name="custom_amounts[{{ $item->id }}]"
                                                                                     x-model="actual"
-                                                                                    class="form-control form-control-sm ui-tabular-nums"
+                                                                                    class="ui-input ui-input--sm ui-tabular-nums"
                                                                                     :disabled="!hasAdjustment"
                                                                                     :required="hasAdjustment"
                                                                                 >
                                                                             </div>
-                                                                            <div class="col-12 col-md-6">
+                                                                            <div>
                                                                                 <template x-if="diff > 0.009">
                                                                                     <div class="tw:text-[11px] tw:font-semibold tw:text-primary tw:py-1">
                                                                                         <x-ui.icon name="arrow-up-right" size="sm" /> <span x-text="{{ json_encode(__('finance.drp_ui.overpayment_diff'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) }}.replace(':amount', () => Math.abs(diff).toLocaleString('id-ID'))"></span>
@@ -524,7 +524,7 @@
                                                                                             type="text"
                                                                                             name="correction_reasons[{{ $item->id }}]"
                                                                                             placeholder="{{ __('finance.payment.underpayment_reason') }}"
-                                                                                            class="form-control form-control-sm tw:text-[11px] mt-1"
+                                                                                            class="ui-input ui-input--sm tw:text-[11px] tw:mt-1"
                                                                                             :disabled="!hasAdjustment"
                                                                                         >
                                                                                     </div>
@@ -543,7 +543,7 @@
                                                     @endforeach
 
                                                     @if(! $hasActiveItem)
-                                                        <div class="tw:p-2 tw:rounded-sm tw:bg-surface tw:border tw:border-outline-variant tw:text-ui-xs tw:text-on-surface-variant text-center">
+                                                        <div class="tw:p-2 tw:rounded-sm tw:bg-surface tw:border tw:border-outline-variant tw:text-ui-xs tw:text-on-surface-variant tw:text-center">
                                                             {{ __('finance.drp.empty_items') }}
                                                         </div>
                                                     @endif

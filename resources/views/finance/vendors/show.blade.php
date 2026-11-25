@@ -92,9 +92,9 @@
                 :title="__('local_invoice.labels.bank_history')"
                 :description="__('local_procurement.vendor_ui.bank_history_help')"
             >
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle tw:m-0 tw:text-ui-xs w-100">
-                        <thead class="table-light">
+                <div class="ui-table-scroll">
+                    <table class="ui-table ui-table--hover tw:align-middle tw:m-0 tw:text-ui-xs tw:w-full">
+                        <thead>
                             <tr>
                                 <th scope="col">{{ __('local_procurement.change_details.bank') }}</th>
                                 <th scope="col">{{ __('ga.detail.bank_number') }}</th>
@@ -126,7 +126,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="6" class="text-center tw:py-4 tw:text-on-surface-variant">{{ __('local_invoice.empty.bank') }}</td>
+                                    <td colspan="6" class="tw:text-center tw:py-4 tw:text-on-surface-variant">{{ __('local_invoice.empty.bank') }}</td>
                                 </tr>
                             @endforelse
                         </tbody>

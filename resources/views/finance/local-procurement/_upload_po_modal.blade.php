@@ -3,7 +3,7 @@
         <div class="modal-content">
             <div class="modal-header tw:border-b tw:border-outline-variant">
                 <div>
-                    <h6 class="modal-title fw-bold tw:text-on-surface" id="uploadPoDocumentModalLabel">
+                    <h6 class="modal-title tw:font-bold tw:text-on-surface" id="uploadPoDocumentModalLabel">
                         {{ __('local_procurement.actions.upload_po_full') }}
                     </h6>
                     <div class="tw:text-on-surface-variant tw:text-ui-xs tw:mt-0.5">
@@ -19,13 +19,13 @@
                 <div class="modal-body tw:p-4 tw:space-y-4">
                     {{-- Rekanan Supplier Selection --}}
                     <div>
-                        <label for="poUploadSupplierId" class="form-label tw:text-ui-xs tw:font-semibold tw:text-on-surface">
+                        <label for="poUploadSupplierId" class="ui-label tw:text-ui-xs tw:font-semibold tw:text-on-surface">
                             {{ __('local_procurement.labels.supplier_partner') }} <span class="tw:text-error">*</span>
                         </label>
                         <select
                             name="supplier_id"
                             id="poUploadSupplierId"
-                            class="form-select form-select-sm tw:text-ui-xs @error('supplier_id') is-invalid @enderror"
+                            class="ui-select ui-select--sm tw:text-ui-xs @error('supplier_id') is-invalid @enderror"
                             required
                         >
                             <option value="">{{ __('local_procurement.labels.supplier_option') }}</option>
@@ -36,7 +36,7 @@
                             @endforeach
                         </select>
                         @error('supplier_id')
-                            <div class="invalid-feedback tw:text-[11px]">{{ $message }}</div>
+                            <div class="ui-field-error tw:text-[11px]">{{ $message }}</div>
                         @enderror
                     </div>
 
@@ -55,7 +55,7 @@
 
                     {{-- Information Box --}}
                     <div class="tw:rounded-ui-md tw:border tw:border-outline-variant tw:bg-surface-container tw:p-3 tw:text-[11px] tw:text-on-surface-variant tw:leading-relaxed">
-                        <div class="tw:font-bold tw:text-on-surface tw:mb-1 d-flex align-items-center tw:gap-1.5">
+                        <div class="tw:font-bold tw:text-on-surface tw:mb-1 tw:flex tw:items-center tw:gap-1.5">
                             <x-ui.icon name="info" size="xs" />
                             <span>{{ __('local_procurement.surface.naming') }}</span>
                         </div>
@@ -74,7 +74,7 @@
                         {{ __('local_invoice.actions.cancel') }}
                     </x-ui.button>
                     <x-ui.button type="submit" size="sm" variant="primary" id="btnSubmitPoUpload">
-                        <x-ui.icon name="upload" size="sm" class="me-1" />
+                        <x-ui.icon name="upload" size="sm" class="tw:me-1" />
                         <span>{{ __('local_invoice.form.document_upload') }}</span>
                     </x-ui.button>
                 </div>

@@ -126,7 +126,7 @@
                 placeholder="{{ __('payment_voucher.filters.search_placeholder') }}"
                 maxlength="120"
                 autocomplete="off"
-                class="form-control form-control-sm ui-filter-bar__search-input"
+                class="ui-input ui-input--sm ui-filter-bar__search-input"
             >
         </x-slot:search>
 
@@ -135,7 +135,7 @@
             <select
                 id="pv-filter-status"
                 name="status"
-                class="form-select form-select-sm tw:w-full tw:min-w-0 tw:sm:w-auto tw:sm:min-w-[160px]"
+                class="ui-select ui-select--sm tw:w-full tw:min-w-0 tw:sm:w-auto tw:sm:min-w-[160px]"
             >
                 <option value="">{{ __('payment_voucher.filters.all_statuses') }}</option>
                 @foreach(PaymentVoucher::STATUSES as $status)
@@ -149,7 +149,7 @@
             <select
                 id="pv-filter-dept"
                 name="department"
-                class="form-select form-select-sm tw:w-full tw:min-w-0 tw:sm:w-auto tw:sm:min-w-[160px]"
+                class="ui-select ui-select--sm tw:w-full tw:min-w-0 tw:sm:w-auto tw:sm:min-w-[160px]"
             >
                 <option value="">{{ __('payment_voucher.filters.all_departments') }}</option>
                 @foreach(PaymentVoucher::DEPARTMENTS as $dept)
@@ -168,7 +168,7 @@
                 <select
                     id="pv-filter-method"
                     name="payment_method"
-                    class="form-select form-select-sm tw:w-full"
+                    class="ui-select ui-select--sm tw:w-full"
                 >
                     <option value="">{{ __('payment_voucher.filters.all_methods') }}</option>
                     <option value="{{ PaymentVoucher::METHOD_BANK }}" @selected(($filters['payment_method'] ?? '') === PaymentVoucher::METHOD_BANK)>
@@ -187,7 +187,7 @@
                 <select
                     id="pv-filter-payee"
                     name="payee_type"
-                    class="form-select form-select-sm tw:w-full"
+                    class="ui-select ui-select--sm tw:w-full"
                 >
                     <option value="">{{ __('payment_voucher.filters.all_payee_types') }}</option>
                     @foreach(PaymentVoucher::PAYEE_TYPES as $payeeType)
@@ -284,17 +284,17 @@
             @endforeach
         </x-slot:cards>
 
-        <table class="table table-hover align-middle tw:m-0 tw:text-ui-sm w-100">
-            <thead class="table-light">
+        <table class="ui-table ui-table--hover tw:align-middle tw:m-0 tw:text-ui-sm tw:w-full">
+            <thead>
                 <tr>
                     <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('payment_voucher.labels.voucher_number') }}</th>
                     <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('payment_voucher.labels.payee') }}</th>
                     <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('payment_voucher.labels.department') }}</th>
                     <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('payment_voucher.labels.voucher_date') }}</th>
                     <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('payment_voucher.labels.payment_method') }}</th>
-                    <th scope="col" class="tw:text-ui-xs tw:font-semibold text-end">{{ __('payment_voucher.labels.net_amount') }}</th>
-                    <th scope="col" class="tw:text-ui-xs tw:font-semibold text-center">{{ __('payment_voucher.labels.status') }}</th>
-                    <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-right text-end">{{ __('common.table.action') }}</th>
+                    <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-end">{{ __('payment_voucher.labels.net_amount') }}</th>
+                    <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-center">{{ __('payment_voucher.labels.status') }}</th>
+                    <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-end">{{ __('common.table.action') }}</th>
                 </tr>
             </thead>
             <tbody>
@@ -334,15 +334,15 @@
                                 {{ $voucher->isBankMethod() ? __('payment_voucher.methods.bank') : __('payment_voucher.methods.kas') }}
                             </span>
                         </td>
-                        <td class="text-end ui-tabular-nums tw:font-bold tw:text-on-surface">
+                        <td class="tw:text-end ui-tabular-nums tw:font-bold tw:text-on-surface">
                             Rp {{ $regionalFormatter->money($voucher->net_amount, 2) }}
                         </td>
-                        <td class="text-center">
+                        <td class="tw:text-center">
                             <x-ui.status-chip :tone="StatusHelper::localFinanceTone($voucher->status)">
                                 {{ StatusHelper::localFinanceLabel($voucher->status) }}
                             </x-ui.status-chip>
                         </td>
-                        <td class="tw:text-right text-end">
+                        <td class="tw:text-end">
                             <div class="tw:inline-flex tw:items-center tw:justify-end tw:gap-1.5">
                                 <x-ui.row-action
                                     :href="route($routePrefix.'.print', $voucher)"
@@ -372,4 +372,3 @@
     </x-ui.data-table>
 </div>
 @endsection
-

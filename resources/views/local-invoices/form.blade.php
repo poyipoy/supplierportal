@@ -514,7 +514,7 @@
                 <div class="ui-density-form-grid tw:grid tw:sm:grid-cols-2">
                     <div>
                         <div class="tw:flex tw:items-center tw:justify-between tw:mb-1">
-                            <label for="invoice-number" class="form-label tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:mb-0">
+                            <label for="invoice-number" class="ui-label tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:mb-0">
                                 {{ __('local_invoice.receipt.invoice_number') }} <span class="tw:text-error">*</span>
                             </label>
                             <span id="invoice-autofill-badge" class="tw:hidden tw:items-center tw:gap-1 tw:text-[11px] tw:text-primary tw:font-semibold tw:bg-primary/10 tw:px-2 tw:py-0.5 tw:rounded-sm">
@@ -525,7 +525,7 @@
                         <input
                             name="invoice_number"
                             id="invoice-number"
-                            class="form-control form-control-sm"
+                            class="ui-input ui-input--sm"
                             value="{{ old('invoice_number', $invoice->invoice_number ?? '') }}"
                             placeholder="{{ __('common.reference_example', ['reference' => 'INV/2026/09/001']) }}"
                             @readonly(isset($invoice))
@@ -582,7 +582,7 @@
                     {{-- Baris Finansial 3 Kolom Berjajar: DPP, Skema PPN, dan Estimasi Nilai PPN --}}
                     <div class="tw:sm:col-span-2 tw:grid tw:grid-cols-1 tw:md:grid-cols-3 tw:gap-3 tw:rounded-ui-md tw:border tw:border-outline-variant tw:bg-surface-container tw:p-3.5">
                         <div>
-                            <label for="invoice-amount" class="form-label tw:text-ui-xs tw:font-semibold tw:text-on-surface">
+                            <label for="invoice-amount" class="ui-label tw:text-ui-xs tw:font-semibold tw:text-on-surface">
                                 {{ __('local_invoice.form.dpp_idr') }} <span class="tw:text-error">*</span>
                             </label>
                             <div class="tw:relative">
@@ -592,7 +592,7 @@
                                     type="number"
                                     step="0.01"
                                     min="0.01"
-                                    class="form-control form-control-sm ui-tabular-nums"
+                                    class="ui-input ui-input--sm ui-tabular-nums"
                                     value="{{ old('invoice_amount', $invoice->invoice_amount ?? '') }}"
                                     placeholder="0.00"
                                     required
@@ -605,10 +605,10 @@
                         </div>
 
                         <div>
-                            <label for="ppn-scheme" class="form-label tw:text-ui-xs tw:font-semibold tw:text-on-surface">
+                            <label for="ppn-scheme" class="ui-label tw:text-ui-xs tw:font-semibold tw:text-on-surface">
                                 {{ __('finance.labels.ppn_scheme') }} <span class="tw:text-error">*</span>
                             </label>
-                            <select name="ppn_scheme" id="ppn-scheme" class="form-select form-select-sm">
+                            <select name="ppn_scheme" id="ppn-scheme" class="ui-select ui-select--sm">
                                 @if($isPkp)
                                     <option value="11%" @selected($selectedPpnScheme === '11%')>{{ __('local_invoice.closure.ppn_standard') }}</option>
                                     <option value="1.1%" @selected($selectedPpnScheme === '1.1%')>{{ __('local_invoice.closure.ppn_certain') }}</option>
@@ -621,7 +621,7 @@
                         </div>
 
                         <div>
-                            <label for="tax-amount" class="form-label tw:text-ui-xs tw:font-semibold tw:text-on-surface">
+                            <label for="tax-amount" class="ui-label tw:text-ui-xs tw:font-semibold tw:text-on-surface">
                                 {{ __('finance.labels.ppn_estimate') }}
                             </label>
                             <input
@@ -630,7 +630,7 @@
                                 type="number"
                                 step="0.01"
                                 min="0"
-                                class="form-control form-control-sm ui-tabular-nums"
+                                class="ui-input ui-input--sm ui-tabular-nums"
                                 value="{{ $isPkp ? old('tax_amount', $invoice->tax_amount ?? '') : \App\Support\Money::zero() }}"
                                 @readonly(!$isPkp)
                                 placeholder="0.00"
@@ -715,7 +715,7 @@
                     >
                         <div class="tw:flex tw:items-center tw:justify-between tw:mb-1">
                             <div class="tw:flex tw:items-center tw:gap-2">
-                                <label for="tax_invoice_number" class="form-label tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:mb-0">
+                                <label for="tax_invoice_number" class="ui-label tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:mb-0">
                                     {{ __('local_invoice.form.tax_number') }} @if($isPkp) <span class="tw:text-error">*</span> @else <span class="tw:text-on-surface-variant tw:font-normal">{{ __('local_invoice.form.non_pkp_optional') }}</span> @endif
                                 </label>
                                 <span id="tax-autofill-badge" class="tw:hidden tw:items-center tw:gap-1 tw:text-[11px] tw:text-primary tw:font-semibold tw:bg-primary/10 tw:px-2 tw:py-0.5 tw:rounded-sm">
@@ -751,7 +751,7 @@
                             name="tax_invoice_number"
                             id="tax_invoice_number"
                             x-ref="taxInput"
-                            class="form-control form-control-sm ui-tabular-nums"
+                            class="ui-input ui-input--sm ui-tabular-nums"
                             x-model="value"
                             @input="onInput($event)"
                             @paste="onPaste($event)"
@@ -789,15 +789,15 @@
                     @if($isCancelledRecovery)
                         <div class="tw:sm:col-span-2 tw:rounded-ui-md tw:border tw:border-outline-variant tw:bg-surface-container tw:p-4 ui-density-list">
                             <div data-async-error-anchor>
-                                <label for="invoiceRecoveryReason" class="form-label tw:text-ui-xs tw:font-semibold">{{ __('local_invoice.recovery.reason') }} <span class="tw:text-error" aria-hidden="true">*</span></label>
-                                <textarea id="invoiceRecoveryReason" name="recovery_reason" maxlength="1000" rows="3" required class="form-control @error('recovery_reason') is-invalid @enderror" aria-describedby="invoiceRecoveryReasonHint{{ $errors->has('recovery_reason') ? ' invoiceRecoveryReasonError' : '' }}" @error('recovery_reason') aria-invalid="true" @enderror>{{ old('recovery_reason') }}</textarea>
+                                <label for="invoiceRecoveryReason" class="ui-label tw:text-ui-xs tw:font-semibold">{{ __('local_invoice.recovery.reason') }} <span class="tw:text-error" aria-hidden="true">*</span></label>
+                                <textarea id="invoiceRecoveryReason" name="recovery_reason" maxlength="1000" rows="3" required class="ui-textarea @error('recovery_reason') is-invalid @enderror" aria-describedby="invoiceRecoveryReasonHint{{ $errors->has('recovery_reason') ? ' invoiceRecoveryReasonError' : '' }}" @error('recovery_reason') aria-invalid="true" @enderror>{{ old('recovery_reason') }}</textarea>
                                 <p id="invoiceRecoveryReasonHint" class="tw:mt-1 tw:mb-0 tw:text-ui-xs tw:text-on-surface-variant">{{ __('local_invoice.recovery.reason_hint') }}</p>
-                                @error('recovery_reason')<div id="invoiceRecoveryReasonError" class="invalid-feedback">{{ $message }}</div>@enderror
+                                @error('recovery_reason')<div id="invoiceRecoveryReasonError" class="ui-field-error">{{ $message }}</div>@enderror
                             </div>
-                            <div class="form-check" data-async-error-anchor>
-                                <input id="invoiceBusinessDocumentValid" name="business_document_valid" type="checkbox" value="1" required @checked(old('business_document_valid')) class="form-check-input @error('business_document_valid') is-invalid @enderror" @error('business_document_valid') aria-invalid="true" aria-describedby="invoiceBusinessDocumentValidError" @enderror>
-                                <label for="invoiceBusinessDocumentValid" class="form-check-label tw:text-ui-xs">{{ __('local_invoice.recovery.confirm_business_document') }}</label>
-                                @error('business_document_valid')<div id="invoiceBusinessDocumentValidError" class="invalid-feedback">{{ $message }}</div>@enderror
+                            <div class="ui-check-row" data-async-error-anchor>
+                                <input id="invoiceBusinessDocumentValid" name="business_document_valid" type="checkbox" value="1" required @checked(old('business_document_valid')) class="ui-check @error('business_document_valid') is-invalid @enderror" @error('business_document_valid') aria-invalid="true" aria-describedby="invoiceBusinessDocumentValidError" @enderror>
+                                <label for="invoiceBusinessDocumentValid" class="ui-check-label tw:text-ui-xs">{{ __('local_invoice.recovery.confirm_business_document') }}</label>
+                                @error('business_document_valid')<div id="invoiceBusinessDocumentValidError" class="ui-field-error">{{ $message }}</div>@enderror
                             </div>
                         </div>
                     @endif

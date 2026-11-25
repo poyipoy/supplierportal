@@ -170,16 +170,16 @@
                         @endif
                     </div>
 
-                    <div class="table-responsive">
-                        <table class="table table-sm align-middle tw:m-0 tw:text-ui-xs">
-                            <thead><tr><th>{{ __('local_invoice.detail.gr_number') }}</th><th>{{ __('local_invoice.labels.date') }}</th><th class="text-end">{{ __('common.fields.qty') }}</th><th scope="col">{{ __('local_procurement.labels.uom') }}</th><th class="text-end">{{ __('local_invoice.three_way_match.gr_amount') }}</th><th>{{ __('local_invoice.labels.status') }}</th></tr></thead>
+                    <div class="ui-table-scroll">
+                        <table class="ui-table ui-table--sm tw:align-middle tw:m-0 tw:text-ui-xs tw:w-full">
+                            <thead><tr><th>{{ __('local_invoice.detail.gr_number') }}</th><th>{{ __('local_invoice.labels.date') }}</th><th class="tw:text-end">{{ __('common.fields.qty') }}</th><th scope="col">{{ __('local_procurement.labels.uom') }}</th><th class="tw:text-end">{{ __('local_invoice.three_way_match.gr_amount') }}</th><th>{{ __('local_invoice.labels.status') }}</th></tr></thead>
                             <tbody>
                             @forelse($invoice->goodsReceiptHistories->sortBy('id') as $history)
                                 <tr>
                                     <td class="ui-tabular-nums ui-col-data-name">{{ $history->gr_number_snapshot }}</td>
                                     <td>{{ $history->goodsReceipt?->gr_date ? $regionalFormatter->date($history->goodsReceipt->gr_date, 'human') : '—' }}</td>
-                                    <td class="text-end ui-tabular-nums">{{ $history->gr_qty_snapshot !== null ? rtrim(rtrim(number_format((float) $history->gr_qty_snapshot, 4, ',', '.'), '0'), ',') : ($history->goodsReceipt?->qty !== null ? rtrim(rtrim(number_format((float) $history->goodsReceipt->qty, 4, ',', '.'), '0'), ',') : '—') }}</td><td>{{ $history->gr_uom_snapshot ?? '—' }}</td>
-                                    <td class="text-end ui-tabular-nums">{{ $history->gr_amount_snapshot !== null ? 'Rp ' . $regionalFormatter->money($history->gr_amount_snapshot) : '—' }}</td>
+                                    <td class="tw:text-end ui-tabular-nums">{{ $history->gr_qty_snapshot !== null ? rtrim(rtrim(number_format((float) $history->gr_qty_snapshot, 4, ',', '.'), '0'), ',') : ($history->goodsReceipt?->qty !== null ? rtrim(rtrim(number_format((float) $history->goodsReceipt->qty, 4, ',', '.'), '0'), ',') : '—') }}</td><td>{{ $history->gr_uom_snapshot ?? '—' }}</td>
+                                    <td class="tw:text-end ui-tabular-nums">{{ $history->gr_amount_snapshot !== null ? 'Rp ' . $regionalFormatter->money($history->gr_amount_snapshot) : '—' }}</td>
                                     <td><x-ui.status-chip :tone="$history->state === 'CONSUMED' ? 'success' : ($history->state === 'RELEASED' ? 'neutral' : 'warning')">{{ \App\Support\StatusHelper::localFinanceLabel($history->state) }}</x-ui.status-chip></td>
                                 </tr>
                             @empty
@@ -212,16 +212,16 @@
                         @csrf
                         <div class="ui-density-list">
                             <div>
-                                <label for="receipt_qr" class="form-label tw:text-ui-xs tw:font-semibold">{{ __('finance.labels.scan_receipt') }}</label>
-                                <input type="text" name="receipt_qr" id="receipt_qr" class="form-control form-control-sm" inputmode="none" autocomplete="off" autofocus required maxlength="2048" placeholder="{{ __('finance.labels.scan_instruction') }}">
+                                <label for="receipt_qr" class="ui-label tw:text-ui-xs tw:font-semibold">{{ __('finance.labels.scan_receipt') }}</label>
+                                <input type="text" name="receipt_qr" id="receipt_qr" class="ui-input ui-input--sm" inputmode="none" autocomplete="off" autofocus required maxlength="2048" placeholder="{{ __('finance.labels.scan_instruction') }}">
                                 <p class="tw:mt-1 tw:text-ui-xs tw:text-on-surface-variant">{{ __('finance.invoice_ui.qr_help') }}</p>
                                 @error('receipt_qr')
                                     <div class="tw:text-error tw:text-ui-xs" role="alert">{{ $message }}</div>
                                 @enderror
                             </div>
                             <div>
-                                <label for="cashier-notes" class="form-label tw:text-ui-xs tw:font-semibold">{{ __('finance.labels.cashier_notes') }}</label>
-                                <input type="text" name="notes" id="cashier-notes" class="form-control form-control-sm" placeholder="{{ __('finance.copy_review.cashier_example') }}">
+                                <label for="cashier-notes" class="ui-label tw:text-ui-xs tw:font-semibold">{{ __('finance.labels.cashier_notes') }}</label>
+                                <input type="text" name="notes" id="cashier-notes" class="ui-input ui-input--sm" placeholder="{{ __('finance.copy_review.cashier_example') }}">
                             </div>
                             <x-ui.button type="submit" variant="primary" size="sm">
                                 <x-ui.icon name="inbox" size="sm" />
@@ -280,7 +280,7 @@
                                         </label>
                                     </div>
                                 </div>
-                                <input type="text" name="invoice_notes" class="form-control form-control-sm" placeholder="{{ __('finance.invoice_ui.check_notes') }}" value="{{ $verification->invoice_notes ?? '' }}">
+                                <input type="text" name="invoice_notes" class="ui-input ui-input--sm" placeholder="{{ __('finance.invoice_ui.check_notes') }}" value="{{ $verification->invoice_notes ?? '' }}">
                             </div>
 
                             {{-- 2. Faktur Pajak Check --}}
@@ -306,7 +306,7 @@
                                         </label>
                                     </div>
                                 </div>
-                                <input type="text" name="tax_invoice_notes" class="form-control form-control-sm" placeholder="{{ __('finance.copy_review.tax_notes') }}" value="{{ $verification->tax_invoice_notes ?? '' }}">
+                                <input type="text" name="tax_invoice_notes" class="ui-input ui-input--sm" placeholder="{{ __('finance.copy_review.tax_notes') }}" value="{{ $verification->tax_invoice_notes ?? '' }}">
                             </div>
 
                             {{-- 3. PO Check --}}
@@ -322,7 +322,7 @@
                                         </label>
                                     </div>
                                 </div>
-                                <input type="text" name="po_notes" class="form-control form-control-sm" placeholder="{{ __('local_procurement.labels.po_notes') }}" value="{{ $verification->po_notes ?? '' }}">
+                                <input type="text" name="po_notes" class="ui-input ui-input--sm" placeholder="{{ __('local_procurement.labels.po_notes') }}" value="{{ $verification->po_notes ?? '' }}">
                             </div>
 
                             {{-- 4. Surat Jalan Check --}}
@@ -341,7 +341,7 @@
                                         </label>
                                     </div>
                                 </div>
-                                <input type="text" name="delivery_note_notes" class="form-control form-control-sm" placeholder="{{ __('finance.copy_review.delivery_notes') }}" value="{{ $verification->delivery_note_notes ?? '' }}">
+                                <input type="text" name="delivery_note_notes" class="ui-input ui-input--sm" placeholder="{{ __('finance.copy_review.delivery_notes') }}" value="{{ $verification->delivery_note_notes ?? '' }}">
                             </div>
 
                             {{-- 5. GR Check --}}
@@ -357,9 +357,9 @@
                                         </label>
                                     </div>
                                 </div>
-                                <input type="text" name="gr_notes" class="form-control form-control-sm @error('gr_notes') is-invalid @enderror" placeholder="{{ __('local_procurement.labels.gr_notes') }}" value="{{ old('gr_notes', $verification->gr_notes ?? '') }}">
+                                <input type="text" name="gr_notes" class="ui-input ui-input--sm @error('gr_notes') is-invalid @enderror" placeholder="{{ __('local_procurement.labels.gr_notes') }}" value="{{ old('gr_notes', $verification->gr_notes ?? '') }}">
                                 @error('gr_notes')
-                                    <div class="invalid-feedback tw:text-ui-xs">{{ $message }}</div>
+                                    <div class="ui-field-error tw:text-ui-xs">{{ $message }}</div>
                                 @enderror
                             </div>
 
@@ -416,15 +416,15 @@
                             @endif
                             <div class="tw:grid tw:grid-cols-1 tw:sm:grid-cols-2 tw:gap-4">
                                 <div>
-                                    <label class="form-label tw:text-ui-xs tw:font-semibold">{{ __('finance.invoice_ui.ppn_match') }}</label>
-                                    <select name="ppn_status" class="form-select form-select-sm" required>
+                                    <label class="ui-label tw:text-ui-xs tw:font-semibold">{{ __('finance.invoice_ui.ppn_match') }}</label>
+                                    <select name="ppn_status" class="ui-select ui-select--sm" required>
                                         <option value="SESUAI" @selected(($verification->ppn_status ?? 'SESUAI') === 'SESUAI')>{{ __('finance.labels.tax_conform') }}</option>
                                         <option value="TIDAK_SESUAI" @selected(($verification->ppn_status ?? '') === 'TIDAK_SESUAI')>{{ __('finance.labels.tax_mismatch') }}</option>
                                     </select>
                                 </div>
                                 <div>
-                                    <label class="form-label tw:text-ui-xs tw:font-semibold">{{ __('finance.invoice_ui.verified_ppn') }}</label>
-                                    <input type="number" step="0.01" name="verified_ppn" class="form-control form-control-sm" value="{{ $verification->verified_ppn ?? $invoice->tax_amount }}">
+                                    <label class="ui-label tw:text-ui-xs tw:font-semibold">{{ __('finance.invoice_ui.verified_ppn') }}</label>
+                                    <input type="number" step="0.01" name="verified_ppn" class="ui-input ui-input--sm" value="{{ $verification->verified_ppn ?? $invoice->tax_amount }}">
                                 </div>
                             </div>
 
@@ -436,16 +436,16 @@
                                         <label for="pph23-app" class="tw:text-ui-xs">{{ __('finance.invoice_ui.deduct_pph23') }}</label>
                                     </div>
                                     <div>
-                                        <label for="pph23-base" class="form-label tw:text-[11px]">DPP PPh 23</label>
-                                        <input type="number" step="0.01" id="pph23-base" name="pph_23_base" class="form-control form-control-sm" value="{{ $verification->pph_23_base ?? $invoice->invoice_amount }}">
+                                        <label for="pph23-base" class="ui-label tw:text-[11px]">DPP PPh 23</label>
+                                        <input type="number" step="0.01" id="pph23-base" name="pph_23_base" class="ui-input ui-input--sm" value="{{ $verification->pph_23_base ?? $invoice->invoice_amount }}">
                                     </div>
                                     <div>
-                                        <label for="pph23-rate" class="form-label tw:text-[11px]">{{ __('finance.invoice_ui.pph23_rate') }}</label>
-                                        <input type="number" step="0.01" id="pph23-rate" name="pph_23_rate" class="form-control form-control-sm" value="{{ $verification->pph_23_rate ?? 2 }}">
+                                        <label for="pph23-rate" class="ui-label tw:text-[11px]">{{ __('finance.invoice_ui.pph23_rate') }}</label>
+                                        <input type="number" step="0.01" id="pph23-rate" name="pph_23_rate" class="ui-input ui-input--sm" value="{{ $verification->pph_23_rate ?? 2 }}">
                                     </div>
                                     <div>
-                                        <label for="pph23-amount" class="form-label tw:text-[11px]">{{ __('finance.invoice_ui.pph23_amount') }}</label>
-                                        <input type="number" step="0.01" id="pph23-amount" name="pph_23_amount" class="form-control form-control-sm" value="{{ $verification->pph_23_amount ?? 0 }}">
+                                        <label for="pph23-amount" class="ui-label tw:text-[11px]">{{ __('finance.invoice_ui.pph23_amount') }}</label>
+                                        <input type="number" step="0.01" id="pph23-amount" name="pph_23_amount" class="ui-input ui-input--sm" value="{{ $verification->pph_23_amount ?? 0 }}">
                                         <span id="pph23-calc-hint" class="tw:text-[11px] tw:text-primary ui-tabular-nums tw:mt-1 tw:block"></span>
                                     </div>
                                 </div>
@@ -457,19 +457,19 @@
                                     <div class="tw:flex tw:items-center tw:gap-3">
                                         <input type="checkbox" name="pph_4_2_applicable" id="pph42-app" value="1" @checked($verification->pph_4_2_applicable ?? false)>
                                         <label for="pph42-app" class="tw:text-ui-xs tw:shrink-0">PPh 4(2)</label>
-                                        <input type="number" step="0.01" name="pph_4_2_amount" class="form-control form-control-sm" placeholder="{{ __('finance.invoice_ui.amount_rp') }}" value="{{ $verification->pph_4_2_amount ?? 0 }}">
+                                        <input type="number" step="0.01" name="pph_4_2_amount" class="ui-input ui-input--sm" placeholder="{{ __('finance.invoice_ui.amount_rp') }}" value="{{ $verification->pph_4_2_amount ?? 0 }}">
                                     </div>
                                     <div class="tw:flex tw:items-center tw:gap-3">
                                         <input type="checkbox" name="pph_21_applicable" id="pph21-app" value="1" @checked($verification->pph_21_applicable ?? false)>
                                         <label for="pph21-app" class="tw:text-ui-xs tw:shrink-0">PPh 21</label>
-                                        <input type="number" step="0.01" name="pph_21_amount" class="form-control form-control-sm" placeholder="{{ __('finance.invoice_ui.amount_rp') }}" value="{{ $verification->pph_21_amount ?? 0 }}">
+                                        <input type="number" step="0.01" name="pph_21_amount" class="ui-input ui-input--sm" placeholder="{{ __('finance.invoice_ui.amount_rp') }}" value="{{ $verification->pph_21_amount ?? 0 }}">
                                     </div>
                                 </div>
                             </div>
 
                             <div>
-                                <label class="form-label tw:text-ui-xs tw:font-semibold">{{ __('local_invoice.labels.tax_notes') }}</label>
-                                <textarea name="tax_notes" class="form-control form-control-sm" rows="2" placeholder="{{ __('finance.invoice_ui.tax_notes') }}">{{ $verification->tax_notes ?? '' }}</textarea>
+                                <label class="ui-label tw:text-ui-xs tw:font-semibold">{{ __('local_invoice.labels.tax_notes') }}</label>
+                                <textarea name="tax_notes" class="ui-textarea tw:text-ui-xs tw:px-2 tw:py-1" rows="2" placeholder="{{ __('finance.invoice_ui.tax_notes') }}">{{ $verification->tax_notes ?? '' }}</textarea>
                             </div>
 
                             @if(!$isLocked)
@@ -562,7 +562,7 @@
                                 type="submit"
                                 variant="primary"
                                 size="sm"
-                                class="w-100"
+                                class="tw:w-full"
                                 :disabled="!$verification || !$verification->is_section_a_passed || !$verification->is_section_b_passed"
                             >
                                 <x-ui.icon name="check-circle" size="sm" />
@@ -574,7 +574,7 @@
                             type="button"
                             variant="danger-outline"
                             size="sm"
-                            class="w-100"
+                            class="tw:w-full"
                             data-ui-modal-open="#revisionModal"
                         >
                             <x-ui.icon name="rotate-ccw" size="sm" />
@@ -586,7 +586,7 @@
 
             @if(in_array($invoice->status, [\App\Models\LocalInvoice::STATUS_WAITING_PHYSICAL_DOCUMENT, \App\Models\LocalInvoice::STATUS_UNDER_VERIFICATION, \App\Models\LocalInvoice::STATUS_NEED_REVISION], true))
                 <x-ui.card :title="__('finance.actions.reject_invoice')" :description="__('finance.invoice_ui.reject_help')">
-                    <x-ui.button type="button" variant="danger-outline" size="sm" class="w-100" data-ui-modal-open="#rejectModal">
+                    <x-ui.button type="button" variant="danger-outline" size="sm" class="tw:w-full" data-ui-modal-open="#rejectModal">
                         <x-ui.icon name="x-circle" size="sm" /> {{ __('finance.actions.reject_invoice') }}
                     </x-ui.button>
                 </x-ui.card>
@@ -629,9 +629,9 @@
                     <p class="tw:text-ui-xs tw:text-on-surface-variant tw:mb-3">
                         {{ __('finance.invoice_ui.revision_help') }}
                     </p>
-                    <div class="mb-3">
-                        <label for="rev-notes" class="form-label tw:text-ui-xs tw:font-semibold">{{ __('ga.verification.reason') }} <span class="text-danger">*</span></label>
-                        <textarea name="notes" id="rev-notes" class="form-control form-control-sm" rows="3" required placeholder="{{ __('finance.invoice_ui.revision_example') }}"></textarea>
+                    <div class="tw:mb-3">
+                        <label for="rev-notes" class="ui-label tw:text-ui-xs tw:font-semibold">{{ __('ga.verification.reason') }} <span class="tw:text-error">*</span></label>
+                        <textarea name="notes" id="rev-notes" class="ui-textarea tw:text-ui-xs tw:px-2 tw:py-1" rows="3" required placeholder="{{ __('finance.invoice_ui.revision_example') }}"></textarea>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -650,7 +650,7 @@
             @csrf
             <div class="modal-content">
                 <div class="modal-header"><h5 class="modal-title tw:text-ui-sm tw:font-bold" id="rejectModalLabel">{{ __('finance.actions.reject_invoice') }}</h5><button type="button" class="btn-close" data-ui-modal-close aria-label="{{ __('local_invoice.actions.close') }}"></button></div>
-                <div class="modal-body"><label for="reject-notes" class="form-label tw:text-ui-xs tw:font-semibold">{{ __('finance.labels.rejection_reason') }} <span class="text-danger">*</span></label><textarea name="notes" id="reject-notes" class="form-control form-control-sm" rows="3" maxlength="2000" required></textarea></div>
+                <div class="modal-body"><label for="reject-notes" class="ui-label tw:text-ui-xs tw:font-semibold">{{ __('finance.labels.rejection_reason') }} <span class="tw:text-error">*</span></label><textarea name="notes" id="reject-notes" class="ui-textarea tw:text-ui-xs tw:px-2 tw:py-1" rows="3" maxlength="2000" required></textarea></div>
                 <div class="modal-footer"><x-ui.button type="button" variant="ghost" size="sm" data-ui-modal-close>{{ __('local_invoice.actions.cancel') }}</x-ui.button><x-ui.button type="submit" variant="danger" size="sm">{{ __('finance.actions.reject_release') }}</x-ui.button></div>
             </div>
         </form>

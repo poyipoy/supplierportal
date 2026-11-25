@@ -53,7 +53,7 @@
                         {{-- Nomor PO --}}
                         <div>
                             <div class="tw:flex tw:items-center tw:justify-between tw:min-h-6 tw:mb-1">
-                                <label for="po_number" class="form-label tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:mb-0">
+                                <label for="po_number" class="ui-label tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:mb-0">
                                     {{ __('local_invoice.receipt.po_number') }} <span class="tw:text-error">*</span>
                                 </label>
                                 @if($isLocked)
@@ -67,17 +67,17 @@
                                 type="text"
                                 name="po_number"
                                 id="po_number"
-                                class="form-control form-control-sm ui-tabular-nums @error('po_number') is-invalid @enderror"
+                                class="ui-input ui-input--sm ui-tabular-nums @error('po_number') is-invalid @enderror"
                                 value="{{ old('po_number', $purchaseOrder->po_number) }}"
                                 placeholder="{{ __('common.reference_example', ['reference' => 'PO/2026/09/001']) }}"
                                 @if($isLocked) readonly @endif
                                 required
                             >
                             @error('po_number')
-                                <div class="invalid-feedback tw:text-ui-xs">{{ $message }}</div>
+                                <div class="ui-field-error tw:text-ui-xs">{{ $message }}</div>
                             @enderror
                             @if($isLocked)
-                                <div class="form-text tw:text-[11px] tw:text-on-surface-variant">{{ __('local_procurement.surface.number_locked') }}</div>
+                                <div class="ui-field-help tw:text-[11px] tw:text-on-surface-variant">{{ __('local_procurement.surface.number_locked') }}</div>
                             @endif
                         </div>
 
@@ -85,14 +85,14 @@
                         <div class="tw:min-w-0">
                             @if($isEdit && filled($purchaseOrder->pr_number))
                                 <div class="tw:flex tw:items-center tw:justify-between tw:min-h-6 tw:mb-1">
-                                    <label for="pr_number" class="form-label tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:mb-0">{{ __('local_procurement.pr.number_label') }}</label>
+                                    <label for="pr_number" class="ui-label tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:mb-0">{{ __('local_procurement.pr.number_label') }}</label>
                                     <span class="tw:inline-flex tw:items-center tw:gap-1 tw:px-2 tw:py-0.5 tw:rounded-sm tw:text-[11px] tw:font-semibold tw:bg-warning-container tw:text-warning-container-foreground">
                                         <x-ui.icon name="lock" size="sm" />
                                         <span>{{ __('local_invoice.labels.locked') }}</span>
                                     </span>
                                 </div>
-                                <input id="pr_number" name="pr_number" value="{{ $purchaseOrder->pr_number }}" readonly maxlength="100" class="form-control form-control-sm ui-tabular-nums tw:bg-surface-container">
-                                <div class="form-text tw:text-[11px] tw:text-on-surface-variant">{{ __('local_procurement.pr.manual_locked') }}</div>
+                                <input id="pr_number" name="pr_number" value="{{ $purchaseOrder->pr_number }}" readonly maxlength="100" class="ui-input ui-input--sm ui-tabular-nums tw:bg-surface-container">
+                                <div class="ui-field-help tw:text-[11px] tw:text-on-surface-variant">{{ __('local_procurement.pr.manual_locked') }}</div>
                             @else
                                 <x-ui.searchable-select
                                     name="pr_number"
@@ -111,7 +111,7 @@
 
                         <div>
                             <div class="tw:flex tw:items-center tw:justify-between tw:min-h-6 tw:mb-1">
-                                <label for="supplier_id" class="form-label tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:mb-0">
+                                <label for="supplier_id" class="ui-label tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:mb-0">
                                     {{ __('local_invoice.labels.local_supplier') }} <span class="tw:text-error">*</span>
                                 </label>
                                 @if($isLocked)
@@ -123,7 +123,7 @@
                             </div>
                             @if($isLocked)
                                 <input type="hidden" name="supplier_id" value="{{ $purchaseOrder->supplier_id }}">
-                                <select id="supplier_id_disabled" class="form-select form-select-sm" disabled>
+                                <select id="supplier_id_disabled" class="ui-select ui-select--sm" disabled>
                                     @foreach($suppliers as $supplier)
                                         @if((string)$purchaseOrder->supplier_id === (string)$supplier->id)
                                             <option value="{{ $supplier->id }}" selected>
@@ -132,12 +132,12 @@
                                         @endif
                                     @endforeach
                                 </select>
-                                <div class="form-text tw:text-[11px] tw:text-on-surface-variant">{{ __('local_procurement.surface.supplier_locked') }}</div>
+                                <div class="ui-field-help tw:text-[11px] tw:text-on-surface-variant">{{ __('local_procurement.surface.supplier_locked') }}</div>
                             @else
                                 <select
                                     name="supplier_id"
                                     id="supplier_id"
-                                    class="form-select form-select-sm @error('supplier_id') is-invalid @enderror"
+                                    class="ui-select ui-select--sm @error('supplier_id') is-invalid @enderror"
                                     required
                                 >
                                     <option value="">{{ __('local_procurement.surface.choose_supplier') }}</option>
@@ -154,7 +154,7 @@
                                     @endforeach
                                 </select>
                                 @error('supplier_id')
-                                    <div class="invalid-feedback tw:text-ui-xs">{{ $message }}</div>
+                                    <div class="ui-field-error tw:text-ui-xs">{{ $message }}</div>
                                 @enderror
                             @endif
                         </div>
@@ -162,7 +162,7 @@
                         {{-- Tanggal PO --}}
                         <div>
                             <div class="tw:flex tw:items-center tw:justify-between tw:min-h-6 tw:mb-1">
-                                <label for="local_po_date" class="form-label tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:mb-0">
+                                <label for="local_po_date" class="ui-label tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:mb-0">
                                     {{ __('local_procurement.labels.po_document_date') }} <span class="tw:text-error">*</span>
                                 </label>
                             </div>
@@ -174,34 +174,34 @@
                                 size="sm"
                             />
                             @error('po_date')
-                                <div class="text-danger tw:text-ui-xs tw:mt-1">{{ $message }}</div>
+                                <div class="tw:text-error tw:text-ui-xs tw:mt-1">{{ $message }}</div>
                             @enderror
                         </div>
 
                         {{-- Nilai PO (IDR) --}}
                         <div>
-                            <label for="total_amount" class="form-label tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:mb-1">
+                            <label for="total_amount" class="ui-label tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:mb-1">
                                 {{ __('local_procurement.surface.po_amount_cap') }} <span class="tw:text-error">*</span>
                             </label>
-                            <div class="input-group input-group-sm">
-                                <span class="input-group-text tw:font-semibold tw:text-on-surface-variant">Rp</span>
+                            <div class="ui-input-group ui-input-group--sm">
+                                <span class="ui-input-group__text tw:font-semibold tw:text-on-surface-variant">Rp</span>
                                 <input
                                     type="number"
                                     name="total_amount"
                                     id="total_amount"
                                     min="{{ $isLocked && $activeInvoicedTotal > 0 ? $activeInvoicedTotal : '0.01' }}"
                                     step="0.01"
-                                    class="form-control form-control-sm ui-tabular-nums @error('total_amount') is-invalid @enderror"
+                                    class="ui-input ui-input--sm ui-tabular-nums @error('total_amount') is-invalid @enderror"
                                     value="{{ $initialAmount }}"
                                     placeholder="0.00"
                                     required
                                 >
                             </div>
                             @error('total_amount')
-                                <div class="text-danger tw:text-ui-xs tw:mt-1">{{ $message }}</div>
+                                <div class="tw:text-error tw:text-ui-xs tw:mt-1">{{ $message }}</div>
                             @enderror
                             @if($isLocked && $activeInvoicedTotal > 0)
-                                <div class="form-text tw:text-[11px] tw:text-warning tw:mt-1">
+                                <div class="ui-field-help tw:text-[11px] tw:text-warning tw:mt-1">
                                     {{ __('finance.closure.plafon_minimum', ['amount' => $regionalFormatter->money($activeInvoicedTotal, 2)]) }}
                                 </div>
                             @endif
@@ -215,18 +215,18 @@
                     :description="__('local_procurement.list.notes_help')"
                 >
                     <div>
-                        <label for="description" class="form-label tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:mb-1">
+                        <label for="description" class="ui-label tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:mb-1">
                             {{ __('local_procurement.labels.po_description_notes') }}
                         </label>
                         <textarea
                             name="description"
                             id="description"
-                            class="form-control form-control-sm @error('description') is-invalid @enderror"
+                            class="ui-textarea tw:text-ui-xs tw:px-2 tw:py-1 @error('description') is-invalid @enderror"
                             rows="4"
                             placeholder="{{ __('local_procurement.surface.notes_placeholder') }}"
                         >{{ old('description', $purchaseOrder->description) }}</textarea>
                         @error('description')
-                            <div class="invalid-feedback tw:text-ui-xs">{{ $message }}</div>
+                            <div class="ui-field-error tw:text-ui-xs">{{ $message }}</div>
                         @enderror
                     </div>
                 </x-ui.form-section>
@@ -287,12 +287,12 @@
                         {{-- Tombol Aksi --}}
                         <div class="tw:space-y-2 tw:pt-1">
                             <x-ui.button type="submit" variant="primary" class="tw:w-full tw:justify-center">
-                                <x-ui.icon name="check" size="sm" class="me-1" />
+                                <x-ui.icon name="check" size="sm" class="tw:me-1" />
                                 <span>{{ $isEdit ? __('local_procurement.surface.po_update') : __('local_procurement.surface.po_save') }}</span>
                             </x-ui.button>
 
                             <x-ui.button :href="route($routePrefix.'.index')" variant="outline" class="tw:w-full tw:justify-center">
-                                <x-ui.icon name="x" size="sm" class="me-1" />
+                                <x-ui.icon name="x" size="sm" class="tw:me-1" />
                                 <span>{{ __('common.labels_review.cancel') }}</span>
                             </x-ui.button>
                         </div>

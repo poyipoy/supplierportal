@@ -98,7 +98,7 @@
 
             <x-slot:filters>
                 <label for="candidate_supplier" class="tw:sr-only">{{ __('finance.drp_surface.supplier_filter') }}</label>
-                <select id="candidate_supplier" name="supplier_id" class="form-select form-select-sm tw:w-full tw:min-w-0 tw:sm:w-56">
+                <select id="candidate_supplier" name="supplier_id" class="ui-select ui-select--sm tw:w-full tw:min-w-0 tw:sm:w-56">
                     <option value="">{{ __('finance.drp_surface.local_suppliers') }}</option>
                     @foreach(($suppliers ?? []) as $supplier)
                         <option value="{{ $supplier->hash }}" @selected($supplierFilter?->id === $supplier->id)>{{ $supplier->supplier?->company_name ?: $supplier->name }}</option>
@@ -124,9 +124,9 @@
         <form method="POST" action="{{ route('finance.drp.supplier.create') }}">
             @csrf
             <div class="tw:space-y-4">
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle tw:m-0 tw:text-ui-sm w-100">
-                        <thead class="table-light">
+                <div class="ui-table-scroll">
+                    <table class="ui-table ui-table--hover tw:align-middle tw:m-0 tw:text-ui-sm tw:w-full">
+                        <thead>
                             <tr>
                                 <th scope="col" style="width: 40px;">{{ __('common.actions.choose') }}</th>
                                 <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('finance.drp.payee_account') }}</th>
@@ -139,9 +139,9 @@
                                         </a>
                                     </th>
                                 @endforeach
-                                <th scope="col" class="tw:text-ui-xs tw:font-semibold text-end">{{ __('local_invoice.labels.dpp_amount') }}</th>
-                                <th scope="col" class="tw:text-ui-xs tw:font-semibold text-end">{{ __('finance.drp_ui.ppn_amount') }}</th>
-                                <th scope="col" class="tw:text-ui-xs tw:font-semibold text-end">{{ __('finance.drp.total_payment') }}</th>
+                                <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-end">{{ __('local_invoice.labels.dpp_amount') }}</th>
+                                <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-end">{{ __('finance.drp_ui.ppn_amount') }}</th>
+                                <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-end">{{ __('finance.drp.total_payment') }}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -152,7 +152,7 @@
                                 @endphp
                                 <tr>
                                     <td>
-                                        <input type="checkbox" name="invoice_ids[]" value="{{ $inv->id }}" class="form-check-input" aria-label="{{ __('finance.candidates.select_invoice', ['number' => $inv->invoice_number]) }}">
+                                        <input type="checkbox" name="invoice_ids[]" value="{{ $inv->id }}" class="ui-check" aria-label="{{ __('finance.candidates.select_invoice', ['number' => $inv->invoice_number]) }}">
                                     </td>
                                     <td>
                                         <strong class="tw:text-on-surface">{{ $inv->supplier->supplier?->company_name ?: $inv->supplier->name }}</strong>
@@ -170,15 +170,15 @@
                                         </span>
                                     </td>
                                     <td class="tw:text-ui-xs">@bizdt($inv->ready_to_pay_at)</td>
-                                    <td class="text-end ui-tabular-nums">Rp {{ $regionalFormatter->money($inv->invoice_amount, 0) }}</td>
-                                    <td class="text-end ui-tabular-nums">Rp {{ $regionalFormatter->money($inv->tax_amount, 0) }}</td>
-                                    <td class="text-end ui-tabular-nums tw:font-bold tw:text-primary">
+                                    <td class="tw:text-end ui-tabular-nums">Rp {{ $regionalFormatter->money($inv->invoice_amount, 0) }}</td>
+                                    <td class="tw:text-end ui-tabular-nums">Rp {{ $regionalFormatter->money($inv->tax_amount, 0) }}</td>
+                                    <td class="tw:text-end ui-tabular-nums tw:font-bold tw:text-primary">
                                         Rp {{ $regionalFormatter->money($totalNominal, 0) }}
                                     </td>
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="8" class="text-center tw:py-8 tw:text-on-surface-variant tw:text-ui-sm">
+                                    <td colspan="8" class="tw:text-center tw:py-8 tw:text-on-surface-variant tw:text-ui-sm">
                                         {{ __('finance.drp.empty_supplier_candidates') }}
                                     </td>
                                 </tr>
@@ -191,7 +191,7 @@
                 @if($eligibleInvoices->isNotEmpty())
                     <div class="tw:flex tw:flex-col tw:sm:flex-row tw:sm:items-center tw:sm:justify-between tw:gap-3 tw:border-t tw:border-outline-variant tw:pt-3">
                         <div class="tw:flex-1">
-                            <input type="text" name="notes" class="form-control form-control-sm" aria-label="{{ __('common.final_review.batch_notes') }}" placeholder="{{ __('common.final_review.batch_notes') }}">
+                            <input type="text" name="notes" class="ui-input ui-input--sm" aria-label="{{ __('common.final_review.batch_notes') }}" placeholder="{{ __('common.final_review.batch_notes') }}">
                         </div>
                         <x-ui.button type="submit" variant="primary" size="sm">
                             <x-ui.icon name="plus" size="sm" />
@@ -223,20 +223,20 @@
             </x-ui.button>
         </x-slot:toolbar>
 
-        <div class="table-responsive">
-            <table class="table table-hover align-middle tw:m-0 tw:text-ui-sm w-100" id="drpBatchTable">
-                <thead class="table-light">
+        <div class="ui-table-scroll">
+            <table class="ui-table ui-table--hover tw:align-middle tw:m-0 tw:text-ui-sm tw:w-full" id="drpBatchTable">
+                <thead>
                     <tr>
                         <th scope="col" style="width: 40px;">
-                            <input type="checkbox" class="form-check-input" id="selectAllBatches" title="{{ __('finance.drp_surface.all_batches') }}">
+                            <input type="checkbox" class="ui-check" id="selectAllBatches" title="{{ __('finance.drp_surface.all_batches') }}">
                         </th>
                         <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('finance.drp_surface.batch_number') }}</th>
                         <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('local_invoice.labels.date') }}</th>
                         <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('finance.drp.group_payee') }}</th>
-                        <th scope="col" class="tw:text-ui-xs tw:font-semibold text-end">{{ __('finance.drp.total_amount_rp') }}</th>
-                        <th scope="col" class="tw:text-ui-xs tw:font-semibold text-end">{{ __('finance.drp.total_fee_rp') }}</th>
+                        <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-end">{{ __('finance.drp.total_amount_rp') }}</th>
+                        <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-end">{{ __('finance.drp.total_fee_rp') }}</th>
                         <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('local_invoice.labels.status') }}</th>
-                        <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-right text-end">{{ __('common.table.action') }}</th>
+                        <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-end">{{ __('common.table.action') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -244,7 +244,7 @@
                         <tr>
                             <td>
                                 @if($batch->status !== \App\Models\PaymentBatch::STATUS_CANCELLED)
-                                    <input type="checkbox" class="form-check-input batch-checkbox" value="{{ $batch->hash }}" data-batch-number="{{ $batch->batch_number }}">
+                                    <input type="checkbox" class="ui-check batch-checkbox" value="{{ $batch->hash }}" data-batch-number="{{ $batch->batch_number }}">
                                 @endif
                             </td>
                             <td>
@@ -252,10 +252,10 @@
                             </td>
                             <td>{{ $regionalFormatter->date($batch->created_at, 'human') }}</td>
                             <td>{{ trans_choice('finance.copy_review.accounts_count', $batch->groups_count, ['count' => $batch->groups_count]) }}</td>
-                            <td class="text-end ui-tabular-nums tw:font-semibold">
+                            <td class="tw:text-end ui-tabular-nums tw:font-semibold">
                                 Rp {{ $regionalFormatter->money($batch->total_subtotal, 0) }}
                             </td>
-                            <td class="text-end ui-tabular-nums tw:text-on-surface-variant">
+                            <td class="tw:text-end ui-tabular-nums tw:text-on-surface-variant">
                                 Rp {{ $regionalFormatter->money($batch->total_bank_fee, 0) }}
                             </td>
                             <td>
@@ -263,7 +263,7 @@
                                     {{ \App\Support\StatusHelper::localFinanceLabel($batch->status) }}
                                 </x-ui.status-chip>
                             </td>
-                            <td class="tw:text-right text-end">
+                            <td class="tw:text-end">
                                 <x-ui.row-action
                                     :href="route('finance.drp.show', $batch)"
                                     :context="$batch->batch_number"
@@ -272,7 +272,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="8" class="text-center tw:py-8 tw:text-on-surface-variant tw:text-ui-sm">
+                            <td colspan="8" class="tw:text-center tw:py-8 tw:text-on-surface-variant tw:text-ui-sm">
                                 {{ __('finance.drp.empty_supplier') }}
                             </td>
                         </tr>

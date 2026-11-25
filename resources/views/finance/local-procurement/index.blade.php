@@ -149,7 +149,7 @@
                 id="local-po-search"
                 value="{{ request('q') }}"
                 placeholder="{{ __('local_procurement.filters.po_search') }}"
-                class="form-control form-control-sm ui-filter-bar__search-input"
+                class="ui-input ui-input--sm ui-filter-bar__search-input"
                 maxlength="100"
                 autocomplete="off"
             >
@@ -157,7 +157,7 @@
 
         <x-slot:filters>
             <label for="po-status" class="tw:sr-only">{{ __('local_procurement.labels.po_status') }}</label>
-            <select id="po-status" name="status" class="form-select form-select-sm tw:w-full tw:min-w-0 tw:sm:w-40">
+            <select id="po-status" name="status" class="ui-select ui-select--sm tw:w-full tw:min-w-0 tw:sm:w-40">
                 <option value="">{{ __('local_invoice.labels.all_statuses') }}</option>
                 @foreach(['OPEN', 'CLOSED', 'CANCELLED'] as $status)
                     <option value="{{ $status }}" @selected(request('status') === $status)>{{ \App\Support\StatusHelper::localFinanceLabel($status) }}</option>
@@ -168,7 +168,7 @@
         <x-slot:advanced>
             <div>
                 <label for="po-supplier" class="tw:block tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:mb-1.5">{{ __('local_invoice.labels.supplier') }}</label>
-                <select id="po-supplier" name="supplier_id" class="form-select form-select-sm tw:w-full">
+                <select id="po-supplier" name="supplier_id" class="ui-select ui-select--sm tw:w-full">
                     <option value="">{{ __('local_invoice.labels.all_suppliers') }}</option>
                     @foreach($suppliers as $supplier)
                         <option value="{{ $supplier->hash }}" @selected((string) request('supplier_id') === (string) $supplier->hash)>
@@ -212,19 +212,19 @@
             :title="__('local_procurement.list.local')"
             :description="__('local_procurement.register.po_count', ['count' => $purchaseOrders->total()])"
         >
-        <div class="table-responsive">
-            <table class="table table-hover align-middle tw:m-0 tw:text-ui-sm w-100">
-                <thead class="table-light">
+        <div class="ui-table-scroll">
+            <table class="ui-table ui-table--hover tw:align-middle tw:m-0 tw:text-ui-sm tw:w-full">
+                <thead>
                     <tr>
                         <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('local_invoice.receipt.po_number') }}</th>
                         <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('local_procurement.pr.label') }}</th>
                         <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('local_invoice.labels.supplier') }}</th>
                         <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('local_procurement.labels.po_date') }}</th>
-                        <th scope="col" class="tw:text-ui-xs tw:font-semibold text-end">{{ __('local_procurement.register.po_value') }}</th>
-                        <th scope="col" class="tw:text-ui-xs tw:font-semibold text-end">{{ __('local_procurement.register.gr_actual') }}</th>
-                        <th scope="col" class="tw:text-ui-xs tw:font-semibold text-center">{{ __('local_invoice.labels.status') }}</th>
-                        <th scope="col" class="tw:text-ui-xs tw:font-semibold text-center">{{ __('local_invoice.labels.source') }}</th>
-                        <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-right text-end">{{ __('common.table.action') }}</th>
+                        <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-end">{{ __('local_procurement.register.po_value') }}</th>
+                        <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-end">{{ __('local_procurement.register.gr_actual') }}</th>
+                        <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-center">{{ __('local_invoice.labels.status') }}</th>
+                        <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-center">{{ __('local_invoice.labels.source') }}</th>
+                        <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-end">{{ __('common.table.action') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -236,12 +236,12 @@
                             aria-selected="false"
                         >
                             <td>
-                                <div class="d-flex align-items-center tw:gap-1.5">
-                                    <a href="{{ route($routePrefix.'.show', $po) }}" class="ui-tabular-nums tw:font-semibold tw:text-primary hover:tw-text-primary-hover tw:no-underline tw:hover:underline">
+                                <div class="tw:flex tw:items-center tw:gap-1.5">
+                                    <a href="{{ route($routePrefix.'.show', $po) }}" class="ui-tabular-nums tw:font-semibold tw:text-primary tw:hover:text-primary tw:no-underline tw:hover:underline">
                                         {{ $po->po_number }}
                                     </a>
                                     @if($po->latestPoDocument())
-                                        <a href="{{ route('attachments.show', $po->latestPoDocument()) }}" target="_blank" class="badge bg-light text-primary border tw:no-underline tw:hover:bg-primary tw:hover:text-white tw:transition-colors" title="{{ __('local_procurement.actions.view_po') }}">
+                                        <a href="{{ route('attachments.show', $po->latestPoDocument()) }}" target="_blank" class="ui-status-chip ui-status-chip--info tw:border tw:border-outline-variant tw:no-underline tw:hover:bg-primary tw:hover:text-white tw:transition-colors" title="{{ __('local_procurement.actions.view_po') }}">
                                             <x-ui.icon name="file-text" size="xs" />
                                             <span>PDF</span>
                                         </a>
@@ -266,10 +266,10 @@
                                     {{ $regionalFormatter->date($po->po_date, 'human') ?? '—' }}
                                 </span>
                             </td>
-                            <td class="text-end ui-tabular-nums tw:font-bold tw:text-on-surface">
+                            <td class="tw:text-end ui-tabular-nums tw:font-bold tw:text-on-surface">
                                 Rp {{ $regionalFormatter->money($po->total_amount, 2) }}
                             </td>
-                            <td class="text-end">
+                            <td class="tw:text-end">
                                 <div class="ui-tabular-nums tw:font-semibold tw:text-on-surface">
                                     {{ $po->active_gr_count }} GR
                                 </div>
@@ -277,17 +277,17 @@
                                     {{ __('local_procurement.register.gr_files', ['count' => $po->active_gr_count]) }}
                                 </div>
                             </td>
-                            <td class="text-center">
+                            <td class="tw:text-center">
                                 <x-ui.status-chip :tone="\App\Support\StatusHelper::localFinanceTone($po->status)">
                                     {{ \App\Support\StatusHelper::localFinanceLabel($po->status) }}
                                 </x-ui.status-chip>
                             </td>
-                            <td class="text-center">
+                            <td class="tw:text-center">
                                 <span class="tw:inline-flex tw:items-center tw:px-2 tw:py-0.5 tw:rounded-sm tw:text-[10px] tw:font-semibold {{ $po->source === 'IMPORT' ? 'tw:bg-secondary/10 tw:text-secondary' : 'tw:bg-surface-high tw:text-on-surface' }}">
                                     {{ __('local_procurement.sources.'.strtolower($po->source ?: 'MANUAL')) }}
                                 </span>
                             </td>
-                            <td class="tw:text-right text-end">
+                            <td class="tw:text-end">
                                 <x-ui.row-action
                                     :href="route($routePrefix.'.show', $po)"
                                     :context="$po->po_number"

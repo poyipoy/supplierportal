@@ -118,8 +118,8 @@
                                                 {{ __('finance_controls.bank_document_select_for_approval') }}
                                             </div>
                                             <div>
-                                                <label class="form-label tw:text-ui-xs tw:font-semibold">{{ __('finance_controls.bank_document_label') }} <span class="text-danger">*</span></label>
-                                                <select name="bank_confirmation_document_id" class="form-select form-select-sm" required>
+                                                <label class="ui-label tw:text-ui-xs tw:font-semibold">{{ __('finance_controls.bank_document_label') }} <span class="tw:text-error">*</span></label>
+                                                <select name="bank_confirmation_document_id" class="ui-select ui-select--sm" required>
                                                     <option value="">{{ __('local_procurement.vendor_ui.document_select') }}</option>
                                                     @foreach($supplierBankDocs as $doc)
                                                         <option value="{{ $doc->id }}">{{ $doc->original_filename }}</option>
@@ -127,8 +127,8 @@
                                                 </select>
                                             </div>
                                             <div>
-                                                <label class="form-label tw:text-ui-xs tw:font-semibold">{{ __('local_invoice.labels.review_notes') }}</label>
-                                                <textarea name="notes" class="form-control form-control-sm" rows="2" placeholder="{{ __('local_procurement.vendor_ui.approve_help') }}"></textarea>
+                                                <label class="ui-label tw:text-ui-xs tw:font-semibold">{{ __('local_invoice.labels.review_notes') }}</label>
+                                                <textarea name="notes" class="ui-textarea tw:text-ui-xs tw:px-2 tw:py-1" rows="2" placeholder="{{ __('local_procurement.vendor_ui.approve_help') }}"></textarea>
                                             </div>
                                         </div>
                                         <div class="modal-footer">
@@ -152,9 +152,9 @@
                                         <button type="button" class="btn-close" data-ui-modal-close aria-label="{{ __('local_invoice.actions.close') }}"></button>
                                     </div>
                                     <div class="modal-body">
-                                        <div class="mb-3">
-                                            <label class="form-label tw:text-ui-xs tw:font-semibold">{{ __('finance.labels.rejection_required') }} <span class="text-danger">*</span></label>
-                                            <textarea name="notes" class="form-control form-control-sm" rows="3" required placeholder="{{ __('local_procurement.vendor_ui.reject_example') }}"></textarea>
+                                        <div class="tw:mb-3">
+                                            <label class="ui-label tw:text-ui-xs tw:font-semibold">{{ __('finance.labels.rejection_required') }} <span class="tw:text-error">*</span></label>
+                                            <textarea name="notes" class="ui-textarea tw:text-ui-xs tw:px-2 tw:py-1" rows="3" required placeholder="{{ __('local_procurement.vendor_ui.reject_example') }}"></textarea>
                                         </div>
                                     </div>
                                     <div class="modal-footer">
@@ -175,16 +175,16 @@
         :title="__('local_procurement.labels.vendor_register_old')"
         :description="__('local_invoice.labels.company_data')"
     >
-        <div class="table-responsive">
-            <table class="table table-hover align-middle tw:m-0 tw:text-ui-sm w-100">
-                <thead class="table-light">
+        <div class="ui-table-scroll">
+            <table class="ui-table ui-table--hover tw:align-middle tw:m-0 tw:text-ui-sm tw:w-full">
+                <thead>
                     <tr>
                         <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('local_procurement.vendor_ui.company_vendor') }}</th>
                         <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('common.fields.category') }}</th>
                         <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('local_invoice.labels.tax_status') }}</th>
                         <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('finance.drp.payee_account_active') }}</th>
                         <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('local_procurement.change_details.payment_term') }}</th>
-                        <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-right text-end">{{ __('common.table.action') }}</th>
+                        <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-end">{{ __('common.table.action') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -218,7 +218,7 @@
                             <td>
                                 <span class="tw:font-semibold tw:text-ui-xs">{{ trans_choice('local_invoice.table.term_days', $sup?->payment_term_days ?? 30) }}</span>
                             </td>
-                            <td class="tw:text-right text-end">
+                            <td class="tw:text-end">
                                 <x-ui.row-action
                                     :href="route('finance.vendor-master.show', $vendorUser)"
                                     :context="$sup?->company_name ?: $vendorUser->name"
@@ -227,7 +227,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="text-center tw:py-8 tw:text-on-surface-variant tw:text-ui-sm">
+                            <td colspan="6" class="tw:text-center tw:py-8 tw:text-on-surface-variant tw:text-ui-sm">
                                 {{ __('local_procurement.vendor_ui.empty') }}
                             </td>
                         </tr>

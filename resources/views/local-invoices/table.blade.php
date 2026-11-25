@@ -1,16 +1,16 @@
-<div class="d-none d-md-block table-responsive" role="region" tabindex="0" aria-label="{{ __('js.tables.scroll_region') }}">
-    <table class="table table-hover align-middle tw:m-0 tw:text-ui-sm w-100">
-        <thead class="table-light">
+<div class="tw:hidden tw:md:block ui-table-scroll" role="region" tabindex="0" aria-label="{{ __('js.tables.scroll_region') }}">
+    <table class="ui-table ui-table--hover tw:align-middle tw:m-0 tw:text-ui-sm tw:w-full">
+        <thead>
             @if(($portal ?? '') === 'finance')
                 <tr>
                     <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant">{{ __('local_invoice.labels.documents') }}</th>
                     <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant">{{ __('local_invoice.labels.supplier') }}</th>
                     <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant">{{ __('ga.labels.submission_date') }}</th>
-                    <th scope="col" class="text-end tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant">{{ __('local_invoice.table.amount_ppn') }}</th>
+                    <th scope="col" class="tw:text-end tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant">{{ __('local_invoice.table.amount_ppn') }}</th>
                     <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant">{{ __('local_invoice.labels.term_days') }}</th>
                     <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant">{{ __('local_invoice.labels.due_date') }}</th>
                     <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant">{{ __('local_invoice.labels.status') }}</th>
-                    <th scope="col" class="tw:text-right text-end tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant" style="min-width: 110px;">{{ __('common.table.action') }}</th>
+                    <th scope="col" class="tw:text-end tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant" style="min-width: 110px;">{{ __('common.table.action') }}</th>
                 </tr>
             @else
                 <tr>
@@ -20,7 +20,7 @@
                         <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant">{{ __('local_invoice.labels.supplier') }}</th>
                     @endif
                     <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant">{{ __('ga.labels.submission_date') }}</th>
-                    <th scope="col" class="text-end tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant">{{ __('local_invoice.table.amount_ppn') }}</th>
+                    <th scope="col" class="tw:text-end tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant">{{ __('local_invoice.table.amount_ppn') }}</th>
                     <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant">{{ __('local_invoice.labels.status') }}</th>
                     <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant">{{ __('local_invoice.labels.term_days') }}</th>
                     @if(!auth()->user()?->isSupplier())
@@ -29,7 +29,7 @@
                     @if($payments ?? false)
                         <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant">{{ __('local_invoice.labels.payment_date') }}</th>
                     @endif
-                    <th scope="col" class="tw:text-right text-end tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant" style="min-width: 130px;">{{ __('common.table.action') }}</th>
+                    <th scope="col" class="tw:text-end tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant" style="min-width: 130px;">{{ __('common.table.action') }}</th>
                 </tr>
             @endif
         </thead>
@@ -61,7 +61,7 @@
                                 {{ $row->submitted_at ? $regionalFormatter->time($row->submitted_at) : '-' }}
                             </span>
                         </td>
-                        <td class="text-end">
+                        <td class="tw:text-end">
                             <span class="tw:font-semibold ui-tabular-nums tw:text-on-surface">
                                 Rp {{ $regionalFormatter->number(number_format($row->invoice_amount, 0, ',', '.'), 'indonesian') }}
                             </span>
@@ -124,7 +124,7 @@
                                 @endif
                             </div>
                         </td>
-                        <td class="tw:text-right text-end tw:whitespace-nowrap">
+                        <td class="tw:text-end tw:whitespace-nowrap">
                             <x-ui.row-action
                                 :href="route($portal.'.invoices.show', $row)"
                                 :context="$row->invoice_number"
@@ -162,7 +162,7 @@
                                 {{ $row->submitted_at ? $regionalFormatter->time($row->submitted_at) : '-' }}
                             </span>
                         </td>
-                        <td class="text-end">
+                        <td class="tw:text-end">
                             <span class="tw:font-semibold ui-tabular-nums tw:text-on-surface">
                                 Rp {{ $regionalFormatter->number(number_format($row->invoice_amount, 0, ',', '.'), 'indonesian') }}
                             </span>
@@ -232,7 +232,7 @@
                                 </span>
                             </td>
                         @endif
-                        <td class="tw:text-right text-end tw:whitespace-nowrap">
+                        <td class="tw:text-end tw:whitespace-nowrap">
                             <x-ui.row-action
                                 :href="route($portal.'.invoices.show', $row)"
                                 :context="$row->invoice_number"
@@ -256,7 +256,7 @@
 </div>
 
 {{-- Mobile Adaptive Card View (Rendered only on < 768px viewports) --}}
-<div class="d-md-none tw:flex tw:flex-col tw:gap-3 tw:p-3">
+<div class="tw:md:hidden tw:flex tw:flex-col tw:gap-3 tw:p-3">
     @forelse($invoices as $row)
         <x-ui.mobile-card
             :title="$row->invoice_number"

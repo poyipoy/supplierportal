@@ -91,7 +91,7 @@
                 type="search"
                 name="q"
                 value="{{ request('q') }}"
-                class="form-control form-control-sm ui-filter-bar__search-input"
+                class="ui-input ui-input--sm ui-filter-bar__search-input"
                 placeholder="{{ __('finance.refund_surface.search') }}"
                 maxlength="100"
                 autocomplete="off"
@@ -100,7 +100,7 @@
 
         <x-slot:filters>
             <label for="overpayment-status" class="tw:sr-only">{{ __('local_invoice.labels.status') }}</label>
-            <select id="overpayment-status" name="status" class="form-select form-select-sm tw:w-full tw:min-w-0 tw:sm:w-44">
+            <select id="overpayment-status" name="status" class="ui-select ui-select--sm tw:w-full tw:min-w-0 tw:sm:w-44">
                 <option value="">{{ __('local_invoice.labels.all_statuses') }}</option>
                 <option value="OPEN" @selected(request('status') === 'OPEN')>{{ __('status.finance.open') }}</option>
                 <option value="SETTLED" @selected(request('status') === 'SETTLED')>{{ __('status.finance.settled') }}</option>
@@ -110,7 +110,7 @@
         <x-slot:advanced>
             <div>
                 <label for="overpayment-supplier" class="tw:block tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:mb-1.5">{{ __('local_invoice.labels.supplier') }}</label>
-                <select id="overpayment-supplier" name="supplier_id" class="form-select form-select-sm tw:w-full">
+                <select id="overpayment-supplier" name="supplier_id" class="ui-select ui-select--sm tw:w-full">
                     <option value="">{{ __('local_invoice.labels.all_suppliers') }}</option>
                     @foreach($suppliers as $supplier)
                         <option value="{{ $supplier->hash }}" @selected((string) request('supplier_id') === (string) $supplier->hash)>{{ $supplier->supplier?->company_name ?: $supplier->name }}</option>
@@ -139,17 +139,17 @@
     </x-ui.filter-bar>
 
     <x-ui.data-table :title="__('finance.refund.receivable')">
-        <div class="table-responsive">
-            <table class="table align-middle tw:text-ui-sm">
+        <div class="ui-table-scroll">
+            <table class="ui-table tw:align-middle tw:text-ui-sm">
                 <thead>
                     <tr>
                         <th scope="col">{{ __('local_invoice.labels.invoice') }}</th>
                         <th scope="col">{{ __('local_invoice.labels.supplier') }}</th>
                         <th scope="col">{{ __('finance.refund_ui.reference') }}</th>
-                        <th scope="col" class="text-end">{{ __('finance.payment.expected_actual') }}</th>
-                        <th scope="col" class="text-end">{{ __('finance.refund_ui.overpayment') }}</th>
+                        <th scope="col" class="tw:text-end">{{ __('finance.payment.expected_actual') }}</th>
+                        <th scope="col" class="tw:text-end">{{ __('finance.refund_ui.overpayment') }}</th>
                         <th scope="col">{{ __('finance.refund_ui.status_date') }}</th>
-                        <th scope="col" class="text-end" style="min-width: 150px;">{{ __('local_invoice.labels.actions') }}</th>
+                        <th scope="col" class="tw:text-end" style="min-width: 150px;">{{ __('local_invoice.labels.actions') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -164,13 +164,13 @@
                                     <span class="tw:text-on-surface-variant">—</span>
                                 @endforelse
                             </td>
-                            <td class="text-end ui-tabular-nums">Rp {{ $regionalFormatter->money($refund->payment?->expected_amount ?? 0, 2) }} / Rp {{ $regionalFormatter->money($refund->payment?->actual_paid_total ?? 0, 2) }}</td>
-                            <td class="text-end ui-tabular-nums tw:font-semibold">Rp {{ $regionalFormatter->money($refund->overpayment_amount, 2) }}</td>
+                            <td class="tw:text-end ui-tabular-nums">Rp {{ $regionalFormatter->money($refund->payment?->expected_amount ?? 0, 2) }} / Rp {{ $regionalFormatter->money($refund->payment?->actual_paid_total ?? 0, 2) }}</td>
+                            <td class="tw:text-end ui-tabular-nums tw:font-semibold">Rp {{ $regionalFormatter->money($refund->overpayment_amount, 2) }}</td>
                             <td>
                                 <x-ui.status-chip :tone="\App\Support\StatusHelper::localFinanceTone($refund->status)">{{ \App\Support\StatusHelper::localFinanceLabel($refund->status) }}</x-ui.status-chip>
                                 <span class="tw:mt-1 tw:block tw:text-ui-xs tw:text-on-surface-variant">{{ $refund->status === 'SETTLED' ? $regionalFormatter->date($refund->refund_date, 'human') : $regionalFormatter->date($refund->created_at, 'human') }}</span>
                             </td>
-                            <td class="text-end">
+                            <td class="tw:text-end">
                                 @if($refund->status === 'OPEN')
                                     <x-ui.button
                                         type="button"
@@ -225,7 +225,7 @@
                         enctype="multipart/form-data" data-async-submit
                     >
                         @csrf
-                        <div class="modal-content tw-rounded-ui-xl tw:border-0 tw-shadow-ui-modal">
+                        <div class="modal-content tw:rounded-ui-lg tw:border-0 tw:shadow-ui-2">
                             {{-- Modal Header --}}
                             <div class="modal-header tw:border-b tw:border-outline-variant/60 tw:px-6 tw:py-4">
                                 <div class="tw:flex tw:items-center tw:gap-3">
@@ -233,7 +233,7 @@
                                         <x-ui.icon name="hand-coins" size="md" />
                                     </div>
                                     <div>
-                                        <h5 class="modal-title tw-text-ui-md tw:font-bold tw:text-on-surface" id="refundModalLabel-{{ $refund->id }}">
+                                        <h5 class="modal-title tw:text-ui-base tw:font-bold tw:text-on-surface" id="refundModalLabel-{{ $refund->id }}">
                                             {{ __('finance.refund_ui.heading') }}
                                         </h5>
                                         <p class="tw:text-ui-xs tw:text-on-surface-variant tw:m-0">
@@ -299,15 +299,15 @@
                                     </div>
 
                                     <div class="tw:sm:col-span-2">
-                                        <label for="proof_{{ $refund->id }}" class="form-label tw:text-ui-xs tw:font-semibold tw:text-on-surface">
-                                            {{ __('finance.refund_ui.proof') }} <span class="text-danger">*</span>
+                                        <label for="proof_{{ $refund->id }}" class="ui-label tw:text-ui-xs tw:font-semibold tw:text-on-surface">
+                                            {{ __('finance.refund_ui.proof') }} <span class="tw:text-error">*</span>
                                         </label>
                                         <input
                                             type="file"
                                             id="proof_{{ $refund->id }}"
                                             name="proof"
                                             accept=".pdf,.jpg,.jpeg,.png"
-                                            class="form-control form-control-sm"
+                                            class="ui-input ui-input--sm"
                                             required
                                         >
                                         <div class="tw:text-[11px] tw:text-on-surface-variant tw:mt-1">
@@ -316,13 +316,13 @@
                                     </div>
 
                                     <div class="tw:sm:col-span-2">
-                                        <label for="notes_{{ $refund->id }}" class="form-label tw:text-ui-xs tw:font-semibold tw:text-on-surface">
+                                        <label for="notes_{{ $refund->id }}" class="ui-label tw:text-ui-xs tw:font-semibold tw:text-on-surface">
                                             {{ __('finance.payment.reconciliation_notes') }}
                                         </label>
                                         <textarea
                                             id="notes_{{ $refund->id }}"
                                             name="notes"
-                                            class="form-control form-control-sm"
+                                            class="ui-textarea tw:text-ui-xs tw:px-2 tw:py-1"
                                             rows="2"
                                             placeholder="{{ __('finance.refund_surface.notes') }}"
                                             maxlength="1000"

@@ -88,7 +88,7 @@
                 type="search"
                 id="ga-claim-search"
                 name="search"
-                class="form-control form-control-sm ui-filter-bar__search-input"
+                class="ui-input ui-input--sm ui-filter-bar__search-input"
                 placeholder="{{ __('ga.filters.claim_search') }}"
                 value="{{ request('search') }}"
                 autocomplete="off"
@@ -97,7 +97,7 @@
 
         <x-slot:filters>
             <label for="ga-claim-status" class="tw:sr-only">{{ __('local_invoice.labels.status') }}</label>
-            <select id="ga-claim-status" name="status" class="form-select form-select-sm tw:w-full tw:min-w-0 tw:sm:w-44">
+            <select id="ga-claim-status" name="status" class="ui-select ui-select--sm tw:w-full tw:min-w-0 tw:sm:w-44">
                 <option value="">{{ __('local_invoice.labels.all_statuses') }}</option>
                 <option value="SUBMITTED" @selected(request('status') === 'SUBMITTED')>{{ __('local_invoice.labels.submitted') }}</option>
                 <option value="BASIC_VERIFIED" @selected(request('status') === 'BASIC_VERIFIED')>{{ \App\Support\StatusHelper::gaClaimLabel('BASIC_VERIFIED') }}</option>
@@ -107,7 +107,7 @@
             </select>
 
             <label for="ga-claim-employee" class="tw:sr-only">{{ __('ga.labels.employee_name') }}</label>
-            <select id="ga-claim-employee" name="employee_id" class="form-select form-select-sm tw:w-full tw:min-w-0 tw:sm:w-52">
+            <select id="ga-claim-employee" name="employee_id" class="ui-select ui-select--sm tw:w-full tw:min-w-0 tw:sm:w-52">
                 <option value="">{{ __('ga.filters.all_employees') }}</option>
                 @foreach($employees as $emp)
                     <option value="{{ $emp->id }}" @selected(request('employee_id') == $emp->id)>
@@ -127,9 +127,9 @@
         :title="__('ga.list.heading')"
         :description="__('finance.ga.verification_help')"
     >
-        <div class="table-responsive">
-            <table class="table table-hover align-middle tw:m-0 tw:text-ui-xs w-100">
-                <thead class="table-light">
+        <div class="ui-table-scroll">
+            <table class="ui-table ui-table--hover tw:align-middle tw:m-0 tw:text-ui-xs tw:w-full">
+                <thead>
                     <tr>
                         <th scope="col">{{ __('finance.ga.claim_number') }}</th>
                         <th scope="col">{{ __('local_invoice.labels.date') }}</th>
@@ -138,7 +138,7 @@
                         <th scope="col">{{ __('finance.ga.amount_rupiah') }}</th>
                         <th scope="col">{{ __('finance.drp.transfer_destination') }}</th>
                         <th scope="col">{{ __('local_invoice.labels.status') }}</th>
-                        <th scope="col" class="tw:text-right text-end">{{ __('common.table.action') }}</th>
+                        <th scope="col" class="tw:text-end">{{ __('common.table.action') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -166,7 +166,7 @@
                                     {{ \App\Support\StatusHelper::gaClaimLabel($claim->status) }}
                                 </x-ui.status-chip>
                             </td>
-                            <td class="tw:text-right text-end">
+                            <td class="tw:text-end">
                                 <x-ui.row-action
                                     :href="route('finance.ga-claims.show', $claim)"
                                     :context="$claim->claim_number"
@@ -175,7 +175,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="8" class="text-center tw:py-8 tw:text-on-surface-variant">{{ __('finance.copy_review.ga_empty') }}</td>
+                            <td colspan="8" class="tw:text-center tw:py-8 tw:text-on-surface-variant">{{ __('finance.copy_review.ga_empty') }}</td>
                         </tr>
                     @endforelse
                 </tbody>

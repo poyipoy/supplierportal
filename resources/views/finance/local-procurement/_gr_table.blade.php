@@ -5,8 +5,8 @@
 <x-ui.data-table :title="__('local_procurement.labels.gr_list')" :description="$readOnly ? trans_choice('local_procurement.closure.gr_record_count', $grTotal) : trans_choice('finance.closure.gr_count', $grTotal)">
     <x-slot:filters>
         <div>
-            <label for="poGrStatusFilter" class="form-label tw:text-ui-xs">{{ __('local_invoice.labels.status') }}</label>
-            <select id="poGrStatusFilter" class="form-select form-select-sm">
+            <label for="poGrStatusFilter" class="ui-label tw:text-ui-xs">{{ __('local_invoice.labels.status') }}</label>
+            <select id="poGrStatusFilter" class="ui-select ui-select--sm">
                 <option value="">{{ __('local_procurement.gr_table.all_statuses') }}</option>
                 @foreach(['AVAILABLE', 'RESERVED', 'INVOICED', ...($readOnly ? [] : ['CANCELLED'])] as $status)
                     <option value="{{ $status }}">{{ \App\Support\StatusHelper::localFinanceLabel($status) }}</option>
@@ -18,7 +18,7 @@
         {{ __('local_procurement.gr_table.load_failed') }}
         <x-ui.button type="button" size="sm" variant="outline" data-gr-table-retry>{{ __('local_procurement.gr_table.retry') }}</x-ui.button>
     </div>
-    <table id="poGoodsReceiptsTable" data-gr-table data-url="{{ route($routePrefix.'.goods-receipts.data', $purchaseOrder) }}" data-read-only="{{ $readOnly ? '1' : '0' }}" class="table table-hover align-middle tw:text-ui-sm w-100">
+    <table id="poGoodsReceiptsTable" data-gr-table data-url="{{ route($routePrefix.'.goods-receipts.data', $purchaseOrder) }}" data-read-only="{{ $readOnly ? '1' : '0' }}" class="ui-table ui-table--hover tw:align-middle tw:text-ui-sm tw:w-full">
         <thead><tr>
             <th scope="col">{{ __('local_procurement.gr_table.number') }}</th>
             <th scope="col">{{ __('local_procurement.surface.gr_number') }}</th>

@@ -116,7 +116,7 @@
                                 x-model="selectedMonth"
                                 @change="changeMonth($event.target.value)"
                                 :disabled="isLoading"
-                                class="form-select form-select-sm tw:h-8 tw:min-w-[195px] tw:text-ui-xs tw:pl-8 tw:pr-8 tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface tw:text-on-surface tw:font-medium tw:hover:border-outline tw:focus:border-primary tw:focus:ring-1 tw:focus:ring-primary tw:shadow-none"
+                                class="ui-select ui-select--sm tw:h-8 tw:min-w-[195px] tw:text-ui-xs tw:pl-8 tw:pr-8 tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface tw:text-on-surface tw:font-medium tw:hover:border-outline tw:focus:border-primary tw:focus:ring-1 tw:focus:ring-primary tw:shadow-none"
                             >
                                 @foreach($availableMonths as $m)
                                     <option value="{{ $m['key'] }}">
@@ -212,14 +212,14 @@
                         </span>
                     </div>
 
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle tw:m-0 tw:text-ui-sm w-100" aria-label="{{ __('finance.review.forecast_table') }}">
-                            <thead class="table-light">
+                    <div class="ui-table-scroll">
+                        <table class="ui-table ui-table--hover tw:align-middle tw:m-0 tw:text-ui-sm tw:w-full" aria-label="{{ __('finance.review.forecast_table') }}">
+                            <thead>
                                 <tr>
                                     <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant">{{ __('finance.review.period') }}</th>
-                                    <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant text-center">{{ __('finance.labels.invoice_ready') }}</th>
-                                    <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant text-end">{{ __('finance.review.period_amount') }}</th>
-                                    <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant text-end">{{ __('finance.labels.accumulation') }}</th>
+                                    <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant tw:text-center">{{ __('finance.labels.invoice_ready') }}</th>
+                                    <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant tw:text-end">{{ __('finance.review.period_amount') }}</th>
+                                    <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant tw:text-end">{{ __('finance.labels.accumulation') }}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -229,15 +229,15 @@
                                             <span class="tw:font-semibold tw:text-on-surface" x-text="row.week || row.month || row.label"></span>
                                             <span class="tw:block tw:text-ui-xs tw:text-on-surface-variant" x-text="@js(__('finance.review.date_range')).replace(':start', formatDate(row.start)).replace(':end', formatDate(row.end))"></span>
                                         </td>
-                                        <td class="text-center">
+                                        <td class="tw:text-center">
                                             <span class="tw:inline-flex tw:items-center tw:px-2 tw:py-0.5 tw:rounded-sm tw:text-ui-xs tw:font-semibold"
                                                   :class="row.count > 0 ? 'tw:bg-primary/10 tw:text-primary' : 'tw:bg-surface-container tw:text-on-surface-variant'"
                                                   x-text="window.AdasiI18n.choice('js.finance.invoice_count', row.count)">
                                             </span>
                                         </td>
-                                        <td class="text-end ui-tabular-nums tw:font-semibold tw:text-on-surface" x-text="formatRupiah(row.period_amount)">
+                                        <td class="tw:text-end ui-tabular-nums tw:font-semibold tw:text-on-surface" x-text="formatRupiah(row.period_amount)">
                                         </td>
-                                        <td class="text-end ui-tabular-nums tw:font-bold tw:text-primary" x-text="formatRupiah(row.cumulative_amount)">
+                                        <td class="tw:text-end ui-tabular-nums tw:font-bold tw:text-primary" x-text="formatRupiah(row.cumulative_amount)">
                                         </td>
                                     </tr>
                                 </template>
@@ -247,15 +247,15 @@
                                             <span class="tw:font-semibold tw:text-on-surface">{{ $w['week'] ?? $w['label'] }}</span>
                                             <span class="tw:block tw:text-ui-xs tw:text-on-surface-variant">{{ __('finance.review.date_range', ['start' => $regionalFormatter->date($w['start'], 'iso'), 'end' => $regionalFormatter->date($w['end'], 'iso')]) }}</span>
                                         </td>
-                                        <td class="text-center">
+                                        <td class="tw:text-center">
                                             <span class="tw:inline-flex tw:items-center tw:px-2 tw:py-0.5 tw:rounded-sm tw:text-ui-xs tw:font-semibold {{ $w['count'] > 0 ? 'tw:bg-primary/10 tw:text-primary' : 'tw:bg-surface-container tw:text-on-surface-variant' }}">
                                                 {{ trans_choice('finance.review.invoice_count', $w['count']) }}
                                             </span>
                                         </td>
-                                        <td class="text-end ui-tabular-nums tw:font-semibold tw:text-on-surface">
+                                        <td class="tw:text-end ui-tabular-nums tw:font-semibold tw:text-on-surface">
                                             Rp {{ $regionalFormatter->number(substr($w['period_amount_formatted'] ?? ('Rp ' . $regionalFormatter->money($w['period_amount'], 0)), 3), 'indonesian') }}
                                         </td>
-                                        <td class="text-end ui-tabular-nums tw:font-bold tw:text-primary">
+                                        <td class="tw:text-end ui-tabular-nums tw:font-bold tw:text-primary">
                                             Rp {{ $regionalFormatter->number(substr($w['cumulative_amount_formatted'] ?? ('Rp ' . $regionalFormatter->money($w['cumulative_amount'], 0)), 3), 'indonesian') }}
                                         </td>
                                     </tr>
@@ -282,17 +282,17 @@
             </x-ui.button>
         </x-slot:toolbar>
 
-        <div class="table-responsive">
-            <table class="table table-hover align-middle tw:m-0 tw:text-ui-sm w-100">
-                <thead class="table-light">
+        <div class="ui-table-scroll">
+            <table class="ui-table ui-table--hover tw:align-middle tw:m-0 tw:text-ui-sm tw:w-full">
+                <thead>
                     <tr>
                         <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant">{{ __('finance.copy_review.batch_number') }}</th>
                         <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant">{{ __('local_invoice.labels.type') }}</th>
                         <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant">{{ __('local_invoice.labels.status') }}</th>
-                        <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant text-end">{{ __('finance.drp.total_amount') }}</th>
-                        <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant text-end">{{ __('finance.drp.total_fee') }}</th>
+                        <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant tw:text-end">{{ __('finance.drp.total_amount') }}</th>
+                        <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant tw:text-end">{{ __('finance.drp.total_fee') }}</th>
                         <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant">{{ __('local_invoice.labels.created_by') }}</th>
-                        <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant tw:text-right text-end">{{ __('common.table.action') }}</th>
+                        <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant tw:text-end">{{ __('common.table.action') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -312,16 +312,16 @@
                                     {{ \App\Support\StatusHelper::localFinanceLabel($batch->status) }}
                                 </x-ui.status-chip>
                             </td>
-                            <td class="text-end ui-tabular-nums tw:font-semibold tw:text-on-surface">
+                            <td class="tw:text-end ui-tabular-nums tw:font-semibold tw:text-on-surface">
                                 Rp {{ $regionalFormatter->number(number_format($batch->total_subtotal, 0, ',', '.'), 'indonesian') }}
                             </td>
-                            <td class="text-end ui-tabular-nums tw:text-on-surface-variant">
+                            <td class="tw:text-end ui-tabular-nums tw:text-on-surface-variant">
                                 Rp {{ $regionalFormatter->number(number_format($batch->total_bank_fee, 0, ',', '.'), 'indonesian') }}
                             </td>
                             <td>
                                 <span class="tw:text-ui-xs">{{ $batch->creator?->name ?? __('common.final_copy.system') }}</span>
                             </td>
-                            <td class="tw:text-right text-end">
+                            <td class="tw:text-end">
                                 <x-ui.row-action
                                     :href="route('finance.drp.show', $batch)"
                                     :context="$batch->batch_number"
@@ -330,7 +330,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7" class="text-center tw:py-8 tw:text-on-surface-variant tw:text-ui-sm">
+                            <td colspan="7" class="tw:text-center tw:py-8 tw:text-on-surface-variant tw:text-ui-sm">
                                 {{ __('finance.drp.empty') }}
                             </td>
                         </tr>
@@ -372,29 +372,29 @@
                     />
                 </x-slot:emptyState>
 
-                <table class="table table-hover align-middle mb-0 tw:text-ui-xs w-100">
-                    <thead class="table-light">
+                <table class="ui-table ui-table--hover tw:align-middle tw:mb-0 tw:text-ui-xs tw:w-full">
+                    <thead>
                         <tr>
                             <th scope="col">{{ __('terms.invoice') }}</th>
                             <th scope="col">{{ __('purchasing.copy.supplier') }}</th>
-                            <th scope="col" class="text-end">{{ __('local_invoice.three_way_match.expected_gr_dpp') }}</th>
-                            <th scope="col" class="text-end">{{ __('local_invoice.three_way_match.submitted_dpp') }}</th>
-                            <th scope="col" class="text-end">{{ __('local_invoice.three_way_match.dpp_variance') }}</th>
-                            <th scope="col" class="tw:text-right text-end">{{ __('common.table.action') }}</th>
+                            <th scope="col" class="tw:text-end">{{ __('local_invoice.three_way_match.expected_gr_dpp') }}</th>
+                            <th scope="col" class="tw:text-end">{{ __('local_invoice.three_way_match.submitted_dpp') }}</th>
+                            <th scope="col" class="tw:text-end">{{ __('local_invoice.three_way_match.dpp_variance') }}</th>
+                            <th scope="col" class="tw:text-end">{{ __('common.table.action') }}</th>
                         </tr>
                     </thead>
                     <tbody>
                         @foreach($threeWayVarianceInvoices ?? [] as $varInv)
                             <tr>
-                                <td class="ui-tabular-nums fw-semibold">{{ $varInv->invoice_number }}</td>
+                                <td class="ui-tabular-nums tw:font-semibold">{{ $varInv->invoice_number }}</td>
                                 <td>{{ $varInv->supplier?->supplier?->company_name ?: $varInv->supplier?->name ?? '—' }}</td>
-                                <td class="text-end ui-tabular-nums">Rp {{ $regionalFormatter->money($varInv->expected_gr_dpp_amount ?? '0.00') }}</td>
-                                <td class="text-end ui-tabular-nums">Rp {{ $regionalFormatter->money($varInv->invoice_amount) }}</td>
-                                <td class="text-end ui-tabular-nums tw:text-warning fw-semibold">
+                                <td class="tw:text-end ui-tabular-nums">Rp {{ $regionalFormatter->money($varInv->expected_gr_dpp_amount ?? '0.00') }}</td>
+                                <td class="tw:text-end ui-tabular-nums">Rp {{ $regionalFormatter->money($varInv->invoice_amount) }}</td>
+                                <td class="tw:text-end ui-tabular-nums tw:text-warning tw:font-semibold">
                                     @php $dashVariance = (string) ($varInv->gr_dpp_variance_amount ?? '0.00'); @endphp
                                     {{ \App\Support\Money::compare($dashVariance, '0.00') < 0 ? '-' : '+' }}Rp {{ $regionalFormatter->money(ltrim($dashVariance, '+-')) }}
                                 </td>
-                                <td class="tw:text-right text-end">
+                                <td class="tw:text-end">
                                     <x-ui.row-action
                                         :href="route('finance.invoices.show', $varInv)"
                                         :label="__('purchasing.copy.review')"

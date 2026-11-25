@@ -22,15 +22,15 @@
                     <div role="alert" data-recovery-error class="tw:text-error tw:text-ui-sm">{{ $recoveryBag->first('status') ?: $recoveryBag->first('supplier_id') }}</div>
                 @endif
                 <div>
-                    <label for="{{ $recoveryId }}Reason" class="form-label">{{ __('local_procurement.recovery.reason') }} <span class="tw:text-error" aria-hidden="true">*</span></label>
-                    <textarea name="reason" id="{{ $recoveryId }}Reason" rows="3" maxlength="1000" required class="form-control {{ $recoveryBag->has('reason') ? 'is-invalid' : '' }}" aria-describedby="{{ $recoveryId }}Hint{{ $recoveryBag->has('reason') ? ' '.$recoveryId.'ReasonError' : '' }}" @if($recoveryBag->has('reason')) aria-invalid="true" @endif>{{ $hasRecoveryErrors ? old('reason') : '' }}</textarea>
+                    <label for="{{ $recoveryId }}Reason" class="ui-label">{{ __('local_procurement.recovery.reason') }} <span class="tw:text-error" aria-hidden="true">*</span></label>
+                    <textarea name="reason" id="{{ $recoveryId }}Reason" rows="3" maxlength="1000" required class="ui-textarea {{ $recoveryBag->has('reason') ? 'is-invalid' : '' }}" aria-describedby="{{ $recoveryId }}Hint{{ $recoveryBag->has('reason') ? ' '.$recoveryId.'ReasonError' : '' }}" @if($recoveryBag->has('reason')) aria-invalid="true" @endif>{{ $hasRecoveryErrors ? old('reason') : '' }}</textarea>
                     <p id="{{ $recoveryId }}Hint" class="tw:text-ui-xs tw:text-on-surface-variant tw:mt-1">{{ __('local_procurement.recovery.reason_hint') }}</p>
-                    @if($recoveryBag->has('reason'))<div id="{{ $recoveryId }}ReasonError" data-recovery-error class="invalid-feedback">{{ $recoveryBag->first('reason') }}</div>@endif
+                    @if($recoveryBag->has('reason'))<div id="{{ $recoveryId }}ReasonError" data-recovery-error class="ui-field-error">{{ $recoveryBag->first('reason') }}</div>@endif
                 </div>
-                <div class="form-check">
-                    <input id="{{ $recoveryId }}Confirm" type="checkbox" name="business_document_valid" value="1" required class="form-check-input {{ $recoveryBag->has('business_document_valid') ? 'is-invalid' : '' }}" @checked($hasRecoveryErrors && old('business_document_valid')) @if($recoveryBag->has('business_document_valid')) aria-invalid="true" aria-describedby="{{ $recoveryId }}ConfirmError" @endif>
-                    <label class="form-check-label tw:text-ui-sm" for="{{ $recoveryId }}Confirm">{{ __('local_procurement.recovery.confirm_business_document') }}</label>
-                    @if($recoveryBag->has('business_document_valid'))<div id="{{ $recoveryId }}ConfirmError" data-recovery-error class="invalid-feedback">{{ $recoveryBag->first('business_document_valid') }}</div>@endif
+                <div class="ui-check-row">
+                    <input id="{{ $recoveryId }}Confirm" type="checkbox" name="business_document_valid" value="1" required class="ui-check {{ $recoveryBag->has('business_document_valid') ? 'is-invalid' : '' }}" @checked($hasRecoveryErrors && old('business_document_valid')) @if($recoveryBag->has('business_document_valid')) aria-invalid="true" aria-describedby="{{ $recoveryId }}ConfirmError" @endif>
+                    <label class="ui-check-label tw:text-ui-sm" for="{{ $recoveryId }}Confirm">{{ __('local_procurement.recovery.confirm_business_document') }}</label>
+                    @if($recoveryBag->has('business_document_valid'))<div id="{{ $recoveryId }}ConfirmError" data-recovery-error class="ui-field-error">{{ $recoveryBag->first('business_document_valid') }}</div>@endif
                 </div>
             </div>
             <div class="modal-footer">

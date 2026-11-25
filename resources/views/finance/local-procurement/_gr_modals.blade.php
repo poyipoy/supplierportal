@@ -4,12 +4,12 @@
             @csrf @method('PUT')
             <div class="modal-header"><h2 id="editPoGrTitle" class="modal-title tw:text-ui-sm tw:font-bold">{{ __('local_procurement.gr_table.edit_title') }} <span data-gr-modal-number></span></h2><button type="button" class="btn-close" data-ui-modal-close aria-label="{{ __('local_invoice.actions.close') }}"></button></div>
             <div class="modal-body tw:space-y-3">
-                <div><label for="editPoGrNumber" class="form-label">{{ __('local_procurement.surface.gr_number') }}</label><input id="editPoGrNumber" name="gr_number" maxlength="100" class="form-control" required></div>
+                <div><label for="editPoGrNumber" class="ui-label">{{ __('local_procurement.surface.gr_number') }}</label><input id="editPoGrNumber" name="gr_number" maxlength="100" class="ui-input" required></div>
                 <x-ui.date-picker id="editPoGrDate" name="gr_date" :label="__('local_procurement.labels.gr_date')" required="true" />
-                <div><label for="editPoGrQty" class="form-label">{{ __('common.fields.qty') }}</label><input id="editPoGrQty" name="qty" type="number" step="0.001" min="0.001" class="form-control" required></div>
-                <div><label for="editPoGrUom" class="form-label">{{ __('local_procurement.labels.uom') }}</label><select id="editPoGrUom" name="uom" class="form-select" required><option value="">{{ __('local_procurement.labels.choose_uom') }}</option>@foreach(\App\Models\LocalGoodsReceipt::UOMS as $uom)<option value="{{ $uom }}">{{ $uom }}</option>@endforeach</select></div>
-                <div><label for="editPoGrDescription" class="form-label">{{ __('local_procurement.labels.goods_description') }}</label><textarea id="editPoGrDescription" name="description" maxlength="2000" class="form-control" rows="2"></textarea></div>
-                <div><label for="editPoGrNotes" class="form-label">{{ __('local_invoice.labels.optional_notes') }}</label><textarea id="editPoGrNotes" name="notes" maxlength="2000" class="form-control" rows="2"></textarea></div>
+                <div><label for="editPoGrQty" class="ui-label">{{ __('common.fields.qty') }}</label><input id="editPoGrQty" name="qty" type="number" step="0.001" min="0.001" class="ui-input" required></div>
+                <div><label for="editPoGrUom" class="ui-label">{{ __('local_procurement.labels.uom') }}</label><select id="editPoGrUom" name="uom" class="ui-select" required><option value="">{{ __('local_procurement.labels.choose_uom') }}</option>@foreach(\App\Models\LocalGoodsReceipt::UOMS as $uom)<option value="{{ $uom }}">{{ $uom }}</option>@endforeach</select></div>
+                <div><label for="editPoGrDescription" class="ui-label">{{ __('local_procurement.labels.goods_description') }}</label><textarea id="editPoGrDescription" name="description" maxlength="2000" class="ui-textarea" rows="2"></textarea></div>
+                <div><label for="editPoGrNotes" class="ui-label">{{ __('local_invoice.labels.optional_notes') }}</label><textarea id="editPoGrNotes" name="notes" maxlength="2000" class="ui-textarea" rows="2"></textarea></div>
             </div>
             <div class="modal-footer"><x-ui.button type="button" variant="ghost" data-ui-modal-close>{{ __('local_invoice.actions.cancel') }}</x-ui.button><x-ui.button type="submit">{{ __('local_invoice.actions.save_changes') }}</x-ui.button></div>
         </form>

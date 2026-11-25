@@ -164,7 +164,7 @@
             type="search"
             name="q"
             id="invoice-search"
-            class="form-control form-control-sm ui-filter-bar__search-input"
+            class="ui-input ui-input--sm ui-filter-bar__search-input"
             placeholder="{{ __('local_invoice.filters.search') }}"
             value="{{ request('q') }}"
             maxlength="100"
@@ -174,7 +174,7 @@
 
     <x-slot:filters>
         <label for="invoice-status" class="tw:sr-only">{{ __('local_invoice.labels.status') }}</label>
-        <select id="invoice-status" class="form-select form-select-sm tw:w-full tw:min-w-0 tw:sm:w-auto tw:sm:min-w-[160px]" name="status">
+        <select id="invoice-status" class="ui-select ui-select--sm tw:w-full tw:min-w-0 tw:sm:w-auto tw:sm:min-w-[160px]" name="status">
             <option value="">{{ __('local_invoice.labels.all_statuses') }}</option>
             @foreach(\App\Models\LocalInvoice::STATUSES as $status)
                 <option value="{{ $status }}" @selected(request('status') === $status)>
@@ -215,7 +215,7 @@
 
         <div>
             <label for="invoice-overpayment-status" class="tw:block tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:mb-1.5">{{ __('finance.refund.status') }}</label>
-            <select name="overpayment_status" id="invoice-overpayment-status" class="form-select form-select-sm tw:w-full">
+            <select name="overpayment_status" id="invoice-overpayment-status" class="ui-select ui-select--sm tw:w-full">
                 <option value="all" @selected(request('overpayment_status') === 'all' || !request()->filled('overpayment_status'))>{{ __('finance.refund.all_statuses') }}</option>
                 <option value="open" @selected(request('overpayment_status') === 'open')>{{ __('local_invoice.filters.refund_open') }}</option>
                 <option value="settled" @selected(request('overpayment_status') === 'settled')>{{ __('finance.refund.completed_status') }}</option>
@@ -225,7 +225,7 @@
         @if(! $isSupplierUser)
             <div>
                 <label for="invoice-supplier" class="tw:block tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:mb-1.5">{{ __('local_invoice.filters.supplier_organization') }}</label>
-                <select name="supplier" id="invoice-supplier" class="form-select form-select-sm tw:w-full">
+                <select name="supplier" id="invoice-supplier" class="ui-select ui-select--sm tw:w-full">
                     <option value="">{{ __('local_invoice.labels.all_suppliers') }}</option>
                     @foreach($suppliers ?? [] as $supplier)
                         <option value="{{ $supplier->hash }}" @selected(request('supplier') === $supplier->hash)>
@@ -245,7 +245,7 @@
                     class="ui-motion tw:inline-flex tw:items-center tw:gap-2 tw:rounded-ui-sm tw:border tw:px-3 tw:py-1.5 tw:text-ui-xs tw:font-medium tw:cursor-pointer select-none {{ request('overdue') ? 'tw:border-error tw:bg-error-container tw:text-on-error-container' : 'tw:border-outline-variant tw:bg-surface tw:text-on-surface tw:hover:border-outline tw:hover:bg-surface-container' }}"
                 >
                     <input
-                        class="form-check-input tw:m-0 tw:cursor-pointer"
+                        class="ui-check tw:m-0 tw:cursor-pointer"
                         type="checkbox"
                         id="overdue"
                         name="overdue"
@@ -262,7 +262,7 @@
                         class="ui-motion tw:inline-flex tw:items-center tw:gap-2 tw:rounded-ui-sm tw:border tw:px-3 tw:py-1.5 tw:text-ui-xs tw:font-medium tw:cursor-pointer select-none {{ request('history') ? 'tw:border-primary tw:bg-primary-container tw:text-on-primary-container' : 'tw:border-outline-variant tw:bg-surface tw:text-on-surface tw:hover:border-outline tw:hover:bg-surface-container' }}"
                     >
                         <input
-                            class="form-check-input tw:m-0 tw:cursor-pointer"
+                            class="ui-check tw:m-0 tw:cursor-pointer"
                             type="checkbox"
                             id="history"
                             name="history"
@@ -283,7 +283,7 @@
 </x-ui.filter-bar>
 
 @if(isset($errors) && $errors->any())
-    <div class="alert alert-danger tw:mb-4" role="alert">
+    <div class="tw:rounded-ui-md tw:border tw:border-error/40 tw:bg-error-container tw:text-error-container-foreground tw:p-3.5 tw:text-ui-sm tw:mb-4" role="alert">
         <x-ui.icon name="alert-circle" size="sm" class="tw:inline tw:me-1" />
         {{ $errors->first() }}
     </div>

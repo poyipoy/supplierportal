@@ -17,21 +17,21 @@
             <span id="exportTransferCountPaid" class="tw:hidden tw:ml-1.5 tw:inline-flex tw:items-center tw:justify-center tw:rounded-full tw:bg-white/20 tw:text-white tw:text-[10px] tw:font-bold tw:px-1.5 tw:py-0.5"></span>
         </x-ui.button>
     </x-slot:toolbar>
-    <div class="table-responsive tw:border-0 tw:bg-transparent tw:rounded-none tw:w-full tw:min-w-0">
-        <table class="table table-hover align-middle tw:m-0 tw:text-ui-sm w-100">
-            <thead class="table-light">
+    <div class="ui-table-scroll tw:border-0 tw:bg-transparent tw:rounded-none tw:w-full tw:min-w-0">
+        <table class="ui-table ui-table--hover tw:align-middle tw:m-0 tw:text-ui-sm tw:w-full">
+            <thead>
                 <tr>
                     <th scope="col" style="width: 40px;">
-                        <input type="checkbox" class="form-check-input" id="selectAllBatchesPaid" title="{{ __('finance.drp_surface.all_supplier_batches') }}">
+                        <input type="checkbox" class="ui-check" id="selectAllBatchesPaid" title="{{ __('finance.drp_surface.all_supplier_batches') }}">
                     </th>
                     <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:whitespace-nowrap">{{ __('finance.drp_surface.batch_number') }}</th>
                     <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:whitespace-nowrap">{{ __('common.labels_review.type_date') }}</th>
-                    <th scope="col" class="tw:text-ui-xs tw:font-semibold text-center tw:whitespace-nowrap">{{ __('finance.drp.group_items') }}</th>
-                    <th scope="col" class="tw:text-ui-xs tw:font-semibold text-end tw:whitespace-nowrap">{{ __('local_invoice.labels.total_amount') }}</th>
-                    <th scope="col" class="tw:text-ui-xs tw:font-semibold text-end tw:whitespace-nowrap">{{ __('common.final_copy.net_payment_rp') }}</th>
-                    <th scope="col" class="tw:text-ui-xs tw:font-semibold text-center tw:whitespace-nowrap">{{ __('local_invoice.labels.status') }}</th>
+                    <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-center tw:whitespace-nowrap">{{ __('finance.drp.group_items') }}</th>
+                    <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-end tw:whitespace-nowrap">{{ __('local_invoice.labels.total_amount') }}</th>
+                    <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-end tw:whitespace-nowrap">{{ __('common.final_copy.net_payment_rp') }}</th>
+                    <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-center tw:whitespace-nowrap">{{ __('local_invoice.labels.status') }}</th>
                     <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:whitespace-nowrap">{{ __('local_invoice.labels.payment_info') }}</th>
-                    <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-right text-end tw:whitespace-nowrap">{{ __('common.table.action') }}</th>
+                    <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-end tw:whitespace-nowrap">{{ __('common.table.action') }}</th>
                 </tr>
             </thead>
             <tbody>
@@ -39,11 +39,11 @@
                     <tr>
                         <td>
                             @if($batch->batch_type === \App\Models\PaymentBatch::TYPE_SUPPLIER && $batch->status !== \App\Models\PaymentBatch::STATUS_CANCELLED)
-                                <input type="checkbox" class="form-check-input batch-checkbox-paid" value="{{ $batch->hash }}" data-batch-number="{{ $batch->batch_number }}">
+                                <input type="checkbox" class="ui-check batch-checkbox-paid" value="{{ $batch->hash }}" data-batch-number="{{ $batch->batch_number }}">
                             @endif
                         </td>
                         <td>
-                            <a href="{{ route('finance.drp.show', $batch) }}" class="ui-tabular-nums tw:font-semibold tw:text-primary hover:tw-text-primary-hover tw:no-underline tw:hover:underline tw:whitespace-nowrap">
+                            <a href="{{ route('finance.drp.show', $batch) }}" class="ui-tabular-nums tw:font-semibold tw:text-primary tw:hover:text-primary tw:no-underline tw:hover:underline tw:whitespace-nowrap">
                                 {{ $batch->batch_number }}
                             </a>
                         </td>
@@ -58,14 +58,14 @@
                                 {{ __('ga.detail.actor', ['name' => $batch->creator?->name ?? __('ga.detail.system')]) }}
                             </div>
                         </td>
-                        <td class="text-center tw:whitespace-nowrap">
+                        <td class="tw:text-center tw:whitespace-nowrap">
                             <span class="tw:font-semibold ui-tabular-nums">{{ $batch->groups_count }}</span>
                             <span class="tw:text-ui-xs tw:text-on-surface-variant">{{ __('finance.paid_ui.accounts') }}</span>
                         </td>
-                        <td class="text-end ui-tabular-nums tw:whitespace-nowrap">
+                        <td class="tw:text-end ui-tabular-nums tw:whitespace-nowrap">
                             Rp {{ $regionalFormatter->money($batch->total_subtotal, 0) }}
                         </td>
-                        <td class="text-end ui-tabular-nums tw:whitespace-nowrap">
+                        <td class="tw:text-end ui-tabular-nums tw:whitespace-nowrap">
                             <div class="tw:font-bold tw:text-on-surface">
                                 Rp {{ $regionalFormatter->money($batch->total_net_amount, 0) }}
                             </div>
@@ -80,7 +80,7 @@
                                 </div>
                             @endif
                         </td>
-                        <td class="text-center tw:whitespace-nowrap">
+                        <td class="tw:text-center tw:whitespace-nowrap">
                             <x-ui.status-chip :tone="\App\Support\StatusHelper::paymentBatchTone($batch->status)">
                                 {{ \App\Support\StatusHelper::localFinanceLabel($batch->status) }}
                             </x-ui.status-chip>
@@ -168,7 +168,7 @@
                                 <span class="tw:text-ui-xs tw:text-on-surface-variant tw:font-medium">-</span>
                             @endif
                         </td>
-                        <td class="tw:text-right text-end">
+                        <td class="tw:text-end">
                             <div class="tw:inline-flex tw:items-center tw:gap-1.5 tw:whitespace-nowrap">
                                 <x-ui.row-action
                                     :href="route('finance.drp.show', $batch)"
@@ -210,7 +210,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="9" class="text-center tw:py-8 tw:text-on-surface-variant tw:text-ui-sm">
+                        <td colspan="9" class="tw:text-center tw:py-8 tw:text-on-surface-variant tw:text-ui-sm">
                             {{ __('finance.drp.empty_filtered') }}
                         </td>
                     </tr>

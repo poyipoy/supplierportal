@@ -75,7 +75,7 @@
                     name="q"
                     value="{{ request('q') }}"
                     placeholder="{{ __('finance.candidates.search_ga') }}"
-                    class="form-control form-control-sm ui-filter-bar__search-input"
+                    class="ui-input ui-input--sm ui-filter-bar__search-input"
                     maxlength="100"
                     autocomplete="off"
                 >
@@ -83,7 +83,7 @@
 
             <x-slot:filters>
                 <label for="ga-candidate-type" class="tw:sr-only">{{ __('ga.labels.claim_type') }}</label>
-                <select id="ga-candidate-type" name="claim_type" class="form-select form-select-sm tw:w-full tw:min-w-0 tw:sm:w-48">
+                <select id="ga-candidate-type" name="claim_type" class="ui-select ui-select--sm tw:w-full tw:min-w-0 tw:sm:w-48">
                     <option value="">{{ __('finance.candidates.all_types') }}</option>
                     @foreach(\App\Models\GaClaim::CLAIM_TYPES as $type)
                         <option value="{{ $type }}" @selected(request('claim_type') === $type)>{{ \App\Models\GaClaim::claimTypeLabel($type) }}</option>
@@ -97,28 +97,28 @@
         </x-ui.filter-bar>
         <form method="POST" action="{{ route('finance.drp.ga.create') }}">
             @csrf
-            <div class="table-responsive">
-                <table class="table table-hover align-middle tw:text-ui-sm w-100">
+            <div class="ui-table-scroll">
+                <table class="ui-table ui-table--hover tw:align-middle tw:text-ui-sm tw:w-full">
                     <thead><tr>
                         <th scope="col">{{ __('common.actions.choose') }}</th>
                         <th scope="col">{{ __('finance.drp.payee_account') }}</th>
                         <th scope="col">{{ __('ga.review.claim_number') }}</th>
                         <th scope="col">{{ __('ga.labels.claim_type') }}</th>
                         <th scope="col">{{ __('finance.candidates.verification_date') }}</th>
-                        <th scope="col" class="text-end">{{ __('finance.drp.total_amount_rp') }}</th>
+                        <th scope="col" class="tw:text-end">{{ __('finance.drp.total_amount_rp') }}</th>
                     </tr></thead>
                     <tbody>
                         @forelse($eligibleClaims as $claim)
                             <tr>
-                                <td><input type="checkbox" class="form-check-input" name="claim_ids[]" value="{{ $claim->id }}" aria-label="{{ __('finance.candidates.select_claim', ['number' => $claim->claim_number]) }}"></td>
+                                <td><input type="checkbox" class="ui-check" name="claim_ids[]" value="{{ $claim->id }}" aria-label="{{ __('finance.candidates.select_claim', ['number' => $claim->claim_number]) }}"></td>
                                 <td><strong>{{ $claim->employee->name }}</strong><span class="tw:block tw:text-ui-xs tw:text-on-surface-variant">{{ __('finance.drp_ui.bank_details', ['bank' => $claim->employee->bank_name, 'account' => $claim->employee->account_number, 'holder' => $claim->employee->account_holder_name]) }}</span></td>
                                 <td>{{ $claim->claim_number }}</td>
                                 <td>{{ \App\Models\GaClaim::claimTypeLabel($claim->claim_type) }}</td>
                                 <td>@bizdt($claim->ready_to_pay_at)</td>
-                                <td class="text-end ui-tabular-nums">Rp {{ $regionalFormatter->number(number_format($claim->amount, 0, ',', '.'), 'indonesian') }}</td>
+                                <td class="tw:text-end ui-tabular-nums">Rp {{ $regionalFormatter->number(number_format($claim->amount, 0, ',', '.'), 'indonesian') }}</td>
                             </tr>
                         @empty
-                            <tr><td colspan="6" class="text-center tw:py-8">{{ __('finance.candidates.empty_ga') }}</td></tr>
+                            <tr><td colspan="6" class="tw:text-center tw:py-8">{{ __('finance.candidates.empty_ga') }}</td></tr>
                         @endforelse
                     </tbody>
                 </table>
@@ -126,7 +126,7 @@
             {{ $eligibleClaims->links('pagination::tailwind', ['label' => __('pagination.labels.candidates')]) }}
             @if($eligibleClaims->isNotEmpty())
                 <div class="tw:flex tw:flex-wrap tw:items-center tw:gap-3 tw:mt-3">
-                    <input type="text" name="notes" class="form-control form-control-sm" maxlength="1000" aria-label="{{ __('common.final_review.batch_notes') }}" placeholder="{{ __('common.final_review.batch_notes') }}">
+                    <input type="text" name="notes" class="ui-input ui-input--sm" maxlength="1000" aria-label="{{ __('common.final_review.batch_notes') }}" placeholder="{{ __('common.final_review.batch_notes') }}">
                     <x-ui.button type="submit" size="sm">{{ __('finance.candidates.create_ga') }}</x-ui.button>
                 </div>
             @endif
@@ -137,16 +137,16 @@
         :title="__('finance.drp.ga_list')"
         :description="__('finance.drp.ga_submissions')"
     >
-        <div class="table-responsive">
-            <table class="table table-hover align-middle tw:m-0 tw:text-ui-sm w-100">
-                <thead class="table-light">
+        <div class="ui-table-scroll">
+            <table class="ui-table ui-table--hover tw:align-middle tw:m-0 tw:text-ui-sm tw:w-full">
+                <thead>
                     <tr>
                         <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('finance.drp_surface.batch_number') }}</th>
                         <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('local_invoice.labels.date') }}</th>
                         <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('ga.labels.active_employees') }}</th>
-                        <th scope="col" class="tw:text-ui-xs tw:font-semibold text-end">{{ __('finance.drp.total_amount_rp') }}</th>
+                        <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-end">{{ __('finance.drp.total_amount_rp') }}</th>
                         <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('local_invoice.labels.status') }}</th>
-                        <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-right text-end">{{ __('common.table.action') }}</th>
+                        <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-end">{{ __('common.table.action') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -157,7 +157,7 @@
                             </td>
                             <td>{{ $regionalFormatter->date($batch->created_at, 'human') }}</td>
                             <td>{{ trans_choice('common.final_copy.employee_count', $batch->groups_count) }}</td>
-                            <td class="text-end ui-tabular-nums tw:font-semibold tw:text-primary">
+                            <td class="tw:text-end ui-tabular-nums tw:font-semibold tw:text-primary">
                                 Rp {{ $regionalFormatter->money($batch->total_subtotal, 0) }}
                             </td>
                             <td>
@@ -165,7 +165,7 @@
                                     {{ \App\Support\StatusHelper::localFinanceLabel($batch->status) }}
                                 </x-ui.status-chip>
                             </td>
-                            <td class="tw:text-right text-end">
+                            <td class="tw:text-end">
                                 <x-ui.row-action
                                     :href="route('finance.drp.show', $batch)"
                                     :label="__('finance.drp.review_pay')"
@@ -175,7 +175,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="text-center tw:py-8 tw:text-on-surface-variant tw:text-ui-sm">
+                            <td colspan="6" class="tw:text-center tw:py-8 tw:text-on-surface-variant tw:text-ui-sm">
                                 {{ __('finance.drp.empty_ga_submitted') }}
                             </td>
                         </tr>

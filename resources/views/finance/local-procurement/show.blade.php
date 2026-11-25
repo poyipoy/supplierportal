@@ -184,7 +184,7 @@
 
                         <div class="tw:grid tw:grid-cols-1 tw:sm:grid-cols-2 tw:gap-3">
                             <div class="tw:grid tw:gap-1.5 tw:min-w-0 tw:content-start">
-                                <label for="add_gr_number" class="form-label tw:m-0 tw:text-ui-sm tw:font-medium tw:text-on-surface">
+                                <label for="add_gr_number" class="ui-label tw:m-0 tw:text-ui-sm tw:font-medium tw:text-on-surface">
                                     {{ __('local_procurement.surface.gr_number') }}
                                     <span class="tw:text-error" aria-hidden="true">*</span><span class="tw:sr-only"> {{ __('common.required') }}</span>
                                 </label>
@@ -193,12 +193,12 @@
                                     name="gr_number"
                                     maxlength="100"
                                     value="{{ old('gr_number') }}"
-                                    class="form-control form-control-sm ui-tabular-nums @error('gr_number') is-invalid @enderror"
+                                    class="ui-input ui-input--sm ui-tabular-nums @error('gr_number') is-invalid @enderror"
                                     @error('gr_number') aria-invalid="true" aria-describedby="add_gr_number_error" @enderror
                                     placeholder="{{ __('common.reference_example', ['reference' => 'GR-2026-09-001']) }}"
                                     required
                                 >
-                                @error('gr_number')<div id="add_gr_number_error" class="invalid-feedback">{{ $message }}</div>@enderror
+                                @error('gr_number')<div id="add_gr_number_error" class="ui-field-error">{{ $message }}</div>@enderror
                             </div>
 
                             <div class="tw:min-w-0">
@@ -213,7 +213,7 @@
                             </div>
 
                             <div class="tw:grid tw:gap-1.5 tw:min-w-0 tw:content-start">
-                                <label for="add_gr_qty" class="form-label tw:m-0 tw:text-ui-sm tw:font-medium tw:text-on-surface">
+                                <label for="add_gr_qty" class="ui-label tw:m-0 tw:text-ui-sm tw:font-medium tw:text-on-surface">
                                     {{ __('local_procurement.closure.quantity') }}
                                     <span class="tw:text-error" aria-hidden="true">*</span><span class="tw:sr-only"> {{ __('common.required') }}</span>
                                 </label>
@@ -224,54 +224,54 @@
                                     step="0.001"
                                     min="0.001"
                                     value="{{ old('qty') }}"
-                                    class="form-control form-control-sm ui-tabular-nums @error('qty') is-invalid @enderror"
+                                    class="ui-input ui-input--sm ui-tabular-nums @error('qty') is-invalid @enderror"
                                     @error('qty') aria-invalid="true" aria-describedby="add_gr_qty_error" @enderror
                                     placeholder="1.125"
                                     required
                                 >
-                                @error('qty')<div id="add_gr_qty_error" class="invalid-feedback">{{ $message }}</div>@enderror
+                                @error('qty')<div id="add_gr_qty_error" class="ui-field-error">{{ $message }}</div>@enderror
                             </div>
 
                             <div class="tw:grid tw:gap-1.5 tw:min-w-0 tw:content-start">
-                                <label for="gr_uom_new" class="form-label tw:m-0 tw:text-ui-sm tw:font-medium tw:text-on-surface">
+                                <label for="gr_uom_new" class="ui-label tw:m-0 tw:text-ui-sm tw:font-medium tw:text-on-surface">
                                     {{ __('local_procurement.labels.uom') }}
                                     <span class="tw:text-error" aria-hidden="true">*</span><span class="tw:sr-only"> {{ __('common.required') }}</span>
                                 </label>
-                                <select name="uom" id="gr_uom_new" class="form-select form-select-sm @error('uom') is-invalid @enderror" @error('uom') aria-invalid="true" aria-describedby="gr_uom_new_error" @enderror required>
+                                <select name="uom" id="gr_uom_new" class="ui-select ui-select--sm @error('uom') is-invalid @enderror" @error('uom') aria-invalid="true" aria-describedby="gr_uom_new_error" @enderror required>
                                     <option value="">{{ __('local_procurement.labels.choose_uom') }}</option>
                                     @foreach(\App\Models\LocalGoodsReceipt::UOMS as $uom)
                                         <option value="{{ $uom }}" @selected(old('uom') === $uom)>{{ $uom }}</option>
                                     @endforeach
                                 </select>
-                                @error('uom')<div id="gr_uom_new_error" class="invalid-feedback">{{ $message }}</div>@enderror
+                                @error('uom')<div id="gr_uom_new_error" class="ui-field-error">{{ $message }}</div>@enderror
                             </div>
 
                             <div class="tw:grid tw:gap-1.5 tw:min-w-0 tw:content-start">
-                                <label for="add_gr_description" class="form-label tw:m-0 tw:text-ui-sm tw:font-medium tw:text-on-surface">{{ __('local_procurement.labels.goods_description_optional') }}</label>
+                                <label for="add_gr_description" class="ui-label tw:m-0 tw:text-ui-sm tw:font-medium tw:text-on-surface">{{ __('local_procurement.labels.goods_description_optional') }}</label>
                                 <input
                                     id="add_gr_description"
                                     name="description"
                                     maxlength="2000"
                                     value="{{ old('description') }}"
-                                    class="form-control form-control-sm @error('description') is-invalid @enderror"
+                                    class="ui-input ui-input--sm @error('description') is-invalid @enderror"
                                     @error('description') aria-invalid="true" aria-describedby="add_gr_description_error" @enderror
                                     placeholder="{{ __('local_procurement.surface.material_placeholder') }}"
                                 >
-                                @error('description')<div id="add_gr_description_error" class="invalid-feedback">{{ $message }}</div>@enderror
+                                @error('description')<div id="add_gr_description_error" class="ui-field-error">{{ $message }}</div>@enderror
                             </div>
 
                             <div class="tw:grid tw:gap-1.5 tw:min-w-0 tw:content-start">
-                                <label for="add_gr_notes" class="form-label tw:m-0 tw:text-ui-sm tw:font-medium tw:text-on-surface">{{ __('local_procurement.surface.notes') }}</label>
+                                <label for="add_gr_notes" class="ui-label tw:m-0 tw:text-ui-sm tw:font-medium tw:text-on-surface">{{ __('local_procurement.surface.notes') }}</label>
                                 <input
                                     id="add_gr_notes"
                                     name="notes"
                                     maxlength="2000"
                                     value="{{ old('notes') }}"
-                                    class="form-control form-control-sm @error('notes') is-invalid @enderror"
+                                    class="ui-input ui-input--sm @error('notes') is-invalid @enderror"
                                     @error('notes') aria-invalid="true" aria-describedby="add_gr_notes_error" @enderror
                                     placeholder="{{ __('local_procurement.surface.physical_notes') }}"
                                 >
-                                @error('notes')<div id="add_gr_notes_error" class="invalid-feedback">{{ $message }}</div>@enderror
+                                @error('notes')<div id="add_gr_notes_error" class="ui-field-error">{{ $message }}</div>@enderror
                             </div>
                         </div>
 

@@ -161,7 +161,7 @@
                         <form method="POST" action="{{ route('finance.ga-claims.verify', $claim) }}" onsubmit="event.preventDefault(); window.AdasiAlert.confirm({title: {{ json_encode(__('ga.verification.approve_title'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) }}, text: {{ json_encode(__('ga.verification.approve_confirm'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) }}, confirmText: {{ json_encode(__('ga.verification.approve_yes'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) }}, cancelText: {{ json_encode(__('local_invoice.actions.cancel'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) }}}).then(r => { if (r.isConfirmed) this.submit(); });">
                             @csrf
                             <input type="hidden" name="approve" value="1">
-                            <x-ui.button type="submit" variant="primary" size="sm" class="w-100">
+                            <x-ui.button type="submit" variant="primary" size="sm" class="tw:w-full">
                                 <x-ui.icon name="check-circle" size="sm" />
                                 <span>{{ __('ga.verification.approve') }}</span>
                             </x-ui.button>
@@ -175,7 +175,7 @@
                                 type="button"
                                 variant="danger-outline"
                                 size="sm"
-                                class="w-100"
+                                class="tw:w-full"
                                 x-on:click="revisionOpen = !revisionOpen"
                                 x-bind:aria-expanded="revisionOpen.toString()"
                                 aria-expanded="{{ $errors->any() ? 'true' : 'false' }}"
@@ -189,9 +189,9 @@
                                 <form method="POST" action="{{ route('finance.ga-claims.verify', $claim) }}" class="tw:space-y-2">
                                     @csrf
                                     <input type="hidden" name="approve" value="0">
-                                    <label class="form-label tw:text-ui-xs tw:font-semibold">{{ __('finance.labels.revision_required') }} <span class="text-danger">*</span></label>
-                                    <textarea name="reason" rows="3" class="form-control form-control-sm" required placeholder="{{ __('ga.verification.reason_example') }}"></textarea>
-                                    <x-ui.button type="submit" variant="danger" size="sm" class="w-100">
+                                    <label class="ui-label tw:text-ui-xs tw:font-semibold">{{ __('finance.labels.revision_required') }} <span class="tw:text-error">*</span></label>
+                                    <textarea name="reason" rows="3" class="ui-textarea tw:text-ui-xs tw:px-2 tw:py-1" required placeholder="{{ __('ga.verification.reason_example') }}"></textarea>
+                                    <x-ui.button type="submit" variant="danger" size="sm" class="tw:w-full">
                                         {{ __('ga.verification.send_revision') }}
                                     </x-ui.button>
                                 </form>

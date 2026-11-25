@@ -31,7 +31,7 @@
     </div>
 </section>
 {{-- Live region harus sudah ada sebelum diisi, dan tetap ada walau panel disembunyikan. --}}
-<div data-recovery-announcer class="visually-hidden" role="status" aria-live="polite"></div>
+<div data-recovery-announcer class="tw:sr-only" role="status" aria-live="polite"></div>
 
 <template data-recovery-chip="ready"><x-ui.status-chip tone="success" icon="circle-check"><span data-chip-label></span></x-ui.status-chip></template>
 <template data-recovery-chip="invalid"><x-ui.status-chip tone="warning" icon="triangle-alert"><span data-chip-label></span></x-ui.status-chip></template>
