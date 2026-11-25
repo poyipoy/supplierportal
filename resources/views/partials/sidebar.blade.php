@@ -136,7 +136,7 @@
                     <x-ui.icon name="chevron-down" size="xs" />
                 </span>
             </button>
-            <div id="sidebarPortalSwitcherPopover" popover="auto" data-ui-dropdown-menu class="dropdown-menu dropdown-menu-start tw:shadow-xl tw:border tw:border-outline-variant tw:rounded-xl tw:p-1.5 tw:min-w-[270px] tw:bg-surface tw-animate-in tw-fade-in-0 tw-zoom-in-95" aria-labelledby="portalContextSwitcherDropdown">
+            <div id="sidebarPortalSwitcherPopover" popover="auto" data-ui-dropdown-menu class="dropdown-menu dropdown-menu-start tw:shadow-xl tw:border tw:border-outline-variant tw:rounded-xl tw:p-1.5 tw:min-w-[270px] tw:bg-surface" aria-labelledby="portalContextSwitcherDropdown">
                 <div class="tw:px-2.5 tw:pt-1.5 tw:pb-2 tw:flex tw:items-center tw:justify-between">
                     <span class="tw:text-[10px] tw:font-bold tw:text-on-surface-variant tw:uppercase tw:tracking-wider">{{ __('navigation.choose_portal') }}</span>
                     <span class="tw:text-[10px] tw:text-on-surface-variant">{{ __('navigation.dual_scope') }}</span>
@@ -160,7 +160,7 @@
                                 </div>
                             </div>
                             @if($currentScope === 'local')
-                                <span class="tw:w-5 tw:h-5 tw:rounded-full tw:bg-primary tw:text-on-primary tw:flex tw:items-center tw:justify-center tw:shrink-0 tw-shadow-xs">
+                                <span class="tw:w-5 tw:h-5 tw:rounded-full tw:bg-primary tw:text-on-primary tw:flex tw:items-center tw:justify-center tw:shrink-0 tw:shadow-ui-1">
                                     <x-ui.icon name="check" size="xs" />
                                 </span>
                             @endif
@@ -185,7 +185,7 @@
                                 </div>
                             </div>
                             @if($currentScope === 'import')
-                                <span class="tw:w-5 tw:h-5 tw:rounded-full tw:bg-primary tw:text-on-primary tw:flex tw:items-center tw:justify-center tw:shrink-0 tw-shadow-xs">
+                                <span class="tw:w-5 tw:h-5 tw:rounded-full tw:bg-primary tw:text-on-primary tw:flex tw:items-center tw:justify-center tw:shrink-0 tw:shadow-ui-1">
                                     <x-ui.icon name="check" size="xs" />
                                 </span>
                             @endif

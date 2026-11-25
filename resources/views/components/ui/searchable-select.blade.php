@@ -259,7 +259,7 @@
                             <span class="ui-tabular-nums tw:min-w-0 tw:max-w-full tw:text-ui-sm tw:font-semibold tw:text-on-surface tw:break-words" style="overflow-wrap: anywhere;" x-text="opt.label"></span>
                             <template x-if="opt.badge">
                                 <span
-                                    class="tw:shrink-0 tw:inline-flex tw:items-center tw:px-1.5 tw-py-0.2 tw:rounded-full tw:text-[10px] tw:font-bold tw:uppercase tw:tracking-wider"
+                                    class="tw:shrink-0 tw:inline-flex tw:items-center tw:px-1.5 tw:py-0.5 tw:rounded-full tw:text-[10px] tw:font-bold tw:uppercase tw:tracking-wider"
                                     :class="{
                                         'tw:bg-emerald-100 tw:text-emerald-800': opt.badgeTone === 'success' || opt.badge === 'OPEN',
                                         'tw:bg-amber-100 tw:text-amber-800': opt.badgeTone === 'warning',

@@ -18,7 +18,7 @@
                         <p class="tw:m-0 tw:text-ui-sm tw:font-medium tw:text-on-surface">
                             {{ $activeSession->ip_address ?: __('security.unknown_ip') }}
                             @if ($activeSession->is_current)
-                                <span class="tw:ml-1 tw:rounded-ui-xs tw:bg-primary/10 tw:px-1.5 tw:py-0.5 tw-text-ui-2xs tw:font-semibold tw:text-primary">{{ __('security.this_device') }}</span>
+                                <span class="tw:ml-1 tw:rounded-ui-xs tw:bg-primary/10 tw:px-1.5 tw:py-0.5 tw:text-ui-xs tw:font-semibold tw:text-primary">{{ __('security.this_device') }}</span>
                             @endif
                         </p>
                         <p class="tw:m-0 tw:text-ui-xs tw:text-on-surface-variant">

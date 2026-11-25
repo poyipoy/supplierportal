@@ -91,7 +91,6 @@
         const isRightAligned = (style && style.textAlign === 'right') ||
             input.classList.contains('tw:text-end') ||
             input.classList.contains('tw:text-right') ||
-            input.classList.contains('text-end') ||
             (input.getAttribute('class') || '').includes('text-right');
 
         let left = isRightAligned

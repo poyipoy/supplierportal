@@ -67,10 +67,10 @@
                     {{-- Tipe Klaim & Tanggal --}}
                     <div class="tw:grid tw:grid-cols-1 tw:sm:grid-cols-2 ui-density-form-grid">
                         <div>
-                            <label for="claim_type" class="form-label tw:text-ui-xs tw:font-semibold">
-                                {{ __('ga.labels.claim_type') }} <span class="text-danger">*</span>
+                            <label for="claim_type" class="ui-label tw:mb-1 tw:text-ui-xs tw:font-semibold">
+                                {{ __('ga.labels.claim_type') }} <span class="tw:text-error">*</span>
                             </label>
-                            <select name="claim_type" id="claim_type" class="form-select form-select-sm" required>
+                            <select name="claim_type" id="claim_type" class="ui-select ui-select--sm" required>
                                 <option value="">{{ __('ga.form.type_option') }}</option>
                                 @foreach($claimTypes as $type)
                                     <option value="{{ $type }}" @selected(old('claim_type') === $type)>
@@ -80,8 +80,8 @@
                             </select>
                         </div>
                         <div>
-                            <label for="claim_date" class="form-label tw:text-ui-xs tw:font-semibold">
-                                {{ __('ga.form.event_date') }} <span class="text-danger">*</span>
+                            <label for="claim_date" class="ui-label tw:mb-1 tw:text-ui-xs tw:font-semibold">
+                                {{ __('ga.form.event_date') }} <span class="tw:text-error">*</span>
                             </label>
                             <x-ui.date-picker
                                 name="claim_date"
@@ -94,26 +94,26 @@
 
                     {{-- Nominal --}}
                     <div>
-                        <label for="amount" class="form-label tw:text-ui-xs tw:font-semibold">
-                            {{ __('ga.form.amount') }} <span class="text-danger">*</span>
+                        <label for="amount" class="ui-label tw:mb-1 tw:text-ui-xs tw:font-semibold">
+                            {{ __('ga.form.amount') }} <span class="tw:text-error">*</span>
                         </label>
-                        <input type="number" step="0.01" name="amount" id="amount" class="form-control form-control-sm" placeholder="{{ __('ga.form.example_amount') }}" value="{{ old('amount') }}" required min="1">
+                        <input type="number" step="0.01" name="amount" id="amount" class="ui-input ui-input--sm" placeholder="{{ __('ga.form.example_amount') }}" value="{{ old('amount') }}" required min="1">
                     </div>
 
                     {{-- Deskripsi --}}
                     <div>
-                        <label for="description" class="form-label tw:text-ui-xs tw:font-semibold">
+                        <label for="description" class="ui-label tw:mb-1 tw:text-ui-xs tw:font-semibold">
                             {{ __('ga.form.remarks') }}
                         </label>
-                        <textarea name="description" id="description" class="form-control form-control-sm" rows="3" placeholder="{{ __('ga.form.description_placeholder') }}">{{ old('description') }}</textarea>
+                        <textarea name="description" id="description" class="ui-textarea tw:text-ui-xs" rows="3" placeholder="{{ __('ga.form.description_placeholder') }}">{{ old('description') }}</textarea>
                     </div>
 
                     {{-- Dokumen Pendukung --}}
                     <div class="tw:border-t tw:border-outline-variant tw:pt-3">
-                        <label for="supporting" class="form-label tw:text-ui-xs tw:font-semibold">
+                        <label for="supporting" class="ui-label tw:mb-1 tw:text-ui-xs tw:font-semibold">
                             {{ __('ga.form.upload_supporting') }}
                         </label>
-                        <input type="file" name="supporting" id="supporting" class="form-control form-control-sm" accept=".pdf,.jpg,.jpeg,.png,.xlsx,.xls,.doc,.docx" aria-describedby="supporting-help" @if($errors->has('supporting')) aria-invalid="true" @endif>
+                        <input type="file" name="supporting" id="supporting" class="ui-input ui-input--sm" accept=".pdf,.jpg,.jpeg,.png,.xlsx,.xls,.doc,.docx" aria-describedby="supporting-help" @if($errors->has('supporting')) aria-invalid="true" @endif>
                         <span id="supporting-help" class="tw:text-[11px] tw:text-on-surface-variant tw:block tw:mt-1">
                             {{ __('ga.form.entertainment_supporting') }}
                             {{ __('ga.form.support_formats') }}
@@ -121,7 +121,7 @@
                     </div>
 
                     @error('supporting')
-                        <p class="text-danger" role="alert">{{ $message }}</p>
+                        <p class="ui-field-error" role="alert">{{ $message }}</p>
                     @enderror
 
                     {{-- Submit Button --}}

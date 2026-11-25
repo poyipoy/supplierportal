@@ -23,13 +23,13 @@
     $specErrorKey = "accept_spec.{$prItemId}";
     $delta = is_numeric($default) ? (int) $default - $requested : null;
 @endphp
-<div class="tw:mt-2 tw:grid tw:gap-1 text-start" data-order-qty-control data-pr-item-id="{{ $prItemId }}" data-requested="{{ $requested }}" @if($disabled) hidden @endif>
+<div class="tw:mt-2 tw:grid tw:gap-1 tw:text-start" data-order-qty-control data-pr-item-id="{{ $prItemId }}" data-requested="{{ $requested }}" @if($disabled) hidden @endif>
     <label for="{{ $inputId }}" class="tw:text-ui-xs tw:font-semibold tw:text-on-surface">{{ __('procurement.ordered_quantity.order_qty') }}</label>
     <input
         type="number"
         id="{{ $inputId }}"
         name="order_qty[{{ $prItemId }}]"
-        class="form-control form-control-sm text-end ui-tabular-nums @error($errorKey) is-invalid @enderror"
+        class="ui-input ui-input--sm tw:text-end ui-tabular-nums @error($errorKey) is-invalid @enderror"
         min="1"
         max="{{ $offered }}"
         step="1"
@@ -44,18 +44,18 @@
          data-template="{{ __('procurement.ordered_quantity.order_qty_hint', ['requested' => $requested, 'offered' => $offered, 'delta' => '__DELTA__']) }}">
         {{ __('procurement.ordered_quantity.order_qty_hint', ['requested' => $requested, 'offered' => $offered, 'delta' => $delta === null ? '—' : ($delta > 0 ? '+'.$delta : (string) $delta)]) }}
     </div>
-    @error($errorKey)<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
+    @error($errorKey)<div class="ui-field-error">{{ $message }}</div>@enderror
 
     @if($specDifferent)
         <input type="hidden" name="accept_spec[{{ $prItemId }}]" value="0" @if($disabled) disabled @endif>
-        <div class="form-check tw:mt-1">
-            <input type="checkbox" class="form-check-input @error($specErrorKey) is-invalid @enderror" id="acceptSpec{{ $idSuffix }}"
+        <div class="ui-check-group tw:items-start tw:mt-1">
+            <input type="checkbox" class="ui-check @error($specErrorKey) is-invalid @enderror" id="acceptSpec{{ $idSuffix }}"
                    name="accept_spec[{{ $prItemId }}]" value="1" @checked(old("accept_spec.{$prItemId}", $specAccepted)) @if($disabled) disabled @endif data-accept-spec-input>
-            <label class="form-check-label tw:text-ui-xs" for="acceptSpec{{ $idSuffix }}">
+            <label class="tw:cursor-pointer tw:text-ui-xs" for="acceptSpec{{ $idSuffix }}">
                 {{ __('procurement.ordered_quantity.accept_spec') }}
-                <span class="d-block tw:text-on-surface-variant">{{ __('procurement.ordered_quantity.accept_spec_detail', ['requested' => $requestedSpec ?? '—', 'offered' => $offeredSpec ?? '—']) }}</span>
+                <span class="tw:block tw:text-on-surface-variant">{{ __('procurement.ordered_quantity.accept_spec_detail', ['requested' => $requestedSpec ?? '—', 'offered' => $offeredSpec ?? '—']) }}</span>
             </label>
-            @error($specErrorKey)<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
+            @error($specErrorKey)<div class="ui-field-error">{{ $message }}</div>@enderror
         </div>
     @endif
 </div>

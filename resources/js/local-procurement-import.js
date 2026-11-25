@@ -26,7 +26,6 @@ function resultAction(body) {
 function setHidden(element, hidden) {
     if (!element?.classList) return;
     element.classList.toggle('tw:hidden', hidden);
-    if (!hidden) element.classList.remove('d-none');
 }
 // Toast hilang saat halaman di-reload; pesan sukses dititipkan sekali pakai di tab ini.
 const TOAST_KEY = 'adasi:local-import-toast';

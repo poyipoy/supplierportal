@@ -758,7 +758,7 @@
                             $evidenceGapCount = (int) ($progressItem['evidence_gap_count'] ?? 0);
                             $isWaitingForShipment = $usesShipmentWorkflow && $activeShipmentCount === 0;
                         @endphp
-                        <div class="po-doc-card tw:h-full tw:rounded-xl tw:border tw:border-outline-variant/80 tw:bg-surface tw:p-3.5 tw-shadow-2xs tw:flex tw:flex-col tw:justify-between tw:transition-colors tw:hover:border-primary/40 tw:hover:shadow-xs tw:min-w-0" id="doc-card-{{ $docKey }}">
+                        <div class="po-doc-card tw:h-full tw:rounded-xl tw:border tw:border-outline-variant/80 tw:bg-surface tw:p-3.5 tw:shadow-2xs tw:flex tw:flex-col tw:justify-between tw:transition-colors tw:hover:border-primary/40 tw:hover:shadow-xs tw:min-w-0" id="doc-card-{{ $docKey }}">
                             {{-- Zone 1: Document Header (Centered & Uniform) --}}
                             <div class="tw:flex tw:flex-col tw:items-center tw:text-center">
                                 <div class="tw:w-10 tw:h-10 tw:rounded-full tw:flex tw:items-center tw:justify-center tw:mb-2 {{ $iconClasses }}">

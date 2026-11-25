@@ -10,16 +10,16 @@
         />
     </x-slot:emptyState>
 
-    <table class="table table-hover align-middle mb-0 tw:text-ui-sm w-100" id="outstandingMaterialTable">
-        <thead class="table-light">
+    <table class="ui-table ui-table--hover tw:align-middle tw:mb-0 tw:text-ui-sm tw:w-full" id="outstandingMaterialTable">
+        <thead>
             <tr>
-                <th scope="col" class="text-center" style="width: 48px;">{{ __('purchasing.outstanding_materials.col_no') }}</th>
+                <th scope="col" class="tw:text-center" style="width: 48px;">{{ __('purchasing.outstanding_materials.col_no') }}</th>
                 <th scope="col">{{ __('purchasing.outstanding_materials.col_po') }}</th>
                 <th scope="col">{{ __('purchasing.outstanding_materials.col_invoice_reference') }}</th>
                 <th scope="col">{{ __('purchasing.outstanding_materials.col_supplier') }}</th>
                 <th scope="col">{{ __('purchasing.outstanding_materials.col_material') }}</th>
                 <th scope="col">{{ __('purchasing.outstanding_materials.col_dimension') }}</th>
-                <th scope="col" class="text-center">{{ __('purchasing.outstanding_materials.col_status') }}</th>
+                <th scope="col" class="tw:text-center">{{ __('purchasing.outstanding_materials.col_status') }}</th>
                 <th scope="col">{{ __('purchasing.outstanding_materials.col_port_of_loading') }}</th>
                 <th scope="col">{{ __('purchasing.outstanding_materials.col_port_of_discharge') }}</th>
                 <th scope="col">{{ __('purchasing.outstanding_materials.col_est_arrival') }}</th>
@@ -32,9 +32,9 @@
             @endphp
             @foreach($rows as $index => $row)
                 <tr>
-                    <td class="text-center tw:text-on-surface-variant ui-tabular-nums">{{ $rowOffset + $index + 1 }}</td>
-                    <td class="fw-bold tw:text-on-surface ui-tabular-nums">
-                        <a href="{{ route($poShowRouteName, $row['po']) }}" class="text-primary text-decoration-none">
+                    <td class="tw:text-center tw:text-on-surface-variant ui-tabular-nums">{{ $rowOffset + $index + 1 }}</td>
+                    <td class="tw:font-bold tw:text-on-surface ui-tabular-nums">
+                        <a href="{{ route($poShowRouteName, $row['po']) }}" class="tw:text-primary tw:no-underline">
                             {{ $row['po_number'] }}
                         </a>
                     </td>
@@ -44,7 +44,7 @@
                                 @foreach($row['invoice_references'] as $ref)
                                     <div class="tw:leading-tight">
                                         @if($ref['invoice_number'] !== '')
-                                            <div class="fw-medium">{{ $ref['invoice_number'] }}</div>
+                                            <div class="tw:font-medium">{{ $ref['invoice_number'] }}</div>
                                         @endif
                                         @if($ref['supplier_reference'] !== '')
                                             <div class="tw:text-ui-xs tw:text-on-surface-variant">
@@ -58,10 +58,10 @@
                             <span class="tw:text-on-surface-variant">-</span>
                         @endif
                     </td>
-                    <td class="fw-semibold">{{ $row['supplier_name'] }}</td>
-                    <td class="fw-medium">{{ $row['material_name'] }}</td>
+                    <td class="tw:font-semibold">{{ $row['supplier_name'] }}</td>
+                    <td class="tw:font-medium">{{ $row['material_name'] }}</td>
                     <td class="ui-tabular-nums tw:text-on-surface-variant">{{ $row['dimension'] ?: '-' }}</td>
-                    <td class="text-center">
+                    <td class="tw:text-center">
                         <div class="tw:inline-flex tw:flex-wrap tw:items-center tw:justify-center tw:gap-1">
                             <x-ui.status-chip :tone="$row['status_tone']" size="sm">
                                 {{ $row['status_label'] }}
@@ -80,7 +80,7 @@
                     </td>
                     <td class="ui-tabular-nums tw:text-on-surface-variant">
                         @if($row['actual_arrival'])
-                            <span class="text-success fw-semibold">{{ $regionalFormatter->date($row['actual_arrival'], 'human') }}</span>
+                            <span class="tw:text-success tw:font-semibold">{{ $regionalFormatter->date($row['actual_arrival'], 'human') }}</span>
                         @else
                             <span>-</span>
                         @endif
@@ -96,4 +96,3 @@
         </x-slot:footer>
     @endif
 </x-ui.data-table>
-

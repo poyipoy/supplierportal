@@ -70,7 +70,7 @@ class ClaimAndInspectionListLayoutTest extends TestCase
 
         $this->assertSame(1, $xpath->query('//div[@id="history"]//select[@id="historyStatusFilter"]')->length);
         $this->assertSame(1, $xpath->query('//div[@id="history"]//button[@id="resetHistoryStatusFilter"]')->length);
-        $this->assertSame(1, $xpath->query('//div[@id="inspectionExportLink"][contains(@class, "d-none")]')->length);
+        $this->assertSame(1, $xpath->query('//div[@id="inspectionExportLink"][contains(@class, "tw:hidden")]')->length);
         $this->assertStringContainsString('table="#historyTable"', file_get_contents(resource_path('views/qc/inspections/index.blade.php')));
     }
 

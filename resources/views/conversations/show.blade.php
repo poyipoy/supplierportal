@@ -138,8 +138,8 @@
             @endif
             @forelse($conversation->messages as $msg)
                 @php $isMe = $msg->sender_id === auth()->id(); @endphp
-                <div class="chat-message-row {{ $isMe ? 'is-me justify-content-end' : 'is-partner justify-content-start' }}" data-message-id="{{ $msg->id }}">
-                    <div class="chat-message-stack {{ $isMe ? 'align-items-end' : 'align-items-start' }}">
+                <div class="chat-message-row {{ $isMe ? 'is-me tw:justify-end' : 'is-partner tw:justify-start' }}" data-message-id="{{ $msg->id }}">
+                    <div class="chat-message-stack {{ $isMe ? 'tw:items-end' : 'tw:items-start' }}">
                         <div class="chat-message-bubble {{ $isMe ? 'is-me' : 'is-partner' }}">
                             @if($msg->body !== '')
                                 <div class="chat-message-text">{{ $msg->body }}</div>
@@ -155,7 +155,7 @@
                                 </div>
                             @endif
                         </div>
-                        <div class="chat-message-meta {{ $isMe ? 'text-end' : 'text-start' }}">
+                        <div class="chat-message-meta {{ $isMe ? 'tw:text-end' : 'tw:text-start' }}">
                             @unless($isMe)
                                 {{ $msg->sender->name }} &bull;
                             @endunless
@@ -186,22 +186,22 @@
                         <button class="ui-focus-ring tw:inline-flex tw:h-7 tw:items-center tw:gap-1 tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-transparent tw:px-2.5 tw:text-ui-xs tw:font-medium tw:text-on-surface tw:hover:bg-surface-low" type="button" data-ui-dropdown-trigger popovertarget="conversationTemplateMenu" aria-controls="conversationTemplateMenu" aria-expanded="false">
                             <x-ui.icon name="zap" />{{ __('purchasing.copy.template') }}
                         </button>
-                        <div id="conversationTemplateMenu" popover="auto" data-ui-dropdown-menu class="dropdown-menu p-2 chat-template-menu">
+                        <div id="conversationTemplateMenu" popover="auto" data-ui-dropdown-menu class="dropdown-menu tw:p-2 chat-template-menu">
                             @foreach($messageTemplates as $template)
-                                <button type="button" class="dropdown-item rounded small text-wrap" data-chat-template="{{ $template }}">
+                                <button type="button" class="dropdown-item tw:rounded-ui-sm tw:text-ui-xs tw:whitespace-normal" data-chat-template="{{ $template }}">
                                     {{ $template }}
                                 </button>
                             @endforeach
                         </div>
                     </div>
                 @endif
-                <div class="tw:text-ui-xs tw:text-on-surface-variant tw:mb-1.5 d-none" id="message-attachments-preview"></div>
+                <div class="tw:text-ui-xs tw:text-on-surface-variant tw:mb-1.5 tw:hidden" id="message-attachments-preview"></div>
                 <div class="tw:flex tw:gap-2 tw:items-end">
                     <textarea id="message-body" class="tw:flex-1 tw:rounded-ui-sm tw:border tw:border-outline-strong tw:bg-surface tw:px-3 tw:py-2 tw:text-ui-sm tw:text-on-surface tw:focus:border-primary tw:focus:ring-2 tw:focus:ring-primary tw:resize-none" rows="2" placeholder="{{ __('purchasing.copy.type_a_message_enter_to_send_shift_enter_for_new_line') }}" aria-label="{{ __('purchasing.copy.message') }}"></textarea>
                     <label for="message-attachments" class="ui-focus-ring tw:inline-flex tw:h-10 tw:w-10 tw:shrink-0 tw:cursor-pointer tw:items-center tw:justify-center tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-transparent tw:text-on-surface-variant tw:hover:bg-surface-container" title="{{ __('purchasing.copy.attach_files') }}" aria-label="{{ __('purchasing.copy.attach_files') }}">
                         <x-ui.icon name="paperclip" />
                     </label>
-                    <input type="file" id="message-attachments" class="d-none" multiple accept=".jpg,.jpeg,.png,.pdf,.xlsx,.xls,.doc,.docx">
+                    <input type="file" id="message-attachments" class="tw:hidden" multiple accept=".jpg,.jpeg,.png,.pdf,.xlsx,.xls,.doc,.docx">
                     <button type="submit" class="ui-focus-ring tw:inline-flex tw:h-10 tw:w-10 tw:shrink-0 tw:items-center tw:justify-center tw:rounded-ui-sm tw:border-0 tw:bg-primary tw:text-primary-foreground tw:hover:brightness-95" id="btn-send" aria-label="{{ __('purchasing.copy.send_message') }}">
                         <x-ui.icon name="send" />
                     </button>
@@ -253,7 +253,7 @@
         const files = Array.from(attachmentInput?.files || []);
         if (!attachmentPreview || files.length === 0) {
             if (attachmentPreview) {
-                attachmentPreview.classList.add('d-none');
+                attachmentPreview.classList.add('tw:hidden');
                 attachmentPreview.replaceChildren();
             }
             return;
@@ -264,7 +264,7 @@
                 <x-ui.icon name="paperclip" />${escapeHtml(file.name)}
             </span>
         `).join('');
-        attachmentPreview.classList.remove('d-none');
+        attachmentPreview.classList.remove('tw:hidden');
     }
 
     function readReceiptHtml(msg) {
@@ -368,8 +368,8 @@
         const timeLocale = window.AdasiI18n.locale === 'id' ? 'id-ID' : 'en-GB';
         const time = new Date(msg.created_at).toLocaleTimeString(timeLocale, { hour: '2-digit', minute: '2-digit' });
         const name = isMe ? '' : (msg.sender_name || msg.sender?.name || window.AdasiI18n.t('js.chat.unknown_sender'));
-        const alignClass = isMe ? 'justify-content-end' : 'justify-content-start';
-        const colAlignClass = isMe ? 'align-items-end' : 'align-items-start';
+        const alignClass = isMe ? 'tw:justify-end' : 'tw:justify-start';
+        const colAlignClass = isMe ? 'tw:items-end' : 'tw:items-start';
         const bubbleClass = isMe ? 'is-me' : 'is-partner';
 
         const safeBody = escapeHtml(msg.body || '');
@@ -381,7 +381,7 @@
                         ${safeBody ? `<div class="chat-message-text">${safeBody}</div>` : ''}
                         ${attachmentHtml(msg.attachments, isMe)}
                     </div>
-                    <div class="chat-message-meta ${isMe ? 'text-end' : 'text-start'}">
+                    <div class="chat-message-meta ${isMe ? 'tw:text-end' : 'tw:text-start'}">
                         ${isMe ? '' : `${escapeHtml(name)} &bull; `}
                         ${time}
                         ${readReceiptHtml(msg)}

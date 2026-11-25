@@ -17,11 +17,11 @@
                         : route('ga.claims.show', $claim)
                 );
             @endphp
-            <x-ui.button :href="$resolvedDetailUrl" variant="outline" size="sm" class="d-print-none">
+            <x-ui.button :href="$resolvedDetailUrl" variant="outline" size="sm" class="tw:print:hidden">
                 <x-ui.icon name="arrow-left" size="sm" />
                 <span>{{ __('ga.actions.back_detail') }}</span>
             </x-ui.button>
-            <x-ui.button :href="route('ga.claims.receipt.print', $claim)" variant="primary" size="sm" class="d-print-none" data-download-pdf data-no-loader>
+            <x-ui.button :href="route('ga.claims.receipt.print', $claim)" variant="primary" size="sm" class="tw:print:hidden" data-download-pdf data-no-loader>
                 <x-ui.icon name="printer" size="sm" />
                 <span>{{ __('local_invoice.actions.print_receipt') }}</span>
             </x-ui.button>
@@ -30,30 +30,30 @@
 
     <x-ui.card :title="__('ga.receipt.company_title')">
         <div class="tw:flex tw:flex-col tw:sm:flex-row tw:gap-6 tw:items-start">
-            <dl class="row tw:text-ui-xs tw:flex-1 tw:m-0">
-                <dt class="col-sm-4 text-muted">{{ __('local_invoice.receipt.number') }}</dt>
-                <dd class="col-sm-8"><strong class="ui-tabular-nums tw:text-primary">{{ $claim->receipt?->receipt_number }}</strong></dd>
+            <dl class="tw:grid tw:grid-cols-12 tw:gap-x-3 tw:gap-y-1.5 tw:text-ui-xs tw:flex-1 tw:m-0">
+                <dt class="tw:col-span-12 tw:sm:col-span-4 tw:font-semibold tw:text-on-surface-variant">{{ __('local_invoice.receipt.number') }}</dt>
+                <dd class="tw:col-span-12 tw:sm:col-span-8 tw:m-0"><strong class="ui-tabular-nums tw:text-primary">{{ $claim->receipt?->receipt_number }}</strong></dd>
 
-                <dt class="col-sm-4 text-muted">{{ __('ga.receipt.claim_number') }}</dt>
-                <dd class="col-sm-8"><strong class="ui-tabular-nums">{{ $claim->claim_number }}</strong></dd>
+                <dt class="tw:col-span-12 tw:sm:col-span-4 tw:font-semibold tw:text-on-surface-variant">{{ __('ga.receipt.claim_number') }}</dt>
+                <dd class="tw:col-span-12 tw:sm:col-span-8 tw:m-0"><strong class="ui-tabular-nums">{{ $claim->claim_number }}</strong></dd>
 
-                <dt class="col-sm-4 text-muted">{{ __('ga.labels.employee_name') }}</dt>
-                <dd class="col-sm-8"><strong>{{ $claim->employee?->name }}</strong> ({{ $claim->employee?->department }})</dd>
+                <dt class="tw:col-span-12 tw:sm:col-span-4 tw:font-semibold tw:text-on-surface-variant">{{ __('ga.labels.employee_name') }}</dt>
+                <dd class="tw:col-span-12 tw:sm:col-span-8 tw:m-0"><strong>{{ $claim->employee?->name }}</strong> ({{ $claim->employee?->department }})</dd>
 
-                <dt class="col-sm-4 text-muted">{{ __('ga.labels.claim_type') }}</dt>
-                <dd class="col-sm-8">{{ \App\Models\GaClaim::claimTypeLabel($claim->claim_type) }}</dd>
+                <dt class="tw:col-span-12 tw:sm:col-span-4 tw:font-semibold tw:text-on-surface-variant">{{ __('ga.labels.claim_type') }}</dt>
+                <dd class="tw:col-span-12 tw:sm:col-span-8 tw:m-0">{{ \App\Models\GaClaim::claimTypeLabel($claim->claim_type) }}</dd>
 
-                <dt class="col-sm-4 text-muted">{{ __('ga.labels.claim_date') }}</dt>
-                <dd class="col-sm-8">{{ $regionalFormatter->date($claim->claim_date, 'human') }}</dd>
+                <dt class="tw:col-span-12 tw:sm:col-span-4 tw:font-semibold tw:text-on-surface-variant">{{ __('ga.labels.claim_date') }}</dt>
+                <dd class="tw:col-span-12 tw:sm:col-span-8 tw:m-0">{{ $regionalFormatter->date($claim->claim_date, 'human') }}</dd>
 
-                <dt class="col-sm-4 text-muted">{{ __('ga.labels.claim_amount') }}</dt>
-                <dd class="col-sm-8"><strong class="ui-tabular-nums tw:text-ui-sm">Rp {{ number_format($claim->amount, 0, ',', '.') }}</strong></dd>
+                <dt class="tw:col-span-12 tw:sm:col-span-4 tw:font-semibold tw:text-on-surface-variant">{{ __('ga.labels.claim_amount') }}</dt>
+                <dd class="tw:col-span-12 tw:sm:col-span-8 tw:m-0"><strong class="ui-tabular-nums tw:text-ui-sm">Rp {{ number_format($claim->amount, 0, ',', '.') }}</strong></dd>
 
-                <dt class="col-sm-4 text-muted">{{ __('ga.receipt.bank_account') }}</dt>
-                <dd class="col-sm-8">{{ $claim->employee?->bank_name }} - {{ $claim->employee?->account_number }} {{ __('finance.drp_surface.account_holder') }} {{ $claim->employee?->account_holder_name }}</dd>
+                <dt class="tw:col-span-12 tw:sm:col-span-4 tw:font-semibold tw:text-on-surface-variant">{{ __('ga.receipt.bank_account') }}</dt>
+                <dd class="tw:col-span-12 tw:sm:col-span-8 tw:m-0">{{ $claim->employee?->bank_name }} - {{ $claim->employee?->account_number }} {{ __('finance.drp_surface.account_holder') }} {{ $claim->employee?->account_holder_name }}</dd>
 
-                <dt class="col-sm-4 text-muted">{{ __('local_invoice.labels.submitted_time') }}</dt>
-                <dd class="col-sm-8">{{ $regionalFormatter->timestamp($claim->created_at, 'datetime') }}</dd>
+                <dt class="tw:col-span-12 tw:sm:col-span-4 tw:font-semibold tw:text-on-surface-variant">{{ __('local_invoice.labels.submitted_time') }}</dt>
+                <dd class="tw:col-span-12 tw:sm:col-span-8 tw:m-0">{{ $regionalFormatter->timestamp($claim->created_at, 'datetime') }}</dd>
             </dl>
 
             @if(isset($qrCode))

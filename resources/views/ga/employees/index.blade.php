@@ -74,7 +74,7 @@
                 type="search"
                 id="ga-employee-search"
                 name="search"
-                class="form-control form-control-sm ui-filter-bar__search-input"
+                class="ui-input ui-input--sm ui-filter-bar__search-input"
                 placeholder="{{ __('ga.filters.employee_search') }}"
                 value="{{ request('search') }}"
                 autocomplete="off"
@@ -83,7 +83,7 @@
 
         <x-slot:filters>
             <label for="employee-status-filter" class="tw:sr-only">{{ __('ga.labels.employee_status') }}</label>
-            <select id="employee-status-filter" name="status" class="form-select form-select-sm tw:w-full tw:min-w-0 tw:sm:w-44">
+            <select id="employee-status-filter" name="status" class="ui-select ui-select--sm tw:w-full tw:min-w-0 tw:sm:w-44">
                 <option value="">{{ __('local_invoice.labels.all_statuses') }}</option>
                 <option value="active" @selected(request('status') === 'active')>{{ __('local_invoice.labels.active') }}</option>
                 <option value="inactive" @selected(request('status') === 'inactive')>{{ __('common.labels_review.inactive') }}</option>
@@ -100,19 +100,18 @@
         :title="__('ga.labels.employee_register')"
         :description="__('ga.labels.bank_help')"
     >
-        <div class="table-responsive">
-            <table class="table table-hover align-middle tw:m-0 tw:text-ui-xs w-100">
-                <thead class="table-light">
-                    <tr>
-                        <th scope="col">{{ __('ga.labels.employee_name') }}</th>
-                        <th scope="col">{{ __('local_invoice.labels.department') }}</th>
-                        <th scope="col">{{ __('common.labels_review.bank') }}</th>
-                        <th scope="col">{{ __('ga.detail.bank_number') }}</th>
-                        <th scope="col">{{ __('local_invoice.labels.account_name') }}</th>
-                        <th scope="col">{{ __('local_invoice.labels.status') }}</th>
-                        <th scope="col" class="text-end tw:whitespace-nowrap">{{ __('local_invoice.labels.actions') }}</th>
-                    </tr>
-                </thead>
+        <table class="ui-table ui-table--hover tw:align-middle tw:m-0 tw:text-ui-xs tw:w-full">
+            <thead>
+                <tr>
+                    <th scope="col">{{ __('ga.labels.employee_name') }}</th>
+                    <th scope="col">{{ __('local_invoice.labels.department') }}</th>
+                    <th scope="col">{{ __('common.labels_review.bank') }}</th>
+                    <th scope="col">{{ __('ga.detail.bank_number') }}</th>
+                    <th scope="col">{{ __('local_invoice.labels.account_name') }}</th>
+                    <th scope="col">{{ __('local_invoice.labels.status') }}</th>
+                    <th scope="col" class="tw:text-end tw:whitespace-nowrap">{{ __('local_invoice.labels.actions') }}</th>
+                </tr>
+            </thead>
                 <tbody>
                     @forelse($employees as $emp)
                         <tr>
@@ -130,7 +129,7 @@
                                     {{ __($emp->is_active ? 'ga.employee_status.active' : 'ga.employee_status.inactive') }}
                                 </x-ui.status-chip>
                             </td>
-                            <td class="text-end tw:whitespace-nowrap">
+                            <td class="tw:text-end tw:whitespace-nowrap">
                                 <div class="tw:inline-flex tw:items-center tw:justify-end tw:gap-1.5">
                                     <button
                                         type="button"
@@ -167,14 +166,13 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7" class="text-center tw:py-8 tw:text-on-surface-variant">
+                            <td colspan="7" class="tw:text-center tw:py-8 tw:text-on-surface-variant">
                                 {{ __('ga.empty.employees') }}
                             </td>
                         </tr>
                     @endforelse
                 </tbody>
             </table>
-        </div>
 
         @if($employees->hasPages())
             <x-slot:pagination>
@@ -198,12 +196,12 @@
                     </div>
                     <div class="modal-body tw:space-y-3 tw:text-ui-xs">
                         <div>
-                            <label class="form-label tw:font-semibold">{{ __('common.fields.full_name') }}</label>
-                            <input type="text" name="name" class="form-control form-control-sm" value="{{ $emp->name }}" required>
+                            <label class="ui-label tw:mb-1 tw:font-semibold">{{ __('common.fields.full_name') }}</label>
+                            <input type="text" name="name" class="ui-input ui-input--sm" value="{{ $emp->name }}" required>
                         </div>
                         <div>
-                            <label class="form-label tw:font-semibold">{{ __('local_invoice.labels.department') }}</label>
-                            <input type="text" name="department" class="form-control form-control-sm" value="{{ $emp->department }}" required>
+                            <label class="ui-label tw:mb-1 tw:font-semibold">{{ __('local_invoice.labels.department') }}</label>
+                            <input type="text" name="department" class="ui-input ui-input--sm" value="{{ $emp->department }}" required>
                         </div>
                         <div>
                             <x-ui.searchable-select
@@ -218,16 +216,16 @@
                             />
                         </div>
                         <div>
-                            <label class="form-label tw:font-semibold">{{ __('ga.detail.bank_number') }}</label>
-                            <input type="text" name="account_number" class="form-control form-control-sm" value="{{ $emp->account_number }}" required>
+                            <label class="ui-label tw:mb-1 tw:font-semibold">{{ __('ga.detail.bank_number') }}</label>
+                            <input type="text" name="account_number" class="ui-input ui-input--sm" value="{{ $emp->account_number }}" required>
                         </div>
                         <div>
-                            <label class="form-label tw:font-semibold">{{ __('ga.review.account_holder') }}</label>
-                            <input type="text" name="account_holder_name" class="form-control form-control-sm" value="{{ $emp->account_holder_name }}" required>
+                            <label class="ui-label tw:mb-1 tw:font-semibold">{{ __('ga.review.account_holder') }}</label>
+                            <input type="text" name="account_holder_name" class="ui-input ui-input--sm" value="{{ $emp->account_holder_name }}" required>
                         </div>
                         <div>
-                            <label class="form-label tw:font-semibold">{{ __('ga.labels.employee_status') }}</label>
-                            <select name="is_active" class="form-select form-select-sm">
+                            <label class="ui-label tw:mb-1 tw:font-semibold">{{ __('ga.labels.employee_status') }}</label>
+                            <select name="is_active" class="ui-select ui-select--sm">
                                 <option value="1" @selected($emp->is_active)>{{ __('ga.labels.active_claims') }}</option>
                                 <option value="0" @selected(! $emp->is_active)>{{ __('common.labels_review.inactive') }}</option>
                             </select>
@@ -259,12 +257,12 @@
                 </div>
                 <div class="modal-body tw:space-y-3 tw:text-ui-xs">
                     <div>
-                        <label class="form-label tw:font-semibold">{{ __('common.fields.full_name') }} <span class="text-danger">*</span></label>
-                        <input type="text" name="name" class="form-control form-control-sm" required placeholder="{{ __('ga.review.name_example') }}">
+                        <label class="ui-label tw:mb-1 tw:font-semibold">{{ __('common.fields.full_name') }} <span class="tw:text-error">*</span></label>
+                        <input type="text" name="name" class="ui-input ui-input--sm" required placeholder="{{ __('ga.review.name_example') }}">
                     </div>
                     <div>
-                        <label class="form-label tw:font-semibold">{{ __('local_invoice.labels.department') }} <span class="text-danger">*</span></label>
-                        <input type="text" name="department" class="form-control form-control-sm" required placeholder="{{ __('ga.review.department_example') }}">
+                        <label class="ui-label tw:mb-1 tw:font-semibold">{{ __('local_invoice.labels.department') }} <span class="tw:text-error">*</span></label>
+                        <input type="text" name="department" class="ui-input ui-input--sm" required placeholder="{{ __('ga.review.department_example') }}">
                     </div>
                     <div>
                         <x-ui.searchable-select
@@ -279,12 +277,12 @@
                         />
                     </div>
                     <div>
-                        <label class="form-label tw:font-semibold">{{ __('ga.detail.bank_number') }} <span class="text-danger">*</span></label>
-                        <input type="text" name="account_number" class="form-control form-control-sm" required placeholder="{{ __('ga.detail.bank_number') }}">
+                        <label class="ui-label tw:mb-1 tw:font-semibold">{{ __('ga.detail.bank_number') }} <span class="tw:text-error">*</span></label>
+                        <input type="text" name="account_number" class="ui-input ui-input--sm" required placeholder="{{ __('ga.detail.bank_number') }}">
                     </div>
                     <div>
-                        <label class="form-label tw:font-semibold">{{ __('ga.review.account_holder') }}<span class="text-danger">*</span></label>
-                        <input type="text" name="account_holder_name" class="form-control form-control-sm" required placeholder="{{ __('local_invoice.labels.account_book') }}">
+                        <label class="ui-label tw:mb-1 tw:font-semibold">{{ __('ga.review.account_holder') }}<span class="tw:text-error">*</span></label>
+                        <input type="text" name="account_holder_name" class="ui-input ui-input--sm" required placeholder="{{ __('local_invoice.labels.account_book') }}">
                     </div>
                 </div>
                 <div class="modal-footer tw:gap-2">

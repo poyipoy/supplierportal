@@ -302,11 +302,10 @@
                 document.querySelectorAll('.notif-badge').forEach((badge) => {
                     if (count > 0) {
                         badge.textContent = count;
-                        badge.classList.remove('tw:hidden', 'd-none');
+                        badge.classList.remove('tw:hidden');
                     } else {
                         badge.textContent = '0';
                         badge.classList.add('tw:hidden');
-                        badge.classList.remove('d-none');
                     }
 
                     badge.closest('button[data-ui-dropdown-trigger]')?.setAttribute('aria-label', label);
@@ -339,7 +338,7 @@
                         return;
                     }
 
-                    item.classList.remove('tw:bg-primary-container', 'bg-light');
+                    item.classList.remove('tw:bg-primary-container');
                     item.dataset.notificationUnread = '0';
                     item.querySelectorAll('[data-notification-new-badge]').forEach((badge) => badge.remove());
                 });
@@ -352,7 +351,7 @@
 
                 const selector = `[data-notification-item][data-notification-id="${CSS.escape(String(notificationId))}"]`;
                 document.querySelectorAll(selector).forEach((item) => {
-                    item.classList.remove('tw:bg-primary-container', 'bg-light');
+                    item.classList.remove('tw:bg-primary-container');
                     item.dataset.notificationUnread = '0';
                     item.querySelectorAll('[data-notification-new-badge]').forEach((badge) => badge.remove());
                 });

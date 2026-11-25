@@ -18,7 +18,7 @@
         :description="__('qc.copy.process_arrived_shipments_waiting_for_quality_evaluation_and_review_completed_inspection_history')"
     >
         <x-slot:actions>
-            <div id="inspectionExportLink" class="d-none"><x-export.advanced-modal export-key="qc.inspections" table="#historyTable" :action="route('qc.export.inspections')" :filter-selectors="['status' => '#historyStatusFilter']" /></div>
+            <div id="inspectionExportLink" class="tw:hidden"><x-export.advanced-modal export-key="qc.inspections" table="#historyTable" :action="route('qc.export.inspections')" :filter-selectors="['status' => '#historyStatusFilter']" /></div>
         </x-slot:actions>
     </x-ui.page-header>
 
@@ -35,19 +35,19 @@
     {{-- Queue Panes --}}
     <div class="tab-content" id="inspectionTabsContent">
         {{-- Tab 1: Waiting for Inspection --}}
-        <div class="tab-pane fade show active" id="waiting" role="tabpanel" aria-labelledby="waiting-tab" tabindex="0">
+        <div class="tab-pane active" id="waiting" role="tabpanel" aria-labelledby="waiting-tab" tabindex="0">
             <div class="tw:grid tw:gap-3">
                 <x-ui.alert tone="info">{{ __('qc.copy.shipments_in_this_queue_have_arrived_at_the_warehouse_and_require_physical_qc_inspection') }}</x-ui.alert>
 
                 <x-ui.data-table>
-                    <table class="table table-hover align-middle mb-0 tw:text-ui-sm w-100" id="waitingTable">
-                        <thead class="table-light">
+                    <table class="ui-table ui-table--hover tw:align-middle tw:mb-0 tw:text-ui-sm tw:w-full" id="waitingTable">
+                        <thead>
                             <tr>
                                 <th scope="col">{{ __('qc.copy.po_number') }}</th>
                                 <th scope="col">{{ __('qc.copy.supplier_name') }}</th>
                                 <th scope="col">{{ __('qc.copy.date_material_arrived') }}</th>
-                                <th scope="col" class="text-center">{{ __('qc.copy.total_items') }}</th>
-                                <th scope="col" class="tw:text-right text-end" style="width: 140px;">{{ __('common.table.action') }}</th>
+                                <th scope="col" class="tw:text-center">{{ __('qc.copy.total_items') }}</th>
+                                <th scope="col" class="tw:text-end" style="width: 140px;">{{ __('common.table.action') }}</th>
                             </tr>
                         </thead>
                         <tbody></tbody>
@@ -57,7 +57,7 @@
         </div>
 
         {{-- Tab 2: Inspection History --}}
-        <div class="tab-pane fade" id="history" role="tabpanel" aria-labelledby="history-tab" tabindex="0" hidden>
+        <div class="tab-pane" id="history" role="tabpanel" aria-labelledby="history-tab" tabindex="0" hidden>
             <div class="tw:grid tw:gap-3">
                 {{-- Filter Bar --}}
                 <x-ui.filter-bar
@@ -69,7 +69,7 @@
                 >
                     <x-slot:filters>
                         <label for="historyStatusFilter" class="tw:sr-only">{{ __('qc.copy.inspection_outcome_status') }}</label>
-                        <select id="historyStatusFilter" class="form-select form-select-sm tw:w-full tw:min-w-0 tw:sm:w-56">
+                        <select id="historyStatusFilter" class="ui-select ui-select--sm tw:w-full tw:min-w-0 tw:sm:w-56">
                             <option value="">{{ __('qc.copy.all_statuses_ok_ng') }}</option>
                             <option value="ok" @selected(request('status') === 'ok')>{{ __('qc.copy.ok_status_label') }}</option>
                             <option value="ng" @selected(request('status') === 'ng')>{{ __('qc.copy.ng_status_label') }}</option>
@@ -82,15 +82,15 @@
                 </x-ui.filter-bar>
 
                 <x-ui.data-table>
-                    <table class="table table-hover align-middle mb-0 tw:text-ui-sm w-100" id="historyTable">
-                        <thead class="table-light">
+                    <table class="ui-table ui-table--hover tw:align-middle tw:mb-0 tw:text-ui-sm tw:w-full" id="historyTable">
+                        <thead>
                             <tr>
                                 <th scope="col">{{ __('qc.copy.po_number') }}</th>
                                 <th scope="col">{{ __('qc.copy.supplier_name') }}</th>
                                 <th scope="col">{{ __('qc.copy.inspection_date') }}</th>
-                                <th scope="col" class="text-center">{{ __('qc.copy.status') }}</th>
+                                <th scope="col" class="tw:text-center">{{ __('qc.copy.status') }}</th>
                                 <th scope="col">{{ __('qc.copy.inspected_by') }}</th>
-                                <th scope="col" class="tw:text-right text-end" style="width: 110px;">{{ __('common.table.action') }}</th>
+                                <th scope="col" class="tw:text-end" style="width: 110px;">{{ __('common.table.action') }}</th>
                             </tr>
                         </thead>
                         <tbody></tbody>
@@ -117,11 +117,11 @@
             serverSide: true,
             ajax: '{{ route("qc.inspections.data-waiting") }}',
             columns: [
-                { data: 'po_number_display', name: 'po_number', className: 'fw-bold tw:text-on-surface' },
-                { data: 'supplier_name', name: 'supplier_name', orderable: false, className: 'tw:text-on-surface fw-medium' },
+                { data: 'po_number_display', name: 'po_number', className: 'tw:font-bold tw:text-on-surface' },
+                { data: 'supplier_name', name: 'supplier_name', orderable: false, className: 'tw:text-on-surface tw:font-medium' },
                 { data: 'arrival_date', name: 'actual_arrival', className: 'ui-tabular-nums tw:text-on-surface-variant' },
-                { data: 'item_count', name: 'item_count', orderable: false, searchable: false, className: 'text-center fw-semibold ui-tabular-nums' },
-                { data: 'action', name: 'action', orderable: false, searchable: false, className: 'text-end' }
+                { data: 'item_count', name: 'item_count', orderable: false, searchable: false, className: 'tw:text-center tw:font-semibold ui-tabular-nums' },
+                { data: 'action', name: 'action', orderable: false, searchable: false, className: 'tw:text-end' }
             ],
             language: dtLang
         }));
@@ -133,7 +133,7 @@
         const exportLinkEl = document.getElementById('inspectionExportLink');
 
         historyTabBtn?.addEventListener('adasi:tab-shown', () => {
-            exportLinkEl?.classList.remove('d-none');
+            exportLinkEl?.classList.remove('tw:hidden');
 
             const historyTableEl = document.getElementById('historyTable');
             if (!historyInit && historyTableEl) {
@@ -151,12 +151,12 @@
                         }
                     },
                     columns: [
-                        { data: 'po_number', name: 'po_number', className: 'fw-bold tw:text-on-surface', orderable: false },
-                        { data: 'supplier_name', name: 'supplier_name', orderable: false, className: 'tw:text-on-surface fw-medium' },
+                        { data: 'po_number', name: 'po_number', className: 'tw:font-bold tw:text-on-surface', orderable: false },
+                        { data: 'supplier_name', name: 'supplier_name', orderable: false, className: 'tw:text-on-surface tw:font-medium' },
                         { data: 'inspected_date', name: 'inspected_at', className: 'ui-tabular-nums tw:text-on-surface-variant' },
-                        { data: 'status_badge', name: 'status', className: 'text-center' },
+                        { data: 'status_badge', name: 'status', className: 'tw:text-center' },
                         { data: 'inspector_name', name: 'inspector_name', orderable: false, className: 'tw:text-on-surface-variant' },
-                        { data: 'action', name: 'action', orderable: false, searchable: false, className: 'text-end' }
+                        { data: 'action', name: 'action', orderable: false, searchable: false, className: 'tw:text-end' }
                     ],
                     language: dtLang
                 }));
@@ -164,7 +164,7 @@
         });
 
         waitingTabBtn?.addEventListener('adasi:tab-shown', () => {
-            exportLinkEl?.classList.add('d-none');
+            exportLinkEl?.classList.add('tw:hidden');
         });
 
         const updateInspectionFilterState = function() {

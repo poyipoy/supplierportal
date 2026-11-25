@@ -57,28 +57,28 @@
             />
         </x-slot:emptyState>
 
-        <table class="table table-hover align-middle mb-0 tw:text-ui-xs w-100">
-            <thead class="table-light">
+        <table class="ui-table ui-table--hover tw:align-middle tw:mb-0 tw:text-ui-xs tw:w-full">
+            <thead>
                 <tr>
                     <th scope="col">{{ __('qc.copy.po_number') }}</th>
                     <th scope="col">{{ __('qc.copy.supplier') }}</th>
                     <th scope="col">{{ __('qc.copy.inspection_date') }}</th>
                     <th scope="col">{{ __('qc.copy.inspector') }}</th>
-                    <th scope="col" class="text-center">{{ __('qc.copy.status') }}</th>
-                    <th scope="col" class="tw:text-right text-end" style="width: 110px;">{{ __('common.table.action') }}</th>
+                    <th scope="col" class="tw:text-center">{{ __('qc.copy.status') }}</th>
+                    <th scope="col" class="tw:text-end" style="width: 110px;">{{ __('common.table.action') }}</th>
                 </tr>
             </thead>
             <tbody>
                 @foreach($recentInspections as $insp)
                     <tr>
-                        <td class="fw-bold tw:text-on-surface">{{ $insp->purchaseOrder->po_number ?? '-' }}</td>
-                        <td class="tw:text-on-surface fw-medium">{{ $insp->purchaseOrder->supplier->name ?? '-' }}</td>
+                        <td class="tw:font-bold tw:text-on-surface">{{ $insp->purchaseOrder->po_number ?? '-' }}</td>
+                        <td class="tw:text-on-surface tw:font-medium">{{ $insp->purchaseOrder->supplier->name ?? '-' }}</td>
                         <td class="tw:text-on-surface-variant ui-tabular-nums">{{ $insp->inspected_at ? $regionalFormatter->timestamp($insp->inspected_at, 'datetime_comma') : '-' }}</td>
                         <td class="tw:text-on-surface-variant">{{ $insp->inspector->name ?? '-' }}</td>
-                        <td class="text-center">
+                        <td class="tw:text-center">
                             <x-status-badge type="qc" :status="$insp->status" />
                         </td>
-                        <td class="tw:text-right text-end">
+                        <td class="tw:text-end">
                             <x-ui.row-action
                                 :href="route('qc.inspections.show', $insp)"
                                 :context="$insp->purchaseOrder->po_number ?? (string) $insp->id"
@@ -142,21 +142,21 @@
             @if($totalInspections > 0)
                 <x-ui.chart id="trendChart" :label="__('qc.copy.qc_ok_and_ng_trend_by_period')" :fallback="__('qc.copy.qc_ok_and_ng_trend_chart_by_period')" plot-class="tw:h-[260px]">
                     <x-slot:table>
-                        <table class="table table-sm align-middle tw:m-0 tw:text-ui-xs">
+                        <table class="ui-table ui-table--sm tw:align-middle tw:m-0 tw:text-ui-xs">
                             <caption class="tw:sr-only">{{ __('qc.copy.inspection_outcomes_trend_6_month') }}</caption>
                             <thead>
                                 <tr>
                                     <th scope="col">{{ __('charts.columns.period') }}</th>
-                                    <th scope="col" class="text-end">{{ __('qc.copy.material_ok') }}</th>
-                                    <th scope="col" class="text-end">{{ __('qc.copy.material_ng') }}</th>
+                                    <th scope="col" class="tw:text-end">{{ __('qc.copy.material_ok') }}</th>
+                                    <th scope="col" class="tw:text-end">{{ __('qc.copy.material_ng') }}</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 @foreach($trendData as $month)
                                     <tr>
                                         <th scope="row" class="tw:font-normal">{{ $month['label'] }}</th>
-                                        <td class="text-end ui-tabular-nums">{{ $regionalFormatter->number((string) $month['ok'], 'plain') }}</td>
-                                        <td class="text-end ui-tabular-nums">{{ $regionalFormatter->number((string) $month['ng'], 'plain') }}</td>
+                                        <td class="tw:text-end ui-tabular-nums">{{ $regionalFormatter->number((string) $month['ok'], 'plain') }}</td>
+                                        <td class="tw:text-end ui-tabular-nums">{{ $regionalFormatter->number((string) $month['ng'], 'plain') }}</td>
                                     </tr>
                                 @endforeach
                             </tbody>

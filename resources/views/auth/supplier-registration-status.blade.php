@@ -38,7 +38,7 @@
 @if ($status === \App\Models\SupplierRegistrationAttempt::STATUS_PENDING)
     <div class="tw:rounded-ui-sm tw:border tw:border-warning/30 tw:bg-warning/10 tw:p-4 tw:mb-5">
         <div class="tw:flex tw:items-start tw:gap-3">
-            <div class="tw:p-2 tw:rounded-full tw:bg-warning/20 tw-text-warning-dim tw:shrink-0">
+            <div class="tw:p-2 tw:rounded-full tw:bg-warning/20 tw:text-warning tw:shrink-0">
                 <x-ui.icon name="clock" size="md" />
             </div>
             <div>

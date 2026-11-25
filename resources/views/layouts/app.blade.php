@@ -677,7 +677,7 @@
                                 : window.AdasiI18n.t('js.notification.button_label');
                             if (data.count > 0) {
                                 badge.textContent = data.count;
-                                badge.classList.remove('tw:hidden', 'd-none');
+                                badge.classList.remove('tw:hidden');
                             } else {
                                 badge.classList.add('tw:hidden');
                             }
@@ -715,7 +715,7 @@
                                 }
                                 if (data.count > 0) {
                                     badge.textContent = data.count;
-                                    badge.classList.remove('tw:hidden', 'd-none');
+                                    badge.classList.remove('tw:hidden');
                                 } else {
                                     badge.classList.add('tw:hidden');
                                 }
@@ -1369,7 +1369,7 @@
 
                             pane
                                 .querySelector(
-                                    '[data-notification-empty], .text-center.text-muted.py-5'
+                                    '[data-notification-empty]'
                                 )
                                 ?.remove();
 

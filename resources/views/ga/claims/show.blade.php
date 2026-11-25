@@ -124,7 +124,7 @@
                             <strong>{{ __('local_invoice.labels.revision_reason') }}:</strong>
                             <p class="tw:m-0 tw:mt-1">{{ $claim->revision_reason ?: __('ga.detail.revision_hint') }}</p>
                         </div>
-                        <x-ui.button :href="route('ga.claims.revision', $claim)" variant="primary" size="sm" class="w-100">
+                        <x-ui.button :href="route('ga.claims.revision', $claim)" variant="primary" size="sm" class="tw:w-full">
                             <x-ui.icon name="edit" size="sm" />
                             <span>{{ __('ga.detail.resubmit') }}</span>
                         </x-ui.button>
@@ -143,9 +143,9 @@
                                 {{ __('ga.detail.basic_hint') }}
                             </p>
                             <div>
-                                <input type="text" name="notes" class="form-control form-control-sm" placeholder="{{ __('ga.verification.notes_optional') }}">
+                                <input type="text" name="notes" class="ui-input ui-input--sm" placeholder="{{ __('ga.verification.notes_optional') }}">
                             </div>
-                            <x-ui.button type="submit" variant="primary" size="sm" class="w-100">
+                            <x-ui.button type="submit" variant="primary" size="sm" class="tw:w-full">
                                 <x-ui.icon name="check" size="sm" />
                                 <span>{{ __('ga.detail.confirm_basic') }}</span>
                             </x-ui.button>

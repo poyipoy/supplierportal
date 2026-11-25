@@ -158,7 +158,7 @@ export function bindLive(containerOrSelector, options = {}) {
         const clearLabel = chipsEl.dataset?.clearLabel || '';
         const removeTemplate = chipsEl.dataset?.removeTemplate || ':label';
 
-        chipsEl.classList.remove('tw:hidden', 'd-none');
+        chipsEl.classList.remove('tw:hidden');
 
         if (activeLabel) {
             const labelSpan = document.createElement('span');
