@@ -115,70 +115,70 @@
                     </div>
 
                     <div>
-                        <label for="shipmentNotes" class="form-label tw:text-ui-xs fw-semibold">
+                        <label for="shipmentNotes" class="ui-label tw:text-ui-xs tw:font-semibold">
                             {{ __('shipments.copy.logistics_notes_remarks') }}
                         </label>
                         <input
                             type="text"
                             name="notes"
                             id="shipmentNotes"
-                            class="form-control form-control-sm @error('notes') is-invalid @enderror"
+                            class="ui-input ui-input--sm @error('notes') is-invalid @enderror"
                             value="{{ old('notes', $shipment?->notes) }}"
                             placeholder="{{ __('shipments.copy.e_g_container_no_vessel_name_forwarder') }}"
                         >
-                        @error('notes')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                        @error('notes')<div class="ui-field-error">{{ $message }}</div>@enderror
                     </div>
 
                     <div>
-                        <label for="shipmentInvoiceNumber" class="form-label tw:text-ui-xs fw-semibold">
-                            {{ __('shipments.copy.invoice_number') }} <span class="text-danger" aria-hidden="true">*</span>
+                        <label for="shipmentInvoiceNumber" class="ui-label tw:text-ui-xs tw:font-semibold">
+                            {{ __('shipments.copy.invoice_number') }} <span class="tw:text-error" aria-hidden="true">*</span>
                         </label>
                         <input
                             type="text"
                             name="invoice_number"
                             id="shipmentInvoiceNumber"
-                            class="form-control form-control-sm @error('invoice_number') is-invalid @enderror"
+                            class="ui-input ui-input--sm @error('invoice_number') is-invalid @enderror"
                             value="{{ old('invoice_number', $shipment?->invoice_number) }}"
                             placeholder="{{ __('shipments.copy.invoice_number_placeholder') }}"
                             maxlength="100"
                             required
                             aria-describedby="shipmentInvoiceNumberHelp"
                         >
-                        <div id="shipmentInvoiceNumberHelp" class="form-text tw:text-ui-xs">{{ __('shipments.copy.invoice_number_help') }}</div>
-                        @error('invoice_number')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                        <div id="shipmentInvoiceNumberHelp" class="ui-field-help">{{ __('shipments.copy.invoice_number_help') }}</div>
+                        @error('invoice_number')<div class="ui-field-error">{{ $message }}</div>@enderror
                     </div>
 
                     <div>
-                        <label for="shipmentSupplierReference" class="form-label tw:text-ui-xs fw-semibold">
+                        <label for="shipmentSupplierReference" class="ui-label tw:text-ui-xs tw:font-semibold">
                             {{ __('shipments.copy.supplier_reference') }}
                         </label>
                         <input
                             type="text"
                             name="supplier_reference"
                             id="shipmentSupplierReference"
-                            class="form-control form-control-sm @error('supplier_reference') is-invalid @enderror"
+                            class="ui-input ui-input--sm @error('supplier_reference') is-invalid @enderror"
                             value="{{ old('supplier_reference', $shipment?->supplier_reference) }}"
                             placeholder="{{ __('shipments.copy.supplier_reference_placeholder') }}"
                             maxlength="120"
                             aria-describedby="shipmentSupplierReferenceHelp"
                         >
-                        <div id="shipmentSupplierReferenceHelp" class="form-text tw:text-ui-xs">{{ __('shipments.copy.supplier_reference_help') }}</div>
-                        @error('supplier_reference')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                        <div id="shipmentSupplierReferenceHelp" class="ui-field-help">{{ __('shipments.copy.supplier_reference_help') }}</div>
+                        @error('supplier_reference')<div class="ui-field-error">{{ $message }}</div>@enderror
                     </div>
 
                     <div>
-                        <label for="shipmentCommercialInvoiceFile" class="form-label tw:text-ui-xs fw-semibold">
+                        <label for="shipmentCommercialInvoiceFile" class="ui-label tw:text-ui-xs tw:font-semibold">
                             {{ __('shipments.copy.commercial_invoice') }}
                         </label>
                         <input
                             type="file"
                             name="commercial_invoice_file"
                             id="shipmentCommercialInvoiceFile"
-                            class="form-control form-control-sm @error('commercial_invoice_file') is-invalid @enderror"
+                            class="ui-input ui-input--sm @error('commercial_invoice_file') is-invalid @enderror"
                             accept=".pdf,.jpg,.jpeg,.png,.xlsx,.doc,.docx"
                         >
-                        <div class="form-text tw:text-ui-xs">{{ __('shipments.copy.commercial_invoice_required_before_submit') }}</div>
-                        @error('commercial_invoice_file')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                        <div class="ui-field-help">{{ __('shipments.copy.commercial_invoice_required_before_submit') }}</div>
+                        @error('commercial_invoice_file')<div class="ui-field-error">{{ $message }}</div>@enderror
                     </div>
                 </div>
             </x-ui.card>
@@ -250,23 +250,23 @@
                 $globalIndex = 0;
             @endphp
 
-            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 p-3 tw:bg-surface-low border tw:border-outline-variant rounded">
-                <div class="d-flex align-items-center gap-2">
-                    <span class="fw-bold tw:text-ui-sm tw:text-on-surface">{{ __('shipments.copy.material_allocation') }}</span>
+            <div class="tw:flex tw:flex-wrap tw:items-center tw:justify-between tw:gap-2 tw:p-3 tw:bg-surface-low tw:border tw:border-outline-variant tw:rounded-ui-md">
+                <div class="tw:flex tw:items-center tw:gap-2">
+                    <span class="tw:font-bold tw:text-ui-sm tw:text-on-surface">{{ __('shipments.copy.material_allocation') }}</span>
                     <span class="ui-status-chip ui-status-chip--info ui-tabular-nums">
                         {{ __('shipments.page.allocation_counts', ['pos' => $groupedByPo->count(), 'items' => $poItems->count()]) }}
                     </span>
                 </div>
 
-                <div class="d-flex align-items-center gap-2" style="min-width: 260px;">
-                    <div class="input-group input-group-sm">
-                        <span class="input-group-text tw:bg-surface border-end-0 tw:text-on-surface-variant">
+                <div class="tw:flex tw:items-center tw:gap-2" style="min-width: 260px;">
+                    <div class="ui-input-group ui-input-group--sm">
+                        <span class="ui-input-group-text tw:bg-surface tw:border-e-0 tw:text-on-surface-variant">
                             <x-ui.icon name="search" size="sm" />
                         </span>
                         <input
                             type="text"
                             id="quickSearchItems"
-                            class="form-control form-control-sm border-start-0 ps-0"
+                            class="ui-input ui-input--sm tw:border-s-0 tw:ps-0"
                             placeholder="{{ __('shipments.copy.filter_po_or_material_name') }}"
                             autocomplete="off"
                         >
@@ -283,9 +283,9 @@
                         $isPoPreselected = $preselectedPoId && (int)$po->id === (int)$preselectedPoId;
                     @endphp
                     <div class="po-group-card" data-po-number="{{ strtolower($po->po_number) }}">
-                        <div class="po-group-header d-flex flex-wrap align-items-center justify-content-between gap-2">
-                            <div class="d-flex align-items-center gap-2">
-                                <span class="fw-bold tw:text-ui-sm text-primary">{{ $po->po_number }}</span>
+                        <div class="po-group-header tw:flex tw:flex-wrap tw:items-center tw:justify-between tw:gap-2">
+                            <div class="tw:flex tw:items-center tw:gap-2">
+                                <span class="tw:font-bold tw:text-ui-sm tw:text-primary">{{ $po->po_number }}</span>
                                 @if($po->pr_reference)
                                     <span class="ui-status-chip ui-status-chip--neutral tw:text-ui-xs">
                                         {{ __('purchasing.copy.pr_no') }}: {{ $po->pr_reference }}
@@ -296,7 +296,7 @@
                                 </span>
                             </div>
 
-                            <div class="d-flex align-items-center gap-2">
+                            <div class="tw:flex tw:items-center tw:gap-2">
                                 <x-ui.button type="button" variant="outline-primary" size="sm" class="po-select-all-btn">
                                     <x-ui.icon name="check-check" size="sm" />
                                     <span>{{ __('shipments.copy.select_all_in_po') }}</span>
@@ -307,17 +307,17 @@
                             </div>
                         </div>
 
-                        <div class="table-responsive">
-                            <table class="table table-hover align-middle mb-0 tw:text-ui-xs w-100">
-                                <thead class="table-light">
+                        <div class="ui-table-responsive">
+                            <table class="ui-table ui-table--hover tw:align-middle tw:m-0 tw:text-ui-xs tw:w-full">
+                                <thead>
                                     <tr>
-                                        <th scope="col" style="width: 44px;" class="text-center">{{ __('shipments.copy.select') }}</th>
+                                        <th scope="col" style="width: 44px;" class="tw:text-center">{{ __('shipments.copy.select') }}</th>
                                         <th scope="col">{{ __('shipments.copy.material_specifications') }}</th>
-                                        <th scope="col" class="text-end">{{ __('shipments.copy.ordered_qty') }}</th>
-                                        <th scope="col" class="text-end">{{ __('shipments.copy.already_shipped') }}</th>
-                                        <th scope="col" class="text-end">{{ __('shipments.copy.remaining_qty') }}</th>
-                                        <th scope="col" class="text-end" style="width: 170px;">{{ __('shipments.copy.this_shipment_qty') }}</th>
-                                        <th scope="col" class="text-end" style="width: 150px;">{{ __('shipments.copy.actual_kg') }}</th>
+                                        <th scope="col" class="tw:text-end">{{ __('shipments.copy.ordered_qty') }}</th>
+                                        <th scope="col" class="tw:text-end">{{ __('shipments.copy.already_shipped') }}</th>
+                                        <th scope="col" class="tw:text-end">{{ __('shipments.copy.remaining_qty') }}</th>
+                                        <th scope="col" class="tw:text-end" style="width: 170px;">{{ __('shipments.copy.this_shipment_qty') }}</th>
+                                        <th scope="col" class="tw:text-end" style="width: 150px;">{{ __('shipments.copy.actual_kg') }}</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -330,17 +330,17 @@
                                             $prItem = $itemData['pr_item'];
                                         @endphp
                                         <tr class="item-alloc-row" data-material-name="{{ strtolower($prItem->material_name ?? '') }}">
-                                            <td class="text-center">
+                                            <td class="tw:text-center">
                                                 <input
                                                     type="checkbox"
-                                                    class="form-check-input alloc-toggle"
+                                                    class="ui-check alloc-toggle"
                                                     id="toggle_{{ $currentIndex }}"
                                                     {{ $isPreselected ? 'checked' : '' }}
                                                     aria-label="{{ __('shipments.a11y.select_item', ['material' => $prItem->material_name]) }}"
                                                 >
                                             </td>
                                             <td>
-                                                <div class="fw-semibold tw:text-on-surface">
+                                                <div class="tw:font-semibold tw:text-on-surface">
                                                     {{ $prItem->material_name }}
                                                     @if($itemData['not_ready'] ?? false)
                                                         <span class="ui-status-chip ui-status-chip--warning tw:text-ui-xs">{{ __('shipments.audit_ui.not_ready_chip') }}</span>
@@ -354,19 +354,19 @@
                                                     @if($prItem?->length) | L: {{ $prItem->length }}mm @endif
                                                 </div>
                                             </td>
-                                            <td class="text-end ui-tabular-nums tw:text-on-surface-variant">
+                                            <td class="tw:text-end ui-tabular-nums tw:text-on-surface-variant">
                                                 {{ number_format($itemData['ordered_qty'] ?? $itemData['ordered']) }} pcs
                                             </td>
-                                            <td class="text-end ui-tabular-nums tw:text-on-surface-variant">
+                                            <td class="tw:text-end ui-tabular-nums tw:text-on-surface-variant">
                                                 {{ number_format($itemData['allocated_qty'] ?? $itemData['allocated']) }} pcs
                                             </td>
-                                            <td class="text-end fw-bold text-primary ui-tabular-nums">
+                                            <td class="tw:text-end tw:font-bold tw:text-primary ui-tabular-nums">
                                                 {{ number_format($itemData['remaining_qty'] ?? $itemData['remaining']) }} pcs
                                             </td>
-                                            <td class="text-end">
+                                            <td class="tw:text-end">
                                                 <input type="hidden" name="items[{{ $currentIndex }}][purchase_order_id]" value="{{ $itemData['po']->id }}">
                                                 <input type="hidden" name="items[{{ $currentIndex }}][quotation_item_id]" value="{{ $itemData['quotation_item']->id }}">
-                                                <div class="input-group input-group-sm">
+                                                <div class="ui-input-group ui-input-group--sm">
                                                     <input
                                                         type="number"
                                                         step="1"
@@ -374,24 +374,24 @@
                                                         max="{{ $itemData['remaining_qty'] ?? $itemData['remaining'] }}"
                                                         name="items[{{ $currentIndex }}][shipped_qty]"
                                                         value="{{ old("items.{$currentIndex}.shipped_qty", $currentShippedQty ?? ($isPreselected ? ($itemData['remaining_qty'] ?? $itemData['remaining']) : '')) }}"
-                                                        class="form-control form-control-sm text-end shipped-qty-input"
+                                                        class="ui-input ui-input--sm tw:text-end shipped-qty-input"
                                                         placeholder="0"
                                                         data-remaining="{{ $itemData['remaining_qty'] ?? $itemData['remaining'] }}"
                                                         aria-label="{{ __('shipments.a11y.ship_quantity', ['material' => $prItem->material_name]) }}"
                                                     >
-                                                    <button type="button" class="btn btn-outline-secondary btn-sm fill-all-btn" title="{{ __('shipments.copy.ship_all_remaining_quantity') }}">
+                                                    <button type="button" class="ui-button ui-button--outline ui-button--sm fill-all-btn" title="{{ __('shipments.copy.ship_all_remaining_quantity') }}">
                                                         {{ __('shipments.copy.all') }}
                                                     </button>
                                                 </div>
                                             </td>
-                                            <td class="text-end">
+                                            <td class="tw:text-end">
                                                 <input
                                                     type="number"
                                                     step="0.0001"
                                                     min="0.0001"
                                                     name="items[{{ $currentIndex }}][actual_weight_kg]"
                                                     value="{{ old("items.{$currentIndex}.actual_weight_kg", $currentActualWeightKg ?? '') }}"
-                                                    class="form-control form-control-sm text-end actual-weight-input"
+                                                    class="ui-input ui-input--sm tw:text-end actual-weight-input"
                                                     placeholder="0.0000"
                                                     aria-label="{{ __('shipments.a11y.actual_weight', ['material' => $prItem->material_name]) }}"
                                                 >
@@ -406,13 +406,13 @@
             </div>
 
             {{-- 4. Sticky Bottom Submission Summary Bar --}}
-            <div class="sticky-summary-bar mt-4 rounded d-flex flex-wrap align-items-center justify-content-between gap-3">
-                <div class="d-flex align-items-center gap-3">
-                    <div class="d-inline-flex align-items-center justify-content-center tw:h-9 tw:w-9 rounded-circle tw:bg-primary-container text-primary">
+            <div class="sticky-summary-bar tw:mt-4 tw:rounded-ui-md tw:flex tw:flex-wrap tw:items-center tw:justify-between tw:gap-3">
+                <div class="tw:flex tw:items-center tw:gap-3">
+                    <div class="tw:inline-flex tw:items-center tw:justify-center tw:h-9 tw:w-9 tw:rounded-full tw:bg-primary-container tw:text-primary">
                         <x-ui.icon name="truck" size="sm" />
                     </div>
                     <div>
-                        <div class="fw-bold tw:text-ui-sm tw:text-on-surface" id="shipmentSummaryTitle">
+                        <div class="tw:font-bold tw:text-ui-sm tw:text-on-surface" id="shipmentSummaryTitle">
                             {{ __('shipments.copy.consignment_allocation_summary') }}
                         </div>
                         <div class="tw:text-ui-xs tw:text-on-surface-variant" id="shipmentSummaryText">
@@ -421,7 +421,7 @@
                     </div>
                 </div>
 
-                <div class="d-flex flex-wrap align-items-center gap-2">
+                <div class="tw:flex tw:flex-wrap tw:items-center tw:gap-2">
                     <x-ui.button type="submit" name="action" value="draft" variant="outline" size="sm" id="btnSaveDraft">
                         <x-slot:leading><x-ui.icon name="save" size="sm" /></x-slot:leading>
                         {{ $isEditing ? __('shipments.copy.save_draft_changes') : __('shipments.copy.save_as_draft') }}
@@ -504,7 +504,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (summaryText) {
             if (hasOverAllocation) {
                 const warning = document.createElement('span');
-                warning.className = 'text-danger fw-semibold';
+                warning.className = 'tw:text-error tw:font-semibold';
                 warning.textContent = window.AdasiI18n.t('js.shipments.remaining_balance_warning');
                 summaryText.replaceChildren(warning);
             } else {
@@ -529,9 +529,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 field.disabled = !enabled;
             });
             if (enabled) {
-                row.classList.add('table-active');
+                row.classList.add('tw:bg-primary-container/40');
             } else {
-                row.classList.remove('table-active');
+                row.classList.remove('tw:bg-primary-container/40');
             }
         };
 
@@ -591,7 +591,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 toggle.checked = true;
                 qtyInput.value = remaining;
                 row.querySelectorAll('input[name^="items["]').forEach(f => f.disabled = false);
-                row.classList.add('table-active');
+                row.classList.add('tw:bg-primary-container/40');
             });
             updateSummary();
         });
@@ -605,7 +605,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 qtyInput.value = '';
                 weightInput.value = '';
                 row.querySelectorAll('input[name^="items["]').forEach(f => f.disabled = true);
-                row.classList.remove('table-active');
+                row.classList.remove('tw:bg-primary-container/40');
             });
             updateSummary();
         });

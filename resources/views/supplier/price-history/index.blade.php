@@ -44,16 +44,16 @@
             :title="__('supplier.copy.materials_and_latest_pricing')"
         :description="__('supplier.copy.original_price_ranges_grouped_by_material_and_transaction_currency')"
     >
-        <table class="table table-hover align-middle mb-0 tw:text-ui-xs w-100" id="overviewTable">
-            <thead class="table-light">
+        <table class="ui-table ui-table--hover tw:align-middle tw:m-0 tw:text-ui-xs tw:w-full" id="overviewTable">
+            <thead>
                 <tr>
                     <th scope="col">{{ __('supplier.copy.material_name') }}</th>
-                    <th scope="col" class="text-center">{{ __('supplier.copy.currency') }}</th>
-                    <th scope="col" class="text-center">{{ __('supplier.copy.total_offers') }}</th>
+                    <th scope="col" class="tw:text-center">{{ __('supplier.copy.currency') }}</th>
+                    <th scope="col" class="tw:text-center">{{ __('supplier.copy.total_offers') }}</th>
                     <th scope="col">{{ __('supplier.copy.latest_price_kg_range') }}</th>
                     <th scope="col">{{ __('supplier.copy.last_quoted_date') }}</th>
-                    <th scope="col" class="text-center">{{ __('supplier.copy.latest_status') }}</th>
-                    <th scope="col" class="tw:text-right text-end" style="width: 120px;">{{ __('common.table.action') }}</th>
+                    <th scope="col" class="tw:text-center">{{ __('supplier.copy.latest_status') }}</th>
+                    <th scope="col" class="tw:text-end" style="width: 120px;">{{ __('common.table.action') }}</th>
                 </tr>
             </thead>
             <tbody></tbody>
@@ -74,9 +74,9 @@
             serverSide: true,
             ajax: '{{ route("supplier.price-history.index") }}',
             columns: [
-                { data: 'material_name', name: 'material_name', className: 'fw-bold tw:text-on-surface' },
-                { data: 'currency', name: 'currency', className: 'text-center fw-semibold ui-tabular-nums' },
-                { data: 'total_quotations', name: 'total_quotations', searchable: false, className: 'text-center fw-semibold ui-tabular-nums' },
+                { data: 'material_name', name: 'material_name', className: 'tw:font-bold tw:text-on-surface' },
+                { data: 'currency', name: 'currency', className: 'tw:text-center tw:font-semibold ui-tabular-nums' },
+                { data: 'total_quotations', name: 'total_quotations', searchable: false, className: 'tw:text-center tw:font-semibold ui-tabular-nums' },
                 { data: 'price_info', name: 'price_info', orderable: false, searchable: false },
                 {
                     data: 'last_submitted_at',
@@ -87,8 +87,8 @@
                         return data ? new Date(data).toLocaleDateString(dateLocale, {day: '2-digit', month: 'short', year: 'numeric'}) : '-';
                     }
                 },
-                { data: 'latest_status_badge', name: 'latest_status_badge', orderable: false, searchable: false, className: 'text-center' },
-                { data: 'action', name: 'action', orderable: false, searchable: false, className: 'text-end' }
+                { data: 'latest_status_badge', name: 'latest_status_badge', orderable: false, searchable: false, className: 'tw:text-center' },
+                { data: 'action', name: 'action', orderable: false, searchable: false, className: 'tw:text-end' }
             ],
             order: [[0, 'asc'], [1, 'asc']],
         });

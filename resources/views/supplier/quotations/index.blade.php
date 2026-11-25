@@ -27,25 +27,25 @@
         :description="__('supplier.copy.counts_indicate_open_requisitions_and_your_supplier_quotation_submissions_per_period')"
         :empty="$periods->isEmpty()"
     >
-        <table class="table table-hover align-middle mb-0 tw:text-ui-xs w-100">
-            <thead class="table-light">
+        <table class="ui-table ui-table--hover tw:align-middle tw:m-0 tw:text-ui-xs tw:w-full">
+            <thead>
                 <tr>
-                    <th scope="col" class="ps-3">{{ __('supplier.copy.procurement_period') }}</th>
-                    <th scope="col" class="text-center">{{ __('supplier.copy.status') }}</th>
-                    <th scope="col" class="text-center">{{ __('supplier.copy.awaiting_quotation') }}</th>
-                    <th scope="col" class="text-center">{{ __('supplier.copy.submitted_quotations') }}</th>
-                    <th scope="col" class="text-center">{{ __('supplier.copy.rejected_quotations') }}</th>
-                    <th scope="col" class="tw:w-44 tw:text-right text-end pe-3">{{ __('common.table.action') }}</th>
+                    <th scope="col" class="tw:ps-3">{{ __('supplier.copy.procurement_period') }}</th>
+                    <th scope="col" class="tw:text-center">{{ __('supplier.copy.status') }}</th>
+                    <th scope="col" class="tw:text-center">{{ __('supplier.copy.awaiting_quotation') }}</th>
+                    <th scope="col" class="tw:text-center">{{ __('supplier.copy.submitted_quotations') }}</th>
+                    <th scope="col" class="tw:text-center">{{ __('supplier.copy.rejected_quotations') }}</th>
+                    <th scope="col" class="tw:w-44 tw:text-end tw:pe-3">{{ __('common.table.action') }}</th>
                 </tr>
             </thead>
             <tbody>
                 @foreach($periods as $period)
                     <tr>
-                        <td class="fw-bold tw:text-on-surface ps-3">{{ $period->display_label }}</td>
-                        <td class="text-center">
+                        <td class="tw:font-bold tw:text-on-surface tw:ps-3">{{ $period->display_label }}</td>
+                        <td class="tw:text-center">
                             @if($period->status === 'open')
                                 <span class="ui-status-chip ui-status-chip--success">
-                                    <x-ui.icon name="circle-dot" size="sm" class="me-1" />{{ __('status.finance.open') }}
+                                    <x-ui.icon name="circle-dot" size="sm" class="tw:me-1" />{{ __('status.finance.open') }}
                                 </span>
                             @else
                                 <span class="ui-status-chip ui-status-chip--neutral">
@@ -53,7 +53,7 @@
                                 </span>
                             @endif
                         </td>
-                        <td class="text-center">
+                        <td class="tw:text-center">
                             @if($period->unresponded_prs > 0)
                                 <span class="ui-status-chip ui-status-chip--error ui-tabular-nums">
                                     {{ trans_choice('purchasing.copy.pr_count', $period->unresponded_prs, ['count' => $period->unresponded_prs]) }}
@@ -62,7 +62,7 @@
                                 <span class="tw:text-on-surface-variant">-</span>
                             @endif
                         </td>
-                        <td class="text-center">
+                        <td class="tw:text-center">
                             @if($period->responded_prs > 0)
                                 <span class="ui-status-chip ui-status-chip--info ui-tabular-nums">
                                     {{ trans_choice('purchasing.copy.pr_count', $period->responded_prs, ['count' => $period->responded_prs]) }}
@@ -71,7 +71,7 @@
                                 <span class="tw:text-on-surface-variant">-</span>
                             @endif
                         </td>
-                        <td class="text-center">
+                        <td class="tw:text-center">
                             @if($period->rejected_prs > 0)
                                 <span class="ui-status-chip ui-status-chip--neutral ui-tabular-nums">
                                     {{ trans_choice('purchasing.copy.pr_count', $period->rejected_prs, ['count' => $period->rejected_prs]) }}
@@ -80,7 +80,7 @@
                                 <span class="tw:text-on-surface-variant">-</span>
                             @endif
                         </td>
-                        <td class="tw:text-right text-end pe-3">
+                        <td class="tw:text-end tw:pe-3">
                             <x-ui.row-action
                                 :href="route('supplier.quotations.period', $period->id)"
                                 :context="$period->display_label"

@@ -27,18 +27,18 @@
         :title="__('supplier.copy.received_purchase_orders')"
         :description="__('supplier.copy.search_export_and_inspect_order_details_without_exposing_other_suppliers_data')"
     >
-        <table class="table table-hover align-middle mb-0 tw:text-ui-xs w-100" id="poTable">
-            <thead class="table-light">
+        <table class="ui-table ui-table--hover tw:align-middle tw:m-0 tw:text-ui-xs tw:w-full" id="poTable">
+            <thead>
                 <tr>
                     <th scope="col">{{ __('supplier.copy.po_number') }}</th>
                     <th scope="col">{{ __('supplier.copy.period') }}</th>
                     <th scope="col">{{ __('supplier.copy.reference_no_pr') }}</th>
                     <th scope="col">{{ __('supplier.copy.remark') }}</th>
-                    <th scope="col" class="text-end">{{ __('supplier.copy.total_amount_idr') }}</th>
-                    <th scope="col" class="text-center">{{ __('supplier.copy.status') }}</th>
+                    <th scope="col" class="tw:text-end">{{ __('supplier.copy.total_amount_idr') }}</th>
+                    <th scope="col" class="tw:text-center">{{ __('supplier.copy.status') }}</th>
                     <th scope="col">{{ __('supplier.copy.outstanding_status_breakdown') }}</th>
                     <th scope="col">{{ __('supplier.copy.estimated_arrival') }}</th>
-                    <th scope="col" class="tw:text-right text-end" style="width: 110px;">{{ __('common.table.action') }}</th>
+                    <th scope="col" class="tw:text-end" style="width: 110px;">{{ __('common.table.action') }}</th>
                 </tr>
             </thead>
             <tbody></tbody>
@@ -63,15 +63,15 @@
                 ['po_number', 'status', 'start_date', 'end_date'].forEach((name) => { if (params.has(name)) d[name] = params.get(name); });
             } },
             columns: [
-                { data: 'po_number_display', name: 'po_number', className: 'fw-bold tw:text-on-surface' },
+                { data: 'po_number_display', name: 'po_number', className: 'tw:font-bold tw:text-on-surface' },
                 { data: 'period_name', name: 'period_name', orderable: false, className: 'tw:text-on-surface-variant' },
                 { data: 'pr_reference', name: 'pr_reference', orderable: false },
                 { data: 'remark_display', name: 'remark_display', orderable: false, className: 'tw:text-on-surface-variant tw:text-ui-xs' },
-                { data: 'total_idr', name: 'total_idr', className: 'text-end fw-bold text-primary ui-tabular-nums', orderable: false, searchable: false },
-                { data: 'status_badge', name: 'status', className: 'text-center' },
+                { data: 'total_idr', name: 'total_idr', className: 'tw:text-end tw:font-bold tw:text-primary ui-tabular-nums', orderable: false, searchable: false },
+                { data: 'status_badge', name: 'status', className: 'tw:text-center' },
                 { data: 'outstanding_breakdown', name: 'outstanding_breakdown', orderable: false, searchable: false },
                 { data: 'estimated_date', name: 'estimated_arrival', className: 'ui-tabular-nums tw:text-on-surface-variant' },
-                { data: 'action', name: 'action', orderable: false, searchable: false, className: 'text-end' }
+                { data: 'action', name: 'action', orderable: false, searchable: false, className: 'tw:text-end' }
             ],
             language: {},
 

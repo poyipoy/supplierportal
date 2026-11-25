@@ -231,20 +231,22 @@
 
                                                 {{-- U3: Score hanya muncul setelah Ya; slot kanan tetap dicadangkan di desktop. --}}
                                                 <div class="ui-audit-controls__score">
-                                                    <div class="btn-group tw:w-full tw:sm:w-auto" role="radiogroup" aria-label="{{ __('supplier_audit.fields.score') }} — {{ $ref }}"
+                                                    <div class="tw:inline-flex tw:w-full tw:sm:w-auto tw:rounded-ui-sm tw:border tw:border-[var(--ui-input-border)] tw:overflow-hidden tw:bg-surface" role="radiogroup" aria-label="{{ __('supplier_audit.fields.score') }} — {{ $ref }}"
                                                         x-show="answers['{{ $cid }}'].answer === 'YES'"
                                                         x-transition:enter="tw:transition tw:duration-150 tw:ease-out" x-transition:enter-start="tw:opacity-0" x-transition:enter-end="tw:opacity-100"
                                                         @if($answer->answer !== 'YES') style="display: none;" @endif>
                                                         @foreach($scoreScale as $score => $meaning)
-                                                            <input type="radio" class="btn-check" name="answers[{{ $cid }}][score]" id="s{{ $cid }}-{{ $score }}" value="{{ $score }}" autocomplete="off"
-                                                                @checked($answer->score === $score) @disabled($answer->answer !== 'YES')
-                                                                :checked="Number(answers['{{ $cid }}'].score) === {{ $score }}"
-                                                                :disabled="answers['{{ $cid }}'].answer !== 'YES'"
-                                                                x-on:change="setScore('{{ $cid }}', {{ $score }})">
-                                                            <label class="btn btn-outline-primary tw:min-h-11 tw:flex-1 tw:sm:min-h-9 tw:sm:min-w-9 tw:sm:flex-none" for="s{{ $cid }}-{{ $score }}" title="{{ $score }} — {{ $meaning }}" style="font-variant-numeric: tabular-nums;">
-                                                                <span aria-hidden="true">{{ $score }}</span>
-                                                                <span class="tw:sr-only">{{ __('supplier_audit.labels.score_option', ['score' => $score]) }}: {{ $meaning }}</span>
-                                                            </label>
+                                                            <span class="tw:flex tw:flex-1 tw:sm:flex-none @if(! $loop->first) tw:border-s tw:border-outline-variant @endif">
+                                                                <input type="radio" class="tw:sr-only tw:peer" name="answers[{{ $cid }}][score]" id="s{{ $cid }}-{{ $score }}" value="{{ $score }}" autocomplete="off"
+                                                                    @checked($answer->score === $score) @disabled($answer->answer !== 'YES')
+                                                                    :checked="Number(answers['{{ $cid }}'].score) === {{ $score }}"
+                                                                    :disabled="answers['{{ $cid }}'].answer !== 'YES'"
+                                                                    x-on:change="setScore('{{ $cid }}', {{ $score }})">
+                                                                <label class="ui-focus-ring tw:flex tw:w-full tw:min-h-11 tw:sm:min-h-9 tw:sm:min-w-9 tw:items-center tw:justify-center tw:px-2.5 tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant tw:transition-colors tw:cursor-pointer tw:select-none tw:hover:bg-surface-container tw:peer-checked:bg-primary tw:peer-checked:text-primary-foreground tw:peer-focus-visible:outline tw:peer-focus-visible:outline-2 tw:peer-focus-visible:outline-primary tw:peer-disabled:opacity-50 tw:peer-disabled:cursor-not-allowed" for="s{{ $cid }}-{{ $score }}" title="{{ $score }} — {{ $meaning }}" style="font-variant-numeric: tabular-nums;">
+                                                                    <span aria-hidden="true">{{ $score }}</span>
+                                                                    <span class="tw:sr-only">{{ __('supplier_audit.labels.score_option', ['score' => $score]) }}: {{ $meaning }}</span>
+                                                                </label>
+                                                            </span>
                                                         @endforeach
                                                     </div>
                                                 </div>

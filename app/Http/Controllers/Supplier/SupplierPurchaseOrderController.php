@@ -137,7 +137,7 @@ class SupplierPurchaseOrderController extends Controller
                 })
                 ->addColumn('estimated_date', fn ($po) => $po->estimated_arrival ? $regionalFormatter->date($po->estimated_arrival, 'human') : '-')
                 ->addColumn('action', function ($po) {
-                    $html = '<div class="d-inline-flex gap-1 justify-content-end flex-wrap">';
+                    $html = '<div class="tw:inline-flex tw:gap-1 tw:justify-end tw:flex-wrap">';
                     if ($po->pending_claim_id) {
                         $html .= RowAction::link(
                             route('supplier.claims.show', HashidCodec::encode((int) $po->pending_claim_id)),

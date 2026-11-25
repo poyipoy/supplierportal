@@ -26,11 +26,11 @@
     </x-ui.page-header>
 
     <x-ui.card>
-        <article class="p-2 tw:text-on-surface tw:text-ui-sm leading-relaxed tw:whitespace-pre-line">
+        <article class="tw:p-2 tw:text-on-surface tw:text-ui-sm tw:leading-relaxed tw:whitespace-pre-line">
             {{ $announcement->content }}
         </article>
         <x-slot:footer>
-            <div class="tw:text-on-surface-variant tw:text-ui-xs text-center">
+            <div class="tw:text-on-surface-variant tw:text-ui-xs tw:text-center">
                 {{ __('supplier.copy.official_announcement_distributed_to_authorized_suppliers_by_pt_astra_daido_steel_indonesia') }}
             </div>
         </x-slot:footer>

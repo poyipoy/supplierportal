@@ -46,7 +46,7 @@
                     <input
                         type="search"
                         id="filter_pr_number"
-                        class="form-control form-control-sm ui-filter-bar__search-input"
+                        class="ui-input ui-input--sm ui-filter-bar__search-input"
                         placeholder="{{ __('supplier.copy.e_g_req_05_2026_001') }}"
                         value="{{ request('pr_number', request('search')) }}"
                     >
@@ -54,7 +54,7 @@
 
                 <x-slot:filters>
                     <label for="filter_status" class="tw:sr-only">{{ __('supplier.copy.my_quotation_status') }}</label>
-                    <select id="filter_status" class="form-select form-select-sm tw:w-full tw:min-w-0 tw:sm:w-52">
+                    <select id="filter_status" class="ui-select ui-select--sm tw:w-full tw:min-w-0 tw:sm:w-52">
                         <option value="">{{ __('supplier.copy.all_statuses') }}</option>
                         <option value="unresponded" @selected(request('status') === 'unresponded')>{{ __('supplier.copy.awaiting_quotation') }}</option>
                         <option value="draft" @selected(request('status') === 'draft')>{{ __('supplier.copy.draft') }}</option>
@@ -72,15 +72,15 @@
             </x-ui.filter-bar>
         </x-slot:filters>
 
-        <table class="table table-hover align-middle mb-0 tw:text-ui-xs w-100" id="prTable">
-            <thead class="table-light">
+        <table class="ui-table ui-table--hover tw:align-middle tw:m-0 tw:text-ui-xs tw:w-full" id="prTable">
+            <thead>
                 <tr>
                     <th scope="col" style="width: 40px;">{{ __('supplier.copy.no') }}</th>
                     <th scope="col">{{ __('supplier.copy.pr_number') }}</th>
                     <th scope="col">{{ __('supplier.copy.date_issued') }}</th>
-                    <th scope="col" class="text-center">{{ __('supplier.copy.items') }}</th>
-                    <th scope="col" class="text-center">{{ __('supplier.copy.my_quotation_status') }}</th>
-                    <th scope="col" class="tw:text-right text-end" style="width: 140px;">{{ __('common.table.action') }}</th>
+                    <th scope="col" class="tw:text-center">{{ __('supplier.copy.items') }}</th>
+                    <th scope="col" class="tw:text-center">{{ __('supplier.copy.my_quotation_status') }}</th>
+                    <th scope="col" class="tw:text-end" style="width: 140px;">{{ __('common.table.action') }}</th>
                 </tr>
             </thead>
             <tbody></tbody>
@@ -108,12 +108,12 @@
                 }
             },
             columns: [
-                { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false, className: 'text-center tw:text-on-surface-variant' },
-                { data: 'pr_number_display', name: 'pr_number', className: 'fw-bold text-primary' },
+                { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false, className: 'tw:text-center tw:text-on-surface-variant' },
+                { data: 'pr_number_display', name: 'pr_number', className: 'tw:font-bold tw:text-primary' },
                 { data: 'updated_date', name: 'updated_at', className: 'ui-tabular-nums tw:text-on-surface-variant' },
-                { data: 'item_count', name: 'item_count', orderable: false, searchable: false, className: 'text-center fw-medium ui-tabular-nums' },
-                { data: 'status_badge', name: 'status', searchable: false, className: 'text-center' },
-                { data: 'action', name: 'action', orderable: false, searchable: false, className: 'text-end' }
+                { data: 'item_count', name: 'item_count', orderable: false, searchable: false, className: 'tw:text-center tw:font-medium ui-tabular-nums' },
+                { data: 'status_badge', name: 'status', searchable: false, className: 'tw:text-center' },
+                { data: 'action', name: 'action', orderable: false, searchable: false, className: 'tw:text-end' }
             ],
             language: {},
 

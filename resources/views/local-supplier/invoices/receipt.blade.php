@@ -43,11 +43,11 @@
         ]"
     >
         <x-slot:actions>
-            <x-ui.button :href="$resolvedDetailUrl" variant="outline" size="sm" class="d-print-none">
+            <x-ui.button :href="$resolvedDetailUrl" variant="outline" size="sm" class="tw:print:hidden">
                 <x-ui.icon name="arrow-left" size="sm" />
                 <span>{{ __('local_invoice.actions.view_detail') }}</span>
             </x-ui.button>
-            <x-ui.button :href="$pdfUrl ?? null" variant="primary" size="sm" class="d-print-none" data-download-pdf data-no-loader>
+            <x-ui.button :href="$pdfUrl ?? null" variant="primary" size="sm" class="tw:print:hidden" data-download-pdf data-no-loader>
                 <x-ui.icon name="printer" size="sm" />
                 <span>{{ __('local_invoice.actions.print_receipt') }}</span>
             </x-ui.button>
@@ -55,8 +55,8 @@
     </x-ui.page-header>
 
     @if(session('success'))
-        <div class="alert alert-success d-flex align-items-center mb-4 d-print-none" role="alert">
-            <x-ui.icon name="circle-check" size="sm" class="me-2 tw:text-success tw:shrink-0" />
+        <div class="tw:rounded-ui-md tw:border tw:border-success/40 tw:bg-success-container tw:text-success-container-foreground tw:p-3.5 tw:text-ui-sm tw:flex tw:items-center tw:mb-4 tw:print:hidden" role="alert">
+            <x-ui.icon name="circle-check" size="sm" class="tw:me-2 tw:text-success tw:shrink-0" />
             <div>
                 <strong>{{ __('local_invoice.receipt.recorded') }}</strong>
                 <div class="tw:text-ui-xs tw:mt-0.5">{{ session('success') }}</div>
@@ -66,30 +66,30 @@
 
     <x-ui.card :title="__('local_invoice.receipt.company_title')">
         <div class="tw:flex tw:flex-col tw:sm:flex-row tw:gap-6 tw:items-start">
-            <dl class="row tw:text-ui-xs tw:flex-1 tw:m-0">
-                <dt class="col-sm-4 text-muted">{{ __('local_invoice.receipt.number') }}</dt>
-                <dd class="col-sm-8"><strong class="ui-tabular-nums tw:text-primary">{{ $invoice->receipt->receipt_number }}</strong></dd>
+            <dl class="tw:grid tw:grid-cols-12 tw:gap-y-2 tw:gap-x-3 tw:text-ui-xs tw:flex-1 tw:m-0">
+                <dt class="tw:col-span-12 tw:sm:col-span-4 tw:text-on-surface-variant tw:font-medium">{{ __('local_invoice.receipt.number') }}</dt>
+                <dd class="tw:col-span-12 tw:sm:col-span-8 tw:m-0"><strong class="ui-tabular-nums tw:text-primary">{{ $invoice->receipt->receipt_number }}</strong></dd>
 
-                <dt class="col-sm-4 text-muted">{{ __('local_invoice.receipt.submission_number') }}</dt>
-                <dd class="col-sm-8"><strong class="ui-tabular-nums">{{ $invoice->submission_number }}</strong></dd>
+                <dt class="tw:col-span-12 tw:sm:col-span-4 tw:text-on-surface-variant tw:font-medium">{{ __('local_invoice.receipt.submission_number') }}</dt>
+                <dd class="tw:col-span-12 tw:sm:col-span-8 tw:m-0"><strong class="ui-tabular-nums">{{ $invoice->submission_number }}</strong></dd>
 
-                <dt class="col-sm-4 text-muted">{{ __('local_invoice.receipt.invoice_number') }}</dt>
-                <dd class="col-sm-8"><strong class="ui-tabular-nums">{{ $invoice->invoice_number }}</strong></dd>
+                <dt class="tw:col-span-12 tw:sm:col-span-4 tw:text-on-surface-variant tw:font-medium">{{ __('local_invoice.receipt.invoice_number') }}</dt>
+                <dd class="tw:col-span-12 tw:sm:col-span-8 tw:m-0"><strong class="ui-tabular-nums">{{ $invoice->invoice_number }}</strong></dd>
 
-                <dt class="col-sm-4 text-muted">{{ __('local_invoice.receipt.po_number') }}</dt>
-                <dd class="col-sm-8"><span class="ui-tabular-nums">{{ $invoice->po_number }}</span></dd>
+                <dt class="tw:col-span-12 tw:sm:col-span-4 tw:text-on-surface-variant tw:font-medium">{{ __('local_invoice.receipt.po_number') }}</dt>
+                <dd class="tw:col-span-12 tw:sm:col-span-8 tw:m-0"><span class="ui-tabular-nums">{{ $invoice->po_number }}</span></dd>
 
-                <dt class="col-sm-4 text-muted">{{ __('local_invoice.receipt.supplier_name') }}</dt>
-                <dd class="col-sm-8"><strong>{{ $invoice->supplier->supplier?->company_name ?: $invoice->supplier->name }}</strong></dd>
+                <dt class="tw:col-span-12 tw:sm:col-span-4 tw:text-on-surface-variant tw:font-medium">{{ __('local_invoice.receipt.supplier_name') }}</dt>
+                <dd class="tw:col-span-12 tw:sm:col-span-8 tw:m-0"><strong>{{ $invoice->supplier->supplier?->company_name ?: $invoice->supplier->name }}</strong></dd>
 
-                <dt class="col-sm-4 text-muted">{{ __('local_invoice.receipt.invoice_ppn') }}</dt>
-                <dd class="col-sm-8"><strong class="ui-tabular-nums">Rp {{ number_format($invoice->invoice_amount, 0, ',', '.') }}</strong> (PPN: Rp {{ number_format($invoice->tax_amount, 0, ',', '.') }})</dd>
+                <dt class="tw:col-span-12 tw:sm:col-span-4 tw:text-on-surface-variant tw:font-medium">{{ __('local_invoice.receipt.invoice_ppn') }}</dt>
+                <dd class="tw:col-span-12 tw:sm:col-span-8 tw:m-0"><strong class="ui-tabular-nums">Rp {{ number_format($invoice->invoice_amount, 0, ',', '.') }}</strong> (PPN: Rp {{ number_format($invoice->tax_amount, 0, ',', '.') }})</dd>
 
-                <dt class="col-sm-4 text-muted">{{ __('local_invoice.labels.submitted_time') }}</dt>
-                <dd class="col-sm-8">@bizdt($invoice->submitted_at)</dd>
+                <dt class="tw:col-span-12 tw:sm:col-span-4 tw:text-on-surface-variant tw:font-medium">{{ __('local_invoice.labels.submitted_time') }}</dt>
+                <dd class="tw:col-span-12 tw:sm:col-span-8 tw:m-0">@bizdt($invoice->submitted_at)</dd>
 
-                <dt class="col-sm-4 text-muted">{{ __('local_invoice.labels.revision') }}</dt>
-                <dd class="col-sm-8">{{ $invoice->revision_number }}</dd>
+                <dt class="tw:col-span-12 tw:sm:col-span-4 tw:text-on-surface-variant tw:font-medium">{{ __('local_invoice.labels.revision') }}</dt>
+                <dd class="tw:col-span-12 tw:sm:col-span-8 tw:m-0">{{ $invoice->revision_number }}</dd>
             </dl>
 
             @if(isset($qrCode))
@@ -106,7 +106,7 @@
             </p>
         </div>
 
-        <div class="tw:mt-5 tw:pt-4 tw:border-t tw:border-outline-variant tw:flex tw:items-center tw:justify-between d-print-none">
+        <div class="tw:mt-5 tw:pt-4 tw:border-t tw:border-outline-variant tw:flex tw:items-center tw:justify-between tw:print:hidden">
             <x-ui.button :href="$resolvedDetailUrl" variant="outline" size="sm">
                 <x-ui.icon name="arrow-left" size="sm" />
                 <span>{{ __('local_invoice.actions.view_detail') }}</span>

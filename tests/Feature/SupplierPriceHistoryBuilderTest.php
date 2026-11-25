@@ -375,7 +375,7 @@ class SupplierPriceHistoryBuilderTest extends TestCase
             ->get(route('supplier.price-history.historical'));
 
         $response->assertOk();
-        $response->assertSee('<fieldset class="col-md-12 col-lg-3 tw:m-0 tw:min-w-0 tw:border-0 tw:p-0">', false);
+        $response->assertSee('<fieldset class="tw:col-span-12 tw:lg:col-span-3 tw:m-0 tw:min-w-0 tw:border-0 tw:p-0">', false);
         $response->assertSee('role="group" aria-label="'.__('supplier.copy.aggregation_interval').'"', false);
         $response->assertSee('filterForm.requestSubmit()', false);
     }

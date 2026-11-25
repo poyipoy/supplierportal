@@ -79,13 +79,13 @@
                 </span>
             </summary>
             <div class="tw:overflow-x-auto">
-                <table class="table align-top tw:m-0 tw:text-ui-sm">
-                    <thead class="table-light">
+                <table class="ui-table tw:align-top tw:m-0 tw:text-ui-sm">
+                    <thead>
                         <tr>
                             <th scope="col" class="tw:w-12 tw:text-ui-xs tw:font-semibold">{{ __('supplier_audit.fields.number') }}</th>
                             <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('supplier_audit.fields.criterion') }}</th>
                             <th scope="col" class="tw:w-28 tw:text-ui-xs tw:font-semibold">{{ __('supplier_audit.fields.answer') }}</th>
-                            <th scope="col" class="tw:w-20 tw:text-ui-xs tw:font-semibold text-end">{{ __('supplier_audit.fields.score') }}</th>
+                            <th scope="col" class="tw:w-20 tw:text-ui-xs tw:font-semibold tw:text-end">{{ __('supplier_audit.fields.score') }}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -103,7 +103,7 @@
                                         <span class="tw:text-ui-xs tw:text-on-surface-variant">{{ __('supplier_audit.labels.empty_answer') }}</span>
                                     @endif
                                 </td>
-                                <td class="text-end tw:font-semibold {{ $matches['low'] ? 'tw:text-error' : '' }}" style="font-variant-numeric: tabular-nums;">{{ $answer->score ?? '—' }}</td>
+                                <td class="tw:text-end tw:font-semibold {{ $matches['low'] ? 'tw:text-error' : '' }}" style="font-variant-numeric: tabular-nums;">{{ $answer->score ?? '—' }}</td>
                             </tr>
                         @endforeach
                     </tbody>

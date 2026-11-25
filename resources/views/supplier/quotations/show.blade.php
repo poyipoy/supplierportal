@@ -53,7 +53,7 @@
             </div>
             <div>
                 <dt class="{{ $dtClass }}">{{ __('supplier.copy.requisition_reference') }}</dt>
-                <dd class="{{ $ddClass }} text-primary">{{ $requisition->pr_number ?? '-' }}</dd>
+                <dd class="{{ $ddClass }} tw:text-primary">{{ $requisition->pr_number ?? '-' }}</dd>
             </div>
             <div>
                 <dt class="{{ $dtClass }}">{{ __('procurement.logistics.port_of_discharge') }}</dt>
@@ -112,17 +112,17 @@
 
     {{-- 3. Status & Follow-up: a single banner; per-item award moved into the item table. --}}
     <section class="tw:grid tw:gap-2" data-quotation-section="status" aria-labelledby="quotation-status-heading">
-        <h2 id="quotation-status-heading" class="visually-hidden">{{ __('procurement.quotation.status_follow_up') }}</h2>
+        <h2 id="quotation-status-heading" class="tw:sr-only">{{ __('procurement.quotation.status_follow_up') }}</h2>
         @if($quotation->reviewer_notes)
-            <div class="tw:p-2.5 bg-warning-subtle border border-warning-subtle rounded text-warning-emphasis">
-                <div class="fw-bold tw:text-ui-xs tw:uppercase tw:mb-0.5"><x-ui.icon name="square-pen" size="sm" class="me-1" />{{ __('supplier.copy.purchasing_reviewer_notes') }}</div>
+            <div class="tw:p-2.5 tw:bg-warning-container tw:border tw:border-warning/30 tw:rounded-ui-sm tw:text-warning-container-foreground">
+                <div class="tw:font-bold tw:text-ui-xs tw:uppercase tw:mb-0.5"><x-ui.icon name="square-pen" size="sm" class="tw:me-1" />{{ __('supplier.copy.purchasing_reviewer_notes') }}</div>
                 <div class="tw:text-ui-xs">{{ $quotation->reviewer_notes }}</div>
             </div>
         @endif
 
         @if($quotation->status === 'revision_requested')
             <x-ui.alert tone="warning" :title="__('supplier.copy.revision_requested')">{{ __('supplier.copy.purchasing_requested_a_revision_update_unit_prices_estimated_delivery_and_validity_date_before_resub') }}</x-ui.alert>
-            <div class="d-flex flex-wrap tw:gap-2">
+            <div class="tw:flex tw:flex-wrap tw:gap-2">
                 <x-ui.button :href="route('supplier.quotations.create', $requisition)" variant="primary" size="sm">
                     <x-ui.icon name="square-pen" size="sm" />
                     <span>{{ __('supplier.copy.revise_quotation') }}</span>
@@ -155,7 +155,7 @@
                 <x-ui.alert tone="success" :title="__('supplier.copy.quotation_selected')">{{ __('supplier.copy.an_official_po_will_be_issued_through_the_procurement_workflow') }}</x-ui.alert>
             @endif
             @if($relatedPos->isNotEmpty())
-                <div class="d-flex flex-wrap tw:gap-2">
+                <div class="tw:flex tw:flex-wrap tw:gap-2">
                     @foreach($relatedPos as $po)
                         <x-ui.button :href="route('supplier.purchase-orders.show', $po)" variant="outline" size="sm">
                             <x-ui.icon name="receipt" size="sm" />

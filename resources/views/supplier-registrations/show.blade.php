@@ -33,7 +33,7 @@
     @endif
 
     {{-- CURRENT STATUS CARD & REVIEWER ACTIONS --}}
-    <div class="tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface tw:p-5 tw-shadow-xs">
+    <div class="tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface tw:p-5 tw:shadow-xs">
         <div class="tw:flex tw:flex-col tw:md:flex-row tw:md:items-center tw:md:justify-between tw:gap-4">
             <div>
                 <div class="tw:flex tw:items-center tw:gap-2.5">
@@ -82,7 +82,7 @@
                     {{-- APPROVE & ACTIVATE BUTTON --}}
                     <button
                         type="button"
-                        class="ui-focus-ring tw:inline-flex tw:items-center tw:gap-1.5 tw:px-4 tw:py-2 tw:rounded-ui-sm tw:bg-success tw:text-on-success tw:text-ui-sm tw:font-semibold tw:border-0 tw:hover:brightness-95 tw-shadow-xs"
+                        class="ui-focus-ring tw:inline-flex tw:items-center tw:gap-1.5 tw:px-4 tw:py-2 tw:rounded-ui-sm tw:bg-success tw:text-on-success tw:text-ui-sm tw:font-semibold tw:border-0 tw:hover:brightness-95 tw:shadow-xs"
                         @click="approveModal = true"
                     >
                         <x-ui.icon name="check-circle" size="xs" />
@@ -98,7 +98,7 @@
         {{-- LEFT COLUMN: COMPANY & PIC & BANK (2 cols) --}}
         <div class="tw:lg:col-span-2 tw:space-y-6">
             {{-- COMPANY & TAX IDENTIFIER CARD --}}
-            <div class="tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface tw:p-5 tw-shadow-xs">
+            <div class="tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface tw:p-5 tw:shadow-xs">
                 <div class="tw:flex tw:items-center tw:gap-2 tw:mb-4 tw:text-primary">
                     <x-ui.icon name="building-2" size="sm" />
                     <h3 class="tw:m-0 tw:text-ui-base tw:font-bold tw:text-on-surface">{{ __('local_procurement.registration.company_tax') }}</h3>
@@ -153,7 +153,7 @@
             {{-- PIC & BANK ACCOUNT CARD --}}
             <div class="tw:grid tw:grid-cols-1 tw:md:grid-cols-2 tw:gap-6">
                 {{-- PIC CARD --}}
-                <div class="tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface tw:p-5 tw-shadow-xs">
+                <div class="tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface tw:p-5 tw:shadow-xs">
                     <div class="tw:flex tw:items-center tw:gap-2 tw:mb-3 tw:text-primary">
                         <x-ui.icon name="user" size="sm" />
                     <h3 class="tw:m-0 tw:text-ui-sm tw:font-bold tw:text-on-surface">{{ __('local_procurement.registration.pic') }}</h3>
@@ -175,7 +175,7 @@
                 </div>
 
                 {{-- BANK ACCOUNT CARD --}}
-                <div class="tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface tw:p-5 tw-shadow-xs">
+                <div class="tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface tw:p-5 tw:shadow-xs">
                     <div class="tw:flex tw:items-center tw:gap-2 tw:mb-3 tw:text-primary">
                         <x-ui.icon name="credit-card" size="sm" />
                     <h3 class="tw:m-0 tw:text-ui-sm tw:font-bold tw:text-on-surface">{{ __('local_procurement.registration.bank_details') }}</h3>
@@ -204,7 +204,7 @@
                     : \App\Support\SupplierComplianceQuestionnaire::answersFrom($supplier?->compliance_questionnaire);
                 $flaggedAnswers = \App\Support\SupplierComplianceQuestionnaire::flagged($snapshotAnswers);
             @endphp
-            <div class="tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface tw:p-5 tw-shadow-xs">
+            <div class="tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface tw:p-5 tw:shadow-xs">
                 <div class="tw:flex tw:flex-wrap tw:items-center tw:justify-between tw:gap-2 tw:mb-3">
                     <div class="tw:flex tw:items-center tw:gap-2 tw:text-primary">
                         <x-ui.icon name="clipboard-check" size="sm" />
@@ -254,7 +254,7 @@
             @endif
 
             {{-- AUDIT TRAIL LOG --}}
-            <div class="tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface tw:p-5 tw-shadow-xs">
+            <div class="tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface tw:p-5 tw:shadow-xs">
                 <div class="tw:flex tw:items-center tw:gap-2 tw:mb-4 tw:text-primary">
                     <x-ui.icon name="shield-check" size="sm" />
                     <h3 class="tw:m-0 tw:text-ui-base tw:font-bold tw:text-on-surface">{{ __('local_procurement.registration.audit_trail') }}</h3>
@@ -302,7 +302,7 @@
         {{-- RIGHT COLUMN: DOCUMENTS & ATTEMPT HISTORY (1 col) --}}
         <div class="tw:space-y-6">
             {{-- DOCUMENTS CARD --}}
-            <div class="tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface tw:p-5 tw-shadow-xs">
+            <div class="tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface tw:p-5 tw:shadow-xs">
                 <div class="tw:flex tw:items-center tw:gap-2 tw:mb-4 tw:text-primary">
                     <x-ui.icon name="file-text" size="sm" />
                     <h3 class="tw:m-0 tw:text-ui-sm tw:font-bold tw:text-on-surface">{{ __('registration.js.step3') }}</h3>
@@ -341,7 +341,7 @@
             </div>
 
             {{-- ATTEMPT HISTORY CARD --}}
-            <div class="tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface tw:p-5 tw-shadow-xs">
+            <div class="tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface tw:p-5 tw:shadow-xs">
                 <div class="tw:flex tw:items-center tw:gap-2 tw:mb-3 tw:text-primary">
                     <x-ui.icon name="history" size="sm" />
                     <h3 class="tw:m-0 tw:text-ui-sm tw:font-bold tw:text-on-surface">{{ __('local_procurement.registration.attempts') }}</h3>
@@ -470,7 +470,7 @@
                         <p class="tw:m-0 tw:mb-3 tw:text-ui-xs tw:font-medium tw:text-error">{{ __('local_procurement.registration.bank_declaration_missing') }}</p>
                     @endif
                     <label class="tw:flex tw:items-start tw:gap-2.5 tw:cursor-pointer">
-                        <input type="checkbox" name="confirm_bank_declaration" value="1" class="form-check-input tw:mt-0.5" @disabled(! $declarationDoc)>
+                        <input type="checkbox" name="confirm_bank_declaration" value="1" class="ui-check tw:mt-0.5" @disabled(! $declarationDoc)>
                         <span class="tw:text-ui-sm tw:text-on-surface">{{ __('local_procurement.registration.bank_confirm_checkbox') }}</span>
                     </label>
                     <p class="tw:m-0 tw:mt-1.5 tw:text-ui-xs tw:text-on-surface-variant">{{ __('local_procurement.registration.bank_confirm_help') }}</p>

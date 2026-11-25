@@ -212,7 +212,7 @@ class QuotationController extends Controller
                     if ($pr->isCancelledForSupplier($supplierId)) {
                         $action = RowAction::detail(route('supplier.requests.show', $pr), $pr->pr_number);
 
-                        return '<div class="d-inline-flex gap-1 justify-content-end flex-wrap">'.$action.'</div>';
+                        return '<div class="tw:inline-flex tw:gap-1 tw:justify-end tw:flex-wrap">'.$action.'</div>';
                     }
 
                     $quotation = $pr->quotations->first();
@@ -225,7 +225,7 @@ class QuotationController extends Controller
                         default => $quotation ? RowAction::detail(route('supplier.quotations.show', $quotation), $pr->pr_number) : '-',
                     };
 
-                    return '<div class="d-inline-flex gap-1 justify-content-end flex-wrap">'.$action.'</div>';
+                    return '<div class="tw:inline-flex tw:gap-1 tw:justify-end tw:flex-wrap">'.$action.'</div>';
                 })
                 ->rawColumns(['status_badge', 'action'])
                 ->ignoreSelectsInCountQuery()

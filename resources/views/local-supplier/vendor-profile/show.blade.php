@@ -88,9 +88,9 @@
 
             {{-- Rekening Bank Terdaftar --}}
             <x-ui.card :title="__('local_invoice.labels.bank_accounts')">
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle tw:m-0 tw:text-ui-xs w-100">
-                        <thead class="table-light">
+                <div class="ui-table-scroll">
+                    <table class="ui-table ui-table--hover tw:align-middle tw:m-0 tw:text-ui-xs tw:w-full">
+                        <thead>
                             <tr>
                                 <th scope="col">{{ __('local_procurement.vendor_ui.bank_name') }}</th>
                                 <th scope="col">{{ __('local_procurement.vendor_ui.bank_number') }}</th>
@@ -122,7 +122,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="5" class="text-center tw:py-4 tw:text-on-surface-variant">{{ __('local_invoice.empty.bank') }}</td>
+                                    <td colspan="5" class="tw:text-center tw:py-4 tw:text-on-surface-variant">{{ __('local_invoice.empty.bank') }}</td>
                                 </tr>
                             @endforelse
                         </tbody>
@@ -144,35 +144,35 @@
 
                     <div class="tw:grid tw:grid-cols-1 tw:sm:grid-cols-2 tw:gap-4">
                         <div>
-                            <label for="company_name" class="form-label tw:text-ui-xs tw:font-medium">{{ __('local_procurement.vendor_ui.company') }}</label>
-                            <input type="text" id="company_name" name="company_name" class="form-control form-control-sm" value="{{ old('company_name', $supplier?->company_name) }}">
+                            <label for="company_name" class="ui-label tw:text-ui-xs tw:font-medium">{{ __('local_procurement.vendor_ui.company') }}</label>
+                            <input type="text" id="company_name" name="company_name" class="ui-input ui-input--sm" value="{{ old('company_name', $supplier?->company_name) }}">
                         </div>
                         <div>
-                            <label for="vendor_category" class="form-label tw:text-ui-xs tw:font-medium">{{ __('local_invoice.labels.vendor_category') }}</label>
-                            <select id="vendor_category" name="vendor_category" class="form-select form-select-sm">
+                            <label for="vendor_category" class="ui-label tw:text-ui-xs tw:font-medium">{{ __('local_invoice.labels.vendor_category') }}</label>
+                            <select id="vendor_category" name="vendor_category" class="ui-select ui-select--sm">
                                 <option value="Barang" @selected(old('vendor_category', $supplier?->vendor_category) === 'Barang')>{{ __('local_procurement.vendor_ui.goods') }}</option>
                                 <option value="Jasa" @selected(old('vendor_category', $supplier?->vendor_category) === 'Jasa')>{{ __('local_procurement.vendor_ui.services') }}</option>
                                 <option value="Lainnya" @selected(old('vendor_category', $supplier?->vendor_category) === 'Lainnya')>{{ __('local_procurement.vendor_ui.other') }}</option>
                             </select>
                         </div>
                         <div>
-                            <label for="npwp" class="form-label tw:text-ui-xs tw:font-medium">NPWP</label>
-                            <input type="text" id="npwp" name="npwp" class="form-control form-control-sm" value="{{ old('npwp', $supplier?->npwp) }}">
+                            <label for="npwp" class="ui-label tw:text-ui-xs tw:font-medium">NPWP</label>
+                            <input type="text" id="npwp" name="npwp" class="ui-input ui-input--sm" value="{{ old('npwp', $supplier?->npwp) }}">
                         </div>
                         <div>
-                            <label for="is_pkp" class="form-label tw:text-ui-xs tw:font-medium">{{ __('local_invoice.labels.tax_status') }}</label>
-                            <select id="is_pkp" name="is_pkp" class="form-select form-select-sm">
+                            <label for="is_pkp" class="ui-label tw:text-ui-xs tw:font-medium">{{ __('local_invoice.labels.tax_status') }}</label>
+                            <select id="is_pkp" name="is_pkp" class="ui-select ui-select--sm">
                                 <option value="1" @selected(old('is_pkp', $supplier?->is_pkp) == 1)>{{ __('local_procurement.vendor_ui.pkp_required') }}</option>
                                 <option value="0" @selected(old('is_pkp', $supplier?->is_pkp) == 0)>Non-PKP</option>
                             </select>
                         </div>
                         <div>
-                            <label for="phone" class="form-label tw:text-ui-xs tw:font-medium">{{ __('local_invoice.labels.company_phone') }}</label>
-                            <input type="text" id="phone" name="phone" class="form-control form-control-sm" value="{{ old('phone', $supplier?->phone) }}">
+                            <label for="phone" class="ui-label tw:text-ui-xs tw:font-medium">{{ __('local_invoice.labels.company_phone') }}</label>
+                            <input type="text" id="phone" name="phone" class="ui-input ui-input--sm" value="{{ old('phone', $supplier?->phone) }}">
                         </div>
                         <div class="tw:sm:col-span-2">
-                            <label for="address" class="form-label tw:text-ui-xs tw:font-medium">{{ __('local_invoice.labels.company_address') }}</label>
-                            <textarea id="address" name="address" rows="2" class="form-control form-control-sm">{{ old('address', $supplier?->address) }}</textarea>
+                            <label for="address" class="ui-label tw:text-ui-xs tw:font-medium">{{ __('local_invoice.labels.company_address') }}</label>
+                            <textarea id="address" name="address" rows="2" class="ui-textarea tw:text-ui-xs tw:px-2 tw:py-1">{{ old('address', $supplier?->address) }}</textarea>
                         </div>
                     </div>
 
@@ -181,16 +181,16 @@
 
                     <div class="tw:grid tw:grid-cols-1 tw:sm:grid-cols-3 tw:gap-4">
                         <div>
-                            <label for="pic_name" class="form-label tw:text-ui-xs tw:font-medium">{{ __('local_procurement.vendor_ui.pic_name') }}</label>
-                            <input type="text" id="pic_name" name="pic_name" class="form-control form-control-sm" value="{{ old('pic_name', $supplier?->pic_name) }}">
+                            <label for="pic_name" class="ui-label tw:text-ui-xs tw:font-medium">{{ __('local_procurement.vendor_ui.pic_name') }}</label>
+                            <input type="text" id="pic_name" name="pic_name" class="ui-input ui-input--sm" value="{{ old('pic_name', $supplier?->pic_name) }}">
                         </div>
                         <div>
-                            <label for="pic_email" class="form-label tw:text-ui-xs tw:font-medium">{{ __('local_invoice.labels.pic_email') }}</label>
-                            <input type="email" id="pic_email" name="pic_email" class="form-control form-control-sm" value="{{ old('pic_email', $supplier?->pic_email) }}">
+                            <label for="pic_email" class="ui-label tw:text-ui-xs tw:font-medium">{{ __('local_invoice.labels.pic_email') }}</label>
+                            <input type="email" id="pic_email" name="pic_email" class="ui-input ui-input--sm" value="{{ old('pic_email', $supplier?->pic_email) }}">
                         </div>
                         <div>
-                            <label for="pic_phone" class="form-label tw:text-ui-xs tw:font-medium">{{ __('local_procurement.vendor_ui.pic_phone') }}</label>
-                            <input type="text" id="pic_phone" name="pic_phone" class="form-control form-control-sm" value="{{ old('pic_phone', $supplier?->pic_phone) }}">
+                            <label for="pic_phone" class="ui-label tw:text-ui-xs tw:font-medium">{{ __('local_procurement.vendor_ui.pic_phone') }}</label>
+                            <input type="text" id="pic_phone" name="pic_phone" class="ui-input ui-input--sm" value="{{ old('pic_phone', $supplier?->pic_phone) }}">
                         </div>
                     </div>
 
@@ -221,36 +221,36 @@
                                 :value="old('bank_name')"
                             />
                             @error('bank_name')
-                                <div class="text-danger tw:text-[11px] tw:mt-1">{{ $message }}</div>
+                                <div class="tw:text-error tw:text-[11px] tw:mt-1">{{ $message }}</div>
                             @enderror
                         </div>
                         <div>
-                            <label for="account_number" class="form-label tw:text-ui-xs tw:font-medium">{{ __('local_procurement.vendor_ui.bank_number') }}</label>
-                            <input type="text" id="account_number" name="account_number" class="form-control form-control-sm @error('account_number') is-invalid @enderror" placeholder="{{ __('local_procurement.vendor_ui.bank_number') }}" value="{{ old('account_number') }}">
+                            <label for="account_number" class="ui-label tw:text-ui-xs tw:font-medium">{{ __('local_procurement.vendor_ui.bank_number') }}</label>
+                            <input type="text" id="account_number" name="account_number" class="ui-input ui-input--sm @error('account_number') is-invalid @enderror" placeholder="{{ __('local_procurement.vendor_ui.bank_number') }}" value="{{ old('account_number') }}">
                             @error('account_number')
-                                <div class="invalid-feedback tw:text-[11px]">{{ $message }}</div>
+                                <div class="ui-field-error tw:text-[11px]">{{ $message }}</div>
                             @enderror
                         </div>
                         <div>
-                            <label for="account_holder_name" class="form-label tw:text-ui-xs tw:font-medium">{{ __('local_procurement.vendor_ui.account_owner') }}</label>
-                            <input type="text" id="account_holder_name" name="account_holder_name" class="form-control form-control-sm @error('account_holder_name') is-invalid @enderror" placeholder="{{ __('local_invoice.labels.account_book_name') }}" value="{{ old('account_holder_name') }}">
+                            <label for="account_holder_name" class="ui-label tw:text-ui-xs tw:font-medium">{{ __('local_procurement.vendor_ui.account_owner') }}</label>
+                            <input type="text" id="account_holder_name" name="account_holder_name" class="ui-input ui-input--sm @error('account_holder_name') is-invalid @enderror" placeholder="{{ __('local_invoice.labels.account_book_name') }}" value="{{ old('account_holder_name') }}">
                             @error('account_holder_name')
-                                <div class="invalid-feedback tw:text-[11px]">{{ $message }}</div>
+                                <div class="ui-field-error tw:text-[11px]">{{ $message }}</div>
                             @enderror
                         </div>
                     </div>
 
                     <div class="tw:pt-2 tw:flex tw:justify-end">
                         <div class="tw:mr-3">
-                            <label for="bank_confirmation_document_id" class="form-label tw:text-ui-xs">{{ __('finance_controls.bank_document_label') }}</label>
-                            <select id="bank_confirmation_document_id" name="bank_confirmation_document_id" class="form-select form-select-sm @error('bank_confirmation_document_id') is-invalid @enderror">
+                            <label for="bank_confirmation_document_id" class="ui-label tw:text-ui-xs">{{ __('finance_controls.bank_document_label') }}</label>
+                            <select id="bank_confirmation_document_id" name="bank_confirmation_document_id" class="ui-select ui-select--sm @error('bank_confirmation_document_id') is-invalid @enderror">
                                 <option value="">{{ __('finance_controls.bank_document_label') }}</option>
                                 @foreach($supplierBankDocs as $bankDocument)
                                     <option value="{{ $bankDocument->hash }}" @selected(old('bank_confirmation_document_id') === $bankDocument->hash)>{{ $bankDocument->original_filename }}</option>
                                 @endforeach
                             </select>
                             @error('bank_confirmation_document_id')
-                                <div class="invalid-feedback tw:text-[11px]">{{ $message }}</div>
+                                <div class="ui-field-error tw:text-[11px]">{{ $message }}</div>
                             @enderror
                         </div>
                         <x-ui.button type="submit" variant="primary" size="sm">
@@ -263,9 +263,9 @@
 
             {{-- Riwayat Pengajuan Perubahan --}}
             <x-ui.card :title="__('local_invoice.labels.change_history')">
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle tw:m-0 tw:text-ui-xs w-100">
-                        <thead class="table-light">
+                <div class="ui-table-scroll">
+                    <table class="ui-table ui-table--hover tw:align-middle tw:m-0 tw:text-ui-xs tw:w-full">
+                        <thead>
                             <tr>
                                 <th scope="col">{{ __('local_invoice.labels.date') }}</th>
                                 <th scope="col">{{ __('local_invoice.labels.type') }}</th>
@@ -325,7 +325,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="5" class="text-center tw:py-4 tw:text-on-surface-variant">{{ __('local_invoice.empty.change_history') }}</td>
+                                    <td colspan="5" class="tw:text-center tw:py-4 tw:text-on-surface-variant">{{ __('local_invoice.empty.change_history') }}</td>
                                 </tr>
                             @endforelse
                         </tbody>
@@ -341,8 +341,8 @@
                 <form action="{{ route('local-supplier.vendor-profile.documents.upload') }}" method="POST" enctype="multipart/form-data" data-async-submit class="tw:space-y-3">
                     @csrf
                     <div>
-                        <label for="document_type" class="form-label tw:text-ui-xs tw:font-medium">{{ __('local_invoice.labels.document_type') }}</label>
-                        <select id="document_type" name="document_type" class="form-select form-select-sm" required>
+                        <label for="document_type" class="ui-label tw:text-ui-xs tw:font-medium">{{ __('local_invoice.labels.document_type') }}</label>
+                        <select id="document_type" name="document_type" class="ui-select ui-select--sm" required>
                             <option value="">{{ __('local_procurement.vendor_ui.document_select') }}</option>
                             <option value="NIB">{{ __('local_procurement.vendor_ui.document_types.nib') }}</option>
                             <option value="NPWP">{{ __('local_procurement.vendor_ui.company_npwp') }}</option>
@@ -353,12 +353,12 @@
                     </div>
 
                     <div>
-                        <label for="document" class="form-label tw:text-ui-xs tw:font-medium">{{ __('local_procurement.vendor_ui.file_limit') }}</label>
-                        <input type="file" id="document" name="document" class="form-control form-control-sm" accept=".pdf,.jpg,.jpeg,.png" required>
+                        <label for="document" class="ui-label tw:text-ui-xs tw:font-medium">{{ __('local_procurement.vendor_ui.file_limit') }}</label>
+                        <input type="file" id="document" name="document" class="ui-input ui-input--sm" accept=".pdf,.jpg,.jpeg,.png" required>
                     </div>
 
                     <div class="tw:pt-1">
-                        <x-ui.button type="submit" variant="primary" size="sm" class="w-100">
+                        <x-ui.button type="submit" variant="primary" size="sm" class="tw:w-full">
                             <x-ui.icon name="upload" size="sm" />
                             <span>{{ __('local_invoice.actions.upload') }}</span>
                         </x-ui.button>

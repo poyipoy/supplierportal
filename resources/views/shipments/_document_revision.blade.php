@@ -23,7 +23,7 @@
             @foreach($versions as $index => $version)
                 <li>
                     <span class="tw:font-semibold">{{ $index === 0 ? __('shipments.copy.document_version_original') : __('shipments.copy.document_version_label', ['number' => $index]) }}</span>
-                    <a href="{{ route('attachments.show', $version) }}" target="_blank" rel="noopener" class="text-primary text-decoration-none">{{ $version->file_name }}</a>
+                    <a href="{{ route('attachments.show', $version) }}" target="_blank" rel="noopener" class="tw:text-primary tw:no-underline">{{ $version->file_name }}</a>
                     <span class="tw:text-on-surface-variant ui-tabular-nums">@bizdt($version->created_at)</span>
                 </li>
             @endforeach

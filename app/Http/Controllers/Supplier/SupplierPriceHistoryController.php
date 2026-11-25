@@ -293,8 +293,8 @@ class SupplierPriceHistoryController extends Controller
                 $min = $row->min_price ?? 0;
                 $max = $row->max_price ?? 0;
 
-                return '<div class="fw-bold text-primary">'.NumberFormat::maxDecimals($latest).' '.e($row->currency).'/Kg</div>'
-                    .'<div class="small text-muted">'
+                return '<div class="tw:font-bold tw:text-primary">'.NumberFormat::maxDecimals($latest).' '.e($row->currency).'/Kg</div>'
+                    .'<div class="tw:text-ui-xs tw:text-on-surface-variant">'
                     .'Min: '.NumberFormat::maxDecimals($min).' | '
                     .'Max: '.NumberFormat::maxDecimals($max)
                     .'</div>';

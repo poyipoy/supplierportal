@@ -68,7 +68,7 @@ class RegionalShipmentDetailsTest extends TestCase
             $this->assertHasText('1.250 pcs', $text);
             $this->assertHasText('1.234,57 Kg', $text);
             $this->assertHasText(route($portal.'.purchase-orders.show', $shipment->items->first()->purchaseOrder), $html);
-            $this->assertHasText('<th scope="col" class="text-end">Actual Weight</th>', $html);
+            $this->assertHasText('<th scope="col" class="tw:text-end">Actual Weight</th>', $html);
         }
         $this->assertSame($raw, $shipment->fresh()->getRawOriginal());
         $this->assertSame($items, $shipment->items()->get()->map->getRawOriginal()->all());

@@ -141,15 +141,15 @@
             :title="__('local_procurement.labels.invoice_history')"
             :description="__('local_procurement.review.invoice_po', ['po' => $purchaseOrder->po_number])"
         >
-            <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0 tw:text-ui-xs">
-                    <thead class="table-light">
+            <div class="ui-table-scroll">
+                <table class="ui-table ui-table--hover tw:align-middle tw:m-0 tw:text-ui-xs">
+                    <thead>
                         <tr>
                             <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('local_invoice.receipt.invoice_number') }}</th>
                             <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('local_invoice.labels.invoice_date') }}</th>
-                            <th scope="col" class="tw:text-ui-xs tw:font-semibold text-end">{{ __('local_procurement.review.dpp') }}</th>
-                            <th scope="col" class="tw:text-ui-xs tw:font-semibold text-center">{{ __('local_invoice.labels.status') }}</th>
-                            <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-right text-end">{{ __('common.table.action') }}</th>
+                            <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-end">{{ __('local_procurement.review.dpp') }}</th>
+                            <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-center">{{ __('local_invoice.labels.status') }}</th>
+                            <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-end">{{ __('common.table.action') }}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -163,15 +163,15 @@
                                         {{ $regionalFormatter->date($inv->invoice_date, 'human') ?? '—' }}
                                     </span>
                                 </td>
-                                <td class="text-end ui-tabular-nums tw:font-bold tw:text-on-surface">
+                                <td class="tw:text-end ui-tabular-nums tw:font-bold tw:text-on-surface">
                                     Rp {{ $regionalFormatter->money($inv->invoice_amount) }}
                                 </td>
-                                <td class="text-center">
+                                <td class="tw:text-center">
                                     <x-ui.status-chip :tone="\App\Support\StatusHelper::localInvoiceTone($inv->status)">
                                         {{ \App\Support\StatusHelper::localInvoiceLabel($inv->status) }}
                                     </x-ui.status-chip>
                                 </td>
-                                <td class="tw:text-right text-end">
+                                <td class="tw:text-end">
                                     <x-ui.row-action
                                         :href="route('local-supplier.invoices.show', $inv)"
                                         :context="$inv->invoice_number"

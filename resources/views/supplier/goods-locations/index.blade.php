@@ -40,7 +40,7 @@
         clearValidation() {
             const form = document.getElementById('goodsLocationModalForm');
             if (!form) return;
-            form.querySelectorAll('.invalid-feedback, [data-async-error]').forEach((el) => el.remove());
+            form.querySelectorAll('.ui-field-error, .invalid-feedback, [data-async-error]').forEach((el) => el.remove());
             form.querySelectorAll('.is-invalid, [data-async-invalid]').forEach((el) => {
                 el.classList.remove('is-invalid');
                 el.removeAttribute('aria-invalid');
@@ -156,7 +156,7 @@
                         id="goodsLocationsSearch"
                         name="search"
                         value="{{ $search }}"
-                        class="form-control form-control-sm ui-filter-bar__search-input"
+                        class="ui-input ui-input--sm ui-filter-bar__search-input"
                         placeholder="{{ __('shipments.preshipment.locations_search_placeholder') }}"
                     >
                 </x-slot:search>
@@ -194,14 +194,14 @@
             @endif
         @else
             <div class="ui-data-table__scroll">
-                <table class="table table-hover align-middle mb-0 tw:text-ui-sm w-100">
+                <table class="ui-table ui-table--hover tw:align-middle tw:m-0 tw:text-ui-sm tw:w-full">
                     <thead>
                         <tr>
                             <th scope="col">{{ __('shipments.preshipment.name') }}</th>
                             <th scope="col">{{ __('shipments.preshipment.address') }}</th>
                             <th scope="col">{{ __('shipments.preshipment.city') }} / {{ __('shipments.preshipment.country') }}</th>
                             <th scope="col">{{ __('shipments.preshipment.contact') }}</th>
-                            <th scope="col" class="text-end">{{ __('shipments.copy.action') }}</th>
+                            <th scope="col" class="tw:text-end">{{ __('shipments.copy.action') }}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -245,8 +245,8 @@
                                         <div class="tw:text-on-surface-variant">{{ implode(' · ', array_filter([$loc->telephone, $loc->email])) }}</div>
                                     @endif
                                 </td>
-                                <td class="text-end">
-                                    <div class="d-inline-flex align-items-center justify-content-end gap-1">
+                                <td class="tw:text-end">
+                                    <div class="tw:inline-flex tw:items-center tw:justify-end tw:gap-1">
                                         <button type="button" class="ui-data-action ui-data-action--primary ui-focus-ring" @click="openEdit(@js($editPayload))">
                                             {{ __('shipments.preshipment.locations_edit') }}
                                         </button>
@@ -277,7 +277,7 @@
                                                     <form method="POST" action="{{ route('supplier.goods-locations.destroy', $loc) }}" class="tw:m-0 goods-location-delete-form">
                                                         @csrf
                                                         @method('DELETE')
-                                                        <button type="button" class="dropdown-item text-danger btn-delete-location">
+                                                        <button type="button" class="dropdown-item tw:text-error btn-delete-location">
                                                             {{ __('shipments.mtc.remove') }}
                                                         </button>
                                                     </form>
@@ -324,33 +324,33 @@
 
             <div class="tw:grid tw:gap-3 tw:sm:grid-cols-2">
                 <div class="tw:sm:col-span-2">
-                    <label for="loc_name" class="form-label tw:text-ui-xs tw:font-semibold tw:text-on-surface">
+                    <label for="loc_name" class="ui-label tw:text-ui-xs tw:font-semibold tw:text-on-surface">
                         {{ __('shipments.preshipment.name') }} <span class="tw:text-error" aria-hidden="true">*</span><span class="tw:sr-only">{{ __('common.upload.required') }}</span>
                     </label>
                     <input type="text" name="name" id="loc_name" x-model="fields.name" maxlength="191" required aria-required="true"
                         @error('name') aria-invalid="true" aria-describedby="loc_name_error" @enderror
-                        class="form-control form-control-sm tw:min-h-[2.5rem] @error('name') is-invalid @enderror">
-                    @error('name')<div id="loc_name_error" class="invalid-feedback" role="alert">{{ $message }}</div>@enderror
+                        class="ui-input ui-input--sm tw:min-h-[2.5rem] @error('name') is-invalid @enderror">
+                    @error('name')<div id="loc_name_error" class="ui-field-error" role="alert">{{ $message }}</div>@enderror
                 </div>
 
                 <div class="tw:sm:col-span-2">
-                    <label for="loc_contact" class="form-label tw:text-ui-xs tw:font-semibold tw:text-on-surface">
+                    <label for="loc_contact" class="ui-label tw:text-ui-xs tw:font-semibold tw:text-on-surface">
                         {{ __('shipments.preshipment.contact') }}
                     </label>
                     <input type="text" name="contact" id="loc_contact" x-model="fields.contact" maxlength="150"
                         @error('contact') aria-invalid="true" aria-describedby="loc_contact_error" @enderror
-                        class="form-control form-control-sm tw:min-h-[2.5rem] @error('contact') is-invalid @enderror">
-                    @error('contact')<div id="loc_contact_error" class="invalid-feedback" role="alert">{{ $message }}</div>@enderror
+                        class="ui-input ui-input--sm tw:min-h-[2.5rem] @error('contact') is-invalid @enderror">
+                    @error('contact')<div id="loc_contact_error" class="ui-field-error" role="alert">{{ $message }}</div>@enderror
                 </div>
 
                 <div class="tw:sm:col-span-2">
-                    <label for="loc_address" class="form-label tw:text-ui-xs tw:font-semibold tw:text-on-surface">
+                    <label for="loc_address" class="ui-label tw:text-ui-xs tw:font-semibold tw:text-on-surface">
                         {{ __('shipments.preshipment.address') }} <span class="tw:text-error" aria-hidden="true">*</span><span class="tw:sr-only">{{ __('common.upload.required') }}</span>
                     </label>
                     <textarea name="address" id="loc_address" x-model="fields.address" rows="2" maxlength="1000" required aria-required="true"
                         @error('address') aria-invalid="true" aria-describedby="loc_address_error" @enderror
-                        class="form-control form-control-sm @error('address') is-invalid @enderror"></textarea>
-                    @error('address')<div id="loc_address_error" class="invalid-feedback" role="alert">{{ $message }}</div>@enderror
+                        class="ui-textarea tw:text-ui-xs tw:px-2 tw:py-1 @error('address') is-invalid @enderror"></textarea>
+                    @error('address')<div id="loc_address_error" class="ui-field-error" role="alert">{{ $message }}</div>@enderror
                 </div>
 
                 <div @change="if ($event.target?.tagName === 'SELECT') { fields.country = $event.target.value; fields.country_unmapped = ''; }">
@@ -358,7 +358,7 @@
                         name="country"
                         id="loc_country"
                         :label="__('shipments.preshipment.country')"
-                        label-class="form-label tw:mb-0 tw:text-ui-xs tw:font-semibold tw:text-on-surface"
+                        label-class="ui-label tw:mb-0 tw:text-ui-xs tw:font-semibold tw:text-on-surface"
                         :value="$initialCountry"
                         :options="$countryOptions"
                         :placeholder="__('shipments.preshipment.select_country')"
@@ -371,63 +371,63 @@
                 </div>
 
                 <div>
-                    <label for="loc_city" class="form-label tw:text-ui-xs tw:font-semibold tw:text-on-surface">
+                    <label for="loc_city" class="ui-label tw:text-ui-xs tw:font-semibold tw:text-on-surface">
                         {{ __('shipments.preshipment.city') }} <span class="tw:text-error" aria-hidden="true">*</span><span class="tw:sr-only">{{ __('common.upload.required') }}</span>
                     </label>
                     <input type="text" name="city" id="loc_city" x-model="fields.city" maxlength="120" required aria-required="true"
                         @error('city') aria-invalid="true" aria-describedby="loc_city_error" @enderror
-                        class="form-control form-control-sm tw:min-h-[2.5rem] @error('city') is-invalid @enderror">
-                    @error('city')<div id="loc_city_error" class="invalid-feedback" role="alert">{{ $message }}</div>@enderror
+                        class="ui-input ui-input--sm tw:min-h-[2.5rem] @error('city') is-invalid @enderror">
+                    @error('city')<div id="loc_city_error" class="ui-field-error" role="alert">{{ $message }}</div>@enderror
                 </div>
 
                 <div>
-                    <label for="loc_telephone" class="form-label tw:text-ui-xs tw:font-semibold tw:text-on-surface">
+                    <label for="loc_telephone" class="ui-label tw:text-ui-xs tw:font-semibold tw:text-on-surface">
                         {{ __('shipments.preshipment.telephone') }}
                     </label>
                     <input type="tel" inputmode="tel" name="telephone" id="loc_telephone" x-model="fields.telephone" maxlength="30"
                         placeholder="{{ __('shipments.preshipment.phone_placeholder') }}"
                         @error('telephone') aria-invalid="true" aria-describedby="loc_telephone_error" @enderror
-                        class="form-control form-control-sm tw:min-h-[2.5rem] @error('telephone') is-invalid @enderror">
-                    @error('telephone')<div id="loc_telephone_error" class="invalid-feedback" role="alert">{{ $message }}</div>@enderror
+                        class="ui-input ui-input--sm tw:min-h-[2.5rem] @error('telephone') is-invalid @enderror">
+                    @error('telephone')<div id="loc_telephone_error" class="ui-field-error" role="alert">{{ $message }}</div>@enderror
                 </div>
 
                 <div>
-                    <label for="loc_mobile" class="form-label tw:text-ui-xs tw:font-semibold tw:text-on-surface">
+                    <label for="loc_mobile" class="ui-label tw:text-ui-xs tw:font-semibold tw:text-on-surface">
                         {{ __('shipments.preshipment.mobile') }}
                     </label>
                     <input type="tel" inputmode="tel" name="mobile" id="loc_mobile" x-model="fields.mobile" maxlength="30"
                         placeholder="{{ __('shipments.preshipment.phone_placeholder') }}"
                         @error('mobile') aria-invalid="true" aria-describedby="loc_mobile_error" @enderror
-                        class="form-control form-control-sm tw:min-h-[2.5rem] @error('mobile') is-invalid @enderror">
-                    @error('mobile')<div id="loc_mobile_error" class="invalid-feedback" role="alert">{{ $message }}</div>@enderror
+                        class="ui-input ui-input--sm tw:min-h-[2.5rem] @error('mobile') is-invalid @enderror">
+                    @error('mobile')<div id="loc_mobile_error" class="ui-field-error" role="alert">{{ $message }}</div>@enderror
                 </div>
 
                 <div>
-                    <label for="loc_fax" class="form-label tw:text-ui-xs tw:font-semibold tw:text-on-surface">
+                    <label for="loc_fax" class="ui-label tw:text-ui-xs tw:font-semibold tw:text-on-surface">
                         {{ __('shipments.preshipment.fax') }}
                     </label>
                     <input type="tel" inputmode="tel" name="fax" id="loc_fax" x-model="fields.fax" maxlength="30"
                         placeholder="{{ __('shipments.preshipment.phone_placeholder') }}"
                         @error('fax') aria-invalid="true" aria-describedby="loc_fax_error" @enderror
-                        class="form-control form-control-sm tw:min-h-[2.5rem] @error('fax') is-invalid @enderror">
-                    @error('fax')<div id="loc_fax_error" class="invalid-feedback" role="alert">{{ $message }}</div>@enderror
+                        class="ui-input ui-input--sm tw:min-h-[2.5rem] @error('fax') is-invalid @enderror">
+                    @error('fax')<div id="loc_fax_error" class="ui-field-error" role="alert">{{ $message }}</div>@enderror
                 </div>
 
                 <div>
-                    <label for="loc_email" class="form-label tw:text-ui-xs tw:font-semibold tw:text-on-surface">
+                    <label for="loc_email" class="ui-label tw:text-ui-xs tw:font-semibold tw:text-on-surface">
                         {{ __('shipments.preshipment.email') }}
                     </label>
                     <input type="email" name="email" id="loc_email" x-model="fields.email" maxlength="191"
                         @error('email') aria-invalid="true" aria-describedby="loc_email_error" @enderror
-                        class="form-control form-control-sm tw:min-h-[2.5rem] @error('email') is-invalid @enderror">
-                    @error('email')<div id="loc_email_error" class="invalid-feedback" role="alert">{{ $message }}</div>@enderror
+                        class="ui-input ui-input--sm tw:min-h-[2.5rem] @error('email') is-invalid @enderror">
+                    @error('email')<div id="loc_email_error" class="ui-field-error" role="alert">{{ $message }}</div>@enderror
                 </div>
             </div>
 
-            <div class="form-check tw:mb-0 tw:pt-2 tw:border-t tw:border-outline-variant">
+            <div class="ui-check-group tw:mb-0 tw:pt-2 tw:border-t tw:border-outline-variant">
                 <input type="hidden" name="is_default" value="0">
-                <input type="checkbox" class="form-check-input" name="is_default" id="loc_is_default" value="1" x-model="fields.is_default">
-                <label class="form-check-label tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:cursor-pointer" for="loc_is_default">
+                <input type="checkbox" class="ui-check" name="is_default" id="loc_is_default" value="1" x-model="fields.is_default">
+                <label class="tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:cursor-pointer" for="loc_is_default">
                     {{ __('shipments.preshipment.set_location_default') }}
                 </label>
             </div>

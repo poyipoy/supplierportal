@@ -4,13 +4,13 @@
     <x-ui.card :title="__('shipments.mtc.purchasing_title')" id="sec-mtc" class="tw:scroll-mt-24" data-po-mtc>
         @forelse($mtcShipments as $shipment)
             <div class="tw:py-2 @if(! $loop->first) tw:border-t tw:border-outline-variant @endif">
-                <a href="{{ route('purchasing.shipments.show', $shipment) }}" class="tw:text-ui-xs fw-semibold text-primary text-decoration-none">{{ $shipment->shipment_number }}</a>
-                <ul class="list-unstyled tw:m-0 tw:mt-1 tw:grid tw:gap-1 tw:text-ui-xs">
+                <a href="{{ route('purchasing.shipments.show', $shipment) }}" class="tw:text-ui-xs tw:font-semibold tw:text-primary tw:no-underline">{{ $shipment->shipment_number }}</a>
+                <ul class="tw:list-none tw:ps-0 tw:m-0 tw:mt-1 tw:grid tw:gap-1 tw:text-ui-xs">
                     @foreach($shipment->mtcAttachments as $file)
                         <li>
-                            <a href="{{ route('attachments.show', $file) }}" target="_blank" rel="noopener" class="d-inline-flex align-items-center gap-1 text-decoration-none tw:max-w-full tw:min-w-0">
+                            <a href="{{ route('attachments.show', $file) }}" target="_blank" rel="noopener" class="tw:inline-flex tw:items-center tw:gap-1 tw:no-underline tw:max-w-full tw:min-w-0">
                                 <x-ui.icon name="file-text" size="sm" class="tw:shrink-0" />
-                                <span class="text-truncate" title="{{ $file->file_name }}">{{ $file->file_name }}</span>
+                                <span class="tw:truncate" title="{{ $file->file_name }}">{{ $file->file_name }}</span>
                             </a>
                         </li>
                     @endforeach

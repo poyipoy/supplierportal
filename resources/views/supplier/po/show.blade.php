@@ -57,8 +57,8 @@
         <div class="tw:flex tw:items-center tw:gap-3 tw:bg-surface-container tw:p-3">
             <x-ui.icon name="file-plus" size="sm" class="tw:shrink-0 tw:text-on-surface-variant" />
             <div>
-                <div class="tw:text-on-surface-variant tw:text-ui-xs fw-semibold tw:uppercase">{{ __('supplier.copy.1_pr_issued') }}</div>
-                <div class="fw-bold tw:text-on-surface tw:text-ui-xs tw:mt-0.5">
+                <div class="tw:text-on-surface-variant tw:text-ui-xs tw:font-semibold tw:uppercase">{{ __('supplier.copy.1_pr_issued') }}</div>
+                <div class="tw:font-bold tw:text-on-surface tw:text-ui-xs tw:mt-0.5">
                     {{ $firstPr?->created_at ? $regionalFormatter->timestamp($firstPr->created_at, 'date') : '-' }}
                 </div>
             </div>
@@ -67,8 +67,8 @@
         <div class="tw:flex tw:items-center tw:gap-3 tw:bg-surface-container tw:p-3">
             <x-ui.icon name="receipt" size="sm" class="tw:shrink-0 tw:text-primary" />
             <div>
-                <div class="tw:text-on-surface-variant tw:text-ui-xs fw-semibold tw:uppercase">{{ __('supplier.copy.2_po_created') }}</div>
-                <div class="fw-bold tw:text-on-surface tw:text-ui-xs tw:mt-0.5">
+                <div class="tw:text-on-surface-variant tw:text-ui-xs tw:font-semibold tw:uppercase">{{ __('supplier.copy.2_po_created') }}</div>
+                <div class="tw:font-bold tw:text-on-surface tw:text-ui-xs tw:mt-0.5">
                     {{ $regionalFormatter->timestamp($po->created_at, 'date') }}
                 </div>
             </div>
@@ -77,10 +77,10 @@
         <div class="tw:flex tw:items-center tw:gap-3 tw:bg-surface-container tw:p-3">
             <x-ui.icon name="calendar" size="sm" class="tw:shrink-0 {{ $po->is_overdue ? 'tw:text-error' : 'tw:text-on-surface-variant' }}" />
             <div>
-                <div class="tw:text-on-surface-variant tw:text-ui-xs fw-semibold tw:uppercase">{{ __('supplier.copy.3_po_target_arrival_date') }}</div>
-                <div class="fw-bold {{ $po->is_overdue ? 'text-danger' : 'tw:text-on-surface' }} tw:text-ui-xs tw:mt-0.5">
+                <div class="tw:text-on-surface-variant tw:text-ui-xs tw:font-semibold tw:uppercase">{{ __('supplier.copy.3_po_target_arrival_date') }}</div>
+                <div class="tw:font-bold {{ $po->is_overdue ? 'tw:text-error' : 'tw:text-on-surface' }} tw:text-ui-xs tw:mt-0.5">
                     {{ $po->estimated_arrival ? $regionalFormatter->date($po->estimated_arrival) : '-' }}
-                    @if($po->is_overdue) <span class="ui-status-chip ui-status-chip--error ms-1">{{ __('supplier.copy.overdue') }}</span> @endif
+                    @if($po->is_overdue) <span class="ui-status-chip ui-status-chip--error tw:ms-1">{{ __('supplier.copy.overdue') }}</span> @endif
                 </div>
                 <div class="tw:text-on-surface-variant tw:text-ui-xs">{{ __('supplier.copy.purchasing_target_at_adsi') }}</div>
             </div>
@@ -89,8 +89,8 @@
         <div class="tw:flex tw:items-center tw:gap-3 tw:bg-surface-container tw:p-3">
             <x-ui.icon name="{{ $po->actual_arrival ? 'circle-check' : 'clock' }}" size="sm" class="tw:shrink-0 {{ $po->actual_arrival ? 'tw:text-success' : 'tw:text-on-surface-variant' }}" />
             <div>
-                <div class="tw:text-on-surface-variant tw:text-ui-xs fw-semibold tw:uppercase">{{ __('supplier.copy.4_actual_arrival') }}</div>
-                <div class="fw-bold {{ $po->actual_arrival ? 'text-success' : 'tw:text-on-surface-variant' }} tw:text-ui-xs tw:mt-0.5">
+                <div class="tw:text-on-surface-variant tw:text-ui-xs tw:font-semibold tw:uppercase">{{ __('supplier.copy.4_actual_arrival') }}</div>
+                <div class="tw:font-bold {{ $po->actual_arrival ? 'tw:text-success' : 'tw:text-on-surface-variant' }} tw:text-ui-xs tw:mt-0.5">
                     {{ $po->actual_arrival ? $regionalFormatter->date($po->actual_arrival) : __('supplier.copy.in_transit') }}
                 </div>
             </div>
@@ -177,15 +177,15 @@
                         @endif
                     </x-slot:actions>
 
-                    <table class="table table-hover align-middle mb-0 tw:text-ui-xs w-100">
-                            <thead class="table-light text-center">
+                    <table class="ui-table ui-table--hover tw:align-middle tw:m-0 tw:text-ui-xs tw:w-full">
+                            <thead class="tw:text-center">
                                 <tr>
                                     @if($updatableProjectionCount > 0)
-                                        <th scope="col" class="text-center" style="width: 44px;">
-                                            <label class="tw:inline-flex tw:min-w-[28px] tw:min-h-[28px] tw:items-center tw:justify-content-center tw:cursor-pointer mb-0">
+                                        <th scope="col" class="tw:text-center" style="width: 44px;">
+                                            <label class="tw:inline-flex tw:min-w-[28px] tw:min-h-[28px] tw:items-center tw:justify-center tw:cursor-pointer tw:mb-0">
                                                 <input
                                                     type="checkbox"
-                                                    class="form-check-input m-0 ui-focus-ring"
+                                                    class="ui-check tw:m-0 ui-focus-ring"
                                                     id="bulkProgressSelectAll"
                                                     aria-label="{{ __('supplier.copy.select_all_updatable_items') }}"
                                                 >
@@ -193,7 +193,7 @@
                                         </th>
                                     @endif
                                     <th scope="col" style="width: 35px;">{{ __('supplier.copy.no') }}</th>
-                                    <th scope="col" class="text-start">{{ __('supplier.copy.material') }}</th>
+                                    <th scope="col" class="tw:text-start">{{ __('supplier.copy.material') }}</th>
                                     <th scope="col">{{ __('supplier.copy.ordered') }}</th>
                                     <th scope="col">{{ __('supplier.copy.accepted') }}</th>
                                     <th scope="col">{{ __('supplier.copy.in_transit') }}</th>
@@ -202,19 +202,19 @@
                                     <th scope="col">{{ __('supplier.copy.original_ready_date') }}</th>
                                     <th scope="col">{{ __('supplier.copy.current_estimated_ready') }}</th>
                                     <th scope="col">{{ __('supplier.copy.last_update') }}</th>
-                                    <th scope="col" class="text-end ui-sticky-col-right">{{ __('supplier.copy.actions') }}</th>
+                                    <th scope="col" class="tw:text-end ui-sticky-col-right">{{ __('supplier.copy.actions') }}</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 @foreach($itemProjections as $idx => $p)
                                     <tr>
                                         @if($updatableProjectionCount > 0)
-                                            <td class="text-center">
+                                            <td class="tw:text-center">
                                                 @if($p['can_update'])
-                                                    <label class="tw:inline-flex tw:min-w-[28px] tw:min-h-[28px] tw:items-center tw:justify-content-center tw:cursor-pointer mb-0">
+                                                    <label class="tw:inline-flex tw:min-w-[28px] tw:min-h-[28px] tw:items-center tw:justify-center tw:cursor-pointer tw:mb-0">
                                                         <input
                                                             type="checkbox"
-                                                            class="form-check-input m-0 ui-focus-ring bulk-progress-checkbox"
+                                                            class="ui-check tw:m-0 ui-focus-ring bulk-progress-checkbox"
                                                             value="{{ $p['award_id'] }}"
                                                             data-material-name="{{ $p['material_name'] }}"
                                                             data-current-rank="{{ \App\Models\PoItemProgressUpdate::STAGE_RANKS[$p['manual_progress_status']] ?? 10 }}"
@@ -226,42 +226,42 @@
                                                 @endif
                                             </td>
                                         @endif
-                                        <td class="text-center tw:text-on-surface-variant ui-tabular-nums">{{ $idx + 1 }}</td>
-                                        <td class="text-start ui-col-data-name">
-                                            <div class="fw-bold tw:text-on-surface">{{ $p['material_name'] }}</div>
+                                        <td class="tw:text-center tw:text-on-surface-variant ui-tabular-nums">{{ $idx + 1 }}</td>
+                                        <td class="tw:text-start ui-col-data-name">
+                                            <div class="tw:font-bold tw:text-on-surface">{{ $p['material_name'] }}</div>
                                             @if($p['hs_code'])
                                                 <div class="tw:text-on-surface-variant tw:text-ui-xs">{{ __('common.fields.hs_code') }}: {{ $p['hs_code'] }}</div>
                                             @endif
                                         </td>
-                                        <td class="text-center ui-tabular-nums fw-semibold">{{ $p['ordered_qty'] }} pcs</td>
-                                        <td class="text-center ui-tabular-nums text-success fw-semibold">{{ $p['accepted_qty'] }} pcs</td>
-                                        <td class="text-center ui-tabular-nums text-primary fw-semibold">{{ $p['in_transit_qty'] }} pcs</td>
-                                        <td class="text-center ui-tabular-nums fw-bold">
+                                        <td class="tw:text-center ui-tabular-nums tw:font-semibold">{{ $p['ordered_qty'] }} pcs</td>
+                                        <td class="tw:text-center ui-tabular-nums tw:text-success tw:font-semibold">{{ $p['accepted_qty'] }} pcs</td>
+                                        <td class="tw:text-center ui-tabular-nums tw:text-primary tw:font-semibold">{{ $p['in_transit_qty'] }} pcs</td>
+                                        <td class="tw:text-center ui-tabular-nums tw:font-bold">
                                             <x-ui.status-chip :tone="$p['supplier_controlled_qty'] > 0 ? 'info' : 'neutral'" size="sm">
                                                 {{ $p['supplier_controlled_qty'] }} pcs
                                             </x-ui.status-chip>
                                         </td>
-                                        <td class="text-center">
+                                        <td class="tw:text-center">
                                             <span class="ui-status-chip ui-status-chip--{{ $p['progress_tone'] }}">
                                                 {{ $p['progress_label'] }}
                                             </span>
                                         </td>
-                                        <td class="text-center ui-tabular-nums tw:text-on-surface-variant" title="{{ __('supplier.copy.original_quotation_ready_dispatch_commitment') }}">
+                                        <td class="tw:text-center ui-tabular-nums tw:text-on-surface-variant" title="{{ __('supplier.copy.original_quotation_ready_dispatch_commitment') }}">
                                             {{ $p['original_supplier_ready_date'] ? $regionalFormatter->date(\Carbon\Carbon::parse($p['original_supplier_ready_date'])) : '-' }}
                                         </td>
-                                        <td class="text-center ui-tabular-nums fw-semibold {{ $p['current_estimated_ready_date'] ? 'text-primary' : 'tw:text-on-surface-variant' }}">
+                                        <td class="tw:text-center ui-tabular-nums tw:font-semibold {{ $p['current_estimated_ready_date'] ? 'tw:text-primary' : 'tw:text-on-surface-variant' }}">
                                             {{ $p['current_estimated_ready_date'] ? $regionalFormatter->date($p['current_estimated_ready_date']) : '-' }}
                                         </td>
-                                        <td class="text-center tw:text-on-surface-variant" style="font-size: 0.75rem;">
+                                        <td class="tw:text-center tw:text-on-surface-variant" style="font-size: 0.75rem;">
                                             @if($p['last_progress_update_at'])
                                                 <div>{{ $regionalFormatter->timestamp($p['last_progress_update_at'], 'datetime') }}</div>
                                                 <div class="tw:text-on-surface-variant">{{ $p['last_updated_by'] ?? __('supplier.copy.supplier') }}</div>
                                             @else
-                                                <span class="text-muted">{{ __('supplier.copy.no_updates') }}</span>
+                                                <span class="tw:text-on-surface-variant">{{ __('supplier.copy.no_updates') }}</span>
                                             @endif
                                         </td>
-                                        <td class="text-end ui-sticky-col-right">
-                                            <div class="d-inline-flex gap-1 justify-content-end">
+                                        <td class="tw:text-end ui-sticky-col-right">
+                                            <div class="tw:inline-flex tw:gap-1 tw:justify-end">
                                                 @if($p['can_update'])
                                                     <x-ui.button type="button"
                                                             variant="outline-primary"
@@ -270,7 +270,7 @@
                                                         {{ __('supplier.copy.update') }}
                                                     </x-ui.button>
                                                 @else
-                                                    <span class="badge bg-light text-muted border tw:text-ui-xs" title="{{ __('supplier.copy.all_quantity_is_already_allocated_to_shipment_or_po_is_closed') }}">
+                                                    <span class="ui-status-chip ui-status-chip--neutral tw:text-ui-xs" title="{{ __('supplier.copy.all_quantity_is_already_allocated_to_shipment_or_po_is_closed') }}">
                                                         {{ __('supplier.copy.fully_dispatched') }}
                                                     </span>
                                                 @endif
@@ -296,19 +296,19 @@
                 :title="__('supplier.copy.ordered_material_breakdown')"
                 :description="__('supplier.copy.line_items_consolidated_from_your_accepted_quotation_offers')"
             >
-                <table class="table table-hover align-middle mb-0 tw:text-ui-xs w-100">
-                    <thead class="table-light text-center">
+                <table class="ui-table ui-table--hover tw:align-middle tw:m-0 tw:text-ui-xs tw:w-full">
+                    <thead class="tw:text-center">
                         <tr>
                             <th scope="col" class="tw:w-10">{{ __('supplier.copy.no') }}</th>
-                            <th scope="col" class="text-start">{{ __('supplier.copy.material') }}</th>
+                            <th scope="col" class="tw:text-start">{{ __('supplier.copy.material') }}</th>
                             <th scope="col">{{ __('supplier.copy.reference_no_pr') }}</th>
                             <th scope="col">{{ __('supplier.copy.remark') }}</th>
                             <th scope="col">{{ __('supplier.copy.qty') }}</th>
-                            <th scope="col" class="text-end">{{ __('supplier.copy.weight_unit') }}</th>
-                            <th scope="col" class="text-end">{{ __('supplier.copy.total_weight') }}</th>
-                            <th scope="col" class="text-end">{{ __('supplier.copy.price_kg_c55926') }} ({{ $po->currency }})</th>
-                            <th scope="col" class="text-end">{{ __('supplier.copy.amount_plain') }} ({{ $po->currency }})</th>
-                            <th scope="col" class="text-end">{{ __('supplier.copy.amount_idr') }}</th>
+                            <th scope="col" class="tw:text-end">{{ __('supplier.copy.weight_unit') }}</th>
+                            <th scope="col" class="tw:text-end">{{ __('supplier.copy.total_weight') }}</th>
+                            <th scope="col" class="tw:text-end">{{ __('supplier.copy.price_kg_c55926') }} ({{ $po->currency }})</th>
+                            <th scope="col" class="tw:text-end">{{ __('supplier.copy.amount_plain') }} ({{ $po->currency }})</th>
+                            <th scope="col" class="tw:text-end">{{ __('supplier.copy.amount_idr') }}</th>
                         </tr>
                     </thead>
                     @php
@@ -324,11 +324,11 @@
                         @php $rate = $quotationRates[$quotation->id] ?? null; @endphp
                         @if($po->quotations->count() > 1)
                             <tbody class="ui-po-group-banner">
-                                <tr class="table-primary">
-                                    <td colspan="10" class="fw-bold ps-3 tw:text-ui-xs">
-                                    <x-ui.icon name="folder" size="sm" class="me-1" />
+                                <tr class="tw:bg-primary-container tw:text-primary-container-foreground">
+                                    <td colspan="10" class="tw:font-bold tw:ps-3 tw:text-ui-xs">
+                                    <x-ui.icon name="folder" size="sm" class="tw:me-1" />
                                         {{ $quotation->purchaseRequisition->pr_number ?? 'PR -' }}
-                                        <span class="tw:text-on-surface-variant fw-normal ms-2">
+                                        <span class="tw:text-on-surface-variant tw:font-normal tw:ms-2">
                                             @if($rate)
                                                 &bull; {{ __('supplier.copy.exchange_rate_value') }}: 1 {{ $quotation->currency }} = Rp {{ $regionalFormatter->groupedDecimal($rate->rate_to_idr) }}
                                             @endif
@@ -349,18 +349,18 @@
                                     if ($idr === null) { $totalIdrUnavailable = true; } else { $totalIdr += $idr; }
                                 @endphp
                                 <tr>
-                                    <td class="text-center tw:text-on-surface-variant ui-tabular-nums">{{ $no++ }}</td>
-                                    <td class="text-start tw:text-on-surface ui-col-data-name">
-                                        <div class="fw-bold">{{ $item->prItem->material_name }}</div>
+                                    <td class="tw:text-center tw:text-on-surface-variant ui-tabular-nums">{{ $no++ }}</td>
+                                    <td class="tw:text-start tw:text-on-surface ui-col-data-name">
+                                        <div class="tw:font-bold">{{ $item->prItem->material_name }}</div>
                                         @if($item->is_available)
                                             <div class="tw:text-on-surface-variant tw:text-ui-xs">{{ __('common.final_copy.offer') }} {{ $item->available_dimension_label }}</div>
                                         @else
                                             <span class="ui-status-chip ui-status-chip--error tw:mt-0.5">{{ __('supplier.copy.not_available') }}</span>
                                         @endif
                                     </td>
-                                    <td class="text-start">
+                                    <td class="tw:text-start">
                                         @if($quotation->purchaseRequisition)
-                                            <a href="{{ route('supplier.quotations.show', $quotation) }}" class="text-primary fw-semibold text-decoration-none d-inline-flex align-items-center gap-1" title="{{ __('supplier.copy.open_related_quotation') }}">
+                                            <a href="{{ route('supplier.quotations.show', $quotation) }}" class="tw:text-primary tw:font-semibold tw:no-underline tw:inline-flex tw:items-center tw:gap-1" title="{{ __('supplier.copy.open_related_quotation') }}">
                                                 <span>{{ $quotation->purchaseRequisition->pr_number ?? '-' }}</span>
                                             <x-ui.icon name="external-link" size="sm" />
                                             </a>
@@ -368,16 +368,16 @@
                                             -
                                         @endif
                                     </td>
-                                    <td class="text-start ui-col-data-name">
+                                    <td class="tw:text-start ui-col-data-name">
                                         @if($poRemark !== '')
-                                            <span class="d-inline-block text-truncate tw:text-on-surface-variant tw:max-w-[180px]" title="{{ $poRemark }}">
+                                            <span class="tw:inline-block tw:truncate tw:text-on-surface-variant tw:max-w-[180px]" title="{{ $poRemark }}">
                                                 {{ \Illuminate\Support\Str::limit($poRemark, 40) }}
                                             </span>
                                         @else
                                             <span class="tw:text-on-surface-variant">-</span>
                                         @endif
                                     </td>
-                                    <td class="text-center fw-bold ui-tabular-nums">
+                                    <td class="tw:text-center tw:font-bold ui-tabular-nums">
                                         @if($item->is_available)
                                             {{ $orderedLine?->qty ?? $item->available_qty ?? $item->prItem->quantity_value }}
                                             @include('procurement._ordered_delta', ['ordered' => $orderedLine?->qty, 'requested' => $item->prItem?->quantity_value])
@@ -385,25 +385,25 @@
                                             <span class="ui-status-chip ui-status-chip--error">{{ __('supplier.copy.not_available') }}</span>
                                         @endif
                                     </td>
-                                    <td class="text-end ui-tabular-nums tw:text-on-surface-variant">
+                                    <td class="tw:text-end ui-tabular-nums tw:text-on-surface-variant">
                                         {{ $item->is_available ? $regionalFormatter->number(\App\Support\NumberFormat::maxDecimals($item->offered_weight_per_unit ?? $item->prItem->weight_needed), 'decimal') : '—' }}
-                                        @if($item->is_available && $item->is_estimated_weight)<span class="ui-status-chip ui-status-chip--warning ms-1">{{ __('supplier.copy.est_weight') }}</span>@endif
+                                        @if($item->is_available && $item->is_estimated_weight)<span class="ui-status-chip ui-status-chip--warning tw:ms-1">{{ __('supplier.copy.est_weight') }}</span>@endif
                                     </td>
-                                    <td class="text-end fw-bold text-primary ui-tabular-nums">{{ $item->is_available ? $regionalFormatter->number(\App\Support\NumberFormat::maxDecimals($orderedLine?->kg ?? $item->offered_total_weight ?? $item->prItem->total_weight), 'decimal') : '—' }}</td>
-                                    <td class="text-end ui-tabular-nums">
+                                    <td class="tw:text-end tw:font-bold tw:text-primary ui-tabular-nums">{{ $item->is_available ? $regionalFormatter->number(\App\Support\NumberFormat::maxDecimals($orderedLine?->kg ?? $item->offered_total_weight ?? $item->prItem->total_weight), 'decimal') : '—' }}</td>
+                                    <td class="tw:text-end ui-tabular-nums">
                                         {{ $regionalFormatter->groupedDecimal($item->price_per_kg, 4) }}
                                     </td>
-                                    <td class="text-end fw-semibold ui-tabular-nums">{{ $item->is_available ? $regionalFormatter->groupedDecimal($amount) : '—' }}</td>
-                                    <td class="text-end fw-bold tw:text-on-surface ui-tabular-nums">{{ ! $item->is_available ? '—' : ($idr === null ? '— ('.__('purchasing.copy.exchange_rate_unavailable').')' : 'Rp '.$regionalFormatter->groupedDecimal($idr)) }}</td>
+                                    <td class="tw:text-end tw:font-semibold ui-tabular-nums">{{ $item->is_available ? $regionalFormatter->groupedDecimal($amount) : '—' }}</td>
+                                    <td class="tw:text-end tw:font-bold tw:text-on-surface ui-tabular-nums">{{ ! $item->is_available ? '—' : ($idr === null ? '— ('.__('purchasing.copy.exchange_rate_unavailable').')' : 'Rp '.$regionalFormatter->groupedDecimal($idr)) }}</td>
                                 </tr>
                             @endforeach
                         </tbody>
                     @endforeach
-                    <tfoot class="table-light fw-bold border-top">
+                    <tfoot class="tw:bg-surface-container tw:font-bold tw:border-t tw:border-outline-variant">
                         <tr>
-                            <td colspan="8" class="text-end tw:text-on-surface">{{ __('common.fields.total') }}</td>
-                            <td class="text-end tw:text-on-surface ui-tabular-nums">{{ $regionalFormatter->groupedDecimal($totalAmount) }} {{ $po->currency }}</td>
-                            <td class="text-end text-primary ui-tabular-nums fs-6">{{ $totalIdrUnavailable ? '— ('.__('purchasing.copy.exchange_rate_unavailable').')' : 'Rp '.$regionalFormatter->groupedDecimal($totalIdr) }}</td>
+                            <td colspan="8" class="tw:text-end tw:text-on-surface">{{ __('common.fields.total') }}</td>
+                            <td class="tw:text-end tw:text-on-surface ui-tabular-nums">{{ $regionalFormatter->groupedDecimal($totalAmount) }} {{ $po->currency }}</td>
+                            <td class="tw:text-end tw:text-primary ui-tabular-nums tw:text-ui-base">{{ $totalIdrUnavailable ? '— ('.__('purchasing.copy.exchange_rate_unavailable').')' : 'Rp '.$regionalFormatter->groupedDecimal($totalIdr) }}</td>
                         </tr>
                     </tfoot>
                 </table>
@@ -418,7 +418,7 @@
             @endphp
 
             @if($pendingClaim || $latestClaim)
-                <x-ui.card :title="__('supplier.copy.material_claim_notice')" class="border-danger">
+                <x-ui.card :title="__('supplier.copy.material_claim_notice')" class="tw:border-error">
                     <x-slot:actions>
                         <span class="ui-status-chip {{ $pendingClaim ? 'ui-status-chip--error' : 'ui-status-chip--neutral' }}">
                             {{ $pendingClaim ? __('supplier.copy.action_required') : __('supplier.copy.claim_logged') }}
@@ -426,7 +426,7 @@
                     </x-slot:actions>
 
                     @if($pendingClaim)
-                        <p class="tw:text-on-surface-variant tw:text-ui-xs mb-3">
+                        <p class="tw:text-on-surface-variant tw:text-ui-xs tw:mb-3">
                             {{ __('supplier.copy.adasi_quality_control_has_submitted_an_ng_defect_claim_for_this_order_please_respond_before_the_dead') }}
                         </p>
                         <x-ui.button :href="route('supplier.claims.show', $pendingClaim)" variant="danger" size="sm" class="tw:w-full">
@@ -434,7 +434,7 @@
                             <span>{{ __('supplier.copy.respond_to_claim') }}</span>
                         </x-ui.button>
                     @else
-                        <p class="tw:text-on-surface-variant tw:text-ui-xs mb-3">
+                        <p class="tw:text-on-surface-variant tw:text-ui-xs tw:mb-3">
                             {{ __('supplier.copy.this_purchase_order_has_historical_claim_resolutions_recorded') }}
                         </p>
                         <x-ui.button :href="route('supplier.claims.show', $latestClaim)" variant="outline" size="sm" class="tw:w-full">
@@ -448,16 +448,16 @@
             {{-- PO Commercial Parameters --}}
             <x-ui.card :title="__('supplier.copy.order_information')">
                 <div class="tw:grid tw:gap-2.5">
-                    <div class="tw:p-2.5 tw:bg-surface-container border rounded">
-                        <div class="tw:text-on-surface-variant tw:text-ui-xs fw-semibold tw:uppercase">{{ __('supplier.copy.reference_no_pr') }}</div>
-                        <div class="fw-bold text-primary tw:text-ui-sm tw:mt-0.5">{{ $po->pr_reference }}</div>
+                    <div class="tw:p-2.5 tw:bg-surface-container tw:border tw:border-outline-variant tw:rounded-ui-md">
+                        <div class="tw:text-on-surface-variant tw:text-ui-xs tw:font-semibold tw:uppercase">{{ __('supplier.copy.reference_no_pr') }}</div>
+                        <div class="tw:font-bold tw:text-primary tw:text-ui-sm tw:mt-0.5">{{ $po->pr_reference }}</div>
                     </div>
-                    <div class="tw:p-2.5 tw:bg-surface-container border rounded">
-                        <div class="tw:text-on-surface-variant tw:text-ui-xs fw-semibold tw:uppercase">{{ __('supplier.copy.currency') }}</div>
-                        <div class="fw-bold tw:text-on-surface tw:text-ui-sm tw:mt-0.5">{{ $po->currency }}</div>
+                    <div class="tw:p-2.5 tw:bg-surface-container tw:border tw:border-outline-variant tw:rounded-ui-md">
+                        <div class="tw:text-on-surface-variant tw:text-ui-xs tw:font-semibold tw:uppercase">{{ __('supplier.copy.currency') }}</div>
+                        <div class="tw:font-bold tw:text-on-surface tw:text-ui-sm tw:mt-0.5">{{ $po->currency }}</div>
                     </div>
-                    <div class="tw:p-2.5 tw:bg-surface-container border rounded">
-                        <div class="tw:text-on-surface-variant tw:text-ui-xs fw-semibold tw:uppercase">{{ __('supplier.copy.order_remarks') }}</div>
+                    <div class="tw:p-2.5 tw:bg-surface-container tw:border tw:border-outline-variant tw:rounded-ui-md">
+                        <div class="tw:text-on-surface-variant tw:text-ui-xs tw:font-semibold tw:uppercase">{{ __('supplier.copy.order_remarks') }}</div>
                         <div class="tw:text-on-surface tw:text-ui-xs tw:mt-0.5">{{ $po->notes ?: __('supplier.copy.no_special_notes_recorded') }}</div>
                     </div>
                 </div>
@@ -486,7 +486,7 @@
                     @foreach($customsSummary as $docType => $item)
                         @php
                             $chipClasses = match($item['status']) {
-                                'pending' => 'bg-light text-muted border border-secondary-subtle',
+                                'pending' => 'ui-status-chip--neutral',
                                 'received', 'issued', 'processing' => 'ui-status-chip--info',
                                 'verified', 'done' => 'ui-status-chip--success',
                                 default => 'ui-status-chip--neutral'
@@ -494,13 +494,13 @@
                             $shipmentDocs = collect($item['shipment_documents'] ?? []);
                             $uploadedShipmentDocs = $shipmentDocs->filter(fn($sd) => !empty($sd['attachment']));
                         @endphp
-                        <div class="tw:border tw:border-outline-variant/70 tw:bg-surface tw:rounded-lg tw:p-3 tw:text-ui-xs tw-shadow-2xs">
+                        <div class="tw:border tw:border-outline-variant/70 tw:bg-surface tw:rounded-lg tw:p-3 tw:text-ui-xs tw:shadow-2xs">
                             <div class="tw:flex tw:items-center tw:justify-between tw:gap-2">
                                 <div class="tw:flex tw:items-center tw:gap-2 tw:min-w-0">
-                                    <x-ui.icon :name="$docIcons[$docType] ?? 'file-text'" size="sm" class="{{ $item['status'] === 'pending' ? 'tw:text-on-surface-variant' : 'text-primary' }} flex-shrink-0" />
-                                    <span class="fw-semibold tw:text-on-surface text-truncate">{{ $item['label'] }}</span>
+                                    <x-ui.icon :name="$docIcons[$docType] ?? 'file-text'" size="sm" class="{{ $item['status'] === 'pending' ? 'tw:text-on-surface-variant' : 'tw:text-primary' }} tw:shrink-0" />
+                                    <span class="tw:font-semibold tw:text-on-surface tw:truncate">{{ $item['label'] }}</span>
                                 </div>
-                                <span class="ui-status-chip {{ $chipClasses }} tw-shadow-2xs flex-shrink-0">
+                                <span class="ui-status-chip {{ $chipClasses }} tw:shadow-2xs tw:shrink-0">
                                     {{ $statusLabels[$item['status']] ?? \App\Support\StatusHelper::shipmentDocLabel($item['status']) }}
                                 </span>
                             </div>
@@ -509,9 +509,9 @@
                                 <div class="tw:mt-2.5 tw:pt-2.5 tw:border-t tw:border-outline-variant/60 tw:grid tw:gap-1.5">
                                     @foreach($uploadedShipmentDocs as $sDoc)
                                         <div class="tw:flex tw:items-center tw:justify-between tw:gap-2 tw:bg-surface-container-low tw:px-2.5 tw:py-1.5 tw:rounded-md tw:border tw:border-outline-variant/70">
-                                            <a href="{{ route('supplier.shipments.show', $sDoc['shipment']) }}" class="text-primary fw-semibold text-decoration-none d-inline-flex align-items-center gap-1.5 text-truncate tw:min-w-0 tw:hover:underline" title="{{ __('common.final_review.open_shipment', ['number' => $sDoc['shipment_number']]) }}">
-                                                <x-ui.icon name="truck" size="sm" class="flex-shrink-0" />
-                                                <span class="text-truncate">{{ $sDoc['shipment_number'] }}</span>
+                                            <a href="{{ route('supplier.shipments.show', $sDoc['shipment']) }}" class="tw:text-primary tw:font-semibold tw:no-underline tw:inline-flex tw:items-center tw:gap-1.5 tw:truncate tw:min-w-0 tw:hover:underline" title="{{ __('common.final_review.open_shipment', ['number' => $sDoc['shipment_number']]) }}">
+                                                <x-ui.icon name="truck" size="sm" class="tw:shrink-0" />
+                                                <span class="tw:truncate">{{ $sDoc['shipment_number'] }}</span>
                                             </a>
                                             <x-ui.button :href="route('attachments.show', $sDoc['attachment'])" target="_blank" variant="outline-primary" size="sm" class="tw:shrink-0" :title="__('common.actions.view').' '.$sDoc['attachment']->file_name">
                                                 <x-ui.icon name="file-text" size="sm" />
@@ -539,20 +539,20 @@
                         <form method="POST" action="{{ route('supplier.purchase-orders.item-progress.update', ['po_id' => $po, 'award_id' => $p['award']]) }}" class="progress-update-form">
                             @csrf
                             <div class="modal-header">
-                                <h5 class="modal-title tw:text-ui-base fw-bold" id="updateProgressModalLabel{{ $p['award_id'] }}">
+                                <h5 class="modal-title tw:text-ui-base tw:font-bold" id="updateProgressModalLabel{{ $p['award_id'] }}">
                                     {{ __('common.final_review.update_progress', ['material' => $p['material_name']]) }}
                                 </h5>
                                 <button type="button" class="btn-close" data-ui-modal-close aria-label="{{ __('supplier.copy.close') }}"></button>
                             </div>
                             <div class="modal-body">
-                                <div class="alert alert-info py-2 px-3 tw:text-ui-xs mb-3">
-                                    <x-ui.icon name="info" size="sm" class="me-1" />
+                                <div class="tw:rounded-ui-sm tw:border-s-4 tw:border-primary tw:bg-primary-container tw:text-primary-container-foreground tw:py-2 tw:px-3 tw:text-ui-xs tw:mb-3">
+                                    <x-ui.icon name="info" size="sm" class="tw:me-1" />
                                     {{ __('supplier.copy.this_update_applies_to') }} <strong>{{ $p['supplier_controlled_qty'] }} pcs</strong> {{ __('supplier.copy.currently_under_supplier_control') }}
                                 </div>
 
-                                <div class="mb-3">
-                                    <label class="form-label small fw-semibold">{{ __('supplier.copy.progress_status') }} <span class="text-danger">*</span></label>
-                                    <select name="status" class="form-select form-select-sm progress-status-select" data-current-rank="{{ \App\Models\PoItemProgressUpdate::STAGE_RANKS[$p['manual_progress_status']] ?? 10 }}" required>
+                                <div class="tw:mb-3">
+                                    <label class="ui-label tw:text-ui-xs tw:font-semibold">{{ __('supplier.copy.progress_status') }} <span class="tw:text-error">*</span></label>
+                                    <select name="status" class="ui-select ui-select--sm progress-status-select" data-current-rank="{{ \App\Models\PoItemProgressUpdate::STAGE_RANKS[$p['manual_progress_status']] ?? 10 }}" required>
                                         {{-- E3: the stage before production is automatic ("Order Confirmed" when the PO is created, incl. legacy awaiting_confirmation rows). --}}
                                         @unless(in_array($p['manual_progress_status'], \App\Models\PoItemProgressUpdate::SUPPLIER_UPDATABLE_STATUSES, true))
                                             <option value="" selected disabled>{{ __('supplier.copy.order_confirmed') }}</option>
@@ -563,7 +563,7 @@
                                     </select>
                                 </div>
 
-                                <div class="mb-3">
+                                <div class="tw:mb-3">
                                     <x-ui.date-picker
                                         name="estimated_ready_date"
                                         id="estimated_ready_date_{{ $p['award_id'] }}"
@@ -573,13 +573,13 @@
                                     />
                                 </div>
 
-                                <div class="mb-3">
-                                    <label class="form-label small fw-semibold">
-                                        {{ __('supplier.copy.progress_note_reason') }} <span class="backward-required-marker text-danger d-none">*</span>
+                                <div class="tw:mb-3">
+                                    <label class="ui-label tw:text-ui-xs tw:font-semibold">
+                                        {{ __('supplier.copy.progress_note_reason') }} <span class="backward-required-marker tw:text-error tw:hidden">*</span>
                                     </label>
-                                    <textarea name="note" class="form-control form-control-sm progress-note-input" rows="3" placeholder="{{ __('supplier.copy.provide_details_about_current_stage_or_operational_updates') }}"></textarea>
-                                    <div class="backward-notice alert alert-warning py-1.5 px-2.5 tw:text-ui-xs mt-1.5 d-none">
-                                        <x-ui.icon name="triangle-alert" size="sm" class="me-1 text-warning" />
+                                    <textarea name="note" class="ui-textarea tw:text-ui-xs tw:px-2 tw:py-1 progress-note-input" rows="3" placeholder="{{ __('supplier.copy.provide_details_about_current_stage_or_operational_updates') }}"></textarea>
+                                    <div class="backward-notice tw:rounded-ui-sm tw:border-s-4 tw:border-warning tw:bg-warning-container tw:text-warning-container-foreground tw:py-1.5 tw:px-2.5 tw:text-ui-xs tw:mt-1.5 tw:hidden">
+                                        <x-ui.icon name="triangle-alert" size="sm" class="tw:me-1 tw:text-warning" />
                                         <span>{{ __('supplier.copy.a_note_reason_is_required_because_progress_is_moving_backward') }}</span>
                                     </div>
                                 </div>
@@ -605,27 +605,27 @@
                     @csrf
                     <div id="bulkUpdateAwardInputs"></div>
                     <div class="modal-header">
-                        <h5 class="modal-title tw:text-ui-base fw-bold" id="bulkUpdateProgressModalLabel">
+                        <h5 class="modal-title tw:text-ui-base tw:font-bold" id="bulkUpdateProgressModalLabel">
                             {{ __('supplier.copy.bulk_update_material_progress') }}
                         </h5>
                         <button type="button" class="btn-close" data-ui-modal-close aria-label="{{ __('supplier.copy.close') }}"></button>
                     </div>
                     <div class="modal-body">
-                        <div class="alert alert-info py-2 px-3 tw:text-ui-xs mb-3" role="status" aria-live="polite">
-                            <div class="d-flex align-items-start gap-2">
+                        <div class="tw:rounded-ui-sm tw:border-s-4 tw:border-primary tw:bg-primary-container tw:text-primary-container-foreground tw:py-2 tw:px-3 tw:text-ui-xs tw:mb-3" role="status" aria-live="polite">
+                            <div class="tw:flex tw:items-start tw:gap-2">
                                 <x-ui.icon name="info" size="sm" class="tw:mt-0.5 tw:shrink-0" />
                                 <div>
-                                    <div id="bulkUpdateSummaryText" class="fw-semibold"></div>
-                                    <ul id="bulkUpdateSelectedList" class="mb-0 mt-1 ps-3"></ul>
+                                    <div id="bulkUpdateSummaryText" class="tw:font-semibold"></div>
+                                    <ul id="bulkUpdateSelectedList" class="tw:mb-0 tw:mt-1 tw:ps-3"></ul>
                                 </div>
                             </div>
                         </div>
 
-                        <div class="mb-3">
-                            <label for="bulkProgressStatus" class="form-label small fw-semibold">
-                                {{ __('supplier.copy.progress_status') }} <span class="text-danger" aria-hidden="true">*</span>
+                        <div class="tw:mb-3">
+                            <label for="bulkProgressStatus" class="ui-label tw:text-ui-xs tw:font-semibold">
+                                {{ __('supplier.copy.progress_status') }} <span class="tw:text-error" aria-hidden="true">*</span>
                             </label>
-                            <select name="status" id="bulkProgressStatus" class="form-select form-select-sm" required>
+                            <select name="status" id="bulkProgressStatus" class="ui-select ui-select--sm" required>
                                 <option value="" selected disabled>{{ __('supplier.copy.select_progress_status') }}</option>
                                 <option value="material_preparation">{{ __('supplier.copy.material_preparation') }}</option>
                                 <option value="on_production">{{ __('supplier.copy.on_production') }}</option>
@@ -633,7 +633,7 @@
                             </select>
                         </div>
 
-                        <div class="mb-3">
+                        <div class="tw:mb-3">
                             <x-ui.date-picker
                                 name="estimated_ready_date"
                                 id="bulk_estimated_ready_date"
@@ -643,13 +643,13 @@
                             />
                         </div>
 
-                        <div class="mb-3">
-                            <label for="bulkProgressNote" class="form-label small fw-semibold">
-                                {{ __('supplier.copy.progress_note_reason') }} <span id="bulkBackwardRequiredMarker" class="text-danger d-none" aria-hidden="true">*</span>
+                        <div class="tw:mb-3">
+                            <label for="bulkProgressNote" class="ui-label tw:text-ui-xs tw:font-semibold">
+                                {{ __('supplier.copy.progress_note_reason') }} <span id="bulkBackwardRequiredMarker" class="tw:text-error tw:hidden" aria-hidden="true">*</span>
                             </label>
-                            <textarea name="note" id="bulkProgressNote" class="form-control form-control-sm" rows="3" placeholder="{{ __('supplier.copy.provide_details_about_current_stage_or_operational_updates') }}"></textarea>
-                            <div id="bulkBackwardNotice" class="alert alert-warning py-1.5 px-2.5 tw:text-ui-xs mt-1.5 d-none" role="status" aria-live="polite">
-                                <x-ui.icon name="triangle-alert" size="sm" class="me-1 text-warning" />
+                            <textarea name="note" id="bulkProgressNote" class="ui-textarea tw:text-ui-xs tw:px-2 tw:py-1" rows="3" placeholder="{{ __('supplier.copy.provide_details_about_current_stage_or_operational_updates') }}"></textarea>
+                            <div id="bulkBackwardNotice" class="tw:rounded-ui-sm tw:border-s-4 tw:border-warning tw:bg-warning-container tw:text-warning-container-foreground tw:py-1.5 tw:px-2.5 tw:text-ui-xs tw:mt-1.5 tw:hidden" role="status" aria-live="polite">
+                                <x-ui.icon name="triangle-alert" size="sm" class="tw:me-1 tw:text-warning" />
                                 <span>{{ __('supplier.copy.backward_bulk_progress_notice') }}</span>
                             </div>
                         </div>
@@ -669,7 +669,7 @@
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title tw:text-ui-base fw-bold" id="progressHistoryModalLabel">
+                <h5 class="modal-title tw:text-ui-base tw:font-bold" id="progressHistoryModalLabel">
                     {{ __('supplier.copy.material_progress_history') }}
                 </h5>
                 <button type="button" class="btn-close" data-ui-modal-close aria-label="{{ __('supplier.copy.close') }}"></button>
@@ -707,12 +707,12 @@ document.addEventListener('DOMContentLoaded', function() {
             const marker = form.querySelector('.backward-required-marker');
 
             if (isBackward) {
-                notice?.classList.remove('d-none');
-                marker?.classList.remove('d-none');
+                notice?.classList.remove('tw:hidden');
+                marker?.classList.remove('tw:hidden');
                 noteInput?.setAttribute('required', 'required');
             } else {
-                notice?.classList.add('d-none');
-                marker?.classList.add('d-none');
+                notice?.classList.add('tw:hidden');
+                marker?.classList.add('tw:hidden');
                 noteInput?.removeAttribute('required');
             }
         });
@@ -741,8 +741,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const selectedStatus = bulkStatusSelect.value;
         const checked = getCheckedBulkItems();
         if (!selectedStatus || checked.length === 0) {
-            bulkBackwardNotice?.classList.add('d-none');
-            bulkBackwardMarker?.classList.add('d-none');
+            bulkBackwardNotice?.classList.add('tw:hidden');
+            bulkBackwardMarker?.classList.add('tw:hidden');
             bulkNoteInput?.removeAttribute('required');
             return;
         }
@@ -751,12 +751,12 @@ document.addEventListener('DOMContentLoaded', function() {
         const isAnyBackward = checked.some(cb => (parseInt(cb.dataset.currentRank, 10) || 10) > newRank);
 
         if (isAnyBackward) {
-            bulkBackwardNotice?.classList.remove('d-none');
-            bulkBackwardMarker?.classList.remove('d-none');
+            bulkBackwardNotice?.classList.remove('tw:hidden');
+            bulkBackwardMarker?.classList.remove('tw:hidden');
             bulkNoteInput?.setAttribute('required', 'required');
         } else {
-            bulkBackwardNotice?.classList.add('d-none');
-            bulkBackwardMarker?.classList.add('d-none');
+            bulkBackwardNotice?.classList.add('tw:hidden');
+            bulkBackwardMarker?.classList.add('tw:hidden');
             bulkNoteInput?.removeAttribute('required');
         }
     }
@@ -843,13 +843,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
         history.forEach(item => {
             const row = textElement('div', 'tw:p-3 tw:rounded-sm tw:border tw:border-outline-variant tw:bg-surface-container tw:text-ui-xs', '');
-            const header = textElement('div', 'd-flex justify-content-between align-items-center mb-1', '');
+            const header = textElement('div', 'tw:flex tw:justify-between tw:items-center tw:mb-1', '');
             const tone = allowedTones.includes(item.status_tone) ? item.status_tone : 'neutral';
-            const status = textElement('span', `ui-status-chip ui-status-chip--${tone} fw-bold`, item.status_label);
-            const timestamp = textElement('span', 'text-muted', item.created_at_display || '-');
+            const status = textElement('span', `ui-status-chip ui-status-chip--${tone} tw:font-bold`, item.status_label);
+            const timestamp = textElement('span', 'tw:text-on-surface-variant', item.created_at_display || '-');
             header.append(status, timestamp);
 
-            const details = textElement('div', 'tw:text-on-surface-variant mb-1', '');
+            const details = textElement('div', 'tw:text-on-surface-variant tw:mb-1', '');
             details.appendChild(textElement('strong', '', @json(__('supplier.copy.supplier_controlled_qty_snapshot'))));
             appendText(details, ` ${item.supplier_controlled_qty_snapshot} pcs`);
             if (item.estimated_ready_date_display) {
@@ -863,7 +863,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             row.append(header, details);
             if (item.note) {
-                const note = textElement('div', 'tw:p-2 tw:rounded-sm tw:bg-surface tw:border tw:border-outline-variant text-dark mt-1', '');
+                const note = textElement('div', 'tw:p-2 tw:rounded-sm tw:bg-surface tw:border tw:border-outline-variant tw:text-on-surface tw:mt-1', '');
                 note.appendChild(textElement('em', '', `"${item.note}"`));
                 row.appendChild(note);
             }
@@ -899,14 +899,14 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(res => res.json())
             .then(data => {
                 if (!data.history || data.history.length === 0) {
-                    bodyEl.innerHTML = '<div class="text-center py-4 text-muted">' + window.AdasiI18n.t('purchasing.js.no_progress') + '</div>';
+                    bodyEl.innerHTML = '<div class="tw:text-center tw:py-4 tw:text-on-surface-variant">' + window.AdasiI18n.t('purchasing.js.no_progress') + '</div>';
                     return;
                 }
 
                 bodyEl.replaceChildren(renderProgressHistoryRows(data.history));
             })
             .catch(() => {
-                bodyEl.innerHTML = '<div class="alert alert-danger py-2 px-3">' + window.AdasiI18n.t('purchasing.js.history_failed') + '</div>';
+                bodyEl.innerHTML = '<div class="tw:rounded-ui-sm tw:border tw:border-error tw:bg-error-container tw:text-on-error-container tw:text-ui-xs tw:py-2 tw:px-3">' + window.AdasiI18n.t('purchasing.js.history_failed') + '</div>';
             });
         });
     });

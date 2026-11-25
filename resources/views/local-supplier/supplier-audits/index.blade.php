@@ -68,13 +68,13 @@
             <x-ui.empty-state icon="history" :title="__('supplier_audit.empty.history')" />
         </x-slot:emptyState>
 
-        <table class="table table-hover align-middle tw:m-0 tw:text-ui-sm w-100">
-            <thead class="table-light">
+        <table class="ui-table ui-table--hover tw:align-middle tw:m-0 tw:text-ui-sm tw:w-full">
+            <thead>
                 <tr>
                     <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('supplier_audit.fields.period') }}</th>
                     <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('supplier_audit.fields.status') }}</th>
                     <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('supplier_audit.fields.submitted_at') }}</th>
-                    <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-right text-end">{{ __('common.table.action') }}</th>
+                    <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-end">{{ __('common.table.action') }}</th>
                 </tr>
             </thead>
             <tbody>
@@ -83,7 +83,7 @@
                         <td class="tw:font-medium tw:text-on-surface">{{ $audit->period_label }}</td>
                         <td><x-ui.status-chip :tone="\App\Support\StatusHelper::supplierAuditTone($audit->status)" size="sm">{{ \App\Support\StatusHelper::supplierAuditLabel($audit->status) }}</x-ui.status-chip></td>
                         <td class="tw:whitespace-nowrap" style="font-variant-numeric: tabular-nums;">{{ $audit->submitted_at ? $regionalFormatter->timestamp($audit->submitted_at) : '—' }}</td>
-                        <td class="tw:text-right text-end">
+                        <td class="tw:text-end">
                             <x-ui.row-action
                                 :href="route('local-supplier.supplier-audits.show', $audit)"
                                 :context="$audit->period_label"

@@ -82,7 +82,7 @@ class SupplierShipmentController extends Controller
                 ->addColumn('shipment_number_display', function ($shp) {
                     $url = route('supplier.shipments.show', $shp);
 
-                    return '<a href="'.e($url).'" class="fw-bold text-primary text-decoration-none">'.e($shp->shipment_number).'</a>';
+                    return '<a href="'.e($url).'" class="tw:font-bold tw:text-primary tw:no-underline">'.e($shp->shipment_number).'</a>';
                 })
                 ->addColumn('po_references', function ($shp) {
                     $pos = $shp->purchaseOrders();
@@ -90,7 +90,7 @@ class SupplierShipmentController extends Controller
                         return '<span class="tw:text-on-surface-variant">-</span>';
                     }
 
-                    return $pos->map(fn ($po) => '<span class="ui-status-chip ui-status-chip--neutral me-1">'.e($po->po_number).'</span>')->implode('');
+                    return $pos->map(fn ($po) => '<span class="ui-status-chip ui-status-chip--neutral tw:me-1">'.e($po->po_number).'</span>')->implode('');
                 })
                 ->addColumn('supplier_reference_display', fn ($shp) => e($shp->supplier_reference ?: '-'))
                 ->addColumn('items_count', fn ($shp) => '<span class="ui-tabular-nums">'.e($regionalFormatter->number((string) $shp->items->count(), 'plain')).'</span>')
@@ -98,7 +98,7 @@ class SupplierShipmentController extends Controller
                     $total = (int) $shp->items->sum('shipped_qty');
                     $text = number_format($total);
 
-                    return '<span class="fw-bold text-primary ui-tabular-nums">'.e($regionalFormatter->number($text, 'international')).' pcs</span>';
+                    return '<span class="tw:font-bold tw:text-primary ui-tabular-nums">'.e($regionalFormatter->number($text, 'international')).' pcs</span>';
                 })
                 ->addColumn('actual_weight', function ($shp) use ($regionalFormatter) {
                     $total = (float) $shp->items->sum('actual_weight_kg');
@@ -109,7 +109,7 @@ class SupplierShipmentController extends Controller
                 ->addColumn('total_weight', function ($shp) {
                     $total = (float) $shp->items->sum('actual_weight_kg');
 
-                    return '<span class="fw-bold text-primary ui-tabular-nums">'.NumberFormat::maxDecimals($total).' Kg</span>';
+                    return '<span class="tw:font-bold tw:text-primary ui-tabular-nums">'.NumberFormat::maxDecimals($total).' Kg</span>';
                 })
                 ->addColumn('shipment_date', fn ($shp) => $shp->shipment_date ? '<span class="ui-tabular-nums">'.e($shp->shipment_date->format('d M Y')).'</span>' : '-')
                 ->addColumn('shipment_date_display', fn ($shp) => $shp->shipment_date ? '<span class="ui-tabular-nums">'.e($regionalFormatter->date($shp->shipment_date, 'human')).'</span>' : '-')
@@ -138,16 +138,16 @@ class SupplierShipmentController extends Controller
                             .'</button></form>';
                         $secondaryActions[] = '<li><a href="'.$viewUrl.'" class="dropdown-item">'.e(__('shipments.copy.view_details')).'</a></li>';
                         $secondaryActions[] = '<li><a href="'.$editUrl.'" class="dropdown-item">'.e(__('shipments.copy.edit_draft')).'</a></li>';
-                        $secondaryActions[] = '<li><form action="'.route('supplier.shipments.cancel', $shp).'" method="POST" class="cancel-form">'.csrf_field().'<button type="button" class="dropdown-item text-danger btn-cancel-shipment btn-delete">'.e(__('shipments.copy.cancel_shipment')).'</button></form></li>';
+                        $secondaryActions[] = '<li><form action="'.route('supplier.shipments.cancel', $shp).'" method="POST" class="cancel-form">'.csrf_field().'<button type="button" class="dropdown-item tw:text-error btn-cancel-shipment btn-delete">'.e(__('shipments.copy.cancel_shipment')).'</button></form></li>';
                     } else {
                         $primaryAction = RowAction::detail($viewUrl, $shp->shipment_number);
                     }
 
                     if ($secondaryActions === []) {
-                        return '<div class="d-inline-flex justify-content-end">'.$primaryAction.'</div>';
+                        return '<div class="tw:inline-flex tw:justify-end">'.$primaryAction.'</div>';
                     }
 
-                    return '<div class="d-inline-flex align-items-center justify-content-end gap-1">'.$primaryAction
+                    return '<div class="tw:inline-flex tw:items-center tw:justify-end tw:gap-1">'.$primaryAction
                         .'<div class="dropdown"><button type="button" class="ui-data-action ui-focus-ring dropdown-toggle" data-ui-dropdown-trigger popovertarget="dd-shp-'.e($shp->hash).'" aria-controls="dd-shp-'.e($shp->hash).'" aria-expanded="false" aria-label="'.e(__('purchasing.action_names.more_actions_for', ['name' => $shp->shipment_number])).'">'.e(__('shipments.copy.more')).'</button>'
                         .'<ul id="dd-shp-'.e($shp->hash).'" popover="auto" data-ui-dropdown-menu class="dropdown-menu dropdown-menu-end">'.implode('', $secondaryActions).'</ul></div></div>';
                 })

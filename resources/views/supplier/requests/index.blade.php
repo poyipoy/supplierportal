@@ -94,7 +94,7 @@
                         id="filter_request_search"
                         name="search"
                         maxlength="100"
-                        class="form-control form-control-sm ui-filter-bar__search-input"
+                        class="ui-input ui-input--sm ui-filter-bar__search-input"
                         value="{{ $filters['search'] ?? '' }}"
                         placeholder="{{ __('supplier.copy.e_g_req_05_2026_001') }}"
                     >
@@ -102,7 +102,7 @@
 
                 <x-slot:filters>
                     <label for="filter_request_period" class="tw:sr-only">{{ __('supplier_requests.period') }}</label>
-                    <select id="filter_request_period" name="period_id" class="form-select form-select-sm tw:w-full tw:min-w-0 tw:sm:w-48">
+                    <select id="filter_request_period" name="period_id" class="ui-select ui-select--sm tw:w-full tw:min-w-0 tw:sm:w-48">
                         <option value="">{{ __('supplier_requests.all_periods') }}</option>
                         @foreach($periods as $period)
                             <option value="{{ $period->id }}" @selected((string) ($filters['period_id'] ?? '') === (string) $period->id)>{{ $period->display_label }}</option>
@@ -110,7 +110,7 @@
                     </select>
 
                     <label for="filter_request_status" class="tw:sr-only">{{ __('supplier.copy.my_quotation_status') }}</label>
-                    <select id="filter_request_status" name="status" class="form-select form-select-sm tw:w-full tw:min-w-0 tw:sm:w-48">
+                    <select id="filter_request_status" name="status" class="ui-select ui-select--sm tw:w-full tw:min-w-0 tw:sm:w-48">
                         <option value="">{{ __('supplier.copy.all_statuses') }}</option>
                         <option value="unresponded" @selected(($filters['status'] ?? '') === 'unresponded')>{{ __('supplier.copy.awaiting_quotation') }}</option>
                         @foreach(['draft', 'revision_requested', 'submitted', 'accepted', 'rejected', 'all_unavailable'] as $status)
@@ -130,15 +130,15 @@
             <x-ui.empty-state :title="__('supplier_requests.empty_title')" :description="__('supplier_requests.empty_description')" />
         </x-slot:emptyState>
 
-        <table class="table table-hover align-middle mb-0 tw:text-ui-xs w-100" id="supplierRequestTable">
-            <thead class="table-light">
+        <table class="ui-table ui-table--hover tw:align-middle tw:m-0 tw:text-ui-xs tw:w-full" id="supplierRequestTable">
+            <thead>
                 <tr>
                     <th scope="col">{{ __('supplier.copy.pr_number') }}</th>
                     <th scope="col">{{ __('supplier_requests.columns.period') }}</th>
                     <th scope="col">{{ __('supplier_requests.columns.updated') }}</th>
-                    <th scope="col" class="text-center">{{ __('supplier.copy.items') }}</th>
-                    <th scope="col" class="text-center">{{ __('supplier_requests.columns.my_quotation') }}</th>
-                    <th scope="col" class="tw:text-right text-end">{{ __('common.table.action') }}</th>
+                    <th scope="col" class="tw:text-center">{{ __('supplier.copy.items') }}</th>
+                    <th scope="col" class="tw:text-center">{{ __('supplier_requests.columns.my_quotation') }}</th>
+                    <th scope="col" class="tw:text-end">{{ __('common.table.action') }}</th>
                 </tr>
             </thead>
             <tbody>
@@ -149,13 +149,13 @@
                         $status = $quotation?->status;
                     @endphp
                     <tr>
-                        <td class="fw-bold">
-                            <a href="{{ route('supplier.requests.show', $pr) }}" class="text-primary ui-focus-ring">{{ $pr->pr_number ?? '-' }}</a>
+                        <td class="tw:font-bold">
+                            <a href="{{ route('supplier.requests.show', $pr) }}" class="tw:text-primary ui-focus-ring">{{ $pr->pr_number ?? '-' }}</a>
                         </td>
                         <td>{{ $pr->period?->display_label ?? '-' }}</td>
                         <td class="ui-tabular-nums tw:text-on-surface-variant">@bizdt($pr->updated_at)</td>
-                        <td class="text-center ui-tabular-nums">{{ $isCancelledForSupplier ? '-' : trans_choice('supplier_requests.item_count', $pr->items_count, ['count' => $pr->items_count]) }}</td>
-                        <td class="text-center">
+                        <td class="tw:text-center ui-tabular-nums">{{ $isCancelledForSupplier ? '-' : trans_choice('supplier_requests.item_count', $pr->items_count, ['count' => $pr->items_count]) }}</td>
+                        <td class="tw:text-center">
                             @if($isCancelledForSupplier)
                                 <x-ui.status-chip tone="error" icon="x-circle">{{ __('status.pr.cancelled') }}</x-ui.status-chip>
                             @elseif($status)
@@ -164,7 +164,7 @@
                                 <span class="ui-status-chip ui-status-chip--error">{{ __('supplier_requests.not_responded') }}</span>
                             @endif
                         </td>
-                        <td class="tw:text-right text-end">
+                        <td class="tw:text-end">
                             <x-ui.row-action
                                 :href="route('supplier.requests.show', $pr)"
                                 :context="$pr->pr_number ?? '-'"

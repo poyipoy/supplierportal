@@ -28,17 +28,17 @@
     @if($mtcFiles->isEmpty())
         <p class="tw:m-0 tw:text-ui-xs tw:text-on-surface-variant">{{ __('shipments.mtc.none') }}</p>
     @else
-        <div class="table-responsive">
-            <table class="table table-sm align-middle mb-0 tw:text-ui-xs">
-                <caption class="visually-hidden">{{ __('shipments.mtc.section_title') }}</caption>
-                <thead class="table-light">
+        <div class="ui-table-scroll">
+            <table class="ui-table ui-table--sm tw:align-middle tw:m-0 tw:text-ui-xs">
+                <caption class="tw:sr-only">{{ __('shipments.mtc.section_title') }}</caption>
+                <thead>
                     <tr>
                         <th scope="col">{{ __('shipments.mtc.file') }}</th>
-                        <th scope="col" class="text-end">{{ __('shipments.mtc.size') }}</th>
+                        <th scope="col" class="tw:text-end">{{ __('shipments.mtc.size') }}</th>
                         <th scope="col">{{ __('shipments.mtc.uploaded_by') }}</th>
                         <th scope="col">{{ __('shipments.mtc.uploaded_at') }}</th>
                         <th scope="col">{{ __('shipments.mtc.inspection') }}</th>
-                        @if($canRemove)<th scope="col"><span class="visually-hidden">{{ __('shipments.mtc.remove') }}</span></th>@endif
+                        @if($canRemove)<th scope="col"><span class="tw:sr-only">{{ __('shipments.mtc.remove') }}</span></th>@endif
                     </tr>
                 </thead>
                 <tbody>
@@ -49,12 +49,12 @@
                         @endphp
                         <tr>
                             <td class="ui-col-data-name">
-                                <a href="{{ route('attachments.show', $file) }}" target="_blank" rel="noopener" class="text-primary text-decoration-none d-inline-flex align-items-center gap-1 fw-medium">
+                                <a href="{{ route('attachments.show', $file) }}" target="_blank" rel="noopener" class="tw:text-primary tw:no-underline tw:inline-flex tw:items-center tw:gap-1 tw:font-medium">
                                     <x-ui.icon name="file-text" size="sm" />
-                                    <span class="text-truncate" style="max-width: 16rem;" title="{{ $file->file_name }}">{{ $file->file_name }}</span>
+                                    <span class="tw:truncate" style="max-width: 16rem;" title="{{ $file->file_name }}">{{ $file->file_name }}</span>
                                 </a>
                             </td>
-                            <td class="text-end ui-tabular-nums">{{ $bytes === null ? '—' : $regionalFormatter->number((string) max(1, (int) round($bytes / 1024)), 'plain').' KB' }}</td>
+                            <td class="tw:text-end ui-tabular-nums">{{ $bytes === null ? '—' : $regionalFormatter->number((string) max(1, (int) round($bytes / 1024)), 'plain').' KB' }}</td>
                             <td class="ui-col-data-name">{{ $file->uploader?->name ?? '—' }}</td>
                             <td class="ui-tabular-nums">@bizdt($file->created_at)</td>
                             <td>
@@ -63,7 +63,7 @@
                                 </x-ui.status-chip>
                             </td>
                             @if($canRemove)
-                                <td class="text-end">
+                                <td class="tw:text-end">
                                     <form method="POST" action="{{ route('supplier.shipments.mtc.destroy', [$shipment, $file]) }}" class="tw:m-0">
                                         @csrf
                                         @method('DELETE')

@@ -220,19 +220,25 @@
         -moz-appearance: textfield !important;
     }
 
-    /* Reset intrusive Bootstrap validation icon and padding-right in compact table cells */
-    .quotation-items-table .form-control.is-invalid {
+    /* Reset validation icon and padding-right in compact table cells */
+    .quotation-items-table :is(.ui-input, .form-control).is-invalid {
         background-image: none !important;
         padding-right: .5rem !important;
         padding-left: .5rem !important;
-        border-color: var(--md-error, #dc3545) !important;
+        border-color: var(--md-error) !important;
     }
 
-    .quotation-items-table .invalid-feedback {
+    .quotation-items-table :is(.ui-field-error, .invalid-feedback) {
+        display: none;
         font-size: .6875rem;
         line-height: 1.2;
         margin-top: .25rem;
         text-align: left;
+    }
+
+    .quotation-items-table .is-invalid ~ :is(.ui-field-error, .invalid-feedback),
+    .quotation-items-table .ui-field-error.tw\:block {
+        display: block;
     }
 
     .quotation-items-table .quotation-editable:focus {
@@ -583,7 +589,7 @@
         color: var(--md-on-surface);
     }
 
-    .mtc-file-action-btn.text-danger:hover {
+    .mtc-file-action-btn.tw\:text-error:hover {
         background: var(--md-error-container);
         color: var(--md-error) !important;
     }
@@ -690,11 +696,11 @@
         <x-slot:meta>
             @if($quotation?->status === 'revision_requested')
                 <span class="ui-status-chip ui-status-chip--warning">
-                    <x-ui.icon name="rotate-ccw" size="sm" class="me-1" />{{ __('supplier.copy.revision_requested') }}
+                    <x-ui.icon name="rotate-ccw" size="sm" class="tw:me-1" />{{ __('supplier.copy.revision_requested') }}
                 </span>
             @else
                 <span class="ui-status-chip ui-status-chip--neutral">
-                    <x-ui.icon name="square-pen" size="sm" class="me-1" />{{ __('supplier.copy.new_offer') }}
+                    <x-ui.icon name="square-pen" size="sm" class="tw:me-1" />{{ __('supplier.copy.new_offer') }}
                 </span>
             @endif
         </x-slot:meta>
@@ -761,16 +767,16 @@
                 :description="__('supplier.copy.general_requisition_parameters_and_notes_established_by_adasi_purchasing')"
             >
                 <div class="tw:grid tw:gap-3 tw:sm:grid-cols-2 tw:lg:grid-cols-3">
-                    <div class="tw:p-2.5 tw:bg-surface-low border rounded">
-                        <div class="tw:text-on-surface-variant tw:text-ui-xs fw-semibold tw:uppercase">{{ __('supplier.copy.procurement_period') }}</div>
-                        <div class="fw-bold tw:text-on-surface tw:text-ui-sm tw:mt-0.5">{{ $pr->period->display_label }}</div>
+                    <div class="tw:p-2.5 tw:bg-surface-low tw:border tw:border-outline-variant tw:rounded-ui-md">
+                        <div class="tw:text-on-surface-variant tw:text-ui-xs tw:font-semibold tw:uppercase">{{ __('supplier.copy.procurement_period') }}</div>
+                        <div class="tw:font-bold tw:text-on-surface tw:text-ui-sm tw:mt-0.5">{{ $pr->period->display_label }}</div>
                     </div>
-                    <div class="tw:p-2.5 tw:bg-surface-low border rounded">
-                        <div class="tw:text-on-surface-variant tw:text-ui-xs fw-semibold tw:uppercase">{{ __('supplier.copy.requisition_reference') }}</div>
-                        <div class="fw-bold text-primary tw:text-ui-sm tw:mt-0.5">{{ $pr->pr_number ?? 'PR -' }}</div>
+                    <div class="tw:p-2.5 tw:bg-surface-low tw:border tw:border-outline-variant tw:rounded-ui-md">
+                        <div class="tw:text-on-surface-variant tw:text-ui-xs tw:font-semibold tw:uppercase">{{ __('supplier.copy.requisition_reference') }}</div>
+                        <div class="tw:font-bold tw:text-primary tw:text-ui-sm tw:mt-0.5">{{ $pr->pr_number ?? 'PR -' }}</div>
                     </div>
-                    <div class="tw:sm:col-span-2 tw:lg:col-span-1 tw:p-2.5 tw:bg-surface-low border rounded">
-                        <div class="tw:text-on-surface-variant tw:text-ui-xs fw-semibold tw:uppercase">{{ __('supplier.copy.purchasing_instructions') }}</div>
+                    <div class="tw:sm:col-span-2 tw:lg:col-span-1 tw:p-2.5 tw:bg-surface-low tw:border tw:border-outline-variant tw:rounded-ui-md">
+                        <div class="tw:text-on-surface-variant tw:text-ui-xs tw:font-semibold tw:uppercase">{{ __('supplier.copy.purchasing_instructions') }}</div>
                         <div class="tw:text-on-surface tw:text-ui-xs tw:mt-0.5">{{ $pr->notes ?: __('supplier.copy.no_additional_notes_provided') }}</div>
                     </div>
                 </div>
@@ -785,7 +791,7 @@
                 :title="__('supplier.copy.commercial_terms_and_logistics')"
                 :description="__('supplier.copy.specify_estimated_delivery_timeline_proposal_validity_duration_and_payment_arrangements')"
             >
-                <x-ui.alert id="allUnavailableTermsNotice" tone="info" class="tw:mb-4 d-none">
+                <x-ui.alert id="allUnavailableTermsNotice" tone="info" class="tw:mb-4 tw:hidden">
                     {{ __('common.final_review.all_unavailable') }}
                 </x-ui.alert>
 
@@ -830,8 +836,8 @@
                 :description="__('procurement.quotation.status_follow_up_description')"
                 data-quotation-section="status"
             >
-                <div class="d-flex flex-wrap align-items-center tw:gap-2">
-                    <span class="tw:text-ui-xs fw-semibold tw:uppercase tw:text-on-surface-variant">{{ __('procurement.quotation.current_status') }}</span>
+                <div class="tw:flex tw:flex-wrap tw:items-center tw:gap-2">
+                    <span class="tw:text-ui-xs tw:font-semibold tw:uppercase tw:text-on-surface-variant">{{ __('procurement.quotation.current_status') }}</span>
                     @if($quotation)
                         <x-status-badge type="quotation" :status="$quotation->status" />
                     @else
@@ -844,8 +850,8 @@
                     </x-ui.alert>
                 @endif
                 @if($quotation?->reviewer_notes)
-                    <div class="tw:mt-3 tw:p-2.5 bg-warning-subtle border border-warning-subtle rounded tw:text-ui-xs text-warning-emphasis">
-                        <span class="fw-bold d-block tw:mb-0.5"><x-ui.icon name="square-pen" size="sm" class="me-1" />{{ __('supplier.copy.purchasing_reviewer_notes') }}</span>
+                    <div class="tw:mt-3 tw:p-2.5 tw:bg-warning-container tw:border tw:border-warning tw:rounded-ui-md tw:text-ui-xs tw:text-warning-container-foreground">
+                        <span class="tw:font-bold tw:block tw:mb-0.5"><x-ui.icon name="square-pen" size="sm" class="tw:me-1" />{{ __('supplier.copy.purchasing_reviewer_notes') }}</span>
                         {{ $quotation->reviewer_notes }}
                     </div>
                 @elseif($quotation?->status !== 'revision_requested')
@@ -860,10 +866,10 @@
                 :description="__($shipmentMtcEnabled ? 'supplier.copy.specify_your_availability_dimensions_and_price_per_kg_shipment_mtc' : 'supplier.copy.specify_your_availability_dimensions_price_per_kg_and_attach_mtc_certificates')"
             >
                 <x-slot:actions>
-                    <div class="d-flex align-items-center gap-2 flex-wrap justify-content-end">
+                    <div class="tw:flex tw:items-center tw:gap-2 tw:flex-wrap tw:justify-end">
                         {{-- Autosave Indicator --}}
-                        <span id="autoSaveBadge" class="ui-status-chip ui-status-chip--success d-none">
-                            <x-ui.icon name="check" size="sm" class="me-1" />{{ __('supplier.copy.draft_saved') }}
+                        <span id="autoSaveBadge" class="ui-status-chip ui-status-chip--success tw:hidden">
+                            <x-ui.icon name="check" size="sm" class="tw:me-1" />{{ __('supplier.copy.draft_saved') }}
                         </span>
 
                         {{-- Import Controls --}}
@@ -876,22 +882,22 @@
                         </x-ui.button>
 
                         {{-- Currency Select --}}
-                        <div class="d-flex align-items-center tw:gap-1.5 ps-2 border-start">
-                            <label for="quotationCurrency" class="small fw-semibold tw:text-on-surface mb-0">{{ __('supplier.copy.currency_b66c8f') }}</label>
-                            <select name="currency" id="quotationCurrency" class="form-select form-select-sm fw-bold @error('currency') is-invalid @enderror" style="width: 100px;" required>
+                        <div class="tw:flex tw:items-center tw:gap-1.5 tw:ps-2 tw:border-s tw:border-outline-variant">
+                            <label for="quotationCurrency" class="tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:mb-0">{{ __('supplier.copy.currency_b66c8f') }}</label>
+                            <select name="currency" id="quotationCurrency" class="ui-select ui-select--sm tw:font-bold @error('currency') is-invalid @enderror" style="width: 100px;" required>
                                 <option value="" disabled @selected($supplierCurrency === '')>{{ __('supplier.copy.select') }}</option>
                                 @foreach($currencyOptions as $currency)
                                     <option value="{{ $currency }}" @selected(old('currency', $supplierCurrency) === $currency)>{{ $currency }}</option>
                                 @endforeach
                             </select>
                             @error('currency')
-                                <div class="invalid-feedback">{{ $message }}</div>
+                                <div class="ui-field-error">{{ $message }}</div>
                             @enderror
                         </div>
                     </div>
                 </x-slot:actions>
 
-                <x-ui.alert id="currencyRateWarning" tone="warning" :title="__('supplier.copy.exchange_rate_required')" class="tw:mb-2 {{ $supplierCurrency && ! $supplierRate ? '' : 'd-none' }}">
+                <x-ui.alert id="currencyRateWarning" tone="warning" :title="__('supplier.copy.exchange_rate_required')" class="tw:mb-2 {{ $supplierCurrency && ! $supplierRate ? '' : 'tw:hidden' }}">
                     {{ __('supplier.copy.exchange_rate_for') }} <strong id="currencyWarningLabel">{{ $supplierCurrency ?: '-' }}</strong> {{ __('supplier.copy.is_not_recorded_in_master_exchange_rates_contact_admin_before_final_submission') }}
                 </x-ui.alert>
 
@@ -907,15 +913,15 @@
                 @endphp
 
                 {{-- Material Entry Table --}}
-                <div class="border rounded overflow-hidden">
-                    <div id="quotationTableScrollHint" class="tw:bg-surface-low border-bottom px-3 tw:py-1.5 tw:text-on-surface-variant tw:text-ui-xs d-flex align-items-center tw:gap-1.5">
+                <div class="tw:border tw:border-outline-variant tw:rounded-ui-md tw:overflow-hidden">
+                    <div id="quotationTableScrollHint" class="tw:bg-surface-low tw:border-b tw:border-outline-variant tw:px-3 tw:py-1.5 tw:text-on-surface-variant tw:text-ui-xs tw:flex tw:items-center tw:gap-1.5">
                         <x-ui.icon name="move-horizontal" size="sm" />
                         <span>{{ __('supplier.copy.scroll_horizontally_to_compare_requested_and_offer_values_for_each_material') }}</span>
                     </div>
 
-                    <div class="table-responsive quotation-table-scroll ui-table-sticky" role="region" tabindex="0" aria-label="{{ __('supplier.copy.material_quotation_price_entry') }}" aria-describedby="quotationTableScrollHint">
-                        <table class="table table-bordered align-middle mb-0 quotation-items-table tw:text-ui-xs @unless($shipmentMtcEnabled) has-mtc-column @endunless">
-                            <caption class="visually-hidden">{{ __('supplier.copy.supplier_quotation_entry_table_with_paired_requested_and_offer_rows_for_each_material') }}</caption>
+                    <div class="ui-table-responsive quotation-table-scroll ui-table-sticky" role="region" tabindex="0" aria-label="{{ __('supplier.copy.material_quotation_price_entry') }}" aria-describedby="quotationTableScrollHint">
+                        <table class="ui-table ui-table--bordered tw:align-middle tw:m-0 quotation-items-table tw:text-ui-xs @unless($shipmentMtcEnabled) has-mtc-column @endunless">
+                            <caption class="tw:sr-only">{{ __('supplier.copy.supplier_quotation_entry_table_with_paired_requested_and_offer_rows_for_each_material') }}</caption>
                             <colgroup>
                                 <col class="quotation-col-number">
                                 <col class="quotation-col-material">
@@ -936,7 +942,7 @@
                                 @endunless
                                 <col class="quotation-col-availability">
                             </colgroup>
-                            <thead class="table-light text-center">
+                            <thead class="tw:text-center">
                                 <tr class="quotation-field-header">
                                     <th scope="col" class="quotation-sticky-number">{{ __('supplier.copy.no') }}</th>
                                     <th scope="col" class="quotation-sticky-material ui-table-sticky-col">{{ __('supplier.copy.material') }}</th>
@@ -986,9 +992,9 @@
                                     data-requested-total-weight="{{ $item->total_weight }}"
                                 >
                                     <tr class="quotation-requested-row">
-                                        <td rowspan="2" class="text-center quotation-sticky-number tw:text-on-surface-variant ui-tabular-nums">{{ $index + 1 }}</td>
-                                        <td rowspan="2" class="quotation-sticky-material ui-table-sticky-col align-top">
-                                            <div class="fw-bold tw:text-on-surface">{{ $item->material_name }}</div>
+                                        <td rowspan="2" class="tw:text-center quotation-sticky-number tw:text-on-surface-variant ui-tabular-nums">{{ $index + 1 }}</td>
+                                        <td rowspan="2" class="quotation-sticky-material ui-table-sticky-col tw:align-top">
+                                            <div class="tw:font-bold tw:text-on-surface" data-quotation-material-label>{{ $item->material_name }}</div>
                                             <div class="tw:text-on-surface-variant tw:text-ui-xs tw:mt-0.5">
                                                 {{ $item->hs_code ? 'HS '.$item->hs_code.' · ' : '' }}{{ $item->shape ?: '-' }}
                                             </div>
@@ -1014,30 +1020,30 @@
                                             <input type="hidden" name="items[{{ $index }}][pr_item_id]" value="{{ $item->id }}">
                                             <input type="hidden" name="items[{{ $index }}][is_available]" class="item-availability-input" value="{{ $itemIsAvailable ? '1' : '0' }}">
                                             @error("items.{$index}.pr_item_id")
-                                                <div class="text-danger small tw:mt-1">{{ $message }}</div>
+                                                <div class="tw:text-error tw:text-ui-xs tw:mt-1">{{ $message }}</div>
                                             @enderror
                                         </td>
                                         <td class="quotation-sticky-row-type"><span class="quotation-row-label">{{ __('supplier.copy.requested') }}</span></td>
-                                        <td class="text-center fw-semibold ui-tabular-nums">{{ $item->quantity_value }}</td>
+                                        <td class="tw:text-center tw:font-semibold ui-tabular-nums">{{ $item->quantity_value }}</td>
                                         @foreach($quotationScalarDimensionOrder as $dimension)
-                                            <td class="text-end ui-tabular-nums tw:text-on-surface-variant">
+                                            <td class="tw:text-end ui-tabular-nums tw:text-on-surface-variant">
                                                 {{ in_array($dimension, $relevantDimensions, true) ? \App\Support\NumberFormat::maxDecimals($item->{$dimension}) : '—' }}
                                             </td>
                                         @endforeach
-                                        <td class="text-end ui-tabular-nums tw:text-on-surface-variant">
+                                        <td class="tw:text-end ui-tabular-nums tw:text-on-surface-variant">
                                             {{ in_array('length', $relevantDimensions, true) ? \App\Support\NumberFormat::maxDecimals($item->length) : '—' }}
                                         </td>
-                                        <td class="text-end ui-tabular-nums tw:text-on-surface-variant">{{ \App\Support\NumberFormat::maxDecimals($item->weight_needed) }}</td>
-                                        <td class="text-end fw-semibold ui-tabular-nums">{{ \App\Support\NumberFormat::maxDecimals($item->total_weight) }}</td>
-                                        <td class="text-end ui-tabular-nums requested-price-display">—</td>
-                                        <td class="text-end ui-tabular-nums">
+                                        <td class="tw:text-end ui-tabular-nums tw:text-on-surface-variant">{{ \App\Support\NumberFormat::maxDecimals($item->weight_needed) }}</td>
+                                        <td class="tw:text-end tw:font-semibold ui-tabular-nums">{{ \App\Support\NumberFormat::maxDecimals($item->total_weight) }}</td>
+                                        <td class="tw:text-end ui-tabular-nums requested-price-display">—</td>
+                                        <td class="tw:text-end ui-tabular-nums">
                                             <span class="requested-amount-display quotation-calculated" aria-live="polite">—</span>
                                         </td>
-                                        <td class="text-start tw:text-on-surface-variant">{{ $item->remark ?: '—' }}</td>
+                                        <td class="tw:text-start tw:text-on-surface-variant">{{ $item->remark ?: '—' }}</td>
                                         @unless($shipmentMtcEnabled)
-                                        <td class="text-center tw:text-on-surface-variant">—</td>
+                                        <td class="tw:text-center tw:text-on-surface-variant">—</td>
                                         @endunless
-                                        <td class="text-center"><span class="ui-status-chip ui-status-chip--neutral">{{ __('supplier.copy.requested') }}</span></td>
+                                        <td class="tw:text-center"><span class="ui-status-chip ui-status-chip--neutral">{{ __('supplier.copy.requested') }}</span></td>
                                     </tr>
                                     <tr class="quotation-offer-row {{ $itemIsAvailable ? '' : 'is-unavailable' }}">
                                         <td class="quotation-sticky-row-type"><span class="quotation-row-label quotation-row-label--offer">{{ __('supplier.copy.offer') }}</span></td>
@@ -1049,7 +1055,7 @@
                                                 @unless($surplusOffersAllowed) max="{{ $item->quantity_value }}" @endunless
                                                 step="1"
                                                 name="items[{{ $index }}][available_qty]"
-                                                class="form-control form-control-sm availability-input offer-disable-when-unavailable quotation-editable text-end ui-tabular-nums @error("items.{$index}.available_qty") is-invalid @enderror"
+                                                class="ui-input ui-input--sm availability-input offer-disable-when-unavailable quotation-editable tw:text-end ui-tabular-nums @error("items.{$index}.available_qty") is-invalid @enderror"
                                                 data-availability-field="qty"
                                                 value="{{ old("items.{$index}.available_qty", $qItem?->available_qty) }}"
                                                 aria-label="{{ $surplusOffersAllowed
@@ -1057,7 +1063,7 @@
                                                     : __('supplier.a11y.offer_quantity', ['material' => $item->material_name, 'maximum' => $item->quantity_value]) }}"
                                                 aria-describedby="availableQtyFeedback{{ $index }}"
                                             >
-                                            <div id="availableQtyFeedback{{ $index }}" class="invalid-feedback offer-qty-feedback">
+                                            <div id="availableQtyFeedback{{ $index }}" class="ui-field-error offer-qty-feedback @error("items.{$index}.available_qty") tw:block @enderror">
                                                 @error("items.{$index}.available_qty"){{ $message }}@enderror
                                             </div>
                                         </td>
@@ -1069,14 +1075,14 @@
                                                         min="0.0001"
                                                         step="0.0001"
                                                         name="items[{{ $index }}][available_{{ $dimension }}]"
-                                                        class="form-control form-control-sm availability-input offer-disable-when-unavailable quotation-editable text-end ui-tabular-nums @error("items.{$index}.available_{$dimension}") is-invalid @enderror"
+                                                        class="ui-input ui-input--sm availability-input offer-disable-when-unavailable quotation-editable tw:text-end ui-tabular-nums @error("items.{$index}.available_{$dimension}") is-invalid @enderror"
                                                         data-availability-field="{{ $dimension }}"
                                                         value="{{ old("items.{$index}.available_{$dimension}", $qItem?->{'available_'.$dimension}) }}"
                                                         aria-label="{{ __('supplier.a11y.offer_dimension', ['dimension' => \App\Models\PrItem::dimensionLabel($dimension), 'material' => $item->material_name]) }}"
                                                     >
-                                                    @error("items.{$index}.available_{$dimension}")<div class="invalid-feedback">{{ $message }}</div>@enderror
+                                                    @error("items.{$index}.available_{$dimension}")<div class="ui-field-error tw:block">{{ $message }}</div>@enderror
                                                 @else
-                                                    <div class="text-center tw:text-on-surface-variant" aria-label="{{ __('supplier.copy.not_applicable') }}">—</div>
+                                                    <div class="tw:text-center tw:text-on-surface-variant" aria-label="{{ __('supplier.copy.not_applicable') }}">—</div>
                                                 @endif
                                             </td>
                                         @endforeach
@@ -1087,7 +1093,7 @@
                                                     type="text"
                                                     inputmode="decimal"
                                                     name="items[{{ $index }}][available_length_input]"
-                                                    class="form-control form-control-sm availability-input offer-length-input offer-disable-when-unavailable quotation-editable text-end ui-tabular-nums @error("items.{$index}.available_length_input") is-invalid @enderror"
+                                                    class="ui-input ui-input--sm availability-input offer-length-input offer-disable-when-unavailable quotation-editable tw:text-end ui-tabular-nums @error("items.{$index}.available_length_input") is-invalid @enderror"
                                                     data-availability-field="length"
                                                     value="{{ old("items.{$index}.available_length_input", $storedLength) }}"
                                                     placeholder="{{ __('supplier.copy.length_placeholder') }}"
@@ -1095,11 +1101,11 @@
                                                     aria-describedby="availableLengthHelp{{ $index }} availableLengthFeedback{{ $index }}"
                                                 >
                                                 <div id="availableLengthHelp{{ $index }}" class="quotation-value-secondary">{{ __('supplier.copy.exact_or_min_max') }}</div>
-                                                <div id="availableLengthFeedback{{ $index }}" class="invalid-feedback offer-length-feedback">
+                                                <div id="availableLengthFeedback{{ $index }}" class="ui-field-error offer-length-feedback @error("items.{$index}.available_length_input") tw:block @enderror">
                                                     @error("items.{$index}.available_length_input"){{ $message }}@enderror
                                                 </div>
                                             @else
-                                                <div class="text-center tw:text-on-surface-variant" aria-label="{{ __('supplier.copy.not_applicable') }}">—</div>
+                                                <div class="tw:text-center tw:text-on-surface-variant" aria-label="{{ __('supplier.copy.not_applicable') }}">—</div>
                                             @endif
                                         </td>
                                         <td>
@@ -1109,16 +1115,16 @@
                                                     min="0.0001"
                                                     step="0.0001"
                                                     name="items[{{ $index }}][offered_weight_per_unit]"
-                                                    class="form-control form-control-sm offered-weight-input offer-disable-when-unavailable quotation-editable text-end ui-tabular-nums @error("items.{$index}.offered_weight_per_unit") is-invalid @enderror"
+                                                    class="ui-input ui-input--sm offered-weight-input offer-disable-when-unavailable quotation-editable tw:text-end ui-tabular-nums @error("items.{$index}.offered_weight_per_unit") is-invalid @enderror"
                                                     value="{{ old("items.{$index}.offered_weight_per_unit", $qItem?->offered_weight_per_unit) }}"
                                                     aria-label="{{ __('supplier.a11y.offer_weight', ['material' => $item->material_name]) }}"
                                                 >
-                                                <span class="ui-status-chip ui-status-chip--warning offer-weight-indicator {{ $manualWeightOverride ? '' : 'd-none' }}">{{ __('supplier.copy.est_weight') }}</span>
+                                                <span class="ui-status-chip ui-status-chip--warning offer-weight-indicator {{ $manualWeightOverride ? '' : 'tw:hidden' }}">{{ __('supplier.copy.est_weight') }}</span>
                                             </div>
                                             <input type="hidden" name="items[{{ $index }}][offered_weight_manual_override]" class="offered-weight-manual-override" value="{{ $manualWeightOverride }}">
-                                            @error("items.{$index}.offered_weight_per_unit")<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
+                                            @error("items.{$index}.offered_weight_per_unit")<div class="ui-field-error tw:block">{{ $message }}</div>@enderror
                                         </td>
-                                        <td class="text-end ui-tabular-nums">
+                                        <td class="tw:text-end ui-tabular-nums">
                                             <span class="offer-total-weight-display quotation-calculated" aria-live="polite">—</span>
                                         </td>
                                         <td>
@@ -1127,14 +1133,14 @@
                                                 step="0.0001"
                                                 min="0.0001"
                                                 name="items[{{ $index }}][price_per_kg]"
-                                                class="form-control form-control-sm price-input offer-disable-when-unavailable quotation-editable text-end ui-tabular-nums @error("items.{$index}.price_per_kg") is-invalid @enderror"
+                                                class="ui-input ui-input--sm price-input offer-disable-when-unavailable quotation-editable tw:text-end ui-tabular-nums @error("items.{$index}.price_per_kg") is-invalid @enderror"
                                                 value="{{ old("items.{$index}.price_per_kg", $qItem?->price_per_kg) }}"
                                                 aria-label="{{ __('supplier.a11y.price_weight', ['material' => $item->material_name]) }}"
                                                 placeholder="{{ __('supplier.copy.e_g_4_2500') }}"
                                             >
-                                            @error("items.{$index}.price_per_kg")<div class="invalid-feedback">{{ $message }}</div>@enderror
+                                            @error("items.{$index}.price_per_kg")<div class="ui-field-error tw:block">{{ $message }}</div>@enderror
                                         </td>
-                                        <td class="text-end ui-tabular-nums">
+                                        <td class="tw:text-end ui-tabular-nums">
                                             <span class="offer-amount-display quotation-calculated" aria-live="polite">—</span>
                                         </td>
                                         <td class="quotation-notes-cell">
@@ -1156,18 +1162,18 @@
                                                 title="{{ $currentNote ?: __('supplier.copy.click_to_add_notes') }}"
                                             >
                                                 <x-ui.icon name="file-text" size="sm" class="quotation-notes-trigger__icon" aria-hidden="true" />
-                                                <span class="quotation-notes-trigger__text text-truncate">{{ $currentNote ?: __('supplier.copy.add_note') }}</span>
+                                                <span class="quotation-notes-trigger__text tw:truncate">{{ $currentNote ?: __('supplier.copy.add_note') }}</span>
                                                 @if(!empty($currentNote))
                                                     <span class="quotation-notes-trigger__badge" title="{{ __('supplier.copy.note_entered') }}" aria-hidden="true"></span>
                                                 @endif
                                             </button>
-                                            @error("items.{$index}.notes")<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
+                                            @error("items.{$index}.notes")<div class="ui-field-error tw:block">{{ $message }}</div>@enderror
 
                                             <div class="quotation-notes-popover" data-notes-popover hidden role="dialog" aria-modal="false" aria-label="{{ __('supplier.a11y.offer_notes', ['material' => $item->material_name]) }}">
                                                 <div class="quotation-notes-popover__header">
                                                     <div>
                                                         <span class="quotation-notes-popover__title">{{ __('supplier.copy.offer_notes') }}</span>
-                                                        <span class="quotation-notes-popover__subtitle text-truncate">{{ $item->material_name }}</span>
+                                                        <span class="quotation-notes-popover__subtitle tw:truncate">{{ $item->material_name }}</span>
                                                     </div>
                                                     <button type="button" class="quotation-notes-popover__close" data-notes-cancel aria-label="{{ __('supplier.copy.close_notes_popover') }}">
                                                         <x-ui.icon name="x" size="sm" />
@@ -1175,7 +1181,7 @@
                                                 </div>
                                                 <div class="quotation-notes-popover__body">
                                                     <textarea
-                                                        class="form-control form-control-sm quotation-notes-draft"
+                                                        class="ui-textarea tw:text-ui-xs tw:px-2 tw:py-1 quotation-notes-draft"
                                                         rows="4"
                                                         placeholder="{{ __('supplier.copy.e_g_mill_tolerance_0_5mm_prime_grade_mtc_included') }}"
                                                         aria-label="{{ __('supplier.a11y.draft_notes', ['material' => $item->material_name]) }}"
@@ -1185,7 +1191,7 @@
                                                 <div class="quotation-notes-popover__footer">
                                                     <x-ui.button type="button" variant="ghost" size="sm" class="quotation-notes-btn-cancel" data-notes-cancel>{{ __('supplier.copy.cancel') }}</x-ui.button>
                                                     <x-ui.button type="button" variant="primary" size="sm" class="quotation-notes-btn-save" data-notes-save>
-                                                        <x-ui.icon name="check" size="sm" class="me-1" /> {{ __('supplier.copy.save') }}
+                                                        <x-ui.icon name="check" size="sm" class="tw:me-1" /> {{ __('supplier.copy.save') }}
                                                     </x-ui.button>
                                                 </div>
                                             </div>
@@ -1193,12 +1199,12 @@
                                         @unless($shipmentMtcEnabled) {{-- Mission 05: MTC moved to the shipment --}}
                                         <td>
                                             @php $hasMtc = !empty($mtcAttachment); @endphp
-                                            <div class="mtc-upload-container @error("items.{$index}.mtc_file") border-danger @enderror" data-mtc-container data-existing-attachment-id="{{ $mtcAttachment?->id ?? '' }}">
+                                            <div class="mtc-upload-container @error("items.{$index}.mtc_file") tw:border-error @enderror" data-mtc-container data-existing-attachment-id="{{ $mtcAttachment?->id ?? '' }}">
                                                 <input
                                                     id="mtcFile{{ $index }}"
                                                     type="file"
                                                     name="items[{{ $index }}][mtc_file]"
-                                                    class="visually-hidden mtc-file-input offer-disable-when-unavailable @error("items.{$index}.mtc_file") is-invalid @enderror"
+                                                    class="tw:sr-only mtc-file-input offer-disable-when-unavailable @error("items.{$index}.mtc_file") is-invalid @enderror"
                                                     accept=".pdf,.jpg,.jpeg,.png"
                                                     aria-label="{{ __('supplier.a11y.mtc_file', ['material' => $item->material_name]) }}"
                                                     aria-describedby="mtcFileHelp{{ $index }}"
@@ -1217,19 +1223,19 @@
                                                 >
 
                                                 {{-- State 1: Empty State (Upload MTC Button) --}}
-                                                <div class="mtc-empty-state {{ $hasMtc ? 'd-none' : '' }}" data-mtc-empty>
+                                                <div class="mtc-empty-state {{ $hasMtc ? 'tw:hidden' : '' }}" data-mtc-empty>
                                                     <label for="mtcFile{{ $index }}" class="mtc-file-label ui-motion ui-focus-ring" title="{{ __('supplier.copy.accepted_files_pdf_jpg_or_png_maximum_5mb') }}">
-                                                        <x-ui.icon name="paperclip" size="sm" class="me-1.5" />
+                                                        <x-ui.icon name="paperclip" size="sm" class="tw:me-1.5" />
                                                         <span>{{ __('supplier.copy.upload_mtc') }}</span>
                                                     </label>
                                                     <div id="mtcFileHelp{{ $index }}" class="mtc-file-hint">{{ __('supplier.copy.pdf_jpg_png_max_5mb') }}</div>
                                                 </div>
 
                                                 {{-- State 2: File Pill/Card State (Attached / Selected) --}}
-                                                <div class="mtc-file-card {{ $hasMtc ? '' : 'd-none' }}" data-mtc-card>
+                                                <div class="mtc-file-card {{ $hasMtc ? '' : 'tw:hidden' }}" data-mtc-card>
                                                     <div class="mtc-file-card__main">
                                                         <x-ui.icon name="file-text" size="sm" class="mtc-file-card__icon" />
-                                                        <span class="mtc-file-name text-truncate" data-default-name="{{ $mtcAttachment?->file_name ?? '' }}" title="{{ $mtcAttachment?->file_name ?? '' }}">
+                                                        <span class="mtc-file-name tw:truncate" data-default-name="{{ $mtcAttachment?->file_name ?? '' }}" title="{{ $mtcAttachment?->file_name ?? '' }}">
                                                             {{ $mtcAttachment?->file_name ?? '' }}
                                                         </span>
                                                     </div>
@@ -1240,7 +1246,7 @@
                                                                 <span>{{ __('supplier.copy.view') }}</span>
                                                             </a>
                                                         @endif
-                                                        <div class="dropdown d-inline-block mtc-copy-dropdown">
+                                                        <div class="dropdown tw:inline-block mtc-copy-dropdown">
                                                             <button
                                                                 type="button"
                                                                 class="mtc-file-action-btn"
@@ -1253,16 +1259,16 @@
                                                             >
                                                                 <x-ui.icon name="copy" size="sm" />
                                                             </button>
-                                                            <ul id="dd-qitem-{{ $item->id }}" popover="auto" data-ui-dropdown-menu class="dropdown-menu dropdown-menu-end shadow-sm" style="font-size: 0.75rem; min-width: 220px; z-index: 1060;">
+                                                            <ul id="dd-qitem-{{ $item->id }}" popover="auto" data-ui-dropdown-menu class="dropdown-menu dropdown-menu-end tw:shadow-ui-1" style="font-size: 0.75rem; min-width: 220px; z-index: 1060;">
                                                                 <li>
-                                                                    <button type="button" class="dropdown-item py-1.5 px-3 d-flex align-items-center gap-1.5" data-mtc-apply="same_material">
-                                                                        <x-ui.icon name="layers" size="sm" class="tw:text-on-surface-variant flex-shrink-0" />
-                                                                        <span>{{ __('supplier.copy.apply_to_same_material') }}<strong class="text-truncate d-inline-block align-bottom" style="max-width: 105px;">{{ $item->material_name }}</strong>)</span>
+                                                                    <button type="button" class="dropdown-item tw:py-1.5 tw:px-3 tw:flex tw:items-center tw:gap-1.5" data-mtc-apply="same_material">
+                                                                        <x-ui.icon name="layers" size="sm" class="tw:text-on-surface-variant tw:shrink-0" />
+                                                                        <span>{{ __('supplier.copy.apply_to_same_material') }}<strong class="tw:truncate tw:inline-block tw:align-bottom" style="max-width: 105px;">{{ $item->material_name }}</strong>)</span>
                                                                     </button>
                                                                 </li>
                                                                 <li>
-                                                                    <button type="button" class="dropdown-item py-1.5 px-3 d-flex align-items-center gap-1.5" data-mtc-apply="all_available">
-                                                                        <x-ui.icon name="check-check" size="sm" class="tw:text-on-surface-variant flex-shrink-0" />
+                                                                    <button type="button" class="dropdown-item tw:py-1.5 tw:px-3 tw:flex tw:items-center tw:gap-1.5" data-mtc-apply="all_available">
+                                                                        <x-ui.icon name="check-check" size="sm" class="tw:text-on-surface-variant tw:shrink-0" />
                                                                         <span>{{ __('supplier.copy.apply_to_all_available_items') }}</span>
                                                                     </button>
                                                                 </li>
@@ -1271,13 +1277,13 @@
                                                         <label for="mtcFile{{ $index }}" class="mtc-file-action-btn" title="{{ __('supplier.copy.change_file') }}" role="button">
                                                             <x-ui.icon name="refresh-cw" size="sm" />
                                                         </label>
-                                                        <button type="button" class="mtc-file-action-btn text-danger" title="{{ __('supplier.copy.remove_file') }}" data-mtc-remove aria-label="{{ __('supplier.copy.remove_selected_mtc_file') }}">
+                                                        <button type="button" class="mtc-file-action-btn tw:text-error" title="{{ __('supplier.copy.remove_file') }}" data-mtc-remove aria-label="{{ __('supplier.copy.remove_selected_mtc_file') }}">
                                                             <x-ui.icon name="x" size="sm" />
                                                         </button>
                                                     </div>
                                                 </div>
                                             </div>
-                                            @error("items.{$index}.mtc_file")<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
+                                            @error("items.{$index}.mtc_file")<div class="ui-field-error tw:block">{{ $message }}</div>@enderror
                                         </td>
                                         @endunless
                                         <td>
@@ -1293,7 +1299,7 @@
                                                     <input
                                                         id="notAvailable{{ $index }}"
                                                         type="checkbox"
-                                                        class="item-not-available-toggle visually-hidden"
+                                                        class="item-not-available-toggle tw:sr-only"
                                                         {{ $itemIsAvailable ? '' : 'checked' }}
                                                         tabindex="-1"
                                                         aria-hidden="true"
@@ -1310,18 +1316,18 @@
                                     </tr>
                                 </tbody>
                             @endforeach
-                            <tfoot class="table-light fw-bold border-top">
+                            <tfoot class="tw:bg-surface-container tw:font-bold tw:border-t tw:border-outline-variant">
                                 <tr>
-                                    <th scope="row" colspan="3" class="text-end tw:text-on-surface quotation-sticky-total">{{ __('procurement.quotation.total_offered') }}</th>
-                                    <td class="text-end tw:text-on-surface ui-tabular-nums">
+                                    <th scope="row" colspan="3" class="tw:text-end tw:text-on-surface quotation-sticky-total">{{ __('procurement.quotation.total_offered') }}</th>
+                                    <td class="tw:text-end tw:text-on-surface ui-tabular-nums">
                                         <span id="totalOfferedQty" aria-label="{{ __('procurement.quotation.total_offered_qty') }}">0</span>
                                     </td>
                                     <td colspan="6"></td>
-                                    <td class="text-end tw:text-on-surface ui-tabular-nums">
+                                    <td class="tw:text-end tw:text-on-surface ui-tabular-nums">
                                         <span id="totalOfferedKg" aria-label="{{ __('procurement.quotation.total_offered_kg') }}">0</span>
                                     </td>
-                                    <td class="text-end tw:text-on-surface">{{ __('supplier.copy.total_offer_amount') }}</td>
-                                    <td class="text-end tw:text-on-surface ui-tabular-nums">
+                                    <td class="tw:text-end tw:text-on-surface">{{ __('supplier.copy.total_offer_amount') }}</td>
+                                    <td class="tw:text-end tw:text-on-surface ui-tabular-nums">
                                         <span id="totalAmount">0</span>
                                     </td>
                                     <td colspan="{{ $shipmentMtcEnabled ? 2 : 3 }}"></td>
@@ -1362,46 +1368,46 @@
         <div class="modal-content">
             <div class="modal-header">
                 <div>
-                    <h6 class="modal-title fw-bold" id="quotationImportModalLabel">{{ __('supplier.copy.import_quotation_items_from_spreadsheet') }}</h6>
+                    <h6 class="modal-title tw:font-bold" id="quotationImportModalLabel">{{ __('supplier.copy.import_quotation_items_from_spreadsheet') }}</h6>
                     <div class="tw:text-on-surface-variant tw:text-ui-xs">{{ __('supplier.copy.imported_values_are_mapped_by_pr_item_id_and_are_not_committed_to_database_until_saved') }}</div>
                 </div>
                 <button type="button" class="btn-close" data-ui-modal-close aria-label="{{ __('supplier.copy.close') }}"></button>
             </div>
-            <div class="modal-body p-4">
-                <div class="row g-3">
-                    <div class="col-md-7">
-                        <label for="quotationImportFile" class="form-label small fw-semibold tw:text-on-surface">{{ __('supplier.copy.spreadsheet_file_xlsx_xls_csv') }}</label>
-                        <input type="file" id="quotationImportFile" class="form-control form-control-sm" accept=".xlsx,.xls,.csv">
-                        <div class="form-text tw:text-ui-xs">{{ __('supplier.copy.use_the_template_for_this_pr_max_10_mb_and_1_000_data_rows') }}</div>
+            <div class="modal-body tw:p-4">
+                <div class="tw:grid tw:grid-cols-12 tw:gap-3">
+                    <div class="tw:col-span-12 tw:md:col-span-7">
+                        <label for="quotationImportFile" class="ui-label tw:text-ui-xs tw:font-semibold tw:text-on-surface">{{ __('supplier.copy.spreadsheet_file_xlsx_xls_csv') }}</label>
+                        <input type="file" id="quotationImportFile" class="ui-input ui-input--sm" accept=".xlsx,.xls,.csv">
+                        <div class="ui-field-help">{{ __('supplier.copy.use_the_template_for_this_pr_max_10_mb_and_1_000_data_rows') }}</div>
                     </div>
-                    <div class="col-md-5">
-                        <label for="quotationImportMode" class="form-label small fw-semibold tw:text-on-surface">{{ __('supplier.copy.import_mode') }}</label>
-                        <select id="quotationImportMode" class="form-select form-select-sm" aria-describedby="quotationImportModeHelp">
+                    <div class="tw:col-span-12 tw:md:col-span-5">
+                        <label for="quotationImportMode" class="ui-label tw:text-ui-xs tw:font-semibold tw:text-on-surface">{{ __('supplier.copy.import_mode') }}</label>
+                        <select id="quotationImportMode" class="ui-select ui-select--sm" aria-describedby="quotationImportModeHelp">
                             <option value="fill_empty" selected>{{ __('supplier.copy.fill_empty_fields_only') }}</option>
                             <option value="replace">{{ __('supplier.copy.replace_imported_fields') }}</option>
                         </select>
-                        <div id="quotationImportModeHelp" class="form-text tw:text-ui-xs" aria-live="polite"></div>
+                        <div id="quotationImportModeHelp" class="ui-field-help" aria-live="polite"></div>
                     </div>
                 </div>
 
-                <div id="quotationImportResult" class="d-none mt-3">
+                <div id="quotationImportResult" class="tw:hidden tw:mt-3">
                     <div id="quotationImportSummary" class="tw:mb-2.5 tw:rounded-ui-sm tw:border tw:border-outline tw:bg-surface-container tw:px-3 tw:py-2 tw:text-ui-xs tw:font-semibold tw:text-on-surface" role="status"></div>
 
-                    <div id="quotationImportWarningsPanel" class="d-none tw:mb-2.5 tw:rounded-ui-sm tw:border-s-4 tw:border-warning tw:bg-warning-container tw:px-3 tw:py-2 tw:text-ui-xs tw:text-warning-container-foreground" role="status">
-                        <div class="fw-bold mb-1"><x-ui.icon name="triangle-alert" size="sm" class="me-1" />{{ __('supplier.copy.warnings') }}</div>
-                        <ul id="quotationImportWarnings" class="mb-0 ps-3"></ul>
+                    <div id="quotationImportWarningsPanel" class="tw:hidden tw:mb-2.5 tw:rounded-ui-sm tw:border-s-4 tw:border-warning tw:bg-warning-container tw:px-3 tw:py-2 tw:text-ui-xs tw:text-warning-container-foreground" role="status">
+                        <div class="tw:font-bold tw:mb-1"><x-ui.icon name="triangle-alert" size="sm" class="tw:me-1" />{{ __('supplier.copy.warnings') }}</div>
+                        <ul id="quotationImportWarnings" class="tw:mb-0 tw:ps-3"></ul>
                     </div>
 
-                    <div id="quotationImportErrorsPanel" class="d-none tw:mb-2.5 tw:rounded-ui-sm tw:border-s-4 tw:border-error tw:bg-error-container tw:px-3 tw:py-2 tw:text-ui-xs tw:text-error-container-foreground" role="alert">
-                        <div class="fw-bold mb-1"><x-ui.icon name="circle-x" size="sm" class="me-1" />{{ __('supplier.copy.import_errors') }}</div>
-                        <ul id="quotationImportErrors" class="mb-0 ps-3"></ul>
+                    <div id="quotationImportErrorsPanel" class="tw:hidden tw:mb-2.5 tw:rounded-ui-sm tw:border-s-4 tw:border-error tw:bg-error-container tw:px-3 tw:py-2 tw:text-ui-xs tw:text-error-container-foreground" role="alert">
+                        <div class="tw:font-bold tw:mb-1"><x-ui.icon name="circle-x" size="sm" class="tw:me-1" />{{ __('supplier.copy.import_errors') }}</div>
+                        <ul id="quotationImportErrors" class="tw:mb-0 tw:ps-3"></ul>
                     </div>
 
-                    <div id="quotationImportPreviewPanel" class="d-none">
-                        <div class="fw-bold tw:text-on-surface tw:text-ui-xs tw:mb-1.5">{{ __('supplier.copy.parsed_item_preview') }}</div>
-                        <div class="table-responsive border rounded tw:max-h-64">
-                            <table class="table table-sm table-striped align-middle mb-0 tw:text-ui-xs">
-                                <thead class="table-light sticky-top">
+                    <div id="quotationImportPreviewPanel" class="tw:hidden">
+                        <div class="tw:font-bold tw:text-on-surface tw:text-ui-xs tw:mb-1.5">{{ __('supplier.copy.parsed_item_preview') }}</div>
+                        <div class="ui-table-responsive tw:border tw:border-outline-variant tw:rounded-ui-md tw:max-h-64">
+                            <table class="ui-table ui-table--sm ui-table--striped tw:align-middle tw:m-0 tw:text-ui-xs">
+                                <thead class="tw:sticky tw:top-0">
                                     <tr>
                                         {{-- Match canonical template order: ID, Material, Dimensions, Offer Qty, KG/Unit, Price, Notes, Availability --}}
                                         <th scope="col">{{ __('supplier.copy.pr_item_id') }}</th>
@@ -1422,21 +1428,21 @@
                     </div>
                 </div>
             </div>
-            <div class="modal-footer tw:bg-surface-low border-top">
+            <div class="modal-footer tw:bg-surface-low tw:border-t tw:border-outline-variant">
                 <x-ui.button type="button" variant="ghost" size="sm" data-ui-modal-close>{{ __('supplier.copy.cancel') }}</x-ui.button>
                 <x-ui.button type="button" variant="outline" size="sm" id="btnParseQuotationImport">
-                    <span class="ui-spinner me-1 d-none" id="quotationImportSpinner" aria-hidden="true"></span>
+                    <span class="ui-spinner tw:me-1 tw:hidden" id="quotationImportSpinner" aria-hidden="true"></span>
                     {{ __('supplier.copy.parse_validate') }}
                 </x-ui.button>
                 <x-ui.button type="button" size="sm" id="btnApplyQuotationImport" disabled>
-                    <x-ui.icon name="circle-check" size="sm" class="me-1" /> {{ __('supplier.copy.apply_to_form') }}
+                    <x-ui.icon name="circle-check" size="sm" class="tw:me-1" /> {{ __('supplier.copy.apply_to_form') }}
                 </x-ui.button>
             </div>
         </div>
     </div>
 </dialog>
 
-<div id="exchangeRates" class="d-none"></div>
+<div id="exchangeRates" class="tw:hidden"></div>
 @endsection
 
 @push('scripts')
@@ -1510,7 +1516,7 @@
         const errors = Array.isArray(payload.errors) ? payload.errors : [];
         const rows = Array.isArray(payload.rows) ? payload.rows : [];
 
-        document.getElementById('quotationImportResult')?.classList.remove('d-none');
+        document.getElementById('quotationImportResult')?.classList.remove('tw:hidden');
         const summaryEl = document.getElementById('quotationImportSummary');
         if (summaryEl) {
             summaryEl.textContent = window.AdasiI18n.t('supplier.js.import_summary', {
@@ -1529,7 +1535,7 @@
                 warningsEl.appendChild(li);
             });
         }
-        document.getElementById('quotationImportWarningsPanel')?.classList.toggle('d-none', warnings.length === 0);
+        document.getElementById('quotationImportWarningsPanel')?.classList.toggle('tw:hidden', warnings.length === 0);
 
         const errorsEl = document.getElementById('quotationImportErrors');
         if (errorsEl) {
@@ -1540,7 +1546,7 @@
                 errorsEl.appendChild(li);
             });
         }
-        document.getElementById('quotationImportErrorsPanel')?.classList.toggle('d-none', errors.length === 0);
+        document.getElementById('quotationImportErrorsPanel')?.classList.toggle('tw:hidden', errors.length === 0);
 
         const previewEl = document.getElementById('quotationImportPreviewBody');
         // Material comes from this form's own PR rows, never from the uploaded file.
@@ -1549,7 +1555,7 @@
                 .find((input) => String(input.value) === String(prItemId));
             const label = matchingInput
                 ?.closest('.quotation-sticky-material')
-                ?.querySelector('.fw-bold')
+                ?.querySelector('[data-quotation-material-label], .tw\\:font-bold')
                 ?.textContent
                 ?.trim();
             return label || '-';
@@ -1580,7 +1586,7 @@
                 previewEl.appendChild(tableRow);
             });
         }
-        document.getElementById('quotationImportPreviewPanel')?.classList.toggle('d-none', rows.length === 0);
+        document.getElementById('quotationImportPreviewPanel')?.classList.toggle('tw:hidden', rows.length === 0);
 
         quotationImportRows = payload.success === true ? rows : [];
         const applyBtn = document.getElementById('btnApplyQuotationImport');
@@ -1595,7 +1601,7 @@
         if (parseBtn) parseBtn.disabled = isBusy;
         if (fileEl) fileEl.disabled = isBusy;
         if (modeEl) modeEl.disabled = isBusy;
-        document.getElementById('quotationImportSpinner')?.classList.toggle('d-none', !isBusy);
+        document.getElementById('quotationImportSpinner')?.classList.toggle('tw:hidden', !isBusy);
     }
 
     async function parseQuotationImport() {
@@ -1975,7 +1981,7 @@
         const isEstimated = parsedLength.isRange
             || groupEl.querySelector('.offered-weight-manual-override')?.value === '1';
 
-        groupEl.querySelector('.offer-weight-indicator')?.classList.toggle('d-none', itemIsUnavailable(groupEl) || !isEstimated);
+        groupEl.querySelector('.offer-weight-indicator')?.classList.toggle('tw:hidden', itemIsUnavailable(groupEl) || !isEstimated);
         return isEstimated;
     }
 
@@ -2022,7 +2028,7 @@
         const warningLabelEl = document.getElementById('currencyWarningLabel');
         if (warningLabelEl) warningLabelEl.textContent = currency || '-';
         const allUnavailable = isAllItemsUnavailable();
-        document.getElementById('currencyRateWarning')?.classList.toggle('d-none', allUnavailable || !currency || selectedRate() > 0);
+        document.getElementById('currencyRateWarning')?.classList.toggle('tw:hidden', allUnavailable || !currency || selectedRate() > 0);
         calculateTotal();
     }
 
@@ -2067,7 +2073,7 @@
                 pickerEl.classList.remove('is-disabled');
             }
             pickerEl.querySelectorAll('[class~="tw:text-error"]').forEach((errEl) => {
-                errEl.classList.toggle('d-none', disabled);
+                errEl.classList.toggle('tw:hidden', disabled);
             });
         }
     }
@@ -2104,11 +2110,11 @@
                 el.classList.add('tw:bg-surface-container', 'tw:opacity-50', 'tw:cursor-not-allowed');
             });
             paymentTermsGroup?.querySelectorAll('[class~="tw:text-error"]').forEach((errEl) => {
-                errEl.classList.add('d-none');
+                errEl.classList.add('tw:hidden');
             });
 
-            rateWarningEl?.classList.add('d-none');
-            termsNoticeEl?.classList.remove('d-none');
+            rateWarningEl?.classList.add('tw:hidden');
+            termsNoticeEl?.classList.remove('tw:hidden');
         } else {
             currencyEl?.setAttribute('required', 'required');
 
@@ -2125,10 +2131,10 @@
                 el.classList.remove('tw:bg-surface-container', 'tw:opacity-50', 'tw:cursor-not-allowed');
             });
             paymentTermsGroup?.querySelectorAll('[class~="tw:text-error"]').forEach((errEl) => {
-                errEl.classList.remove('d-none');
+                errEl.classList.remove('tw:hidden');
             });
 
-            termsNoticeEl?.classList.add('d-none');
+            termsNoticeEl?.classList.add('tw:hidden');
             refreshCurrencyState();
         }
     }
@@ -2653,10 +2659,10 @@
         }
         const badgeEl = document.getElementById('autoSaveBadge');
         if (badgeEl) {
-            badgeEl.classList.remove('d-none', 'ui-status-chip--success', 'ui-status-chip--error');
+            badgeEl.classList.remove('tw:hidden', 'ui-status-chip--success', 'ui-status-chip--error');
             badgeEl.classList.add('ui-status-chip--neutral');
             const spinner = document.createElement('span');
-            spinner.className = 'ui-spinner me-1';
+            spinner.className = 'ui-spinner tw:me-1';
             spinner.setAttribute('aria-hidden', 'true');
             badgeEl.replaceChildren(spinner, document.createTextNode(@json(__('supplier.audit_ui.saving'))));
         }
@@ -2680,7 +2686,7 @@
                 badgeEl.classList.add('ui-status-chip--success');
                 badgeEl.textContent = @json(__('supplier.copy.draft_saved'));
                 setTimeout(() => {
-                    badgeEl.classList.add('d-none');
+                    badgeEl.classList.add('tw:hidden');
                 }, 2000);
             }, 300);
         } catch (e) {
@@ -2720,10 +2726,10 @@
 
         const badgeEl = document.getElementById('autoSaveBadge');
         if (badgeEl) {
-            badgeEl.classList.remove('d-none', 'ui-status-chip--error', 'ui-status-chip--neutral');
+            badgeEl.classList.remove('tw:hidden', 'ui-status-chip--error', 'ui-status-chip--neutral');
             badgeEl.classList.add('ui-status-chip--success');
             badgeEl.textContent = @json(__('supplier.copy.draft_restored'));
-            setTimeout(() => badgeEl.classList.add('d-none'), 3000);
+            setTimeout(() => badgeEl.classList.add('tw:hidden'), 3000);
         }
     }
 
@@ -2775,8 +2781,8 @@
                     fileNameEl.textContent = '';
                     fileNameEl.removeAttribute('title');
                 }
-                container?.querySelector('[data-mtc-card]')?.classList.add('d-none');
-                container?.querySelector('[data-mtc-empty]')?.classList.remove('d-none');
+                container?.querySelector('[data-mtc-card]')?.classList.add('tw:hidden');
+                container?.querySelector('[data-mtc-empty]')?.classList.remove('tw:hidden');
                 return;
             }
 
@@ -2819,7 +2825,7 @@
                     const targetInput = targetContainer?.querySelector('.mtc-file-input') || null;
                     const hasExistingFile = (targetInput?.files && targetInput.files.length > 0)
                         || (targetContainer?.querySelector('.mtc-copy-attachment-id')?.value || '') !== ''
-                        || (!targetContainer?.querySelector('[data-mtc-card]')?.classList.contains('d-none')
+                        || (!targetContainer?.querySelector('[data-mtc-card]')?.classList.contains('tw:hidden')
                             && String(targetContainer?.querySelector('.mtc-file-name')?.textContent || '').trim() !== '');
 
                     targetList.push({
@@ -2874,14 +2880,14 @@
                                 tFileName.textContent = sourceFileName;
                                 tFileName.setAttribute('title', sourceFileName);
                             }
-                            tCont?.querySelector('[data-mtc-empty]')?.classList.add('d-none');
-                            tCont?.querySelector('[data-mtc-card]')?.classList.remove('d-none');
+                            tCont?.querySelector('[data-mtc-empty]')?.classList.add('tw:hidden');
+                            tCont?.querySelector('[data-mtc-card]')?.classList.remove('tw:hidden');
 
                             const tServerLink = tCont?.querySelector('[data-mtc-server-link]');
                             if (sourceServerLink) {
                                 if (tServerLink) {
                                     tServerLink.setAttribute('href', sourceServerLink);
-                                    tServerLink.classList.remove('d-none');
+                                    tServerLink.classList.remove('tw:hidden');
                                 } else {
                                     const actionsEl = tCont?.querySelector('.mtc-file-card__actions');
                                     if (actionsEl) {
@@ -3022,28 +3028,28 @@
                         fileNameEl.textContent = fileName;
                         fileNameEl.setAttribute('title', fileName);
                     }
-                    empty?.classList.add('d-none');
-                    card?.classList.remove('d-none');
-                    serverLinkEl?.classList.add('d-none');
+                    empty?.classList.add('tw:hidden');
+                    card?.classList.remove('tw:hidden');
+                    serverLinkEl?.classList.add('tw:hidden');
                 } else if (copyInput?.value) {
                     // If a copy attachment ID was set, keep card visible
-                    empty?.classList.add('d-none');
-                    card?.classList.remove('d-none');
+                    empty?.classList.add('tw:hidden');
+                    card?.classList.remove('tw:hidden');
                 } else if (defaultName && keepInput?.value === '1') {
                     if (fileNameEl) {
                         fileNameEl.textContent = defaultName;
                         fileNameEl.setAttribute('title', defaultName);
                     }
-                    empty?.classList.add('d-none');
-                    card?.classList.remove('d-none');
-                    serverLinkEl?.classList.remove('d-none');
+                    empty?.classList.add('tw:hidden');
+                    card?.classList.remove('tw:hidden');
+                    serverLinkEl?.classList.remove('tw:hidden');
                 } else {
                     if (fileNameEl) {
                         fileNameEl.textContent = '';
                         fileNameEl.removeAttribute('title');
                     }
-                    card?.classList.add('d-none');
-                    empty?.classList.remove('d-none');
+                    card?.classList.add('tw:hidden');
+                    empty?.classList.remove('tw:hidden');
                 }
                 return;
             }
@@ -3136,7 +3142,7 @@
             if (fileInput) fileInput.value = '';
             if (importModeEl) importModeEl.value = 'fill_empty';
             updateQuotationImportModeHelp();
-            document.getElementById('quotationImportResult')?.classList.add('d-none');
+            document.getElementById('quotationImportResult')?.classList.add('tw:hidden');
             document.getElementById('quotationImportWarnings')?.replaceChildren();
             document.getElementById('quotationImportErrors')?.replaceChildren();
             document.getElementById('quotationImportPreviewBody')?.replaceChildren();

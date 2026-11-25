@@ -116,7 +116,7 @@ for (const path of viewPaths) {
     test(`progress history renderer accepts only literal status tones: ${path}`, async () => {
         const source = await readFile(new URL(path, import.meta.url), 'utf8');
         const rendererSource = extractRenderer(source);
-        const expectedBoldClass = path.includes('/purchasing/') ? 'tw:font-bold' : 'fw-bold';
+        const expectedBoldClass = 'tw:font-bold';
 
         for (const tone of ['success', 'info', 'warning', 'neutral']) {
             const {created, document} = createDocument();

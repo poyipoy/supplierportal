@@ -64,24 +64,24 @@
     class="ui-quotation-readonly"
     data-quotation-readonly
 >
-    <table class="table table-bordered align-middle mb-0 tw:text-ui-xs" style="width: max-content; min-width: 100%;">
-        <caption class="visually-hidden">{{ __('procurement.quotation.table_caption') }}</caption>
-        <thead class="table-light text-center align-middle">
+    <table class="ui-table ui-table--bordered tw:align-middle tw:m-0 tw:text-ui-xs" style="width: max-content; min-width: 100%;">
+        <caption class="tw:sr-only">{{ __('procurement.quotation.table_caption') }}</caption>
+        <thead class="tw:text-center tw:align-middle">
             <tr>
                 <th scope="col" class="ui-sticky-col" style="--ui-sticky-col-left: 0; width: 2.5rem;">#</th>
-                <th scope="col" class="ui-sticky-col text-start" style="--ui-sticky-col-left: 2.5rem; min-width: 12rem;">{{ __('procurement.quotation.material') }}</th>
+                <th scope="col" class="ui-sticky-col tw:text-start" style="--ui-sticky-col-left: 2.5rem; min-width: 12rem;">{{ __('procurement.quotation.material') }}</th>
                 <th scope="col">{{ __('procurement.quotation.row_type') }}</th>
                 <th scope="col">{{ __('procurement.quotation.qty') }}</th>
                 @foreach($dimensionOrder as $dimensionField)
                     <th scope="col">{{ \App\Models\PrItem::dimensionLabel($dimensionField) }}</th>
                 @endforeach
-                <th scope="col" class="text-end">{{ __('procurement.quotation.kg_per_unit') }}</th>
-                <th scope="col" class="text-end">{{ __('procurement.quotation.total_kg') }}</th>
-                <th scope="col" class="text-end">{{ __('procurement.quotation.price_per_kg', ['currency' => $quotation->currency]) }}</th>
-                @if($showRef)<th scope="col" class="text-end">{{ __('materials.reference_prices.reference_price') }}</th>@endif
-                <th scope="col" class="text-end">{{ __('procurement.quotation.amount', ['currency' => $quotation->currency]) }}</th>
-                @if($showIdr)<th scope="col" class="text-end">{{ __('procurement.quotation.est_idr') }}</th>@endif
-                <th scope="col" class="text-start">{{ __('procurement.quotation.notes') }}</th>
+                <th scope="col" class="tw:text-end">{{ __('procurement.quotation.kg_per_unit') }}</th>
+                <th scope="col" class="tw:text-end">{{ __('procurement.quotation.total_kg') }}</th>
+                <th scope="col" class="tw:text-end">{{ __('procurement.quotation.price_per_kg', ['currency' => $quotation->currency]) }}</th>
+                @if($showRef)<th scope="col" class="tw:text-end">{{ __('materials.reference_prices.reference_price') }}</th>@endif
+                <th scope="col" class="tw:text-end">{{ __('procurement.quotation.amount', ['currency' => $quotation->currency]) }}</th>
+                @if($showIdr)<th scope="col" class="tw:text-end">{{ __('procurement.quotation.est_idr') }}</th>@endif
+                <th scope="col" class="tw:text-start">{{ __('procurement.quotation.notes') }}</th>
                 <th scope="col">{{ __('procurement.quotation.status') }}</th>
                 @if($showMtc)<th scope="col">MTC</th>@endif
                 @if($showAward)<th scope="col">{{ __('supplier.copy.award_column') }}</th>@endif
@@ -101,69 +101,69 @@
             @endphp
             <tbody>
                 <tr class="is-requested-row">
-                    <td rowspan="2" class="ui-sticky-col text-center ui-tabular-nums tw:text-on-surface-variant" style="--ui-sticky-col-left: 0;">{{ $index + 1 }}</td>
-                    <th scope="rowgroup" rowspan="2" class="ui-sticky-col text-start tw:font-normal ui-col-data-name" style="--ui-sticky-col-left: 2.5rem;">
-                        <div class="fw-bold tw:text-on-surface">{{ $prItem?->material_name ?? '-' }}</div>
+                    <td rowspan="2" class="ui-sticky-col tw:text-center ui-tabular-nums tw:text-on-surface-variant" style="--ui-sticky-col-left: 0;">{{ $index + 1 }}</td>
+                    <th scope="rowgroup" rowspan="2" class="ui-sticky-col tw:text-start tw:font-normal ui-col-data-name" style="--ui-sticky-col-left: 2.5rem;">
+                        <div class="tw:font-bold tw:text-on-surface">{{ $prItem?->material_name ?? '-' }}</div>
                         @if($prItem?->shape)
                             <span class="ui-status-chip ui-status-chip--neutral tw:mt-0.5">{{ $prItem->shape }}</span>
                         @endif
                     </th>
-                    <td class="text-center"><span class="ui-status-chip ui-status-chip--neutral">{{ __('procurement.quotation.row_requested') }}</span></td>
-                    <td class="text-center ui-tabular-nums">{{ $prItem?->quantity_value ?? '—' }}</td>
+                    <td class="tw:text-center"><span class="ui-status-chip ui-status-chip--neutral">{{ __('procurement.quotation.row_requested') }}</span></td>
+                    <td class="tw:text-center ui-tabular-nums">{{ $prItem?->quantity_value ?? '—' }}</td>
                     @foreach($scalarDimensions as $field)
-                        <td class="text-end ui-tabular-nums">{{ in_array($field, $relevant, true) ? $fmt($prItem?->{$field}, 4) : '—' }}</td>
+                        <td class="tw:text-end ui-tabular-nums">{{ in_array($field, $relevant, true) ? $fmt($prItem?->{$field}, 4) : '—' }}</td>
                     @endforeach
-                    <td class="text-end ui-tabular-nums">{{ in_array('length', $relevant, true) ? $fmt($prItem?->length, 4) : '—' }}</td>
-                    <td class="text-end ui-tabular-nums">{{ $fmt($item->requested_weight_per_unit) }}</td>
-                    <td class="text-end ui-tabular-nums">{{ $fmt($item->requested_total_weight) }}</td>
-                    <td class="text-end ui-tabular-nums">{{ $fmtPrice($item->price_per_kg, 4) }}</td>
-                    @if($showRef)<td class="text-end tw:text-on-surface-variant">—</td>@endif
-                    <td class="text-end ui-tabular-nums tw:text-on-surface-variant">{{ $item->is_available ? $fmtPrice($item->requested_amount) : '—' }}</td>
-                    @if($showIdr)<td class="text-end tw:text-on-surface-variant">—</td>@endif
-                    <td class="text-start tw:text-on-surface-variant ui-col-data-name">{{ $prItem?->remark ?: '—' }}</td>
-                    <td class="text-center tw:text-on-surface-variant">—</td>
-                    @if($showMtc)<td rowspan="2" class="text-center">
+                    <td class="tw:text-end ui-tabular-nums">{{ in_array('length', $relevant, true) ? $fmt($prItem?->length, 4) : '—' }}</td>
+                    <td class="tw:text-end ui-tabular-nums">{{ $fmt($item->requested_weight_per_unit) }}</td>
+                    <td class="tw:text-end ui-tabular-nums">{{ $fmt($item->requested_total_weight) }}</td>
+                    <td class="tw:text-end ui-tabular-nums">{{ $fmtPrice($item->price_per_kg, 4) }}</td>
+                    @if($showRef)<td class="tw:text-end tw:text-on-surface-variant">—</td>@endif
+                    <td class="tw:text-end ui-tabular-nums tw:text-on-surface-variant">{{ $item->is_available ? $fmtPrice($item->requested_amount) : '—' }}</td>
+                    @if($showIdr)<td class="tw:text-end tw:text-on-surface-variant">—</td>@endif
+                    <td class="tw:text-start tw:text-on-surface-variant ui-col-data-name">{{ $prItem?->remark ?: '—' }}</td>
+                    <td class="tw:text-center tw:text-on-surface-variant">—</td>
+                    @if($showMtc)<td rowspan="2" class="tw:text-center">
                         @forelse($item->attachments as $attachment)
                             <x-ui.icon-button :href="route('attachments.show', $attachment)" icon="paperclip" :label="__('common.closure.attachment_open', ['name' => $attachment->file_name])" size="sm" target="_blank" />
                         @empty
                             <span class="tw:text-on-surface-variant">—</span>
                         @endforelse
                     </td>@endif
-                    @if($showAward)<td rowspan="2" class="text-center" data-item-award>
+                    @if($showAward)<td rowspan="2" class="tw:text-center" data-item-award>
                         @if($item->award && $item->award->purchase_order_id)
-                            <span class="ui-status-chip ui-status-chip--success text-nowrap">
-                                <x-ui.icon name="check-circle" size="sm" class="me-1" /> {{ __('supplier.copy.awarded') }} ({{ $item->award->purchaseOrder?->po_number ?? 'PO' }})
+                            <span class="ui-status-chip ui-status-chip--success tw:whitespace-nowrap">
+                                <x-ui.icon name="check-circle" size="sm" class="tw:me-1" /> {{ __('supplier.copy.awarded') }} ({{ $item->award->purchaseOrder?->po_number ?? 'PO' }})
                             </span>
                         @else
-                            <span class="ui-status-chip ui-status-chip--neutral text-nowrap">
-                                <x-ui.icon name="minus-circle" size="sm" class="me-1" /> {{ __('supplier.copy.not_awarded') }}
+                            <span class="ui-status-chip ui-status-chip--neutral tw:whitespace-nowrap">
+                                <x-ui.icon name="minus-circle" size="sm" class="tw:me-1" /> {{ __('supplier.copy.not_awarded') }}
                             </span>
                         @endif
                     </td>@endif
                 </tr>
                 <tr class="is-offer-row">
-                    <td class="text-center"><span class="ui-status-chip ui-status-chip--info">{{ __('procurement.quotation.row_offer') }}</span></td>
+                    <td class="tw:text-center"><span class="ui-status-chip ui-status-chip--info">{{ __('procurement.quotation.row_offer') }}</span></td>
                     @if($item->is_available)
-                        <td class="text-center fw-bold ui-tabular-nums">{{ $item->available_qty ?? '—' }}</td>
+                        <td class="tw:text-center tw:font-bold ui-tabular-nums">{{ $item->available_qty ?? '—' }}</td>
                         @foreach($scalarDimensions as $field)
-                            <td class="text-end fw-semibold ui-tabular-nums">{{ in_array($field, $relevant, true) ? $fmt($item->{'available_'.$field}, 4) : '—' }}</td>
+                            <td class="tw:text-end tw:font-semibold ui-tabular-nums">{{ in_array($field, $relevant, true) ? $fmt($item->{'available_'.$field}, 4) : '—' }}</td>
                         @endforeach
-                        <td class="text-end fw-semibold ui-tabular-nums text-nowrap">{{ in_array('length', $relevant, true) ? $offerLength : '—' }}</td>
-                        <td class="text-end fw-semibold ui-tabular-nums text-nowrap">
+                        <td class="tw:text-end tw:font-semibold ui-tabular-nums tw:whitespace-nowrap">{{ in_array('length', $relevant, true) ? $offerLength : '—' }}</td>
+                        <td class="tw:text-end tw:font-semibold ui-tabular-nums tw:whitespace-nowrap">
                             {{ $fmt($item->offered_weight_per_unit ?? $item->requested_weight_per_unit) }}
-                            @if($item->is_estimated_weight)<span class="ui-status-chip ui-status-chip--warning ms-1">{{ __('procurement.quotation.est_weight') }}</span>@endif
+                            @if($item->is_estimated_weight)<span class="ui-status-chip ui-status-chip--warning tw:ms-1">{{ __('procurement.quotation.est_weight') }}</span>@endif
                         </td>
-                        <td class="text-end fw-semibold ui-tabular-nums">{{ $fmt($item->offered_total_weight) }}</td>
-                        <td class="text-end fw-bold ui-tabular-nums text-nowrap">{{ $fmtPrice($item->price_per_kg, 4) }}</td>
+                        <td class="tw:text-end tw:font-semibold ui-tabular-nums">{{ $fmt($item->offered_total_weight) }}</td>
+                        <td class="tw:text-end tw:font-bold ui-tabular-nums tw:whitespace-nowrap">{{ $fmtPrice($item->price_per_kg, 4) }}</td>
                         {{-- Mission 06B: Purchasing-only live reference (never passed on Supplier pages). --}}
                         @if($showRef)
-                            <td class="text-end">
+                            <td class="tw:text-end">
                                 @if($reference = $referencePrices[$item->id] ?? null)
                                     <div data-reference-price>
                                         @if($reference->isMatched())
-                                            <div class="fw-semibold ui-tabular-nums text-nowrap">{{ $fmtPrice($reference->convertedReferencePricePerKg, 4) }}</div>
+                                            <div class="tw:font-semibold ui-tabular-nums tw:whitespace-nowrap">{{ $fmtPrice($reference->convertedReferencePricePerKg, 4) }}</div>
                                             @if($reference->diffAmountPerKg !== null)
-                                                <div class="tw:text-on-surface-variant ui-tabular-nums text-nowrap"><span class="visually-hidden">{{ __('materials.reference_prices.reference_delta') }}</span>{{ bccomp($reference->diffAmountPerKg, '0', 4) > 0 ? '+' : '' }}{{ $fmtPrice($reference->diffAmountPerKg, 4) }}@if($reference->diffPercent !== null) ({{ bccomp($reference->diffPercent, '0', 4) > 0 ? '+' : '' }}{{ $fmt($reference->diffPercent, 2) }}%)@endif</div>
+                                                <div class="tw:text-on-surface-variant ui-tabular-nums tw:whitespace-nowrap"><span class="tw:sr-only">{{ __('materials.reference_prices.reference_delta') }}</span>{{ bccomp($reference->diffAmountPerKg, '0', 4) > 0 ? '+' : '' }}{{ $fmtPrice($reference->diffAmountPerKg, 4) }}@if($reference->diffPercent !== null) ({{ bccomp($reference->diffPercent, '0', 4) > 0 ? '+' : '' }}{{ $fmt($reference->diffPercent, 2) }}%)@endif</div>
                                             @endif
                                         @else
                                             <span class="ui-status-chip ui-status-chip--neutral ui-quotation-readonly__ref-reason">{{ __('materials.reference_prices.reasons.'.$reference->reasonCode) }}</span>
@@ -174,25 +174,25 @@
                                 @endif
                             </td>
                         @endif
-                        <td class="text-end fw-bold text-primary ui-tabular-nums text-nowrap" data-offer-amount="{{ \App\Support\NumberFormat::maxDecimals($amount) }}">{{ $fmtPrice($amount) }}</td>
+                        <td class="tw:text-end tw:font-bold tw:text-primary ui-tabular-nums tw:whitespace-nowrap" data-offer-amount="{{ \App\Support\NumberFormat::maxDecimals($amount) }}">{{ $fmtPrice($amount) }}</td>
                         @if($showIdr)
-                            <td class="text-end fw-semibold ui-tabular-nums text-nowrap">
+                            <td class="tw:text-end tw:font-semibold ui-tabular-nums tw:whitespace-nowrap">
                                 @if($amountIdr !== null)
                                     Rp {{ $fmtPrice($amountIdr) }}
                                 @else
-                                    <span title="{{ __('procurement.quotation.rate_unavailable') }}">—</span><span class="visually-hidden">{{ __('procurement.quotation.rate_unavailable') }}</span>
+                                    <span title="{{ __('procurement.quotation.rate_unavailable') }}">—</span><span class="tw:sr-only">{{ __('procurement.quotation.rate_unavailable') }}</span>
                                 @endif
                             </td>
                         @endif
                     @else
-                        <td colspan="{{ count($dimensionOrder) + 5 + ($showRef ? 1 : 0) + ($showIdr ? 1 : 0) }}" class="text-center">
+                        <td colspan="{{ count($dimensionOrder) + 5 + ($showRef ? 1 : 0) + ($showIdr ? 1 : 0) }}" class="tw:text-center">
                             <span class="ui-status-chip ui-status-chip--error">{{ __('procurement.quotation.not_available') }}</span>
                         </td>
                     @endif
-                    <td class="text-start tw:text-on-surface-variant ui-col-data-name">{{ $item->notes ?: '—' }}</td>
-                    <td class="text-center">
+                    <td class="tw:text-start tw:text-on-surface-variant ui-col-data-name">{{ $item->notes ?: '—' }}</td>
+                    <td class="tw:text-center">
                         @if($item->is_available)
-                            <div class="d-flex flex-column align-items-center tw:gap-1">
+                            <div class="tw:flex tw:flex-col tw:items-center tw:gap-1">
                                 <span class="ui-status-chip {{ $qtyTone }}">{{ $qtyLabel }}</span>
                                 <span class="ui-status-chip {{ $specTone($availability['specification']['code']) }}">{{ $availability['specification']['label'] }}</span>
                             </div>
@@ -203,28 +203,28 @@
                 </tr>
             </tbody>
         @endforeach
-        <tfoot class="table-light fw-bold">
+        <tfoot class="tw:bg-surface-container-low tw:font-bold">
             <tr>
                 {{-- Span only the sticky columns (# + Material); a wider sticky span covers scrolled cells. --}}
-                <th scope="row" colspan="2" class="ui-sticky-col text-end" style="--ui-sticky-col-left: 0;">{{ __('procurement.quotation.total_requested') }}</th>
+                <th scope="row" colspan="2" class="ui-sticky-col tw:text-end" style="--ui-sticky-col-left: 0;">{{ __('procurement.quotation.total_requested') }}</th>
                 <td></td>
-                <td class="text-center ui-tabular-nums" data-total="requested-qty">{{ $totals['req_qty'] }}</td>
+                <td class="tw:text-center ui-tabular-nums" data-total="requested-qty">{{ $totals['req_qty'] }}</td>
                 <td colspan="{{ count($dimensionOrder) + 1 }}"></td>
-                <td class="text-end ui-tabular-nums text-nowrap" data-total="requested-kg">{{ $fmt($totals['req_kg']) }}</td>
+                <td class="tw:text-end ui-tabular-nums tw:whitespace-nowrap" data-total="requested-kg">{{ $fmt($totals['req_kg']) }}</td>
                 <td colspan="{{ $showRef ? 2 : 1 }}"></td>
-                <td class="text-end ui-tabular-nums tw:text-on-surface-variant text-nowrap" data-total="requested-amount">{{ $fmtPrice($totals['req_amount']) }}</td>
+                <td class="tw:text-end ui-tabular-nums tw:text-on-surface-variant tw:whitespace-nowrap" data-total="requested-amount">{{ $fmtPrice($totals['req_amount']) }}</td>
                 <td colspan="{{ $trailingCols + ($showIdr ? 1 : 0) }}"></td>
             </tr>
             <tr>
-                <th scope="row" colspan="2" class="ui-sticky-col text-end" style="--ui-sticky-col-left: 0;">{{ __('procurement.quotation.total_offered') }}</th>
+                <th scope="row" colspan="2" class="ui-sticky-col tw:text-end" style="--ui-sticky-col-left: 0;">{{ __('procurement.quotation.total_offered') }}</th>
                 <td></td>
-                <td class="text-center ui-tabular-nums" data-total="offered-qty">{{ $totals['off_qty'] }}</td>
+                <td class="tw:text-center ui-tabular-nums" data-total="offered-qty">{{ $totals['off_qty'] }}</td>
                 <td colspan="{{ count($dimensionOrder) + 1 }}"></td>
-                <td class="text-end ui-tabular-nums text-nowrap" data-total="offered-kg">{{ $fmt($totals['off_kg']) }}</td>
+                <td class="tw:text-end ui-tabular-nums tw:whitespace-nowrap" data-total="offered-kg">{{ $fmt($totals['off_kg']) }}</td>
                 <td colspan="{{ $showRef ? 2 : 1 }}"></td>
-                <td class="text-end text-primary ui-tabular-nums text-nowrap" data-total="offered-amount">{{ $fmtPrice($totals['off_amount']) }} {{ $quotation->currency }}</td>
+                <td class="tw:text-end tw:text-primary ui-tabular-nums tw:whitespace-nowrap" data-total="offered-amount">{{ $fmtPrice($totals['off_amount']) }} {{ $quotation->currency }}</td>
                 @if($showIdr)
-                    <td class="text-end text-primary ui-tabular-nums text-nowrap" data-total="offered-idr">
+                    <td class="tw:text-end tw:text-primary ui-tabular-nums tw:whitespace-nowrap" data-total="offered-idr">
                         @if($totalIdr !== null)
                             Rp {{ $fmtPrice($totalIdr) }}
                         @else

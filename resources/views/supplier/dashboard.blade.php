@@ -59,24 +59,24 @@
                     />
                 </x-slot:emptyState>
 
-                <table class="table table-hover align-middle mb-0 tw:text-ui-xs w-100">
-                    <thead class="table-light">
+                <table class="ui-table ui-table--hover tw:align-middle tw:m-0 tw:text-ui-xs tw:w-full">
+                    <thead>
                         <tr>
                             <th scope="col">{{ __('supplier.copy.pr_number') }}</th>
                             <th scope="col">{{ __('supplier.copy.period') }}</th>
-                            <th scope="col" class="text-center">{{ __('supplier.copy.items') }}</th>
+                            <th scope="col" class="tw:text-center">{{ __('supplier.copy.items') }}</th>
                             <th scope="col">{{ __('supplier.copy.date_issued') }}</th>
-                            <th scope="col" class="tw:text-right text-end" style="width: 140px;">{{ __('common.table.action') }}</th>
+                            <th scope="col" class="tw:text-end" style="width: 140px;">{{ __('common.table.action') }}</th>
                         </tr>
                     </thead>
                     <tbody>
                         @foreach($prBelumRespons as $pr)
                             <tr>
-                                <td class="fw-bold text-primary">{{ $pr->pr_number ?? '-' }}</td>
-                                <td class="fw-medium tw:text-on-surface">{{ $pr->period->display_label ?? $pr->period->name }}</td>
-                                <td class="text-center fw-semibold ui-tabular-nums">{{ trans_choice('purchasing.copy.item_count', $pr->items->count(), ['count' => $pr->items->count()]) }}</td>
+                                <td class="tw:font-bold tw:text-primary">{{ $pr->pr_number ?? '-' }}</td>
+                                <td class="tw:font-medium tw:text-on-surface">{{ $pr->period->display_label ?? $pr->period->name }}</td>
+                                <td class="tw:text-center tw:font-semibold ui-tabular-nums">{{ trans_choice('purchasing.copy.item_count', $pr->items->count(), ['count' => $pr->items->count()]) }}</td>
                                 <td class="tw:text-on-surface-variant ui-tabular-nums">{{ $regionalFormatter->timestamp($pr->created_at, 'date') }}</td>
-                                <td class="text-end">
+                                <td class="tw:text-end">
                                     <x-ui.button :href="route('supplier.quotations.create', $pr)" size="sm">
                                         <x-ui.icon name="square-pen" size="sm" />
                                         <span>{{ __('supplier.copy.quote_price') }}</span>
@@ -132,14 +132,14 @@
                     />
                 </x-slot:emptyState>
 
-                <table class="table table-hover align-middle mb-0 tw:text-ui-xs w-100">
-                    <thead class="table-light">
+                <table class="ui-table ui-table--hover tw:align-middle tw:m-0 tw:text-ui-xs tw:w-full">
+                    <thead>
                         <tr>
                             <th scope="col">{{ __('supplier.copy.po_number') }}</th>
                             <th scope="col">{{ __('supplier.copy.period') }}</th>
                             <th scope="col">{{ __('supplier.copy.status') }}</th>
                             <th scope="col">{{ __('supplier.copy.po_date') }}</th>
-                            <th scope="col" class="tw:text-right text-end" style="width: 130px;">{{ __('common.table.action') }}</th>
+                            <th scope="col" class="tw:text-end" style="width: 130px;">{{ __('common.table.action') }}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -149,12 +149,12 @@
                                 $latestClaim = $po->materialClaims->sortByDesc('created_at')->first();
                             @endphp
                             <tr>
-                                <td class="fw-bold tw:text-on-surface">{{ $po->po_number }}</td>
+                                <td class="tw:font-bold tw:text-on-surface">{{ $po->po_number }}</td>
                                 <td class="tw:text-on-surface-variant">{{ $po->quotations->map(fn($q) => optional(optional($q->purchaseRequisition)->period)->display_label)->filter()->first() ?? '-' }}</td>
                                 <td><x-status-badge type="po" :status="$po->status" :is-overdue="$po->is_overdue" /></td>
                                 <td class="tw:text-on-surface-variant ui-tabular-nums">{{ $regionalFormatter->timestamp($po->created_at, 'date') }}</td>
-                                <td class="tw:text-right text-end">
-                                    <div class="d-inline-flex gap-1 justify-content-end align-items-center">
+                                <td class="tw:text-end">
+                                    <div class="tw:inline-flex tw:gap-1 tw:justify-end tw:items-center">
                                         @if($pendingClaim)
                                             <x-ui.icon-button :href="route('supplier.claims.show', $pendingClaim)" icon="reply" :label="__('supplier.copy.respond_to_ng_claim')" variant="danger" size="sm" />
                                         @elseif($latestClaim)
@@ -215,22 +215,22 @@
         <aside class="tw:grid tw:gap-4 tw:text-ui-xs">
             {{-- ADASI Announcements Card --}}
             <x-ui.card :title="__('supplier.copy.adasi_announcements')" padding="none">
-                <div class="list-group list-group-flush">
+                <div class="tw:divide-y tw:divide-outline-variant">
                     @forelse($announcements as $ann)
-                        <div class="list-group-item p-3 border-bottom">
-                            <h6 class="mb-1 fw-bold tw:text-ui-xs">
-                                <a href="{{ route('supplier.announcements.show', $ann->id) }}" class="text-decoration-none tw:text-on-surface tw:hover:text-primary">
+                        <div class="tw:p-3">
+                            <h6 class="tw:mb-1 tw:font-bold tw:text-ui-xs">
+                                <a href="{{ route('supplier.announcements.show', $ann->id) }}" class="tw:no-underline tw:text-on-surface tw:hover:text-primary">
                                     {{ $ann->title }}
                                 </a>
                             </h6>
                             <div class="tw:text-on-surface-variant tw:text-ui-xs tw:mb-1.5">{{ Str::limit($ann->content, 90) }}</div>
-                            <div class="tw:text-on-surface-variant tw:text-ui-xs d-flex align-items-center gap-1">
+                            <div class="tw:text-on-surface-variant tw:text-ui-xs tw:flex tw:items-center tw:gap-1">
                                 <x-ui.icon name="clock" size="sm" />
                                 <span>{{ $ann->published_at->diffForHumans() }}</span>
                             </div>
                         </div>
                     @empty
-                        <div class="p-4 text-center tw:text-on-surface-variant tw:text-ui-xs">
+                        <div class="tw:p-4 tw:text-center tw:text-on-surface-variant tw:text-ui-xs">
                             {{ __('supplier.copy.no_announcements_published_yet') }}
                         </div>
                     @endforelse
@@ -248,7 +248,7 @@
 
             {{-- Supplier Support & Direct Negotiation Card --}}
             <x-ui.card :title="__('supplier.copy.purchasing_support')">
-                <p class="tw:text-on-surface-variant tw:text-ui-xs mb-3">
+                <p class="tw:text-on-surface-variant tw:text-ui-xs tw:mb-3">
                     {{ __('supplier.copy.have_questions_about_procurement_specifications_schedules_or_technical_tolerances_connect_with_the_a') }}
                 </p>
                 <x-ui.button :href="route('supplier.conversations.index')" variant="outline" size="sm" class="tw:w-full">

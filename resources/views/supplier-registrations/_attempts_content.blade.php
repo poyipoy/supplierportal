@@ -42,7 +42,7 @@
                     name="search"
                     value="{{ $regSearch }}"
                     placeholder="{{ __('local_procurement.registration.search') }}"
-                    class="form-control form-control-sm ui-filter-bar__search-input"
+                    class="ui-input ui-input--sm ui-filter-bar__search-input"
                 >
             </x-slot:search>
 
@@ -52,8 +52,8 @@
         </x-ui.filter-bar>
     </x-slot:filters>
     <div class="ui-data-table__scroll tw:overflow-x-auto">
-        <table class="table table-hover align-middle w-100 tw:m-0 tw:text-ui-sm">
-            <thead class="table-light">
+        <table class="ui-table ui-table--hover tw:align-middle tw:w-full tw:m-0 tw:text-ui-sm">
+            <thead>
                 <tr>
                     <th scope="col" style="width: 140px;">{{ __('local_procurement.registration.reference_label') }}</th>
                     <th scope="col">{{ __('local_procurement.registration.company_label') }}</th>
@@ -62,7 +62,7 @@
                     <th scope="col">{{ __('local_procurement.registration.submitted_date', ['timezone' => \App\Support\BusinessTime::label()]) }}</th>
                     <th scope="col">{{ __('local_invoice.labels.status') }}</th>
                     <th scope="col">{{ __('local_procurement.registration.last_reviewer') }}</th>
-                    <th scope="col" class="tw:text-right text-end" style="width: 100px;">{{ __('common.table.action') }}</th>
+                    <th scope="col" class="tw:text-end" style="width: 100px;">{{ __('common.table.action') }}</th>
                 </tr>
             </thead>
             <tbody>
@@ -99,9 +99,9 @@
                             </x-ui.status-chip>
                         </td>
                         <td>
-                            <span class="tw:text-ui-xs text-muted">{{ $attempt->reviewer?->name ?? '-' }}</span>
+                            <span class="tw:text-ui-xs tw:text-on-surface-variant">{{ $attempt->reviewer?->name ?? '-' }}</span>
                         </td>
-                        <td class="tw:text-right text-end">
+                        <td class="tw:text-end">
                             <x-ui.row-action
                                 :href="route('supplier-registrations.show', $attempt->hash)"
                                 :label="__('common.labels_review.review')"
@@ -111,7 +111,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="8" class="text-center tw:py-8 tw:text-on-surface-variant">
+                        <td colspan="8" class="tw:text-center tw:py-8 tw:text-on-surface-variant">
                             <x-ui.icon name="inbox" size="lg" class="tw:mb-2 tw:opacity-50" />
                             <p class="tw:m-0 tw:text-ui-sm">{{ __('finance.copy_review.registration_empty') }}</p>
                         </td>
