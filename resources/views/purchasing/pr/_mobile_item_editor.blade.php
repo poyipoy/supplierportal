@@ -1,5 +1,5 @@
 {{-- Mobile Material Item Editor & Adaptive Cards View for PR Create & Edit --}}
-<div class="d-md-none tw:mb-4" id="prMobileItemSection">
+<div class="tw:md:hidden tw:mb-4" id="prMobileItemSection">
     {{-- Header: Counter & Mode Switcher --}}
     <div class="tw:flex tw:items-center tw:justify-between tw:mb-2.5 tw:px-1">
         <div class="tw:flex tw:items-center tw:gap-2">
@@ -17,7 +17,7 @@
             id="btnTogglePrTableView"
             aria-expanded="false"
         >
-            <x-ui.icon name="table" size="xs" class="me-1" />
+            <x-ui.icon name="table" size="xs" class="tw:me-1" />
             <span id="btnTogglePrTableLabel">Lihat Tabel Penuh</span>
         </x-ui.button>
     </div>
@@ -58,7 +58,7 @@
                     <div class="tw:w-8 tw:h-8 tw:rounded-ui-sm tw:bg-primary-container tw:text-primary tw:flex tw:items-center tw:justify-center">
                         <x-ui.icon name="package" size="sm" />
                     </div>
-                    <h5 class="modal-title tw:text-ui-base tw:font-bold tw:text-on-surface m-0" id="mobileMaterialModalTitle">
+                    <h5 class="modal-title tw:text-ui-base tw:font-bold tw:text-on-surface tw:m-0" id="mobileMaterialModalTitle">
                         Tambah Material
                     </h5>
                 </div>
@@ -75,23 +75,23 @@
                 {{-- Step 1: Material Master Search --}}
                 <div class="tw:space-y-1.5">
                     <label for="mmMaterialSearch" class="tw:text-ui-xs tw:font-bold tw:uppercase tw:tracking-wider tw:text-on-surface">
-                        {{ __('purchasing.copy.material') }} <span class="text-danger">*</span>
+                        {{ __('purchasing.copy.material') }} <span class="tw:text-error">*</span>
                     </label>
-                    <div class="position-relative">
-                        <div class="input-group">
-                            <span class="input-group-text tw:bg-surface-container tw:border-outline">
+                    <div class="tw:relative">
+                        <div class="ui-input-group">
+                            <span class="ui-input-group-text tw:bg-surface-container tw:border-outline">
                                 <x-ui.icon name="search" size="xs" />
                             </span>
                             <input
                                 type="text"
                                 id="mmMaterialSearch"
-                                class="form-control form-control-sm"
+                                class="ui-input ui-input--sm"
                                 placeholder="{{ __('purchasing.copy.search_grade_or_name_e_g_skd11_dc53_s50c') }}"
                                 autocomplete="off"
                             >
                             <button
                                 type="button"
-                                class="btn btn-outline-secondary btn-sm d-none"
+                                class="ui-button ui-button--outline ui-button--sm tw:hidden"
                                 id="mmBtnClearMaterial"
                                 title="Hapus pilihan"
                             >
@@ -102,13 +102,13 @@
                         {{-- Autocomplete Results List --}}
                         <div
                             id="mmMaterialResults"
-                            class="list-group shadow-lg d-none tw:absolute tw:left-0 tw:right-0 tw:top-full tw:mt-1 tw:bg-surface tw:z-[1070] tw:max-h-56 tw:overflow-y-auto tw:rounded-ui-sm tw:border tw:border-outline"
+                            class="tw:list-none tw:m-0 tw:p-0 tw:border tw:border-outline-variant tw:rounded-ui-sm tw:shadow-ui-2 tw:hidden tw:absolute tw:left-0 tw:right-0 tw:top-full tw:mt-1 tw:bg-surface tw:z-[1070] tw:max-h-56 tw:overflow-y-auto tw:rounded-ui-sm tw:border tw:border-outline"
                             role="listbox"
                         ></div>
                     </div>
 
                     {{-- Selected Material Feedback Box --}}
-                    <div id="mmSelectedFeedback" class="d-none tw:mt-2 tw:p-2.5 tw:rounded-ui-sm tw:bg-surface-container-low tw:border tw:border-outline-variant tw:flex tw:items-center tw:justify-between">
+                    <div id="mmSelectedFeedback" class="tw:hidden tw:mt-2 tw:p-2.5 tw:rounded-ui-sm tw:bg-surface-container-low tw:border tw:border-outline-variant tw:flex tw:items-center tw:justify-between">
                         <div class="tw:min-w-0">
                             <div class="tw:text-ui-xs tw:font-bold tw:text-on-surface" id="mmSelectedName"></div>
                             <div class="tw:text-[11px] tw:text-on-surface-variant" id="mmSelectedGrade"></div>
@@ -123,9 +123,9 @@
                 <div class="tw:grid tw:grid-cols-2 tw:gap-3">
                     <div>
                         <label for="mmShape" class="tw:text-ui-xs tw:font-bold tw:uppercase tw:tracking-wider tw:text-on-surface">
-                            {{ __('purchasing.copy.shape') }} <span class="text-danger">*</span>
+                            {{ __('purchasing.copy.shape') }} <span class="tw:text-error">*</span>
                         </label>
-                        <select id="mmShape" class="form-select form-select-sm tw:mt-1">
+                        <select id="mmShape" class="ui-select ui-select--sm tw:mt-1">
                             <option value="">{{ __('purchasing.copy.select') }}</option>
                             @foreach(\App\Models\PrItem::SHAPES as $shape)
                                 <option value="{{ $shape }}">{{ $shape }}</option>
@@ -135,9 +135,9 @@
 
                     <div>
                         <label for="mmQuantity" class="tw:text-ui-xs tw:font-bold tw:uppercase tw:tracking-wider tw:text-on-surface">
-                            {{ __('purchasing.copy.qty') }} <span class="text-danger">*</span>
+                            {{ __('purchasing.copy.qty') }} <span class="tw:text-error">*</span>
                         </label>
-                        <input type="number" id="mmQuantity" min="1" step="1" value="1" class="form-control form-control-sm text-center tw:mt-1" required>
+                        <input type="number" id="mmQuantity" min="1" step="1" value="1" class="ui-input ui-input--sm tw:text-center tw:mt-1" required>
                     </div>
                 </div>
 
@@ -158,7 +158,7 @@
                                     min="0.0001"
                                     id="mm_dim_{{ $dim }}"
                                     data-dim-name="{{ $dim }}"
-                                    class="form-control form-control-sm text-end mm-dim-input"
+                                    class="ui-input ui-input--sm tw:text-end mm-dim-input"
                                     placeholder="0.0"
                                 >
                             </div>
@@ -173,9 +173,9 @@
                         <label for="mmWeightNeeded" class="tw:text-ui-xs tw:font-bold tw:uppercase tw:tracking-wider tw:text-on-surface">
                             {{ __('purchasing.copy.weight_unit_kg_e8ab70') }}
                         </label>
-                        <div class="input-group input-group-sm tw:mt-1">
-                            <input type="number" step="0.0001" id="mmWeightNeeded" class="form-control text-end ui-tabular-nums" value="0.0000">
-                            <span class="input-group-text">kg/unit</span>
+                        <div class="ui-input-group ui-input-group--sm tw:mt-1">
+                            <input type="number" step="0.0001" id="mmWeightNeeded" class="ui-input tw:text-end ui-tabular-nums" value="0.0000">
+                            <span class="ui-input-group-text">kg/unit</span>
                         </div>
                         <div class="tw:text-[11px] tw:text-on-surface-variant tw:mt-1">
                             Total: <strong id="mmTotalWeightDisplay" class="ui-tabular-nums tw:text-on-surface">0.0000 kg</strong>
@@ -188,7 +188,7 @@
                             HS Code
                         </label>
                         <div class="tw:flex tw:items-center tw:gap-2 tw:mt-1">
-                            <input type="text" id="mmHsCode" class="form-control form-control-sm" placeholder="7228.xx.xx">
+                            <input type="text" id="mmHsCode" class="ui-input ui-input--sm" placeholder="7228.xx.xx">
                             <span id="mmHsBadge" class="ui-status-chip ui-status-chip--neutral tw:text-[11px] tw:whitespace-nowrap">
                                 Otomatis
                             </span>
@@ -201,7 +201,7 @@
                     <label for="mmRemark" class="tw:text-ui-xs tw:font-bold tw:uppercase tw:tracking-wider tw:text-on-surface">
                         {{ __('purchasing.copy.remark') }} (Opsional)
                     </label>
-                    <textarea id="mmRemark" rows="2" class="form-control form-control-sm tw:mt-1" placeholder="Catatan toleransi, potongan, atau instruksi pengiriman..."></textarea>
+                    <textarea id="mmRemark" rows="2" class="ui-textarea tw:text-ui-xs tw:px-2 tw:py-1 tw:mt-1" placeholder="Catatan toleransi, potongan, atau instruksi pengiriman..."></textarea>
                 </div>
             </div>
 

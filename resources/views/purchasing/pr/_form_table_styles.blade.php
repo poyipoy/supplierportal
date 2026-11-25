@@ -90,7 +90,9 @@
         -moz-appearance: textfield !important;
     }
 
-    #itemsTable.pr-items-table .form-control.is-invalid {
+    #itemsTable.pr-items-table .ui-input.is-invalid,
+    #itemsTable.pr-items-table .ui-select.is-invalid,
+    #itemsTable.pr-items-table .ui-textarea.is-invalid {
         background-image: none !important;
         padding-right: .5rem !important;
         padding-left: .5rem !important;
@@ -350,9 +352,10 @@
         padding: .2rem .5rem;
     }
 
-    #itemsTable.pr-items-table .form-control,
-    #itemsTable.pr-items-table .form-select,
-    #itemsTable.pr-items-table .input-group-text {
+    #itemsTable.pr-items-table .ui-input,
+    #itemsTable.pr-items-table .ui-select,
+    #itemsTable.pr-items-table .ui-textarea,
+    #itemsTable.pr-items-table .ui-input-group-text {
         min-height: 34px;
         background-color: var(--md-surface);
         border: 1px solid var(--md-outline);
@@ -360,8 +363,9 @@
         border-radius: var(--md-shape-xs);
     }
 
-    #itemsTable.pr-items-table .form-control:focus,
-    #itemsTable.pr-items-table .form-select:focus {
+    #itemsTable.pr-items-table .ui-input:focus,
+    #itemsTable.pr-items-table .ui-select:focus,
+    #itemsTable.pr-items-table .ui-textarea:focus {
         border-color: var(--md-primary);
         box-shadow: 0 0 0 var(--ui-focus-ring-width) rgba(var(--md-primary-rgb), .14) !important;
         position: relative;
@@ -458,9 +462,10 @@
             width: 100%;
         }
 
-        #itemsTable.pr-items-table .form-control,
-        #itemsTable.pr-items-table .form-select,
-        #itemsTable.pr-items-table .input-group-text {
+        #itemsTable.pr-items-table .ui-input,
+        #itemsTable.pr-items-table .ui-select,
+        #itemsTable.pr-items-table .ui-textarea,
+        #itemsTable.pr-items-table .ui-input-group-text {
             min-height: 44px;
         }
 

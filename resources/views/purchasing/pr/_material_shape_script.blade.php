@@ -148,7 +148,7 @@ function positionMaterialSearchResults(row) {
     const input = rowEl.querySelector('.material-master-search');
     const panel = rowEl.querySelector('.material-search-results');
 
-    if (!input || !panel || panel.classList.contains('d-none')) {
+    if (!input || !panel || panel.classList.contains('tw:hidden')) {
         return;
     }
 
@@ -182,7 +182,7 @@ function positionMaterialSearchResults(row) {
 function repositionVisibleMaterialSearchResults() {
     document.querySelectorAll('#itemsBody tr.item-row').forEach((rowEl) => {
         const panel = rowEl.querySelector('.material-search-results');
-        if (panel && !panel.classList.contains('d-none')) {
+        if (panel && !panel.classList.contains('tw:hidden')) {
             positionMaterialSearchResults(rowEl);
         }
     });
@@ -216,7 +216,7 @@ function applyMaterialShapeRules(row, clearIrrelevant = true) {
         }
 
         if (na) {
-            na.classList.toggle('d-none', isRelevant);
+            na.classList.toggle('tw:hidden', isRelevant);
             na.setAttribute('aria-hidden', isRelevant ? 'true' : 'false');
         }
 
@@ -266,7 +266,7 @@ function selectMaterialInRow(row, material) {
     if (searchInput) searchInput.value = material.material_code || material.text || '';
     if (resultsPanel) {
         resultsPanel.replaceChildren();
-        resultsPanel.classList.add('d-none');
+        resultsPanel.classList.add('tw:hidden');
     }
     setMaterialSearchOpen(rowEl, false);
     if (hsOverrideInput) hsOverrideInput.value = '0';
@@ -293,7 +293,7 @@ function renderMaterialSearchResults(row, results) {
     panel.replaceChildren();
     if (!Array.isArray(results) || results.length === 0) {
         const emptyEl = document.createElement('div');
-        emptyEl.className = 'list-group-item small text-muted';
+        emptyEl.className = 'tw:block tw:w-full tw:border-b tw:border-outline-variant tw:px-3 tw:py-2 tw:text-left tw:text-ui-xs tw:text-on-surface-variant';
         emptyEl.textContent = prPurchasingCopy.noActiveMasterMaterialFound;
         panel.appendChild(emptyEl);
     } else {
@@ -301,14 +301,14 @@ function renderMaterialSearchResults(row, results) {
             const category = material.category_label || material.category || 'unmapped';
             const btn = document.createElement('button');
             btn.type = 'button';
-            btn.className = 'list-group-item list-group-item-action py-2';
+            btn.className = 'ui-focus-ring tw:block tw:w-full tw:border-b tw:border-outline-variant tw:bg-surface tw:px-3 tw:py-2 tw:text-left tw:transition-colors tw:hover:bg-surface-container tw:cursor-pointer';
 
             const codeEl = document.createElement('div');
-            codeEl.className = 'fw-semibold';
+            codeEl.className = 'tw:font-semibold tw:text-on-surface';
             codeEl.textContent = material.material_code || '';
 
             const metaEl = document.createElement('div');
-            metaEl.className = 'small text-muted';
+            metaEl.className = 'tw:text-ui-xs tw:text-on-surface-variant';
             metaEl.textContent = `${category} | ${material.density_profile}`;
 
             btn.append(codeEl, metaEl);
@@ -317,7 +317,7 @@ function renderMaterialSearchResults(row, results) {
         });
     }
     setMaterialSearchOpen(rowEl, true);
-    panel.classList.remove('d-none');
+    panel.classList.remove('tw:hidden');
     positionMaterialSearchResults(rowEl);
 }
 
@@ -677,11 +677,11 @@ function renderMobileMaterialCards() {
 
     const emptyStateEl = document.getElementById('prMobileEmptyState');
     if (totalCount === 0) {
-        emptyStateEl?.classList.remove('d-none');
+        emptyStateEl?.classList.remove('tw:hidden');
         return;
     }
 
-    emptyStateEl?.classList.add('d-none');
+    emptyStateEl?.classList.add('tw:hidden');
 
     rows.forEach((rowEl, index) => {
         const matName = String(rowEl.querySelector('.material-master-search')?.value || '').trim();
@@ -750,11 +750,11 @@ function renderMobileMaterialCards() {
 
                 <div class="tw:flex tw:items-center tw:justify-end tw:gap-2 tw:pt-1">
                     <button type="button" class="ui-data-action ui-motion ui-focus-ring tw:py-1 tw:px-3 tw:text-ui-xs pr-mobile-edit-btn" data-row-index="${index}">
-                        <svg class="tw:inline-block tw:align-middle me-1" xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
+                        <svg class="tw:inline-block tw:align-middle tw:me-1" xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
                         Edit
                     </button>
                     <button type="button" class="ui-data-action ui-data-action--danger ui-motion ui-focus-ring tw:py-1 tw:px-2.5 tw:text-ui-xs pr-mobile-delete-btn" data-row-index="${index}">
-                        <svg class="tw:inline-block tw:align-middle me-1" xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                        <svg class="tw:inline-block tw:align-middle tw:me-1" xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
                         Hapus
                     </button>
                 </div>
@@ -896,7 +896,7 @@ function searchMobileMaterial(term) {
         resultsEl.replaceChildren();
 
         if (!term || term.length < 1) {
-            resultsEl.classList.add('d-none');
+            resultsEl.classList.add('tw:hidden');
             return;
         }
 
@@ -924,7 +924,7 @@ function searchMobileMaterial(term) {
             resultsEl.replaceChildren();
             if (!results.length) {
                 const emptyEl = document.createElement('div');
-                emptyEl.className = 'list-group-item small text-muted p-3';
+                emptyEl.className = 'tw:block tw:w-full tw:border-b tw:border-outline-variant tw:p-3 tw:text-left tw:text-ui-xs tw:text-on-surface-variant';
                 emptyEl.textContent = prPurchasingCopy.noActiveMasterMaterialFound;
                 resultsEl.appendChild(emptyEl);
             } else {
@@ -932,14 +932,14 @@ function searchMobileMaterial(term) {
                     const category = mat.category_label || mat.category || 'unmapped';
                     const btn = document.createElement('button');
                     btn.type = 'button';
-                    btn.className = 'list-group-item list-group-item-action py-2.5 px-3';
+                    btn.className = 'ui-focus-ring tw:block tw:w-full tw:border-b tw:border-outline-variant tw:bg-surface tw:px-3 tw:py-2.5 tw:text-left tw:transition-colors tw:hover:bg-surface-container tw:cursor-pointer';
 
                     const codeEl = document.createElement('div');
-                    codeEl.className = 'fw-bold tw:text-ui-xs tw:text-on-surface';
+                    codeEl.className = 'tw:font-bold tw:text-ui-xs tw:text-on-surface';
                     codeEl.textContent = mat.material_code || '';
 
                     const metaEl = document.createElement('div');
-                    metaEl.className = 'small text-muted';
+                    metaEl.className = 'tw:text-ui-xs tw:text-on-surface-variant';
                     metaEl.textContent = `${category} | ${mat.density_profile || ''}`;
 
                     btn.append(codeEl, metaEl);
@@ -947,10 +947,10 @@ function searchMobileMaterial(term) {
                     resultsEl.appendChild(btn);
                 });
             }
-            resultsEl.classList.remove('d-none');
+            resultsEl.classList.remove('tw:hidden');
         } catch (err) {
             if (err?.name !== 'AbortError' || requestState.timedOut) {
-                resultsEl.classList.add('d-none');
+                resultsEl.classList.add('tw:hidden');
             }
         } finally {
             clearPrRequestStateTimer(requestState);
@@ -1094,7 +1094,7 @@ document.addEventListener('keydown', (e) => {
     const searchInput = e.target.closest('.material-master-search');
     if (searchInput) {
         const row = searchInput.closest('tr');
-        row?.querySelector('.material-search-results')?.classList.add('d-none');
+        row?.querySelector('.material-search-results')?.classList.add('tw:hidden');
         setMaterialSearchOpen(row, false);
     }
 });
@@ -1175,7 +1175,7 @@ document.addEventListener('click', (e) => {
 
     if (!target.closest('.material-master-search, .material-search-results')) {
         document.querySelectorAll('.material-search-results').forEach((panel) => {
-            panel.classList.add('d-none');
+            panel.classList.add('tw:hidden');
             setMaterialSearchOpen(panel.closest('tr'), false);
         });
     }
@@ -1196,14 +1196,14 @@ document.addEventListener('click', (e) => {
 
         if (matIdEl) matIdEl.value = mat.id ?? '';
         if (matSearchEl) matSearchEl.value = mat.material_code || mat.text || '';
-        clearBtn?.classList.remove('d-none');
+        clearBtn?.classList.remove('tw:hidden');
         if (resultsEl) {
-            resultsEl.classList.add('d-none');
+            resultsEl.classList.add('tw:hidden');
             resultsEl.replaceChildren();
         }
         if (selectedNameEl) selectedNameEl.textContent = mat.material_code || mat.text || '';
         if (selectedGradeEl) selectedGradeEl.textContent = mat.category_label || mat.category || '';
-        selectedFeedbackEl?.classList.remove('d-none');
+        selectedFeedbackEl?.classList.remove('tw:hidden');
 
         if (mat.default_shape && shapeEl && !shapeEl.value) {
             shapeEl.value = mat.default_shape;
@@ -1223,20 +1223,20 @@ document.addEventListener('click', (e) => {
 
         if (matIdEl) matIdEl.value = '';
         if (matSearchEl) matSearchEl.value = '';
-        document.getElementById('mmSelectedFeedback')?.classList.add('d-none');
-        document.getElementById('mmBtnClearMaterial')?.classList.add('d-none');
+        document.getElementById('mmSelectedFeedback')?.classList.add('tw:hidden');
+        document.getElementById('mmBtnClearMaterial')?.classList.add('tw:hidden');
         if (hsCodeEl) hsCodeEl.value = '';
         if (weightNeededEl) weightNeededEl.value = '0.0000';
         if (totalWeightEl) totalWeightEl.textContent = '0.0000 kg';
         if (resultsEl) {
-            resultsEl.classList.add('d-none');
+            resultsEl.classList.add('tw:hidden');
             resultsEl.replaceChildren();
         }
         return;
     }
 
     if (!target.closest('#mmMaterialSearch, #mmMaterialResults')) {
-        document.getElementById('mmMaterialResults')?.classList.add('d-none');
+        document.getElementById('mmMaterialResults')?.classList.add('tw:hidden');
     }
 
     if (target.closest('#btnOpenMobileMaterialModal')) {
@@ -1258,10 +1258,10 @@ document.addEventListener('click', (e) => {
         if (editingIdxEl) editingIdxEl.value = '-1';
         if (matIdEl) matIdEl.value = '';
         if (matSearchEl) matSearchEl.value = '';
-        document.getElementById('mmBtnClearMaterial')?.classList.add('d-none');
-        document.getElementById('mmSelectedFeedback')?.classList.add('d-none');
+        document.getElementById('mmBtnClearMaterial')?.classList.add('tw:hidden');
+        document.getElementById('mmSelectedFeedback')?.classList.add('tw:hidden');
         if (resultsEl) {
-            resultsEl.classList.add('d-none');
+            resultsEl.classList.add('tw:hidden');
             resultsEl.replaceChildren();
         }
         if (shapeEl) shapeEl.value = '';
@@ -1318,17 +1318,17 @@ document.addEventListener('click', (e) => {
         if (matSearchEl) matSearchEl.value = matName;
 
         if (matName) {
-            clearBtn?.classList.remove('d-none');
+            clearBtn?.classList.remove('tw:hidden');
             if (selectedNameEl) selectedNameEl.textContent = matName;
             if (selectedGradeEl) selectedGradeEl.textContent = grade || '—';
-            selectedFeedbackEl?.classList.remove('d-none');
+            selectedFeedbackEl?.classList.remove('tw:hidden');
         } else {
-            clearBtn?.classList.add('d-none');
-            selectedFeedbackEl?.classList.add('d-none');
+            clearBtn?.classList.add('tw:hidden');
+            selectedFeedbackEl?.classList.add('tw:hidden');
         }
 
         if (resultsEl) {
-            resultsEl.classList.add('d-none');
+            resultsEl.classList.add('tw:hidden');
             resultsEl.replaceChildren();
         }
 
@@ -1496,13 +1496,13 @@ document.addEventListener('click', (e) => {
         const label = document.getElementById('btnTogglePrTableLabel');
         if (!container) return;
 
-        const isHidden = container.classList.contains('d-none');
+        const isHidden = container.classList.contains('tw:hidden');
         if (isHidden) {
-            container.classList.remove('d-none');
+            container.classList.remove('tw:hidden');
             toggleTableBtn.setAttribute('aria-expanded', 'true');
             if (label) label.textContent = 'Tutup Tabel';
         } else {
-            container.classList.add('d-none');
+            container.classList.add('tw:hidden');
             toggleTableBtn.setAttribute('aria-expanded', 'false');
             if (label) label.textContent = 'Lihat Tabel Penuh';
         }

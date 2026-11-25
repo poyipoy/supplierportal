@@ -355,12 +355,12 @@
         const normalizeComparisonKeyword = (value) => String(value || '').toLowerCase().trim();
 
         const hideComparisonPrSuggestions = () => {
-            if (comparisonPrSuggestions) comparisonPrSuggestions.classList.add('d-none');
+            if (comparisonPrSuggestions) comparisonPrSuggestions.classList.add('tw:hidden');
         };
 
         const toggleComparisonClear = () => {
             if (comparisonPrClear) {
-                comparisonPrClear.classList.toggle('d-none', comparisonPrSearch.value.trim() === '');
+                comparisonPrClear.classList.toggle('tw:hidden', comparisonPrSearch.value.trim() === '');
             }
         };
 
@@ -385,31 +385,31 @@
 
             if (matches.length === 0) {
                 const empty = document.createElement('div');
-                empty.className = 'list-group-item small text-muted';
+                empty.className = 'tw:block tw:w-full tw:border-b tw:border-outline-variant tw:px-3 tw:py-2 tw:text-left tw:text-ui-xs tw:text-on-surface-variant';
                 empty.textContent = @json(__('purchasing.copy.no_matching_pr_was_found'));
                 comparisonPrSuggestions.appendChild(empty);
-                comparisonPrSuggestions.classList.remove('d-none');
+                comparisonPrSuggestions.classList.remove('tw:hidden');
                 return;
             }
 
             matches.forEach((option) => {
                 const button = document.createElement('button');
                 button.type = 'button';
-                button.className = 'list-group-item list-group-item-action py-2';
+                button.className = 'ui-focus-ring tw:block tw:w-full tw:border-b tw:border-outline-variant tw:bg-surface tw:px-3 tw:py-2 tw:text-left tw:transition-colors tw:hover:bg-surface-container tw:cursor-pointer';
 
                 const title = document.createElement('div');
-                title.className = 'fw-semibold small';
+                title.className = 'tw:font-semibold tw:text-ui-xs tw:text-on-surface';
                 title.textContent = option.prNumber;
 
                 const meta = document.createElement('div');
-                meta.className = 'text-muted';
+                meta.className = 'tw:text-on-surface-variant';
                 meta.style.fontSize = '.75rem';
                 meta.textContent = `${option.period} - ${option.quotationCountLabel}`;
 
                 const preview = document.createElement('div');
-                preview.className = 'text-secondary mt-1';
+                preview.className = 'tw:text-on-surface-variant tw:mt-1';
                 preview.style.fontSize = '.7rem';
-                preview.innerHTML = `<span class="me-1">${comparisonIcons.package}</span>${option.previewMaterials || ''}`;
+                preview.innerHTML = `<span class="tw:me-1">${comparisonIcons.package}</span>${option.previewMaterials || ''}`;
 
                 button.appendChild(title);
                 button.appendChild(meta);
@@ -422,7 +422,7 @@
                 comparisonPrSuggestions.appendChild(button);
             });
 
-            comparisonPrSuggestions.classList.remove('d-none');
+            comparisonPrSuggestions.classList.remove('tw:hidden');
         };
 
         comparisonPrSearch.addEventListener('focus', renderComparisonPrSuggestions);
@@ -667,7 +667,7 @@
                 materialFilter.addEventListener('change', function() {
                     const materialId = this.value;
                     document.querySelectorAll('[data-comparison-row]').forEach((row) => {
-                        row.classList.toggle('d-none', materialId !== '' && row.dataset.materialId !== materialId);
+                        row.classList.toggle('tw:hidden', materialId !== '' && row.dataset.materialId !== materialId);
                     });
 
                     // A supplier without an offer for the material stays a gap (subset keeps null).
@@ -790,16 +790,16 @@
                 searchInput.disabled = false;
             }
 
-            const itemsList = textElement('table', 'table table-sm table-hover align-middle mb-0 tw:text-ui-xs', '');
-            const thead = textElement('thead', 'table-light tw:sticky tw:top-0 tw:z-1', '');
+            const itemsList = textElement('table', 'ui-table ui-table--sm ui-table--hover tw:align-middle tw:mb-0 tw:text-ui-xs', '');
+            const thead = textElement('thead', 'tw:bg-surface-container-low tw:sticky tw:top-0 tw:z-1', '');
             const headRow = document.createElement('tr');
-            const thNum = textElement('th', 'text-end tw:w-8', '#');
+            const thNum = textElement('th', 'tw:text-end tw:w-8', '#');
             thNum.scope = 'col';
             const thMaterial = textElement('th', '', previewI18n.colMaterial);
             thMaterial.scope = 'col';
             const thSupplier = textElement('th', '', previewI18n.colSupplier);
             thSupplier.scope = 'col';
-            const thPrice = textElement('th', 'text-end text-nowrap', previewI18n.colPrice);
+            const thPrice = textElement('th', 'tw:text-end tw:whitespace-nowrap', previewI18n.colPrice);
             thPrice.scope = 'col';
             headRow.append(thNum, thMaterial, thSupplier, thPrice);
             thead.append(headRow);
@@ -817,10 +817,10 @@
                 tr.dataset.previewRow = '1';
                 tr.dataset.searchText = `${itemName} ${supplierName}`.toLowerCase();
 
-                const tdNum = textElement('td', 'text-end tw:text-on-surface-variant ui-tabular-nums', String(index + 1));
-                const tdMaterial = textElement('td', 'fw-semibold tw:text-on-surface', itemName);
-                const tdSupplier = textElement('td', 'text-primary fw-semibold', supplierName);
-                const tdPrice = textElement('td', 'text-end ui-tabular-nums text-nowrap tw:text-on-surface', price);
+                const tdNum = textElement('td', 'tw:text-end tw:text-on-surface-variant ui-tabular-nums', String(index + 1));
+                const tdMaterial = textElement('td', 'tw:font-semibold tw:text-on-surface', itemName);
+                const tdSupplier = textElement('td', 'tw:text-primary tw:font-semibold', supplierName);
+                const tdPrice = textElement('td', 'tw:text-end ui-tabular-nums tw:whitespace-nowrap tw:text-on-surface', price);
                 tr.append(tdNum, tdMaterial, tdSupplier, tdPrice);
                 tbody.append(tr);
 
@@ -833,7 +833,7 @@
             const emptyFilterRow = document.createElement('tr');
             emptyFilterRow.dataset.previewEmptyFilter = '1';
             emptyFilterRow.hidden = true;
-            const emptyFilterCell = textElement('td', 'text-center tw:py-4 tw:text-on-surface-variant', previewI18n.noMatches);
+            const emptyFilterCell = textElement('td', 'tw:text-center tw:py-4 tw:text-on-surface-variant', previewI18n.noMatches);
             emptyFilterCell.colSpan = 4;
             emptyFilterRow.append(emptyFilterCell);
             tbody.append(emptyFilterRow);
@@ -849,7 +849,7 @@
                 const group = textElement('div', 'tw:p-2.5 tw:rounded-ui-sm tw:bg-surface tw:border tw:border-outline-variant', '');
 
                 const header = textElement('div', 'tw:flex tw:flex-wrap tw:items-center tw:justify-between tw:gap-2 tw:mb-2', '');
-                const title = textElement('div', 'fw-bold tw:text-ui-xs text-primary', `PO #${poCount} · ${supplier.name}`);
+                const title = textElement('div', 'tw:font-bold tw:text-ui-xs tw:text-primary', `PO #${poCount} · ${supplier.name}`);
                 const itemCountChip = textElement(
                     'span',
                     'ui-status-chip ui-status-chip--neutral',
@@ -922,7 +922,7 @@
                         }
                     });
                 }
-                warningEl.classList.toggle('d-none', !isEarlier);
+                warningEl.classList.toggle('tw:hidden', !isEarlier);
             }
         };
 
@@ -1377,7 +1377,7 @@
             const excluded = document.getElementById('historicalExcludedNote');
             if (excluded) {
                 const lines = summary.excluded?.lines || 0;
-                excluded.classList.toggle('d-none', lines === 0);
+                excluded.classList.toggle('tw:hidden', lines === 0);
                 excluded.textContent = lines === 0 ? '' : window.AdasiI18n.t('purchasing.js.history_excluded', { lines, kg: formatNumber(summary.excluded.kg), currencies: (summary.excluded.currencies || []).join(', ') });
             }
             const averageChange = document.getElementById('averageChangeValue');
@@ -1410,11 +1410,11 @@
                 `;
                 body.innerHTML = rows.map((row) => `
                     <tr>
-                        <td class="text-center fw-medium ui-sticky-col">${escapeOptionText(row.period)}</td>
-                        <td class="text-end text-primary fw-bold ui-tabular-nums">${formatRupiah(row.price_idr)}</td>
-                        <td class="text-end ui-tabular-nums">${formatRupiah(row.min_idr)}</td>
-                        <td class="text-end ui-tabular-nums">${formatRupiah(row.max_idr)}</td>
-                        <td class="text-center">${changeHtml(row.change_pct)}</td>
+                        <td class="tw:text-center tw:font-medium ui-sticky-col">${escapeOptionText(row.period)}</td>
+                        <td class="tw:text-end tw:text-primary tw:font-bold ui-tabular-nums">${formatRupiah(row.price_idr)}</td>
+                        <td class="tw:text-end ui-tabular-nums">${formatRupiah(row.min_idr)}</td>
+                        <td class="tw:text-end ui-tabular-nums">${formatRupiah(row.max_idr)}</td>
+                        <td class="tw:text-center">${changeHtml(row.change_pct)}</td>
                     </tr>
                 `).join('');
                 return;
@@ -1435,19 +1435,19 @@
             `;
             body.innerHTML = rows.map((row) => `
                 <tr>
-                    <td class="text-center fw-medium ui-sticky-col">
+                    <td class="tw:text-center tw:font-medium ui-sticky-col">
                         ${row.pr_url
-                            ? `<a href="${escapeOptionText(row.pr_url)}" class="ui-focus-ring tw:rounded-ui-xs text-primary text-decoration-none tw:hover:underline">${escapeOptionText(row.pr_number || '-')} →</a>`
+                            ? `<a href="${escapeOptionText(row.pr_url)}" class="ui-focus-ring tw:rounded-ui-xs tw:text-primary tw:no-underline tw:hover:underline">${escapeOptionText(row.pr_number || '-')} →</a>`
                             : escapeOptionText(row.pr_number || '-')}
                     </td>
-                    <td class="text-center fw-semibold ui-col-data-name">${escapeOptionText(row.material_name || payload.materialName || '-')}</td>
-                    <td class="text-center ui-tabular-nums">${escapeOptionText(row.dimension_display || '-')}</td>
-                    <td class="text-center"><span class="ui-status-chip ui-status-chip--neutral">${escapeOptionText(row.range_classification || '-')}</span></td>
-                    <td class="text-center ui-col-data-name">${escapeOptionText(row.supplier || '-')}</td>
-                    <td class="text-end ui-tabular-nums">${formatMaxDecimals(row.price_per_kg, 4)} <span class="ui-status-chip ui-status-chip--neutral tw:ms-1">${escapeOptionText(row.currency)}</span><div class="tw:text-ui-xs tw:text-on-surface-variant">${escapeOptionText(row.annual_price_display || '')}</div></td>
-                    <td class="text-end text-primary fw-bold ui-tabular-nums">${formatRupiah(row.total_idr)}</td>
-                    <td class="text-center">${row.purchase_order_at_display ? escapeOptionText(row.purchase_order_at_display) : '<span class="ui-status-chip ui-status-chip--neutral">' + escapeOptionText(@json(__('purchasing.copy.draft'))) + '</span>'}</td>
-                    <td class="text-center">${changeHtml(row.change_pct)}</td>
+                    <td class="tw:text-center tw:font-semibold ui-col-data-name">${escapeOptionText(row.material_name || payload.materialName || '-')}</td>
+                    <td class="tw:text-center ui-tabular-nums">${escapeOptionText(row.dimension_display || '-')}</td>
+                    <td class="tw:text-center"><span class="ui-status-chip ui-status-chip--neutral">${escapeOptionText(row.range_classification || '-')}</span></td>
+                    <td class="tw:text-center ui-col-data-name">${escapeOptionText(row.supplier || '-')}</td>
+                    <td class="tw:text-end ui-tabular-nums">${formatMaxDecimals(row.price_per_kg, 4)} <span class="ui-status-chip ui-status-chip--neutral tw:ms-1">${escapeOptionText(row.currency)}</span><div class="tw:text-ui-xs tw:text-on-surface-variant">${escapeOptionText(row.annual_price_display || '')}</div></td>
+                    <td class="tw:text-end tw:text-primary tw:font-bold ui-tabular-nums">${formatRupiah(row.total_idr)}</td>
+                    <td class="tw:text-center">${row.purchase_order_at_display ? escapeOptionText(row.purchase_order_at_display) : '<span class="ui-status-chip ui-status-chip--neutral">' + escapeOptionText(@json(__('purchasing.copy.draft'))) + '</span>'}</td>
+                    <td class="tw:text-center">${changeHtml(row.change_pct)}</td>
                 </tr>
             `).join('');
         }
@@ -1464,7 +1464,7 @@
             }
 
             if (!pagination || Number(pagination.total || 0) === 0) {
-                container.classList.add('d-none');
+                container.classList.add('tw:hidden');
                 return;
             }
 
@@ -1476,7 +1476,7 @@
             previous.dataset.historyPage = String(Math.max(1, currentPage - 1));
             next.disabled = currentPage >= lastPage;
             next.dataset.historyPage = String(Math.min(lastPage, currentPage + 1));
-            container.classList.remove('d-none');
+            container.classList.remove('tw:hidden');
         }
 
         function historicalResultShellHtml() {
@@ -1512,7 +1512,7 @@
                         <div class="tw:text-ui-xs tw:font-semibold tw:uppercase tw:tracking-wider tw:text-on-surface-variant">${escapeOptionText(@js(__('purchasing.comparison_analytics.historical_average')))}</div>
                         <div class="ui-tabular-nums tw:mt-1 tw:text-ui-xl tw:font-semibold tw:text-on-surface" id="historicalWeightedAverage">—</div>
                         <div class="tw:text-ui-xs tw:text-on-surface-variant" id="historicalWeightedBasis"></div>
-                        <div class="d-none tw:text-ui-xs tw:text-warning" id="historicalExcludedNote"></div>
+                        <div class="tw:hidden tw:text-ui-xs tw:text-warning" id="historicalExcludedNote"></div>
                     </div>
                 </section>
 
@@ -1522,12 +1522,12 @@
                         <p class="tw:m-0 tw:mt-0.5 tw:text-ui-xs tw:text-on-surface-variant">${escapeOptionText(@js(__('purchasing.comparison_analytics.supporting_data_description')))}</p>
                     </header>
                     <div class="ui-data-table__scroll ui-table-sticky tw:w-full tw:min-w-0 tw:max-w-full" role="region" tabindex="0" aria-label="${escapeOptionText(@js(__('purchasing.copy.supporting_data')))}">
-                        <table class="table table-hover align-middle mb-0 tw:text-ui-sm">
-                            <thead class="table-light text-center" id="historicalTableHead"></thead>
+                        <table class="ui-table ui-table--hover tw:align-middle tw:mb-0 tw:text-ui-sm">
+                            <thead class="tw:text-center" id="historicalTableHead"></thead>
                             <tbody id="historicalTableBody"></tbody>
                         </table>
                     </div>
-                    <nav id="historicalPagination" aria-label="${escapeOptionText(@js(__('pagination.navigation')))}" class="d-none tw:flex tw:flex-wrap tw:items-center tw:justify-between tw:gap-3 tw:border-t tw:border-outline-variant tw:bg-surface-low tw:px-4 tw:py-3">
+                    <nav id="historicalPagination" aria-label="${escapeOptionText(@js(__('pagination.navigation')))}" class="tw:hidden tw:flex tw:flex-wrap tw:items-center tw:justify-between tw:gap-3 tw:border-t tw:border-outline-variant tw:bg-surface-low tw:px-4 tw:py-3">
                         <span id="historicalPaginationSummary" class="tw:text-ui-xs tw:text-on-surface-variant"></span>
                         <div class="tw:flex tw:items-center tw:gap-2">
                             <button type="button" id="historicalPreviousPage" data-history-page="1" class="ui-button ui-motion ui-focus-ring tw:inline-flex tw:min-h-[var(--ui-control-height-sm)] tw:items-center tw:justify-center tw:rounded-ui-sm tw:border tw:border-outline tw:bg-transparent tw:px-2.5 tw:py-1 tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:disabled:cursor-not-allowed tw:disabled:opacity-50">${escapeOptionText(@js(__('pagination.previous')))}</button>
@@ -1589,7 +1589,7 @@
                 const title = @json(__('purchasing.copy.comparison_price_trend_title', ['material' => ':material', 'supplier' => ':supplier']))
                     .replace(':material', escapeOptionText(payload.materialName))
                     .replace(':supplier', escapeOptionText(payload.supplierName || @json(__('purchasing.comparison_analytics.all_suppliers'))));
-                titleEl.innerHTML = `<span class="tw:text-primary me-1">${comparisonIcons.chart}</span><span>${title}</span>`;
+                titleEl.innerHTML = `<span class="tw:text-primary tw:me-1">${comparisonIcons.chart}</span><span>${title}</span>`;
             }
             const statusSummary = [
                 titleEl?.textContent?.trim() || payload.materialName || '',
@@ -1913,13 +1913,13 @@
                     }
                 },
                 columns: [
-                    { data: 'material_display', name: 'current_pr_items.material_name', className: 'text-start ui-sticky-col ui-col-data-name' },
-                    { data: 'current_price_display', name: 'current_price_idr', className: 'text-end', searchable: false },
-                    { data: 'best_price_display', name: 'best_price_idr', className: 'text-end', searchable: false },
-                    { data: 'diff_display', name: 'diff_idr_per_kg', className: 'text-center', searchable: false },
-                    { data: 'potential_difference_display', name: 'potential_difference_idr', className: 'text-end', searchable: false },
-                    { data: 'status_badge', name: 'diff_percent', className: 'text-center', searchable: false },
-                    { data: 'action', name: 'action', className: 'text-center', orderable: false, searchable: false }
+                    { data: 'material_display', name: 'current_pr_items.material_name', className: 'tw:text-start ui-sticky-col ui-col-data-name' },
+                    { data: 'current_price_display', name: 'current_price_idr', className: 'tw:text-end', searchable: false },
+                    { data: 'best_price_display', name: 'best_price_idr', className: 'tw:text-end', searchable: false },
+                    { data: 'diff_display', name: 'diff_idr_per_kg', className: 'tw:text-center', searchable: false },
+                    { data: 'potential_difference_display', name: 'potential_difference_idr', className: 'tw:text-end', searchable: false },
+                    { data: 'status_badge', name: 'diff_percent', className: 'tw:text-center', searchable: false },
+                    { data: 'action', name: 'action', className: 'tw:text-center', orderable: false, searchable: false }
                 ],
 
                 order: [[4, 'desc']]

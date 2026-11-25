@@ -45,7 +45,7 @@
         @endforeach
         <div class="tw:grid tw:gap-1">
             <label for="{{ $selectId }}" class="tw:text-ui-xs tw:font-semibold tw:text-on-surface">{{ __($pc.'.currency') }}</label>
-            <select name="currency" id="{{ $selectId }}" class="form-select form-select-sm" data-analysis-currency>
+            <select name="currency" id="{{ $selectId }}" class="ui-select ui-select--sm" data-analysis-currency>
                 @foreach($evaluation['currencies'] as $code)
                     <option value="{{ $code }}" @selected($evaluation['currency'] === $code)>{{ $code }}</option>
                 @endforeach

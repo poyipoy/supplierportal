@@ -30,8 +30,8 @@
             </div>
             {{-- PUR-05: material filter applied through AJAX; the date form still submits normally. --}}
             <div class="tw:w-full tw:sm:w-auto tw:min-w-[220px]">
-                <label class="form-label tw:mb-1 tw:text-ui-xs tw:font-semibold tw:text-on-surface" for="vsBestMaterialSelect">{{ __('purchasing.comparison_analytics.material_filter') }}</label>
-                <select id="vsBestMaterialSelect" class="form-select form-select-sm tw:min-h-[var(--ui-control-height-sm)]">
+                <label class="ui-label tw:mb-1 tw:text-ui-xs tw:font-semibold tw:text-on-surface" for="vsBestMaterialSelect">{{ __('purchasing.comparison_analytics.material_filter') }}</label>
+                <select id="vsBestMaterialSelect" class="ui-select ui-select--sm tw:min-h-[var(--ui-control-height-sm)]">
                     <option value="" data-shape="">{{ __('purchasing.copy.all_material') }}</option>
                     @foreach($vsBestMaterials as $option)
                         <option value="{{ $option['name'] }}" data-shape="{{ $option['shape'] ?? '' }}" @selected($selectedVsBestMaterial && $selectedVsBestMaterial['name'] === $option['name'] && $selectedVsBestMaterial['shape'] === $option['shape'])>{{ $option['label'] }}</option>
@@ -62,10 +62,10 @@
 </div>
 
 <x-ui.data-table :title="__('purchasing.copy.price_benchmark_details')" :description="__('purchasing.copy.server_side_results_are_ordered_by_the_largest_potential_difference')">
-    <table class="table table-hover align-middle mb-0 w-100 tw:text-ui-sm" id="vsBestTable">
-        <thead class="table-light text-center">
+    <table class="ui-table ui-table--hover tw:align-middle tw:mb-0 tw:w-full tw:text-ui-sm" id="vsBestTable">
+        <thead class="tw:text-center">
             <tr>
-                <th scope="col" class="text-start">{{ __('purchasing.copy.material') }}</th>
+                <th scope="col" class="tw:text-start">{{ __('purchasing.copy.material') }}</th>
                 <th scope="col">{{ __('purchasing.copy.current_price') }}</th>
                 <th scope="col">{{ __('purchasing.copy.historical_best_price') }}</th>
                 <th scope="col">{{ __('purchasing.comparison_analytics.difference_per_kg', ['currency' => $currency]) }}</th>

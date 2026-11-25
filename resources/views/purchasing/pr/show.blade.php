@@ -92,7 +92,7 @@
                     title="{{ __('purchasing.a11y.quotation_count', ['count' => $submittedQuotationCount]) }}"
                     aria-label="{{ __('purchasing.a11y.quotation_count', ['count' => $submittedQuotationCount]) }}"
                 >
-                    <x-ui.icon name="users" size="sm" class="me-1" />
+                    <x-ui.icon name="users" size="sm" class="tw:me-1" />
                     {{ trans_choice('purchasing.summary.quotations', $submittedQuotationCount, ['count' => $submittedQuotationCount]) }}
                 </span>
             @endif
@@ -167,13 +167,13 @@
                         </x-ui.button>
                     </x-slot:actions>
                 @endif
-                <div class="row g-3">
-                    <div class="col-md-6">
-                        <span class="tw:text-on-surface-variant tw:text-ui-xs fw-semibold tw:uppercase d-block mb-1">{{ __('purchasing.copy.invited_suppliers') }}</span>
+                <div class="tw:grid tw:gap-3 tw:md:grid-cols-2">
+                    <div>
+                        <span class="tw:text-on-surface-variant tw:text-ui-xs tw:font-semibold tw:uppercase tw:block tw:mb-1">{{ __('purchasing.copy.invited_suppliers') }}</span>
                         @if($pr->invitedSuppliers->isEmpty())
                             <span class="ui-status-chip ui-status-chip--neutral">{{ __('purchasing.copy.all_registered_suppliers') }}</span>
                         @else
-                            <div class="d-flex flex-wrap tw:gap-1.5">
+                            <div class="tw:flex tw:flex-wrap tw:gap-1.5">
                                 @foreach($pr->invitedSuppliers as $supplier)
                                     <span class="ui-status-chip ui-status-chip--info">
                                         {{ $supplier->supplier->company_name ?? $supplier->name }}
@@ -182,12 +182,12 @@
                             </div>
                         @endif
                     </div>
-                    <div class="col-md-6">
-                        <span class="tw:text-on-surface-variant tw:text-ui-xs fw-semibold tw:uppercase d-block mb-1">{{ __('purchasing.copy.requisition_notes') }}</span>
+                    <div>
+                        <span class="tw:text-on-surface-variant tw:text-ui-xs tw:font-semibold tw:uppercase tw:block tw:mb-1">{{ __('purchasing.copy.requisition_notes') }}</span>
                         @if($pr->notes)
                             <div class="tw:text-on-surface tw:text-ui-sm tw:whitespace-pre-line">{{ $pr->notes }}</div>
                         @else
-                            <span class="tw:text-on-surface-variant tw:text-ui-sm fst-italic">{{ __('purchasing.copy.no_additional_instructions_provided') }}</span>
+                            <span class="tw:text-on-surface-variant tw:text-ui-sm tw:italic">{{ __('purchasing.copy.no_additional_instructions_provided') }}</span>
                         @endif
                     </div>
                 </div>
@@ -200,19 +200,19 @@
                 :title="__('purchasing.page.material_count', ['count' => $pr->items->count()])"
                 :description="__('purchasing.copy.required_specifications_shapes_dimensions_and_computed_weights')"
             >
-                <table class="table table-hover align-middle mb-0 tw:text-ui-xs w-100">
-                    <thead class="table-light text-center">
+                <table class="ui-table ui-table--hover tw:align-middle tw:mb-0 tw:text-ui-xs tw:w-full">
+                    <thead class="tw:text-center">
                         <tr>
                             <th scope="col" style="width: 40px;">{{ __('purchasing.copy.no') }}</th>
                             <th scope="col">HS Code</th>
                             <th scope="col">{{ __('purchasing.copy.hs_status') }}</th>
-                            <th scope="col" class="text-start ui-sticky-col">{{ __('purchasing.copy.material') }}</th>
-                            <th scope="col" class="text-start">{{ __('purchasing.copy.grade') }}</th>
+                            <th scope="col" class="tw:text-start ui-sticky-col">{{ __('purchasing.copy.material') }}</th>
+                            <th scope="col" class="tw:text-start">{{ __('purchasing.copy.grade') }}</th>
                             <th scope="col">{{ __('purchasing.copy.shape') }}</th>
-                            <th scope="col" class="text-start">{{ __('purchasing.copy.dimensions_mm') }}</th>
+                            <th scope="col" class="tw:text-start">{{ __('purchasing.copy.dimensions_mm') }}</th>
                             <th scope="col">{{ __('purchasing.copy.qty') }}</th>
-                            <th scope="col" class="text-end">{{ __('purchasing.copy.weight_unit_kg_e8ab70') }}</th>
-                            <th scope="col" class="text-end">{{ __('purchasing.copy.total_weight') }}</th>
+                            <th scope="col" class="tw:text-end">{{ __('purchasing.copy.weight_unit_kg_e8ab70') }}</th>
+                            <th scope="col" class="tw:text-end">{{ __('purchasing.copy.total_weight') }}</th>
                             <th scope="col">{{ __('purchasing.copy.remark') }}</th>
                         </tr>
                     </thead>
@@ -235,33 +235,33 @@
                                 };
                             @endphp
                             <tr>
-                                <td class="text-center tw:text-on-surface-variant ui-tabular-nums">{{ $index + 1 }}</td>
-                                <td class="text-center fw-semibold tw:text-on-surface">
+                                <td class="tw:text-center tw:text-on-surface-variant ui-tabular-nums">{{ $index + 1 }}</td>
+                                <td class="tw:text-center tw:font-semibold tw:text-on-surface">
                                     {{ $item->hs_code ?? '-' }}
                                 </td>
-                                <td class="text-center">
+                                <td class="tw:text-center">
                                     <span class="ui-status-chip {{ $hsStatusTone }}">{{ $hsStatusLabel }}</span>
                                 </td>
-                                <td class="text-start fw-bold tw:text-on-surface ui-sticky-col ui-col-data-name">{{ $item->material_name }}</td>
-                                <td class="text-start tw:text-on-surface-variant ui-col-data-name">{{ $item->grade_label ?? '-' }}</td>
-                                <td class="text-center">{{ $item->shape ?: '-' }}</td>
-                                <td class="text-start tw:text-on-surface-variant">{{ $item->dimension_label }}</td>
-                                <td class="text-center fw-bold ui-tabular-nums">{{ number_format($item->quantity_value, 0) }}</td>
-                                <td class="text-end ui-tabular-nums tw:text-on-surface">{{ \App\Support\NumberFormat::maxDecimals($item->weight_needed) }}</td>
-                                <td class="text-end fw-bold text-primary ui-tabular-nums">{{ \App\Support\NumberFormat::maxDecimals($item->total_weight) }}</td>
-                                <td class="text-start tw:text-on-surface-variant ui-col-data-name">{{ $item->remark ?: '-' }}</td>
+                                <td class="tw:text-start tw:font-bold tw:text-on-surface ui-sticky-col ui-col-data-name">{{ $item->material_name }}</td>
+                                <td class="tw:text-start tw:text-on-surface-variant ui-col-data-name">{{ $item->grade_label ?? '-' }}</td>
+                                <td class="tw:text-center">{{ $item->shape ?: '-' }}</td>
+                                <td class="tw:text-start tw:text-on-surface-variant">{{ $item->dimension_label }}</td>
+                                <td class="tw:text-center tw:font-bold ui-tabular-nums">{{ number_format($item->quantity_value, 0) }}</td>
+                                <td class="tw:text-end ui-tabular-nums tw:text-on-surface">{{ \App\Support\NumberFormat::maxDecimals($item->weight_needed) }}</td>
+                                <td class="tw:text-end tw:font-bold tw:text-primary ui-tabular-nums">{{ \App\Support\NumberFormat::maxDecimals($item->total_weight) }}</td>
+                                <td class="tw:text-start tw:text-on-surface-variant ui-col-data-name">{{ $item->remark ?: '-' }}</td>
                             </tr>
                         @endforeach
                     </tbody>
-                    <tfoot id="prItemTotals" class="table-light">
+                    <tfoot id="prItemTotals" class="tw:bg-surface-container-low">
                         <tr>
-                            <th scope="row" colspan="7" class="text-end">{{ __('procurement.totals.total') }}</th>
-                            <td class="text-center fw-bold ui-tabular-nums">
+                            <th scope="row" colspan="7" class="tw:text-end">{{ __('procurement.totals.total') }}</th>
+                            <td class="tw:text-center tw:font-bold ui-tabular-nums">
                                 <span class="tw:sr-only">{{ __('procurement.totals.total_qty') }}:</span>
                                 {{ $regionalFormatter->number(\App\Support\NumberFormat::maxDecimals($totalQty)) }}
                             </td>
-                            <td class="text-end tw:text-on-surface-variant">{{ __('procurement.totals.total_kg') }}</td>
-                            <td class="text-end fw-bold text-primary ui-tabular-nums">{{ $regionalFormatter->number(\App\Support\NumberFormat::maxDecimals($totalKg)) }}</td>
+                            <td class="tw:text-end tw:text-on-surface-variant">{{ __('procurement.totals.total_kg') }}</td>
+                            <td class="tw:text-end tw:font-bold tw:text-primary ui-tabular-nums">{{ $regionalFormatter->number(\App\Support\NumberFormat::maxDecimals($totalKg)) }}</td>
                             <td></td>
                         </tr>
                     </tfoot>
@@ -282,17 +282,17 @@
                     />
                 </x-slot:emptyState>
 
-                <table class="table table-hover align-middle mb-0 tw:text-ui-xs w-100">
-                    <thead class="table-light text-center">
+                <table class="ui-table ui-table--hover tw:align-middle tw:mb-0 tw:text-ui-xs tw:w-full">
+                    <thead class="tw:text-center">
                         <tr>
                             <th scope="col">{{ __('purchasing.copy.supplier') }}</th>
                             <th scope="col">{{ __('purchasing.copy.curr') }}</th>
-                            <th scope="col" class="text-end">{{ __('purchasing.copy.total_price') }}</th>
-                            <th scope="col" class="text-end">{{ __('purchasing.copy.estimated_idr') }}</th>
+                            <th scope="col" class="tw:text-end">{{ __('purchasing.copy.total_price') }}</th>
+                            <th scope="col" class="tw:text-end">{{ __('purchasing.copy.estimated_idr') }}</th>
                             <th scope="col">{{ __('common.labels_review.est_delivery') }}</th>
                             <th scope="col">{{ __('purchasing.copy.submitted') }}</th>
                             <th scope="col">{{ __('purchasing.copy.status') }}</th>
-                            <th scope="col" class="tw:text-right text-end" style="width: 140px;">{{ __('common.table.action') }}</th>
+                            <th scope="col" class="tw:text-end" style="width: 140px;">{{ __('common.table.action') }}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -304,24 +304,24 @@
                                 $supplierName = $quotation->supplier->supplier->company_name ?? $quotation->supplier->name ?? '-';
                             @endphp
                             <tr class="{{ $isLowest ? 'pr-best-quotation' : '' }}">
-                                <td class="fw-bold tw:text-on-surface ui-col-data-name">{{ $supplierName }}</td>
-                                <td class="text-center"><span class="ui-status-chip ui-status-chip--neutral">{{ $quotation->currency }}</span></td>
-                                <td class="text-end ui-tabular-nums fw-semibold">{{ \App\Support\NumberFormat::maxDecimals($quotation->total_amount) }}</td>
-                                <td class="text-end fw-bold ui-tabular-nums">
+                                <td class="tw:font-bold tw:text-on-surface ui-col-data-name">{{ $supplierName }}</td>
+                                <td class="tw:text-center"><span class="ui-status-chip ui-status-chip--neutral">{{ $quotation->currency }}</span></td>
+                                <td class="tw:text-end ui-tabular-nums tw:font-semibold">{{ \App\Support\NumberFormat::maxDecimals($quotation->total_amount) }}</td>
+                                <td class="tw:text-end tw:font-bold ui-tabular-nums">
                                     @if($quotation->total_idr !== null)
                                         Rp {{ $regionalFormatter->groupedDecimal($quotation->total_idr) }}
                                         @if($isLowest)
-                                            <x-ui.icon name="circle-check" class="ms-1 text-success" aria-label="{{ __('purchasing.copy.lowest_estimated_total') }}" />
+                                            <x-ui.icon name="circle-check" class="tw:ms-1 tw:text-success" aria-label="{{ __('purchasing.copy.lowest_estimated_total') }}" />
                                         @endif
                                     @else
                                         <span class="tw:text-on-surface-variant">-</span>
                                     @endif
                                 </td>
-                                <td class="text-center ui-tabular-nums tw:text-on-surface-variant">{{ $quotation->estimated_delivery ? date('d M Y', strtotime($quotation->estimated_delivery)) : '-' }}</td>
-                                <td class="text-center ui-tabular-nums tw:text-on-surface-variant">{{ $quotation->submitted_at ? $regionalFormatter->timestamp($quotation->submitted_at, 'datetime_comma') : '-' }}</td>
-                                <td class="text-center"><x-status-badge type="quotation" :status="$quotation->status" /></td>
-                                <td class="tw:text-right text-end">
-                                    <div class="d-inline-flex align-items-center tw:gap-1.5 justify-content-end">
+                                <td class="tw:text-center ui-tabular-nums tw:text-on-surface-variant">{{ $quotation->estimated_delivery ? date('d M Y', strtotime($quotation->estimated_delivery)) : '-' }}</td>
+                                <td class="tw:text-center ui-tabular-nums tw:text-on-surface-variant">{{ $quotation->submitted_at ? $regionalFormatter->timestamp($quotation->submitted_at, 'datetime_comma') : '-' }}</td>
+                                <td class="tw:text-center"><x-status-badge type="quotation" :status="$quotation->status" /></td>
+                                <td class="tw:text-end">
+                                    <div class="tw:inline-flex tw:items-center tw:gap-1.5 tw:justify-end">
                                         <x-ui.row-action
                                             :href="route('purchasing.quotations.show', [$quotation, \App\Support\PurchasingNavigation::RETURN_URL_KEY => request()->fullUrl()])"
                                             :context="$supplierName"
@@ -416,8 +416,8 @@
                                 @csrf
                                 <input type="hidden" name="return_url" value="{{ \App\Support\PurchasingNavigation::currentUrlForReturn() }}">
                                 <x-ui.button type="submit" variant="outline" size="sm" class="tw:w-full tw:justify-start">
-                                    <x-ui.icon name="message-square" size="sm" class="text-primary flex-shrink-0" />
-                                    <span class="text-truncate fw-medium">{{ $quotation->supplier->supplier->company_name ?? $quotation->supplier->name }}</span>
+                                    <x-ui.icon name="message-square" size="sm" class="tw:text-primary tw:shrink-0" />
+                                    <span class="tw:truncate tw:font-medium">{{ $quotation->supplier->supplier->company_name ?? $quotation->supplier->name }}</span>
                                 </x-ui.button>
                             </form>
                         @endforeach
@@ -430,12 +430,12 @@
                 <ol class="pr-timeline">
                     <li class="pr-timeline-item is-complete">
                         <span class="pr-timeline-marker" aria-hidden="true"></span>
-                        <div class="tw:text-ui-sm fw-bold text-primary">{{ __('purchasing.copy.created_draft') }}</div>
+                        <div class="tw:text-ui-sm tw:font-bold tw:text-primary">{{ __('purchasing.copy.created_draft') }}</div>
                         <time class="ui-tabular-nums tw:text-on-surface-variant tw:text-ui-xs" datetime="{{ $pr->created_at->toIso8601String() }}">{{ $regionalFormatter->timestamp($pr->created_at, 'datetime_comma') }}</time>
                     </li>
                     <li class="pr-timeline-item {{ $hasReachedSubmitted ? 'is-complete' : '' }}">
                         <span class="pr-timeline-marker" aria-hidden="true"></span>
-                        <div class="tw:text-ui-sm fw-bold {{ $hasReachedSubmitted ? 'text-primary' : 'tw:text-on-surface-variant' }}">{{ __('purchasing.copy.submitted') }}</div>
+                        <div class="tw:text-ui-sm tw:font-bold {{ $hasReachedSubmitted ? 'tw:text-primary' : 'tw:text-on-surface-variant' }}">{{ __('purchasing.copy.submitted') }}</div>
                         @if($hasReachedSubmitted)
                             <time class="ui-tabular-nums tw:text-on-surface-variant tw:text-ui-xs" datetime="{{ $pr->updated_at->toIso8601String() }}">{{ $regionalFormatter->timestamp($pr->updated_at, 'datetime_comma') }}</time>
                         @endif
@@ -443,7 +443,7 @@
                     @if($pr->isCancelled())
                         <li class="pr-timeline-item is-cancelled">
                             <span class="pr-timeline-marker" aria-hidden="true"></span>
-                            <div class="tw:text-ui-sm fw-bold tw:text-error">{{ __('status.pr.cancelled') }}</div>
+                            <div class="tw:text-ui-sm tw:font-bold tw:text-error">{{ __('status.pr.cancelled') }}</div>
                             @if($pr->cancelled_at)
                                 <time class="ui-tabular-nums tw:text-on-surface-variant tw:text-ui-xs" datetime="{{ $pr->cancelled_at->toIso8601String() }}">{{ $regionalFormatter->timestamp($pr->cancelled_at, 'datetime_comma') }}</time>
                             @endif
@@ -451,7 +451,7 @@
                     @else
                         <li class="pr-timeline-item {{ $hasReachedBidding ? 'is-current' : '' }}">
                             <span class="pr-timeline-marker" aria-hidden="true"></span>
-                            <div class="tw:text-ui-sm fw-bold {{ $hasReachedBidding ? 'text-warning' : 'tw:text-on-surface-variant' }}">{{ __('purchasing.copy.supplier_bidding') }}</div>
+                            <div class="tw:text-ui-sm tw:font-bold {{ $hasReachedBidding ? 'tw:text-warning' : 'tw:text-on-surface-variant' }}">{{ __('purchasing.copy.supplier_bidding') }}</div>
                         </li>
                     @endif
                 </ol>
@@ -461,7 +461,7 @@
                         <ul class="tw:m-0 tw:grid tw:list-none tw:gap-2 tw:p-0">
                             @foreach($invitationEvents as $event)
                                 <li class="tw:text-ui-xs tw:text-on-surface">
-                                    <span class="fw-semibold">{{ __($event->event === \App\Models\PrSupplierInvitationEvent::ADDED ? 'purchasing.copy.invitation_event_added' : 'purchasing.copy.invitation_event_removed', ['supplier' => $event->supplier?->supplier?->company_name ?? $event->supplier?->name ?? '-', 'actor' => $event->actor?->name ?? '-']) }}</span>
+                                    <span class="tw:font-semibold">{{ __($event->event === \App\Models\PrSupplierInvitationEvent::ADDED ? 'purchasing.copy.invitation_event_added' : 'purchasing.copy.invitation_event_removed', ['supplier' => $event->supplier?->supplier?->company_name ?? $event->supplier?->name ?? '-', 'actor' => $event->actor?->name ?? '-']) }}</span>
                                     @if($event->reason)
                                         <span class="tw:mt-0.5 tw:block tw:text-on-surface-variant">{{ __('purchasing.copy.invitation_event_reason', ['reason' => $event->reason]) }}</span>
                                     @endif
@@ -569,7 +569,7 @@
                                 x-model="removeReason"
                                 aria-describedby="remove-supplier-reason-hint"
                                 placeholder="{{ __('purchasing.copy.invitation_remove_reason_placeholder') }}"
-                                class="form-control form-control-sm tw:mt-1"
+                                class="ui-textarea tw:text-ui-xs tw:px-2 tw:py-1 tw:mt-1"
                             ></textarea>
                             <p id="remove-supplier-reason-hint" class="tw:m-0 tw:mt-1 tw:text-ui-xs">{{ __('purchasing.copy.invitation_remove_reason_hint') }}</p>
                         </div>
@@ -593,9 +593,9 @@
                     <legend class="tw:mb-2 tw:p-0 tw:text-ui-sm tw:font-semibold tw:text-on-surface">{{ __('purchasing.copy.invitation_add_suppliers') }}</legend>
                     @forelse($invitableSuppliers as $candidate)
                         @php($wasPreviouslyRemoved = in_array((int) $candidate->id, $cancelledSupplierIds, true))
-                        <div class="form-check tw:mb-1.5">
-                            <input class="form-check-input" type="checkbox" name="supplier_ids[]" value="{{ $candidate->id }}" id="invite-supplier-{{ $candidate->id }}" @checked(collect(old('supplier_ids', []))->contains($candidate->id))>
-                            <label class="form-check-label tw:inline-flex tw:flex-wrap tw:items-center tw:gap-1.5" for="invite-supplier-{{ $candidate->id }}">
+                        <div class="ui-check-group tw:mb-1.5">
+                            <input class="ui-check" type="checkbox" name="supplier_ids[]" value="{{ $candidate->id }}" id="invite-supplier-{{ $candidate->id }}" @checked(collect(old('supplier_ids', []))->contains($candidate->id))>
+                            <label class="tw:cursor-pointer tw:text-ui-sm tw:inline-flex tw:flex-wrap tw:items-center tw:gap-1.5" for="invite-supplier-{{ $candidate->id }}">
                                 <span>{{ $candidate->supplier->company_name ?? $candidate->name }}</span>
                                 @if($wasPreviouslyRemoved)
                                     <span class="ui-status-chip ui-status-chip--neutral">{{ __('purchasing.copy.invitation_previously_removed') }}</span>
@@ -685,7 +685,7 @@
                         x-bind:aria-invalid="hasError ? 'true' : 'false'"
                         x-bind:aria-describedby="hasError ? 'pr-cancellation-reason-hint pr-cancellation-reason-error' : 'pr-cancellation-reason-hint'"
                         placeholder="{{ __('purchasing.copy.cancellation_reason_placeholder') }}"
-                        class="form-control"
+                        class="ui-textarea"
                         x-bind:class="hasError ? 'is-invalid' : ''"
                     ></textarea>
                     <div class="tw:flex tw:items-center tw:justify-between tw:gap-2 tw:text-ui-xs tw:text-on-surface-variant">

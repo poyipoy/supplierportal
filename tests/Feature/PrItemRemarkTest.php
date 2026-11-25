@@ -120,9 +120,9 @@ class PrItemRemarkTest extends TestCase
         $this->actingAs($this->purchasing)
             ->get(route('purchasing.requisitions.index'))
             ->assertOk()
-            ->assertSee('<thead class="table-light text-center">', false)
+            ->assertSee('<thead class="tw:text-center">', false)
             ->assertSee('<th scope="col">Action</th>', false)
-            ->assertSee("className: 'text-center'", false);
+            ->assertSee("className: 'tw:text-center'", false);
 
         $dataResponse = $this->actingAs($this->purchasing)
             ->get(route('purchasing.requisitions.index'), [

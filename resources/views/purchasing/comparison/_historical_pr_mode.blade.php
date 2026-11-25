@@ -41,7 +41,7 @@
             <div class="tw:grid tw:gap-1">
                 <h2 id="historicalPrChartTitle" class="tw:m-0 tw:text-ui-base tw:font-semibold tw:text-on-surface">{{ __('purchasing.quotation_history.chart_title') }}</h2>
                 <label for="historicalPrChartItem" class="tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant">{{ __('purchasing.quotation_history.chart_item') }}</label>
-                <select id="historicalPrChartItem" class="form-select form-select-sm tw:min-w-64" data-historical-chart-item>
+                <select id="historicalPrChartItem" class="ui-select ui-select--sm tw:min-w-64" data-historical-chart-item>
                     @foreach($historyItems as $option)
                         <option value="{{ $option['hash'] }}" @selected($option['hash'] === $qh['chart_item']['hash'])>{{ $option['label'] }}</option>
                     @endforeach
@@ -75,17 +75,17 @@
     @if($historyGroups === [])
         <p class="tw:m-0 tw:p-4 tw:text-ui-sm tw:text-on-surface-variant" role="status">{{ __('purchasing.quotation_history.empty_no_quotations') }}</p>
     @else
-        <table class="table align-middle mb-0 tw:text-ui-sm" id="historicalPrTable">
+        <table class="ui-table tw:align-middle tw:mb-0 tw:text-ui-sm" id="historicalPrTable">
             <caption class="tw:caption-top tw:px-3 tw:py-2 tw:text-ui-xs tw:text-on-surface-variant">{{ __('purchasing.quotation_history.table_caption') }}</caption>
-            <thead class="table-light">
+            <thead>
                 <tr>
                     <th scope="col" class="ui-sticky-col">{{ __('purchasing.quotation_history.col_supplier') }}</th>
                     <th scope="col">{{ __('purchasing.quotation_history.col_current') }}</th>
                     <th scope="col">{{ __('purchasing.quotation_history.col_previous') }}</th>
-                    <th scope="col" class="text-end">{{ __('purchasing.quotation_history.col_difference') }}</th>
+                    <th scope="col" class="tw:text-end">{{ __('purchasing.quotation_history.col_difference') }}</th>
                     <th scope="col">{{ __('purchasing.quotation_history.col_status') }}</th>
-                    <th scope="col" class="text-center">{{ __('purchasing.quotation_history.col_history') }}</th>
-                    <th scope="col" class="text-center tw:min-w-[170px]">{{ __('purchasing.quotation_history.col_actions') }}</th>
+                    <th scope="col" class="tw:text-center">{{ __('purchasing.quotation_history.col_history') }}</th>
+                    <th scope="col" class="tw:text-center tw:min-w-[170px]">{{ __('purchasing.quotation_history.col_actions') }}</th>
                 </tr>
             </thead>
             @foreach($historyGroups as $group)
@@ -148,7 +148,7 @@
                                     <span class="tw:text-on-surface-variant">-</span>
                                 @endif
                             </td>
-                            <td class="text-end">
+                            <td class="tw:text-end">
                                 @if($row['diff_display'] !== null)
                                     <div @class(['ui-tabular-nums tw:font-semibold', 'tw:text-error' => $row['direction'] > 0, 'tw:text-success' => $row['direction'] < 0])>
                                         <x-ui.icon :name="$row['direction'] > 0 ? 'arrow-up-right' : ($row['direction'] < 0 ? 'arrow-down-right' : 'minus')" size="sm" />
@@ -179,10 +179,10 @@
                                     @endif
                                 @endif
                             </td>
-                            <td class="text-center ui-tabular-nums">
+                            <td class="tw:text-center ui-tabular-nums">
                                 {{ $row['history_count'] === null ? '-' : __('purchasing.quotation_history.history_counts', ['comparable' => $row['comparable_count'], 'total' => $row['history_count']]) }}
                             </td>
-                            <td class="text-center tw:min-w-[170px]">
+                            <td class="tw:text-center tw:min-w-[170px]">
                                 @php
                                     $hasActions = $current || $previous || ($current && ($row['history_count'] ?? 0) > 0);
                                 @endphp

@@ -11,12 +11,12 @@
                data-form="#prForm"
                data-url="{{ route('purchasing.requisitions.export-form') }}"
                data-fallback-url="{{ route('purchasing.requisitions.import-template') }}">
-                <x-ui.icon name="file-down" class="me-1" /> {{ __('purchasing.copy.download_template') }}
+                <x-ui.icon name="file-down" class="tw:me-1" /> {{ __('purchasing.copy.download_template') }}
             </a></li>
         <li><hr class="dropdown-divider"></li>
         <li>
             <button type="button" class="dropdown-item" data-ui-modal-open="#prImportModal">
-                <x-ui.icon name="file-spreadsheet" class="me-1" /> {{ __('purchasing.copy.import_excel') }}
+                <x-ui.icon name="file-spreadsheet" class="tw:me-1" /> {{ __('purchasing.copy.import_excel') }}
             </button>
         </li>
     </ul>

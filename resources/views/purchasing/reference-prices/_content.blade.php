@@ -51,8 +51,8 @@
                 @endif
 
                 <div class="tw:overflow-x-auto">
-                    <table class="table table-sm table-bordered align-middle mb-0 tw:text-ui-xs">
-                        <thead class="table-light">
+                    <table class="ui-table ui-table--sm ui-table--bordered tw:align-middle tw:mb-0 tw:text-ui-xs">
+                        <thead>
                             <tr>
                                 <th style="width: 48px;">#</th>
                                 <th>{{ __($rp.'.rules.category_key') }}</th>
@@ -64,7 +64,7 @@
                         <tbody>
                             @foreach($preview['candidate_rules'] as $idx => $cand)
                                 <tr>
-                                    <td class="ui-tabular-nums text-muted">{{ $idx + 1 }}</td>
+                                    <td class="ui-tabular-nums tw:text-on-surface-variant">{{ $idx + 1 }}</td>
                                     <td class="tw:font-medium ui-tabular-nums">{{ $cand['category_key'] }}</td>
                                     <td class="ui-tabular-nums">{{ $cand['dimension_min'] }} mm</td>
                                     <td class="ui-tabular-nums">{{ $cand['dimension_max'] }} mm</td>
@@ -81,16 +81,16 @@
 
         {{-- Rules Categories Table --}}
         <x-ui.data-table density="compact" sticky :scroll-label="__($rp.'.rules.title')">
-            <table class="table table-hover align-middle mb-0 tw:text-ui-sm w-100" data-reference-price-rules>
-                <thead class="table-light">
+            <table class="ui-table ui-table--hover tw:align-middle tw:mb-0 tw:text-ui-sm tw:w-full" data-reference-price-rules>
+                <thead>
                     <tr>
                         <th scope="col" style="width: 60px;">#</th>
                         <th scope="col">{{ __($rp.'.rules.category_key') }}</th>
                         <th scope="col">{{ __($rp.'.rules.category_name') }}</th>
-                        <th scope="col" class="text-end">{{ __($rp.'.rules.dimension_min') }}</th>
-                        <th scope="col" class="text-end">{{ __($rp.'.rules.dimension_max') }}</th>
-                        <th scope="col" class="text-center">{{ __($rp.'.rules.status') }}</th>
-                        <th scope="col" class="text-end" style="width: 140px;">{{ __($rp.'.rules.actions') }}</th>
+                        <th scope="col" class="tw:text-end">{{ __($rp.'.rules.dimension_min') }}</th>
+                        <th scope="col" class="tw:text-end">{{ __($rp.'.rules.dimension_max') }}</th>
+                        <th scope="col" class="tw:text-center">{{ __($rp.'.rules.status') }}</th>
+                        <th scope="col" class="tw:text-end" style="width: 140px;">{{ __($rp.'.rules.actions') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -99,16 +99,16 @@
                             <td class="tw:text-on-surface-variant ui-tabular-nums">{{ $rule->sort_order }}</td>
                             <td class="tw:font-semibold tw:text-on-surface ui-tabular-nums">{{ $rule->category_key }}</td>
                             <td>{{ $rule->category_name }}</td>
-                            <td class="text-end ui-tabular-nums">{{ $rule->dimension_min }} mm</td>
-                            <td class="text-end ui-tabular-nums">{{ $rule->dimension_max }} mm</td>
-                            <td class="text-center">
+                            <td class="tw:text-end ui-tabular-nums">{{ $rule->dimension_min }} mm</td>
+                            <td class="tw:text-end ui-tabular-nums">{{ $rule->dimension_max }} mm</td>
+                            <td class="tw:text-center">
                                 @if($rule->status === 'active')
                                     <x-ui.status-chip tone="success" size="sm">{{ __($rp.'.rules.status_active') }}</x-ui.status-chip>
                                 @else
                                     <x-ui.status-chip tone="neutral" size="sm">{{ __($rp.'.rules.status_inactive') }}</x-ui.status-chip>
                                 @endif
                             </td>
-                            <td class="text-end">
+                            <td class="tw:text-end">
                                 <div class="tw:inline-flex tw:items-center tw:gap-1.5">
                                     @if($rule->status === 'active')
                                         <form
@@ -171,7 +171,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7" class="text-center py-4 tw:text-on-surface-variant">
+                            <td colspan="7" class="tw:text-center tw:py-4 tw:text-on-surface-variant">
                                 {{ __('common.states.empty') }}
                             </td>
                         </tr>
@@ -267,14 +267,14 @@
                     id="historicalRefSearch"
                     value="{{ $filters['search'] ?? '' }}"
                     placeholder="{{ __($rp.'.search_placeholder') }}"
-                    class="form-control form-control-sm ui-filter-bar__search-input"
+                    class="ui-input ui-input--sm ui-filter-bar__search-input"
                     autocomplete="off"
                 >
             </x-slot:search>
 
             <x-slot:filters>
                 <label for="historicalRefShapeFilter" class="tw:sr-only">{{ __($rp.'.shape') }}</label>
-                <select name="shape" id="historicalRefShapeFilter" class="form-select form-select-sm tw:w-full tw:min-w-0 tw:sm:w-40">
+                <select name="shape" id="historicalRefShapeFilter" class="ui-select ui-select--sm tw:w-full tw:min-w-0 tw:sm:w-40">
                     <option value="">{{ __($rp.'.all_shapes') }}</option>
                     @foreach($shapes as $shape)
                         <option value="{{ $shape }}" @selected(($filters['shape'] ?? '') === $shape)>{{ $shape }}</option>
@@ -282,7 +282,7 @@
                 </select>
 
                 <label for="historicalRefPoStatusFilter" class="tw:sr-only">{{ __('purchasing.copy.status') }}</label>
-                <select name="po_status" id="historicalRefPoStatusFilter" class="form-select form-select-sm tw:w-full tw:min-w-0 tw:sm:w-44">
+                <select name="po_status" id="historicalRefPoStatusFilter" class="ui-select ui-select--sm tw:w-full tw:min-w-0 tw:sm:w-44">
                     <option value="completed" @selected($poStatusFilter === 'completed')>{{ __('purchasing.copy.completed') }}</option>
                     <option value="all" @selected($poStatusFilter === 'all')>{{ __('common.filters.all') }}</option>
                     <option value="active" @selected($poStatusFilter === 'active')>{{ __('purchasing.copy.active') }}</option>
@@ -290,7 +290,7 @@
                 </select>
 
                 <label for="historicalRefCurrencyFilter" class="tw:sr-only">{{ __($rp.'.currency') }}</label>
-                <select name="currency" id="historicalRefCurrencyFilter" class="form-select form-select-sm tw:w-full tw:min-w-0 tw:sm:w-32">
+                <select name="currency" id="historicalRefCurrencyFilter" class="ui-select ui-select--sm tw:w-full tw:min-w-0 tw:sm:w-32">
                     @foreach($currencies as $currency)
                         <option value="{{ $currency }}" @selected($targetCurrency === $currency)>{{ $currency }}</option>
                     @endforeach
@@ -315,7 +315,7 @@
                 </x-ui.status-chip>
             </x-slot:actions>
 
-            <table class="table table-hover align-middle mb-0 tw:text-ui-xs" aria-label="{{ __($rp.'.historical.title') }}">
+            <table class="ui-table ui-table--hover tw:align-middle tw:mb-0 tw:text-ui-xs" aria-label="{{ __($rp.'.historical.title') }}">
                 <thead>
                     <tr>
                         <th scope="col">{{ __('purchasing.copy.po_number') }}</th>
@@ -323,8 +323,8 @@
                         <th scope="col">{{ __('purchasing.copy.dimensions') }}</th>
                         <th scope="col">{{ __($rp.'.rules.category_name') }}</th>
                         <th scope="col">{{ __('purchasing.copy.supplier') }}</th>
-                        <th scope="col" class="text-end">{{ __('purchasing.copy.price_kg') }}</th>
-                        <th scope="col" class="text-end">{{ __('purchasing.comparison_analytics.average_per_kg', ['currency' => $targetCurrency]) }}</th>
+                        <th scope="col" class="tw:text-end">{{ __('purchasing.copy.price_kg') }}</th>
+                        <th scope="col" class="tw:text-end">{{ __('purchasing.comparison_analytics.average_per_kg', ['currency' => $targetCurrency]) }}</th>
                         <th scope="col">{{ __('purchasing.copy.po_date') }}</th>
                         <th scope="col">{{ __('purchasing.copy.status') }}</th>
                     </tr>
@@ -332,13 +332,13 @@
                 <tbody>
                     @forelse($historicalItems as $hRow)
                         <tr>
-                            <td class="fw-bold tw:text-on-surface ui-tabular-nums">
-                                <a href="{{ route('purchasing.purchase-orders.show', \App\Support\HashidCodec::encode((int) $hRow['po_id'])) }}" class="text-primary text-decoration-none tw:hover:underline">
+                            <td class="tw:font-bold tw:text-on-surface ui-tabular-nums">
+                                <a href="{{ route('purchasing.purchase-orders.show', \App\Support\HashidCodec::encode((int) $hRow['po_id'])) }}" class="tw:text-primary tw:no-underline tw:hover:underline">
                                     {{ $hRow['po_number'] }}
                                 </a>
                             </td>
                             <td>
-                                <span class="fw-semibold tw:text-on-surface">{{ $hRow['material_name'] }}</span>
+                                <span class="tw:font-semibold tw:text-on-surface">{{ $hRow['material_name'] }}</span>
                                 @if(!empty($hRow['shape']))
                                     <span class="ui-status-chip ui-status-chip--neutral tw:ms-1">{{ $hRow['shape'] }}</span>
                                 @endif
@@ -350,11 +350,11 @@
                                 </span>
                             </td>
                             <td>{{ $hRow['supplier'] ?? '-' }}</td>
-                            <td class="text-end ui-tabular-nums">
+                            <td class="tw:text-end ui-tabular-nums">
                                 {{ $regionalFormatter->groupedDecimal((float) $hRow['price_per_kg'], 4) }}
                                 <span class="tw:text-on-surface-variant">{{ $hRow['currency'] }}</span>
                             </td>
-                            <td class="text-end fw-bold text-primary ui-tabular-nums">
+                            <td class="tw:text-end tw:font-bold tw:text-primary ui-tabular-nums">
                                 @if($hRow['converted_price_per_kg'] !== null)
                                     {{ $targetCurrency }} {{ $regionalFormatter->groupedDecimal((float) $hRow['converted_price_per_kg'], 4) }}
                                 @else
@@ -374,7 +374,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="9" class="text-center py-4 tw:text-on-surface-variant">
+                            <td colspan="9" class="tw:text-center tw:py-4 tw:text-on-surface-variant">
                                 {{ __($rp.'.historical.no_data') }}
                             </td>
                         </tr>
@@ -478,14 +478,14 @@
                     id="referencePriceSearch"
                     value="{{ $filters['search'] ?? '' }}"
                     placeholder="{{ __($rp.'.search_placeholder') }}"
-                    class="form-control form-control-sm ui-filter-bar__search-input"
+                    class="ui-input ui-input--sm ui-filter-bar__search-input"
                     autocomplete="off"
                 >
             </x-slot:search>
 
             <x-slot:filters>
                 <label for="referencePriceShapeFilter" class="tw:sr-only">{{ __($rp.'.shape') }}</label>
-                <select name="shape" id="referencePriceShapeFilter" class="form-select form-select-sm tw:w-full tw:min-w-0 tw:sm:w-40">
+                <select name="shape" id="referencePriceShapeFilter" class="ui-select ui-select--sm tw:w-full tw:min-w-0 tw:sm:w-40">
                     <option value="">{{ __($rp.'.all_shapes') }}</option>
                     @foreach($shapes as $shape)
                         <option value="{{ $shape }}" @selected(($filters['shape'] ?? '') === $shape)>{{ $shape }}</option>
@@ -493,7 +493,7 @@
                 </select>
 
                 <label for="referencePriceCurrencyFilter" class="tw:sr-only">{{ __($rp.'.currency') }}</label>
-                <select name="currency" id="referencePriceCurrencyFilter" class="form-select form-select-sm tw:w-full tw:min-w-0 tw:sm:w-36">
+                <select name="currency" id="referencePriceCurrencyFilter" class="ui-select ui-select--sm tw:w-full tw:min-w-0 tw:sm:w-36">
                     <option value="">{{ __($rp.'.all_currencies') }}</option>
                     @foreach($currencies as $currency)
                         <option value="{{ $currency }}" @selected(($filters['currency'] ?? '') === $currency)>{{ $currency }}</option>
@@ -501,7 +501,7 @@
                 </select>
 
                 <label for="referencePriceStatusFilter" class="tw:sr-only">{{ __($rp.'.status') }}</label>
-                <select name="status" id="referencePriceStatusFilter" class="form-select form-select-sm tw:w-full tw:min-w-0 tw:sm:w-40">
+                <select name="status" id="referencePriceStatusFilter" class="ui-select ui-select--sm tw:w-full tw:min-w-0 tw:sm:w-40">
                     <option value="active" @selected($legacyStatus === 'active')>{{ __($rp.'.status_active') }}</option>
                     <option value="void" @selected($legacyStatus === 'void')>{{ __($rp.'.status_void') }}</option>
                     <option value="all" @selected($legacyStatus === 'all')>{{ __($rp.'.status_all') }}</option>
@@ -519,18 +519,18 @@
         </x-ui.filter-bar>
 
         <x-ui.data-table density="compact" sticky :scroll-label="__($rp.'.legacy.title')">
-            <table class="table table-hover align-middle mb-0 tw:text-ui-sm w-100" data-reference-prices>
-                <thead class="table-light">
+            <table class="ui-table ui-table--hover tw:align-middle tw:mb-0 tw:text-ui-sm tw:w-full" data-reference-prices>
+                <thead>
                     <tr>
                         <th scope="col">{{ __($rp.'.material_code') }}</th>
                         <th scope="col">{{ __($rp.'.shape') }}</th>
                         <th scope="col">{{ __($rp.'.key_dimension') }}</th>
-                        <th scope="col" class="text-end">{{ __($rp.'.price_per_kg') }}</th>
+                        <th scope="col" class="tw:text-end">{{ __($rp.'.price_per_kg') }}</th>
                         <th scope="col">{{ __($rp.'.valid_from') }}</th>
                         <th scope="col">{{ __($rp.'.valid_until') }}</th>
-                        <th scope="col" class="text-center">{{ __($rp.'.version') }}</th>
+                        <th scope="col" class="tw:text-center">{{ __($rp.'.version') }}</th>
                         <th scope="col">{{ __($rp.'.status') }}</th>
-                        <th scope="col" class="text-end">{{ __($rp.'.actions') }}</th>
+                        <th scope="col" class="tw:text-end">{{ __($rp.'.actions') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -540,16 +540,16 @@
                                 <td class="tw:font-medium">{{ $price->materialMaster?->material_code }}</td>
                                 <td>{{ $price->shape }}</td>
                                 <td class="ui-tabular-nums">{{ $price->dimension_min }}–{{ $price->dimension_max }} mm</td>
-                                <td class="text-end ui-tabular-nums tw:font-medium">{{ $price->currency }} {{ number_format($price->price_per_kg, 4) }}</td>
+                                <td class="tw:text-end ui-tabular-nums tw:font-medium">{{ $price->currency }} {{ number_format($price->price_per_kg, 4) }}</td>
                                 <td>{{ $price->valid_from?->format('d/m/Y') }}</td>
                                 <td>{{ $price->valid_until ? $price->valid_until->format('d/m/Y') : __($rp.'.open_ended') }}</td>
-                                <td class="text-center ui-tabular-nums">v{{ $price->version }}</td>
+                                <td class="tw:text-center ui-tabular-nums">v{{ $price->version }}</td>
                                 <td>
                                     <x-ui.status-chip :tone="$price->status === 'active' ? 'success' : 'neutral'" size="sm">
                                         {{ $price->status === 'active' ? __($rp.'.status_active') : __($rp.'.status_void') }}
                                     </x-ui.status-chip>
                                 </td>
-                                <td class="text-end">
+                                <td class="tw:text-end">
                                     <div class="tw:inline-flex tw:items-center tw:gap-1.5">
                                         <x-ui.icon-button
                                             type="button"
@@ -588,7 +588,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="9" class="text-center py-4 tw:text-on-surface-variant">{{ __($rp.'.empty') }}</td>
+                                <td colspan="9" class="tw:text-center tw:py-4 tw:text-on-surface-variant">{{ __($rp.'.empty') }}</td>
                             </tr>
                         @endforelse
                     @endif

@@ -35,8 +35,8 @@
     <form method="GET" action="{{ route('purchasing.comparison.historical') }}" class="tw:grid tw:w-full tw:gap-3 tw:md:grid-cols-2 tw:xl:grid-cols-12 tw:xl:items-end" id="historicalFilterForm" data-server-tabs-form data-managed-submit>
         <input type="hidden" name="currency" value="{{ $currency }}">
         <div class="tw:xl:col-span-3">
-            <label class="form-label tw:mb-1 tw:text-ui-xs tw:font-semibold tw:text-on-surface" for="historicalSupplierSelect">{{ __('purchasing.copy.supplier') }}</label>
-            <select name="supplier_id" class="form-select form-select-sm tw:min-h-[var(--ui-control-height-sm)]" id="historicalSupplierSelect">
+            <label class="ui-label tw:mb-1 tw:text-ui-xs tw:font-semibold tw:text-on-surface" for="historicalSupplierSelect">{{ __('purchasing.copy.supplier') }}</label>
+            <select name="supplier_id" class="ui-select ui-select--sm tw:min-h-[var(--ui-control-height-sm)]" id="historicalSupplierSelect">
                 <option value="">{{ __('purchasing.comparison_analytics.all_suppliers') }}</option>
                 @foreach($suppliers as $supplier)
                     <option value="{{ $supplier->getRouteKey() }}" {{ $selectedSupplierId === $supplier->getRouteKey() ? 'selected' : '' }}>{{ trim((string) $supplier->supplier?->company_name) ?: $supplier->name }}</option>
@@ -52,9 +52,9 @@
             $shapeFilterValue = $shapeFilterValues->contains($selectedShape ?? null) ? $selectedShape : '';
         @endphp
         <div class="tw:xl:col-span-3">
-            <label class="form-label tw:mb-1 tw:text-ui-xs tw:font-semibold tw:text-on-surface" for="historicalMaterialSelect">{{ __('purchasing.copy.material') }}</label>
+            <label class="ui-label tw:mb-1 tw:text-ui-xs tw:font-semibold tw:text-on-surface" for="historicalMaterialSelect">{{ __('purchasing.copy.material') }}</label>
             {{-- PUR-07: one option per (material, shape); the hidden input carries the shape. --}}
-            <select name="material_name" class="form-select form-select-sm tw:min-h-[var(--ui-control-height-sm)]" id="historicalMaterialSelect" required>
+            <select name="material_name" class="ui-select ui-select--sm tw:min-h-[var(--ui-control-height-sm)]" id="historicalMaterialSelect" required>
                 <option value="">{{ __('purchasing.copy.select_material') }}</option>
                 @foreach($materials as $material)
                     <option value="{{ $material['name'] }}" data-shape="{{ $material['shape'] ?? '' }}" data-key-options='@json($material['key_options'])' @selected($selectedMaterialName === $material['name'] && ($selectedShape ?? null) === $material['shape'])>{{ $material['label'] }}</option>
@@ -63,8 +63,8 @@
             <input type="hidden" name="shape" id="historicalShapeInput" value="{{ $selectedShape ?? '' }}">
         </div>
         <div class="tw:md:col-span-1 tw:xl:col-span-2">
-            <label class="form-label tw:mb-1 tw:text-ui-xs tw:font-semibold tw:text-on-surface" for="historicalShapeFilter">{{ __('purchasing.copy.shape') }}</label>
-            <select id="historicalShapeFilter" class="form-select form-select-sm tw:min-h-[var(--ui-control-height-sm)]" aria-controls="historicalMaterialSelect"
+            <label class="ui-label tw:mb-1 tw:text-ui-xs tw:font-semibold tw:text-on-surface" for="historicalShapeFilter">{{ __('purchasing.copy.shape') }}</label>
+            <select id="historicalShapeFilter" class="ui-select ui-select--sm tw:min-h-[var(--ui-control-height-sm)]" aria-controls="historicalMaterialSelect"
                     data-label-all="{{ __('purchasing.comparison_analytics.all_shapes') }}"
                     data-label-flat="{{ __('materials.shape.flat') }}"
                     data-label-round="{{ __('materials.shape.round') }}"
@@ -76,21 +76,25 @@
             </select>
         </div>
         <div class="tw:xl:col-span-2">
-            <label class="form-label tw:mb-1 tw:text-ui-xs tw:font-semibold tw:text-on-surface" for="historicalRangeSelect">{{ __('purchasing.copy.time_period') }}</label>
-            <select name="range" class="form-select form-select-sm tw:min-h-[var(--ui-control-height-sm)]" id="historicalRangeSelect">
+            <label class="ui-label tw:mb-1 tw:text-ui-xs tw:font-semibold tw:text-on-surface" for="historicalRangeSelect">{{ __('purchasing.copy.time_period') }}</label>
+            <select name="range" class="ui-select ui-select--sm tw:min-h-[var(--ui-control-height-sm)]" id="historicalRangeSelect">
                 @foreach($rangeOptions as $value => $label)
                     <option value="{{ $value }}" {{ $range === $value ? 'selected' : '' }}>{{ $label }}</option>
                 @endforeach
             </select>
         </div>
         <fieldset class="tw:m-0 tw:min-w-0 tw:border-0 tw:p-0 tw:xl:col-span-2">
-            <legend class="form-label tw:mb-1 tw:text-ui-xs tw:font-semibold tw:text-on-surface">{{ __('purchasing.copy.aggregation') }}</legend>
-            <div class="btn-group btn-group-sm w-100" role="group" aria-label="{{ __('purchasing.copy.historical_price_aggregation_interval') }}">
-                <input type="radio" class="btn-check" name="period_view" id="periodViewMonthly" value="monthly" {{ $periodView === 'monthly' ? 'checked' : '' }}>
-                <label class="btn btn-outline-primary" for="periodViewMonthly">{{ __('purchasing.copy.monthly') }}</label>
+            <legend class="ui-label tw:mb-1 tw:text-ui-xs tw:font-semibold tw:text-on-surface">{{ __('purchasing.copy.aggregation') }}</legend>
+            <div class="tw:inline-flex tw:w-full tw:rounded-ui-sm tw:border tw:border-input tw:overflow-hidden tw:bg-surface" role="group" aria-label="{{ __('purchasing.copy.historical_price_aggregation_interval') }}">
+                <label class="tw:flex-1 tw:m-0 tw:cursor-pointer" for="periodViewMonthly">
+                    <input type="radio" class="tw:sr-only tw:peer" name="period_view" id="periodViewMonthly" value="monthly" {{ $periodView === 'monthly' ? 'checked' : '' }}>
+                    <span class="ui-focus-ring tw:flex tw:w-full tw:min-h-[var(--ui-control-height-sm)] tw:items-center tw:justify-center tw:px-3 tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant tw:transition-colors tw:hover:bg-surface-container tw:peer-checked:bg-primary tw:peer-checked:text-primary-foreground tw:peer-focus-visible:outline tw:peer-focus-visible:outline-2 tw:peer-focus-visible:outline-primary">{{ __('purchasing.copy.monthly') }}</span>
+                </label>
 
-                <input type="radio" class="btn-check" name="period_view" id="periodViewYearly" value="yearly" {{ $periodView === 'yearly' ? 'checked' : '' }}>
-                <label class="btn btn-outline-primary" for="periodViewYearly">{{ __('purchasing.copy.yearly') }}</label>
+                <label class="tw:flex-1 tw:m-0 tw:border-s tw:border-outline-variant tw:cursor-pointer" for="periodViewYearly">
+                    <input type="radio" class="tw:sr-only tw:peer" name="period_view" id="periodViewYearly" value="yearly" {{ $periodView === 'yearly' ? 'checked' : '' }}>
+                    <span class="ui-focus-ring tw:flex tw:w-full tw:min-h-[var(--ui-control-height-sm)] tw:items-center tw:justify-center tw:px-3 tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant tw:transition-colors tw:hover:bg-surface-container tw:peer-checked:bg-primary tw:peer-checked:text-primary-foreground tw:peer-focus-visible:outline tw:peer-focus-visible:outline-2 tw:peer-focus-visible:outline-primary">{{ __('purchasing.copy.yearly') }}</span>
+                </label>
             </div>
         </fieldset>
 
@@ -107,14 +111,14 @@
                   data-label-round="{{ $keyLabels['Round'] }}"
                   data-label-hollow="{{ $keyLabels['Hollow'] }}"
                   @if($keyDimension['field'] === null && $selectedMaterialName) hidden @endif>
-            <legend class="form-label tw:mb-1 tw:text-ui-xs tw:font-semibold tw:text-on-surface" id="historicalKeyDimensionLabel">
+            <legend class="ui-label tw:mb-1 tw:text-ui-xs tw:font-semibold tw:text-on-surface" id="historicalKeyDimensionLabel">
                 {{ $keyLabels[$selectedShape ?? ''] ?? $keyLabels['Flat'] }}
             </legend>
             <div class="tw:flex tw:flex-wrap tw:items-end tw:gap-2">
                 {{-- PUR-07: recorded values write into key_min/key_max; this control is never submitted. --}}
                 <div>
-                    <label class="form-label tw:mb-1 tw:text-ui-xs tw:text-on-surface-variant" for="historicalKeyOption">{{ __($pca.'.key_options') }}</label>
-                    <select id="historicalKeyOption" class="form-select form-select-sm tw:min-h-[var(--ui-control-height-sm)]"
+                    <label class="ui-label tw:mb-1 tw:text-ui-xs tw:text-on-surface-variant" for="historicalKeyOption">{{ __($pca.'.key_options') }}</label>
+                    <select id="historicalKeyOption" class="ui-select ui-select--sm tw:min-h-[var(--ui-control-height-sm)]"
                             data-label-all="{{ __($pca.'.key_option_all') }}"
                             data-label-custom="{{ __($pca.'.key_option_custom') }}"
                             data-label-none="{{ __($pca.'.key_option_none') }}"
@@ -133,12 +137,12 @@
                     </select>
                 </div>
                 <div>
-                    <label class="form-label tw:mb-1 tw:text-ui-xs tw:text-on-surface-variant" for="historicalKeyMin">{{ __('purchasing.comparison_analytics.key_from') }}</label>
-                    <input type="number" step="0.0001" min="0" name="key_min" id="historicalKeyMin" aria-describedby="historicalKeyHint" class="form-control form-control-sm tw:min-h-[var(--ui-control-height-sm)] historical-filter-input" value="{{ $keyDimension['min'] }}">
+                    <label class="ui-label tw:mb-1 tw:text-ui-xs tw:text-on-surface-variant" for="historicalKeyMin">{{ __('purchasing.comparison_analytics.key_from') }}</label>
+                    <input type="number" step="0.0001" min="0" name="key_min" id="historicalKeyMin" aria-describedby="historicalKeyHint" class="ui-input ui-input--sm tw:min-h-[var(--ui-control-height-sm)] historical-filter-input" value="{{ $keyDimension['min'] }}">
                 </div>
                 <div>
-                    <label class="form-label tw:mb-1 tw:text-ui-xs tw:text-on-surface-variant" for="historicalKeyMax">{{ __('purchasing.comparison_analytics.key_to') }}</label>
-                    <input type="number" step="0.0001" min="0" name="key_max" id="historicalKeyMax" aria-describedby="historicalKeyHint" class="form-control form-control-sm tw:min-h-[var(--ui-control-height-sm)] historical-filter-input" value="{{ $keyDimension['max'] }}">
+                    <label class="ui-label tw:mb-1 tw:text-ui-xs tw:text-on-surface-variant" for="historicalKeyMax">{{ __('purchasing.comparison_analytics.key_to') }}</label>
+                    <input type="number" step="0.0001" min="0" name="key_max" id="historicalKeyMax" aria-describedby="historicalKeyHint" class="ui-input ui-input--sm tw:min-h-[var(--ui-control-height-sm)] historical-filter-input" value="{{ $keyDimension['max'] }}">
                 </div>
                 <p id="historicalKeyHint" class="tw:m-0 tw:text-ui-xs tw:text-on-surface-variant">{{ __('purchasing.comparison_analytics.key_hint') }}</p>
             </div>
@@ -187,13 +191,13 @@
             <div class="tw:text-ui-xs tw:font-semibold tw:uppercase tw:tracking-wider tw:text-on-surface-variant">{{ __('purchasing.comparison_analytics.historical_average') }}</div>
             <div class="ui-tabular-nums tw:mt-1 tw:text-ui-xl tw:font-semibold tw:text-on-surface" id="historicalWeightedAverage">{{ ($summary['weighted_average'] ?? null) !== null ? $currency.' '.$formatPrice($summary['weighted_average'], 4) : '—' }}</div>
             <div class="tw:text-ui-xs tw:text-on-surface-variant" id="historicalWeightedBasis">{{ __('purchasing.comparison_analytics.history_basis', ['pos' => $summary['po_count'] ?? 0, 'kg' => $formatNumber($summary['total_kg'] ?? 0)]) }} · {{ __('purchasing.comparison_analytics.historical_best') }}: {{ ($summary['best'] ?? null) !== null ? $currency.' '.$formatNumber($summary['best'], 4) : '—' }}</div>
-            <div class="tw:text-ui-xs tw:text-warning {{ ($summary['excluded']['lines'] ?? 0) > 0 ? '' : 'd-none' }}" id="historicalExcludedNote">{{ ($summary['excluded']['lines'] ?? 0) > 0 ? __('purchasing.comparison_analytics.excluded_note', ['lines' => $summary['excluded']['lines'], 'kg' => $formatNumber($summary['excluded']['kg']), 'currencies' => implode(', ', $summary['excluded']['currencies'])]) : '' }}</div>
+            <div class="tw:text-ui-xs tw:text-warning {{ ($summary['excluded']['lines'] ?? 0) > 0 ? '' : 'tw:hidden' }}" id="historicalExcludedNote">{{ ($summary['excluded']['lines'] ?? 0) > 0 ? __('purchasing.comparison_analytics.excluded_note', ['lines' => $summary['excluded']['lines'], 'kg' => $formatNumber($summary['excluded']['kg']), 'currencies' => implode(', ', $summary['excluded']['currencies'])]) : '' }}</div>
         </div>
     </section>
 
     <x-ui.data-table sticky :title="__('purchasing.copy.supporting_data')" :description="__('purchasing.comparison_analytics.supporting_data_description')">
-        <table class="table table-hover align-middle mb-0 tw:text-ui-sm">
-            <thead class="table-light text-center" id="historicalTableHead">
+        <table class="ui-table ui-table--hover tw:align-middle tw:mb-0 tw:text-ui-sm">
+            <thead class="tw:text-center" id="historicalTableHead">
                 @if($periodView === 'yearly')
                     <tr>
                         <th scope="col" class="ui-sticky-col">{{ __('purchasing.copy.year') }}</th>
@@ -220,44 +224,44 @@
                 @foreach($tableData as $row)
                     @if($periodView === 'yearly')
                         <tr>
-                            <td class="text-center fw-medium ui-sticky-col">{{ $row['period'] }}</td>
-                            <td class="text-end text-primary fw-bold ui-tabular-nums">{{ $currency }} {{ $formatPrice($row['price_idr'], 4) }}</td>
-                            <td class="text-end ui-tabular-nums">{{ $currency }} {{ $formatPrice($row['min_idr'], 4) }}</td>
-                            <td class="text-end ui-tabular-nums">{{ $currency }} {{ $formatPrice($row['max_idr'], 4) }}</td>
-                            <td class="text-center">{!! $changeBadge($row['change_pct'] ?? null) !!}</td>
+                            <td class="tw:text-center tw:font-medium ui-sticky-col">{{ $row['period'] }}</td>
+                            <td class="tw:text-end tw:text-primary tw:font-bold ui-tabular-nums">{{ $currency }} {{ $formatPrice($row['price_idr'], 4) }}</td>
+                            <td class="tw:text-end ui-tabular-nums">{{ $currency }} {{ $formatPrice($row['min_idr'], 4) }}</td>
+                            <td class="tw:text-end ui-tabular-nums">{{ $currency }} {{ $formatPrice($row['max_idr'], 4) }}</td>
+                            <td class="tw:text-center">{!! $changeBadge($row['change_pct'] ?? null) !!}</td>
                         </tr>
                     @else
                         <tr>
-                            <td class="text-center fw-medium ui-sticky-col">
+                            <td class="tw:text-center tw:font-medium ui-sticky-col">
                                 @if(!empty($row['pr_id']) && !empty($row['pr_url']))
-                                    <a href="{{ $row['pr_url'] }}" class="ui-focus-ring tw:rounded-ui-xs text-primary text-decoration-none tw:hover:underline">
+                                    <a href="{{ $row['pr_url'] }}" class="ui-focus-ring tw:rounded-ui-xs tw:text-primary tw:no-underline tw:hover:underline">
                                         {{ $row['pr_number'] }}
-                                        <x-ui.icon name="arrow-right" class="ms-1 tw:text-ui-sm" />
+                                        <x-ui.icon name="arrow-right" class="tw:ms-1 tw:text-ui-sm" />
                                     </a>
                                 @else
                                     {{ $row['pr_number'] ?? '-' }}
                                 @endif
                             </td>
-                            <td class="text-center fw-semibold ui-col-data-name">{{ $row['material_name'] ?? $selectedMaterialName ?? '-' }}</td>
-                            <td class="text-center ui-tabular-nums">{{ $row['dimension_display'] ?? '-' }}</td>
-                            <td class="text-center">
+                            <td class="tw:text-center tw:font-semibold ui-col-data-name">{{ $row['material_name'] ?? $selectedMaterialName ?? '-' }}</td>
+                            <td class="tw:text-center ui-tabular-nums">{{ $row['dimension_display'] ?? '-' }}</td>
+                            <td class="tw:text-center">
                                 <span class="ui-status-chip ui-status-chip--neutral">{{ $row['range_classification'] ?? '-' }}</span>
                             </td>
-                            <td class="text-center ui-col-data-name">{{ $row['supplier'] ?? '-' }}</td>
-                            <td class="text-end ui-tabular-nums">
+                            <td class="tw:text-center ui-col-data-name">{{ $row['supplier'] ?? '-' }}</td>
+                            <td class="tw:text-end ui-tabular-nums">
                                 {{ $formatPrice($row['price_per_kg'], 4) }}
                                 <span class="ui-status-chip ui-status-chip--neutral tw:ms-1">{{ $row['currency'] }}</span>
                                 <div class="tw:text-ui-xs tw:text-on-surface-variant">{{ $row['annual_price_display'] }}</div>
                             </td>
-                            <td class="text-end text-primary fw-bold ui-tabular-nums">{{ $row['total_idr'] !== null ? $currency.' '.$formatPrice($row['total_idr']) : __('purchasing.comparison_analytics.rate_unavailable') }}</td>
-                            <td class="text-center">
+                            <td class="tw:text-end tw:text-primary tw:font-bold ui-tabular-nums">{{ $row['total_idr'] !== null ? $currency.' '.$formatPrice($row['total_idr']) : __('purchasing.comparison_analytics.rate_unavailable') }}</td>
+                            <td class="tw:text-center">
                                 @if(!empty($row['purchase_order_at_display']))
                                     {{ $row['purchase_order_at_display'] }}
                                 @else
                                     <span class="ui-status-chip ui-status-chip--neutral">{{ __('purchasing.copy.draft') }}</span>
                                 @endif
                             </td>
-                            <td class="text-center">{!! $changeBadge($row['change_pct'] ?? null) !!}</td>
+                            <td class="tw:text-center">{!! $changeBadge($row['change_pct'] ?? null) !!}</td>
                         </tr>
                     @endif
                 @endforeach
@@ -266,7 +270,7 @@
         <nav
             id="historicalPagination"
             aria-label="{{ __('pagination.navigation') }}"
-            class="tw:flex tw:flex-wrap tw:items-center tw:justify-between tw:gap-3 tw:border-t tw:border-outline-variant tw:px-4 tw:py-3 {{ $tablePagination ? '' : 'd-none' }}"
+            class="tw:flex tw:flex-wrap tw:items-center tw:justify-between tw:gap-3 tw:border-t tw:border-outline-variant tw:px-4 tw:py-3 {{ $tablePagination ? '' : 'tw:hidden' }}"
         >
             <span id="historicalPaginationSummary" class="tw:text-ui-xs tw:text-on-surface-variant">
                 @if($tablePagination)

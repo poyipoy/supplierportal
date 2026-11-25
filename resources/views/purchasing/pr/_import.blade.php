@@ -3,7 +3,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <div>
-                    <h6 class="modal-title fw-bold" id="prImportModalLabel">{{ __('purchasing.copy.import_pr_materials_from_spreadsheet') }}</h6>
+                    <h6 class="modal-title tw:font-bold" id="prImportModalLabel">{{ __('purchasing.copy.import_pr_materials_from_spreadsheet') }}</h6>
                     <div class="tw:text-on-surface-variant tw:text-ui-xs tw:mt-0.5">{{ __('purchasing.copy.validate_your_excel_spreadsheet_xlsx_xls_csv_before_inserting_into_the_requisition') }}</div>
                 </div>
                 <button type="button" class="btn-close" data-ui-modal-close aria-label="{{ __('purchasing.copy.close') }}"></button>
@@ -22,52 +22,52 @@
                             <option value="replace" selected>{{ __('purchasing.copy.replace_current_rows') }}</option>
                             <option value="append">{{ __('purchasing.copy.append_to_current_rows') }}</option>
                         </x-ui.select>
-                        <div id="prImportModeHelp" class="form-text tw:text-ui-xs" aria-live="polite"></div>
+                        <div id="prImportModeHelp" class="ui-field-help tw:text-ui-xs" aria-live="polite"></div>
                     </div>
                 </div>
 
-                <div id="prImportResult" class="d-none mt-4">
+                <div id="prImportResult" class="tw:hidden tw:mt-4">
                     <div id="prImportSummary" class="tw:mb-3 tw:rounded-ui-sm tw:border tw:border-outline tw:bg-surface-container tw:px-3 tw:py-2 tw:text-ui-xs tw:font-semibold tw:text-on-surface" role="status"></div>
 
-                    <div id="prImportWarningsPanel" class="d-none tw:rounded-ui-sm tw:border-s-4 tw:border-warning tw:bg-warning-container tw:px-3 tw:py-2.5 tw:text-ui-xs tw:text-warning-container-foreground" role="status">
-                        <div class="fw-bold mb-1 d-flex align-items-center tw:gap-1.5"><x-ui.icon name="triangle-alert" size="sm" /> {{ __('purchasing.copy.warnings') }}</div>
-                        <ul id="prImportWarnings" class="mb-0 ps-3"></ul>
+                    <div id="prImportWarningsPanel" class="tw:hidden tw:rounded-ui-sm tw:border-s-4 tw:border-warning tw:bg-warning-container tw:px-3 tw:py-2.5 tw:text-ui-xs tw:text-warning-container-foreground" role="status">
+                        <div class="tw:font-bold tw:mb-1 tw:flex tw:items-center tw:gap-1.5"><x-ui.icon name="triangle-alert" size="sm" /> {{ __('purchasing.copy.warnings') }}</div>
+                        <ul id="prImportWarnings" class="tw:mb-0 tw:ps-3"></ul>
                     </div>
 
-                    <div id="prImportErrorsPanel" class="d-none tw:rounded-ui-sm tw:border-s-4 tw:border-error tw:bg-error-container tw:px-3 tw:py-2.5 tw:text-ui-xs tw:text-error-container-foreground" role="alert">
-                        <div class="fw-bold mb-1 d-flex align-items-center tw:gap-1.5"><x-ui.icon name="circle-x" size="sm" /> {{ __('purchasing.copy.import_errors') }}</div>
-                        <ul id="prImportErrors" class="mb-0 ps-3"></ul>
+                    <div id="prImportErrorsPanel" class="tw:hidden tw:rounded-ui-sm tw:border-s-4 tw:border-error tw:bg-error-container tw:px-3 tw:py-2.5 tw:text-ui-xs tw:text-error-container-foreground" role="alert">
+                        <div class="tw:font-bold tw:mb-1 tw:flex tw:items-center tw:gap-1.5"><x-ui.icon name="circle-x" size="sm" /> {{ __('purchasing.copy.import_errors') }}</div>
+                        <ul id="prImportErrors" class="tw:mb-0 tw:ps-3"></ul>
                     </div>
 
-                    <div id="prImportPreviewPanel" class="d-none">
-                        <div class="fw-bold tw:text-on-surface tw:text-ui-sm mb-2">{{ __('purchasing.copy.parsed_materials_preview') }}</div>
-                        <div class="pr-import-preview table-responsive border rounded">
-                            <table class="table table-sm table-striped table-hover align-middle mb-0 tw:text-ui-xs">
-                                <thead class="table-light sticky-top">
+                    <div id="prImportPreviewPanel" class="tw:hidden">
+                        <div class="tw:font-bold tw:text-on-surface tw:text-ui-sm tw:mb-2">{{ __('purchasing.copy.parsed_materials_preview') }}</div>
+                        <div class="pr-import-preview ui-table-responsive tw:border tw:border-outline-variant tw:rounded-ui-sm">
+                            <table class="ui-table ui-table--sm ui-table--striped ui-table--hover tw:align-middle tw:mb-0 tw:text-ui-xs">
+                                <thead class="tw:sticky tw:top-0">
                                     <tr>
-                                        <th scope="col" style="width: 40px;" class="text-center">{{ __('purchasing.copy.row') }}</th>
+                                        <th scope="col" style="width: 40px;" class="tw:text-center">{{ __('purchasing.copy.row') }}</th>
                                         <th scope="col">{{ __('purchasing.copy.material') }}</th>
                                         <th scope="col">{{ __('purchasing.copy.hs_code_result') }}</th>
-                                        <th scope="col" class="text-center">{{ __('purchasing.copy.shape') }}</th>
+                                        <th scope="col" class="tw:text-center">{{ __('purchasing.copy.shape') }}</th>
                                         @foreach(\App\Models\PrItem::FIXED_DIMENSION_ORDER as $dimensionField)
-                                            <th scope="col" class="text-end">{{ \App\Models\PrItem::dimensionLabel($dimensionField) }}</th>
+                                            <th scope="col" class="tw:text-end">{{ \App\Models\PrItem::dimensionLabel($dimensionField) }}</th>
                                         @endforeach
-                                        <th scope="col" class="text-center">{{ __('purchasing.copy.qty') }}</th>
-                                        <th scope="col" class="text-end">KG/Unit</th>
-                                        <th scope="col" class="text-end">{{ __('procurement.totals.total_kg') }}</th>
+                                        <th scope="col" class="tw:text-center">{{ __('purchasing.copy.qty') }}</th>
+                                        <th scope="col" class="tw:text-end">KG/Unit</th>
+                                        <th scope="col" class="tw:text-end">{{ __('procurement.totals.total_kg') }}</th>
                                         <th scope="col">{{ __('purchasing.copy.remark') }}</th>
                                     </tr>
                                 </thead>
                                 <tbody id="prImportPreviewBody"></tbody>
-                                <tfoot class="table-light fw-bold">
+                                <tfoot class="tw:bg-surface-container-low tw:font-bold">
                                     <tr>
-                                        <th scope="row" colspan="9" class="text-end">{{ __('procurement.totals.total') }}</th>
-                                        <td class="text-center ui-tabular-nums">
+                                        <th scope="row" colspan="9" class="tw:text-end">{{ __('procurement.totals.total') }}</th>
+                                        <td class="tw:text-center ui-tabular-nums">
                                             <span class="tw:sr-only">{{ __('procurement.totals.total_qty') }}:</span>
                                             <output id="prImportTotalQty">0</output>
                                         </td>
-                                        <td class="text-end tw:text-on-surface-variant">{{ __('procurement.totals.total_kg') }}</td>
-                                        <td class="text-end ui-tabular-nums"><output id="prImportTotalKg">0</output></td>
+                                        <td class="tw:text-end tw:text-on-surface-variant">{{ __('procurement.totals.total_kg') }}</td>
+                                        <td class="tw:text-end ui-tabular-nums"><output id="prImportTotalKg">0</output></td>
                                         <td></td>
                                     </tr>
                                 </tfoot>
@@ -76,14 +76,14 @@
                     </div>
                 </div>
             </div>
-            <div class="modal-footer tw:bg-surface-low border-top">
+            <div class="modal-footer tw:bg-surface-low tw:border-t tw:border-outline-variant">
                 <x-ui.button type="button" variant="ghost" size="sm" data-ui-modal-close>{{ __('purchasing.copy.cancel') }}</x-ui.button>
                 <x-ui.button type="button" variant="outline" size="sm" id="btnParsePrImport">
-                    <span class="ui-spinner me-1 d-none" id="prImportSpinner" aria-hidden="true"></span>
+                    <span class="ui-spinner tw:me-1 tw:hidden" id="prImportSpinner" aria-hidden="true"></span>
                     {{ __('purchasing.copy.parse_validate') }}
                 </x-ui.button>
                 <x-ui.button type="button" size="sm" id="btnApplyPrImport" disabled>
-                    <x-ui.icon name="circle-check" size="sm" class="me-1" /> {{ __('purchasing.copy.apply_to_form') }}
+                    <x-ui.icon name="circle-check" size="sm" class="tw:me-1" /> {{ __('purchasing.copy.apply_to_form') }}
                 </x-ui.button>
             </div>
         </div>
@@ -255,7 +255,7 @@
         const errors = Array.isArray(payload.errors) ? payload.errors : [];
         const rows = Array.isArray(payload.rows) ? payload.rows : [];
 
-        document.getElementById('prImportResult')?.classList.remove('d-none');
+        document.getElementById('prImportResult')?.classList.remove('tw:hidden');
         const summaryEl = document.getElementById('prImportSummary');
         if (summaryEl) {
             summaryEl.textContent = window.AdasiI18n.t('js.import.summary', {
@@ -274,7 +274,7 @@
                 warningsEl.appendChild(li);
             });
         }
-        document.getElementById('prImportWarningsPanel')?.classList.toggle('d-none', warnings.length === 0);
+        document.getElementById('prImportWarningsPanel')?.classList.toggle('tw:hidden', warnings.length === 0);
 
         const errorsEl = document.getElementById('prImportErrors');
         if (errorsEl) {
@@ -285,7 +285,7 @@
                 errorsEl.appendChild(li);
             });
         }
-        document.getElementById('prImportErrorsPanel')?.classList.toggle('d-none', errors.length === 0);
+        document.getElementById('prImportErrorsPanel')?.classList.toggle('tw:hidden', errors.length === 0);
 
         const previewEl = document.getElementById('prImportPreviewBody');
         const kgFormat = new Intl.NumberFormat(document.documentElement.lang || undefined, { maximumFractionDigits: 4 });
@@ -310,13 +310,13 @@
                     const td = document.createElement('td');
                     td.textContent = value;
                     if (column === 0 || column === 3 || column === 9) {
-                        td.classList.add('text-center');
+                        td.classList.add('tw:text-center');
                     }
                     if (column === 9) {
                         td.classList.add('ui-tabular-nums');
                     }
                     if ((column >= 4 && column <= 8) || column === 10 || column === 11) {
-                        td.classList.add('text-end', 'ui-tabular-nums');
+                        td.classList.add('tw:text-end', 'ui-tabular-nums');
                     }
                     tableRow.appendChild(td);
                 });
@@ -330,7 +330,7 @@
         const totalKgEl = document.getElementById('prImportTotalKg');
         if (totalKgEl) totalKgEl.textContent = kg(summary.total_weight_kg ?? 0);
 
-        document.getElementById('prImportPreviewPanel')?.classList.toggle('d-none', rows.length === 0);
+        document.getElementById('prImportPreviewPanel')?.classList.toggle('tw:hidden', rows.length === 0);
 
         prImportRows = payload.success === true ? rows : [];
         const applyBtn = document.getElementById('btnApplyPrImport');
@@ -345,7 +345,7 @@
         if (parseBtn) parseBtn.disabled = isBusy;
         if (fileEl) fileEl.disabled = isBusy;
         if (modeEl) modeEl.disabled = isBusy;
-        document.getElementById('prImportSpinner')?.classList.toggle('d-none', !isBusy);
+        document.getElementById('prImportSpinner')?.classList.toggle('tw:hidden', !isBusy);
     }
 
     async function parsePrImport() {
@@ -473,7 +473,7 @@
             if (fileInput) fileInput.value = '';
             if (modeSelect) modeSelect.value = 'replace';
             updateImportModeHelp();
-            document.getElementById('prImportResult')?.classList.add('d-none');
+            document.getElementById('prImportResult')?.classList.add('tw:hidden');
             document.getElementById('prImportWarnings')?.replaceChildren();
             document.getElementById('prImportErrors')?.replaceChildren();
             document.getElementById('prImportPreviewBody')?.replaceChildren();

@@ -21,7 +21,7 @@
 @endphp
 <tfoot
     id="prFormTotals"
-    class="table-light"
+    class="tw:bg-surface-container-low"
     data-totals-url="{{ route('purchasing.material-calculations.totals') }}"
     data-calculating-text="{{ __('procurement.totals.calculating') }}"
     data-error-text="{{ __('procurement.totals.sync_error') }}"
@@ -29,15 +29,15 @@
     <tr>
         <td class="pr-sticky-number" aria-hidden="true"></td>
         <td class="pr-sticky-material" aria-hidden="true"></td>
-        <th scope="row" colspan="3" class="text-end fw-semibold text-nowrap">
+        <th scope="row" colspan="3" class="tw:text-end tw:font-semibold tw:whitespace-nowrap">
             {{ __('procurement.totals.total') }}
         </th>
-        <td class="text-center fw-bold ui-tabular-nums text-nowrap">
+        <td class="tw:text-center tw:font-bold ui-tabular-nums tw:whitespace-nowrap">
             <span class="tw:sr-only">{{ __('procurement.totals.total_qty') }}:</span>
             <output id="prFormTotalQty" aria-live="polite">{{ $initialQtyDisplay }}</output>
         </td>
-        <td colspan="{{ count(\App\Models\PrItem::FIXED_DIMENSION_ORDER) + 1 }}" class="text-end fw-semibold tw:text-on-surface-variant text-nowrap">{{ __('procurement.totals.total_kg') }}</td>
-        <td class="text-end fw-bold ui-tabular-nums text-nowrap">
+        <td colspan="{{ count(\App\Models\PrItem::FIXED_DIMENSION_ORDER) + 1 }}" class="tw:text-end tw:font-semibold tw:text-on-surface-variant tw:whitespace-nowrap">{{ __('procurement.totals.total_kg') }}</td>
+        <td class="tw:text-end tw:font-bold ui-tabular-nums tw:whitespace-nowrap">
             <output id="prFormTotalKg" aria-live="polite">{{ $initialKgDisplay }}</output>
         </td>
         <td></td>

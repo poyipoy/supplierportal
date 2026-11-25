@@ -116,7 +116,7 @@ class PurchaseRequisitionController extends Controller
                     $responseChip = '';
                     if ($pr->status === 'bidding') {
                         $count = (int) ($pr->submitted_supplier_count ?? 0);
-                        $responseChip = ' <span class="ui-status-chip ui-status-chip--neutral ui-tabular-nums ms-1" title="'.e(__('purchasing.a11y.quotation_count', ['count' => $count])).'" aria-label="'.e(__('purchasing.a11y.quotation_count', ['count' => $count])).'">'.$count.'</span>';
+                        $responseChip = ' <span class="ui-status-chip ui-status-chip--neutral ui-tabular-nums tw:ms-1" title="'.e(__('purchasing.a11y.quotation_count', ['count' => $count])).'" aria-label="'.e(__('purchasing.a11y.quotation_count', ['count' => $count])).'">'.$count.'</span>';
                     }
 
                     return '<span class="ui-status-chip ui-status-chip--'.$tone.'">'.e($statusLabel).'</span>'.$responseChip;
@@ -147,14 +147,14 @@ class PurchaseRequisitionController extends Controller
                     }
 
                     if ($canEdit) {
-                        $secondaryActions[] = '<li><form action="'.route('purchasing.requisitions.destroy', $pr).'" method="POST" class="delete-form">'.csrf_field().method_field('DELETE').'<button type="button" class="dropdown-item text-danger btn-delete">'.e(__('purchasing.copy.delete_requisition')).'</button></form></li>';
+                        $secondaryActions[] = '<li><form action="'.route('purchasing.requisitions.destroy', $pr).'" method="POST" class="delete-form">'.csrf_field().method_field('DELETE').'<button type="button" class="dropdown-item tw:text-error btn-delete">'.e(__('purchasing.copy.delete_requisition')).'</button></form></li>';
                     }
 
                     if ($secondaryActions === []) {
-                        return '<div class="d-inline-flex justify-content-end">'.$primaryAction.'</div>';
+                        return '<div class="tw:inline-flex tw:justify-end">'.$primaryAction.'</div>';
                     }
 
-                    return '<div class="d-inline-flex align-items-center justify-content-end gap-1">'.$primaryAction
+                    return '<div class="tw:inline-flex tw:items-center tw:justify-end tw:gap-1">'.$primaryAction
                         .'<div class="dropdown"><button type="button" class="ui-data-action ui-focus-ring dropdown-toggle" data-ui-dropdown-trigger popovertarget="dd-pr-'.e($pr->hash).'" aria-controls="dd-pr-'.e($pr->hash).'" aria-expanded="false" aria-label="'.e(__('purchasing.action_names.more_actions_for', ['name' => $pr->pr_number])).'">'.e(__('purchasing.copy.more')).'</button>'
                         .'<ul id="dd-pr-'.e($pr->hash).'" popover="auto" data-ui-dropdown-menu class="dropdown-menu dropdown-menu-end">'.implode('', $secondaryActions).'</ul></div></div>';
                 })

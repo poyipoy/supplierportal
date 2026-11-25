@@ -469,7 +469,7 @@
             // No horizontal scroll wrapper on desktop, so the header can stick to the dialog's scroll area.
             const wrap = node('div', 'tw:max-sm:overflow-x-auto');
             const table = node('table', 'tw:w-full tw:border-collapse tw:text-ui-sm');
-            table.append(node('caption', 'visually-hidden', drawerText.caption));
+            table.append(node('caption', 'tw:sr-only', drawerText.caption));
             const head = node('thead', 'tw:sticky tw:-top-5 tw:z-10 tw:bg-surface');
             const headRow = node('tr', 'tw:border-b tw:border-outline-variant tw:text-ui-xs tw:text-on-surface-variant');
             const columns = other

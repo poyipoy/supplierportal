@@ -23,11 +23,11 @@
         <x-slot:meta>
             @if($pr->status === 'rejected')
                 <span class="ui-status-chip ui-status-chip--error">
-                    <x-ui.icon name="rotate-ccw" size="sm" class="me-1" />{{ __('purchasing.copy.rejected_revision_required') }}
+                    <x-ui.icon name="rotate-ccw" size="sm" class="tw:me-1" />{{ __('purchasing.copy.rejected_revision_required') }}
                 </span>
             @else
                 <span class="ui-status-chip ui-status-chip--neutral">
-                    <x-ui.icon name="square-pen" size="sm" class="me-1" />{{ __('purchasing.copy.draft') }}
+                    <x-ui.icon name="square-pen" size="sm" class="tw:me-1" />{{ __('purchasing.copy.draft') }}
                 </span>
             @endif
         </x-slot:meta>
@@ -94,11 +94,11 @@
                 class="pr-material-section"
             >
                 <x-slot:actions>
-                    <div class="d-flex align-items-center gap-2">
+                    <div class="tw:flex tw:items-center tw:gap-2">
                         @if($pr->status === 'draft')
                             @include('purchasing.pr._import_controls')
                         @endif
-                        <x-ui.button type="button" variant="outline" size="sm" id="btnAddRow" class="d-none d-md-inline-flex">
+                        <x-ui.button type="button" variant="outline" size="sm" id="btnAddRow" class="tw:hidden tw:md:inline-flex">
                             <x-ui.icon name="plus" size="sm" />
                             <span>{{ __('purchasing.copy.add_material') }}</span>
                         </x-ui.button>
@@ -108,9 +108,9 @@
                 {{-- Mobile Material Cards & Modal Editor --}}
                 @include('purchasing.pr._mobile_item_editor')
 
-                <div id="prTableContainer" class="table-responsive pr-form-table-scroll ui-table-sticky border rounded d-none d-md-block" role="region" tabindex="0" aria-label="{{ __('procurement.tables.pr_items') }}">
-                    <table class="table table-bordered table-hover table-sm align-middle pr-items-table mb-0 tw:text-ui-xs" id="itemsTable">
-                        <caption class="visually-hidden">{{ __('purchasing.copy.required_material_entry_table_with_shape_aware_dimension_columns') }}</caption>
+                <div id="prTableContainer" class="ui-table-responsive pr-form-table-scroll ui-table-sticky tw:border tw:border-outline-variant tw:rounded-ui-sm tw:hidden tw:md:block" role="region" tabindex="0" aria-label="{{ __('procurement.tables.pr_items') }}">
+                    <table class="ui-table ui-table--bordered ui-table--hover ui-table--sm tw:align-middle pr-items-table tw:mb-0 tw:text-ui-xs" id="itemsTable">
+                        <caption class="tw:sr-only">{{ __('purchasing.copy.required_material_entry_table_with_shape_aware_dimension_columns') }}</caption>
                         <colgroup>
                             <col style="width: 48px; min-width: 48px;">
                             <col style="width: 250px; min-width: 250px;">
@@ -128,14 +128,14 @@
                             <col style="width: 180px; min-width: 180px;">
                             <col style="width: 64px; min-width: 64px;">
                         </colgroup>
-                        <thead class="table-light text-center">
+                        <thead class="tw:text-center">
                             <tr class="pr-group-header">
                                 <th scope="col" class="pr-sticky-number">{{ __('purchasing.copy.no') }}</th>
-                                <th scope="col" class="pr-sticky-material">{{ __('purchasing.copy.material') }} <span class="text-danger">*</span></th>
+                                <th scope="col" class="pr-sticky-material">{{ __('purchasing.copy.material') }} <span class="tw:text-error">*</span></th>
                                 <th scope="col">HS Code</th>
                                 <th scope="col">{{ __('purchasing.copy.grade') }}</th>
                                 <th scope="col">{{ __('purchasing.copy.shape') }}</th>
-                                <th scope="col">{{ __('purchasing.copy.qty') }} <span class="text-danger">*</span></th>
+                                <th scope="col">{{ __('purchasing.copy.qty') }} <span class="tw:text-error">*</span></th>
                                 @foreach(\App\Models\PrItem::FIXED_DIMENSION_ORDER as $dimensionField)
                                     <th scope="col">{{ \App\Models\PrItem::dimensionLabel($dimensionField) }} (mm)</th>
                                 @endforeach
@@ -159,12 +159,12 @@
                         @include('purchasing.pr._form_totals')
                     </table>
                 </div>
-                <p id="prFormTotalsStatus" class="small tw:text-on-surface-variant tw:mt-1.5 tw:mb-0" role="note" data-default-text="{{ __('procurement.totals.server_calculated_hint') }}">
+                <p id="prFormTotalsStatus" class="tw:text-ui-xs tw:text-on-surface-variant tw:mt-1.5 tw:mb-0" role="note" data-default-text="{{ __('procurement.totals.server_calculated_hint') }}">
                     {{ __('procurement.totals.server_calculated_hint') }}
                 </p>
 
-                @error('items') <div class="text-danger small tw:mt-1.5">{{ $message }}</div> @enderror
-                <div id="noItemAlert" class="text-danger small tw:mt-1.5 d-none" role="alert" aria-live="assertive">{{ __('purchasing.copy.at_least_1_material_row_is_required_before_saving_or_submitting') }}</div>
+                @error('items') <div class="tw:text-error tw:text-ui-xs tw:mt-1.5">{{ $message }}</div> @enderror
+                <div id="noItemAlert" class="tw:text-error tw:text-ui-xs tw:mt-1.5 tw:hidden" role="alert" aria-live="assertive">{{ __('purchasing.copy.at_least_1_material_row_is_required_before_saving_or_submitting') }}</div>
             </x-ui.form-section>
         </div>
 
@@ -244,7 +244,7 @@
         const noItemAlert = document.getElementById('noItemAlert');
         const hasRows = document.querySelector('#itemsBody tr') !== null;
         if (noItemAlert) {
-            noItemAlert.classList.toggle('d-none', hasRows);
+            noItemAlert.classList.toggle('tw:hidden', hasRows);
         }
     }
 
@@ -264,7 +264,7 @@
 
     function submitForm(action) {
         if (!document.querySelector('#itemsBody tr')) {
-            document.getElementById('noItemAlert')?.classList.remove('d-none');
+            document.getElementById('noItemAlert')?.classList.remove('tw:hidden');
             const targetBtn = window.innerWidth < 768 ? document.getElementById('btnOpenMobileMaterialModal') : document.getElementById('btnAddRow');
             targetBtn?.focus();
             return;
@@ -295,7 +295,7 @@
 
     function confirmSubmit() {
         if (!document.querySelector('#itemsBody tr')) {
-            document.getElementById('noItemAlert')?.classList.remove('d-none');
+            document.getElementById('noItemAlert')?.classList.remove('tw:hidden');
             const targetBtn = window.innerWidth < 768 ? document.getElementById('btnOpenMobileMaterialModal') : document.getElementById('btnAddRow');
             targetBtn?.focus();
             return;

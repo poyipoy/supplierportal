@@ -31,7 +31,7 @@
     >
         <x-slot:filters>
             <label for="period_id" class="tw:sr-only">{{ __('purchasing.copy.filter_by_period') }}</label>
-            <select name="period_id" id="period_id" class="form-select form-select-sm tw:w-full tw:min-w-0 tw:sm:w-52" aria-label="{{ __('purchasing.copy.filter_by_period') }}">
+            <select name="period_id" id="period_id" class="ui-select ui-select--sm tw:w-full tw:min-w-0 tw:sm:w-52" aria-label="{{ __('purchasing.copy.filter_by_period') }}">
                 <option value="">{{ __('purchasing.copy.all_periods') }}</option>
                 @foreach($periods as $period)
                     <option value="{{ $period->id }}">{{ $period->display_label }}</option>
@@ -39,7 +39,7 @@
             </select>
 
             <label for="status" class="tw:sr-only">{{ __('purchasing.copy.filter_by_status') }}</label>
-            <select name="status" id="status" class="form-select form-select-sm tw:w-full tw:min-w-0 tw:sm:w-44" aria-label="{{ __('purchasing.copy.filter_by_status') }}">
+            <select name="status" id="status" class="ui-select ui-select--sm tw:w-full tw:min-w-0 tw:sm:w-44" aria-label="{{ __('purchasing.copy.filter_by_status') }}">
                 <option value="">{{ __('purchasing.copy.all_statuses') }}</option>
                 <option value="draft">{{ __('purchasing.copy.draft') }}</option>
                 <option value="submitted">{{ __('purchasing.copy.submitted') }}</option>
@@ -57,8 +57,8 @@
 
     {{-- 3. Balanced Data Table --}}
     <x-ui.data-table density="compact">
-        <table class="table table-hover align-middle mb-0 tw:text-ui-sm w-100" id="prTable">
-            <thead class="table-light text-center">
+        <table class="ui-table ui-table--hover tw:align-middle tw:mb-0 tw:text-ui-sm tw:w-full" id="prTable">
+            <thead class="tw:text-center">
                 <tr>
                     <th scope="col" style="width: 40px;">{{ __('purchasing.copy.no') }}</th>
                     <th scope="col">{{ __('purchasing.copy.pr_no') }}</th>
@@ -66,7 +66,7 @@
                     <th scope="col">{{ __('purchasing.copy.created_by') }}</th>
                     <th scope="col">{{ __('purchasing.copy.suppliers') }}</th>
                     <th scope="col">{{ __('purchasing.copy.items') }}</th>
-                    <th scope="col" class="text-end">{{ __('purchasing.copy.total_kg') }}</th>
+                    <th scope="col" class="tw:text-end">{{ __('purchasing.copy.total_kg') }}</th>
                     <th scope="col">{{ __('purchasing.copy.status') }}</th>
                     <th scope="col">{{ __('purchasing.copy.date_created') }}</th>
                     <th scope="col">{{ __('common.table.action') }}</th>
@@ -96,16 +96,16 @@
                 }
             },
             columns: [
-                { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false, className: 'text-center' },
-                { data: 'pr_number_display', name: 'pr_number', className: 'fw-bold tw:text-on-surface' },
+                { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false, className: 'tw:text-center' },
+                { data: 'pr_number_display', name: 'pr_number', className: 'tw:font-bold tw:text-on-surface' },
                 { data: 'period_name', name: 'period.name' },
                 { data: 'creator_name', name: 'creator.name' },
-                { data: 'supplier_count', name: 'invited_suppliers_count', searchable: false, className: 'text-center' },
-                { data: 'item_count', name: 'item_count', searchable: false, className: 'text-center' },
-                { data: 'total_kg', name: 'total_kg', searchable: false, className: 'text-end fw-semibold tw:text-on-surface ui-tabular-nums' },
-                { data: 'status_badge', name: 'status', searchable: false, className: 'text-center' },
+                { data: 'supplier_count', name: 'invited_suppliers_count', searchable: false, className: 'tw:text-center' },
+                { data: 'item_count', name: 'item_count', searchable: false, className: 'tw:text-center' },
+                { data: 'total_kg', name: 'total_kg', searchable: false, className: 'tw:text-end tw:font-semibold tw:text-on-surface ui-tabular-nums' },
+                { data: 'status_badge', name: 'status', searchable: false, className: 'tw:text-center' },
                 { data: 'created_date', name: 'created_at', className: 'tw:text-on-surface-variant' },
-                { data: 'action', name: 'action', orderable: false, searchable: false, className: 'text-center' }
+                { data: 'action', name: 'action', orderable: false, searchable: false, className: 'tw:text-center' }
             ],
             language: {},
 

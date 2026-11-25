@@ -140,24 +140,24 @@ class VsBestPriceComparisonController extends Controller
                     $returnUrl
                 );
 
-                return '<div class="fw-bold">'.e($row->material_name).'</div>'
-                    .'<div class="text-muted small">Qty: '.$this->regionalFormatter->number(number_format((int) ($row->quantity ?? 1), 0, ',', '.'), 'indonesian').'</div>'
-                    .'<div class="text-muted small">Berat/unit: '.$this->formatNumber($row->weight_needed).' kg</div>'
-                    .'<div class="text-muted small">Total weight: '.$this->formatNumber($row->total_weight).' kg</div>'
-                    .'<a href="'.e($prUrl).'" class="small text-primary text-decoration-none">'
+                return '<div class="tw:font-bold">'.e($row->material_name).'</div>'
+                    .'<div class="tw:text-on-surface-variant tw:text-ui-xs">Qty: '.$this->regionalFormatter->number(number_format((int) ($row->quantity ?? 1), 0, ',', '.'), 'indonesian').'</div>'
+                    .'<div class="tw:text-on-surface-variant tw:text-ui-xs">Berat/unit: '.$this->formatNumber($row->weight_needed).' kg</div>'
+                    .'<div class="tw:text-on-surface-variant tw:text-ui-xs">Total weight: '.$this->formatNumber($row->total_weight).' kg</div>'
+                    .'<a href="'.e($prUrl).'" class="tw:text-ui-xs tw:text-primary tw:no-underline">'
                     .e($row->current_pr_number ?: '-')
                     .'</a>';
             })
             ->addColumn('current_price_display', function ($row) use ($currency) {
-                return '<div class="fw-bold text-primary">'.$this->formatAnalyticAmount($row->current_price_idr, $currency).'</div>'
-                    .'<div class="text-muted small">'.$this->formatPrice($row->current_price, 4).' '.e($row->current_currency).'/kg</div>'
-                    .'<div class="text-muted small">'.e($row->current_supplier ?: '-').'</div>'
-                    .'<div class="text-muted small">'.e($this->formatDate($row->current_submitted_at) ?? __('purchasing.copy.draft')).'</div>';
+                return '<div class="tw:font-bold tw:text-primary">'.$this->formatAnalyticAmount($row->current_price_idr, $currency).'</div>'
+                    .'<div class="tw:text-on-surface-variant tw:text-ui-xs">'.$this->formatPrice($row->current_price, 4).' '.e($row->current_currency).'/kg</div>'
+                    .'<div class="tw:text-on-surface-variant tw:text-ui-xs">'.e($row->current_supplier ?: '-').'</div>'
+                    .'<div class="tw:text-on-surface-variant tw:text-ui-xs">'.e($this->formatDate($row->current_submitted_at) ?? __('purchasing.copy.draft')).'</div>';
             })
             ->addColumn('best_price_display', function ($row) use ($returnUrl, $currency) {
-                $html = '<div class="fw-bold text-success">'.$this->formatAnalyticAmount($row->best_price_idr, $currency).'</div>'
-                    .'<div class="text-muted small">'.$this->formatPrice($row->best_price, 4).' '.e($row->best_currency).'/kg</div>'
-                    .'<div class="text-muted small">'.e($row->best_supplier ?: '-').'</div>';
+                $html = '<div class="tw:font-bold tw:text-success">'.$this->formatAnalyticAmount($row->best_price_idr, $currency).'</div>'
+                    .'<div class="tw:text-on-surface-variant tw:text-ui-xs">'.$this->formatPrice($row->best_price, 4).' '.e($row->best_currency).'/kg</div>'
+                    .'<div class="tw:text-on-surface-variant tw:text-ui-xs">'.e($row->best_supplier ?: '-').'</div>';
 
                 if ($row->best_pr_id) {
                     $bestPrUrl = $this->routeWithReturn(
@@ -165,23 +165,23 @@ class VsBestPriceComparisonController extends Controller
                         HashidCodec::encode((int) $row->best_pr_id),
                         $returnUrl
                     );
-                    $html .= '<a href="'.e($bestPrUrl).'" class="small text-primary text-decoration-none">'
+                    $html .= '<a href="'.e($bestPrUrl).'" class="tw:text-ui-xs tw:text-primary tw:no-underline">'
                         .e($row->best_pr_number ?: '-')
                         .'</a>';
                 } else {
-                    $html .= '<div class="text-muted small">PR: -</div>';
+                    $html .= '<div class="tw:text-on-surface-variant tw:text-ui-xs">PR: -</div>';
                 }
 
-                return $html.'<div class="text-muted small">'.e($this->formatDate($row->best_submitted_at) ?? '-').'</div>';
+                return $html.'<div class="tw:text-on-surface-variant tw:text-ui-xs">'.e($this->formatDate($row->best_submitted_at) ?? '-').'</div>';
             })
             ->addColumn('diff_display', function ($row) use ($currency) {
                 $diff = $row->diff_idr_per_kg !== null ? (float) $row->diff_idr_per_kg : null;
                 $class = $diff > 0 ? 'tw:text-error' : ($diff < 0 ? 'tw:text-success' : 'tw:text-on-surface-variant');
 
-                return '<div class="fw-bold '.$class.'">'.$this->formatAnalyticAmount($diff, $currency, true).'</div>'
-                    .'<div class="small '.$class.'">'.$this->formatPercent($row->diff_percent).'</div>';
+                return '<div class="tw:font-bold '.$class.'">'.$this->formatAnalyticAmount($diff, $currency, true).'</div>'
+                    .'<div class="tw:text-ui-xs '.$class.'">'.$this->formatPercent($row->diff_percent).'</div>';
             })
-            ->addColumn('potential_difference_display', fn ($row) => '<span class="fw-bold">'.$this->formatAnalyticAmount($row->potential_difference_idr, $currency).'</span>')
+            ->addColumn('potential_difference_display', fn ($row) => '<span class="tw:font-bold">'.$this->formatAnalyticAmount($row->potential_difference_idr, $currency).'</span>')
             ->addColumn('status_badge', function ($row) use ($competitiveThreshold) {
                 $status = $this->priceCompetitivenessStatus(
                     $row->diff_percent !== null ? (float) $row->diff_percent : null,
@@ -196,7 +196,7 @@ class VsBestPriceComparisonController extends Controller
 
                 return '<span class="ui-status-chip ui-status-chip--'.$tone.'">'
                     .e($status['label'])
-                    .'</span><div class="text-muted small mt-1">'.e($status['recommendation']).'</div>';
+                    .'</span><div class="tw:text-on-surface-variant tw:text-ui-xs tw:mt-1">'.e($status['recommendation']).'</div>';
             })
             ->addColumn('action', function ($row) use ($returnUrl) {
                 $currentQuotationUrl = $this->routeWithReturn(
@@ -204,7 +204,7 @@ class VsBestPriceComparisonController extends Controller
                     HashidCodec::encode((int) $row->current_quotation_id),
                     $returnUrl
                 );
-                $html = '<div class="d-inline-flex align-items-center gap-1" role="group" aria-label="'.e(__('purchasing.copy.quotation_comparison_actions')).'">'
+                $html = '<div class="tw:inline-flex tw:items-center tw:gap-1" role="group" aria-label="'.e(__('purchasing.copy.quotation_comparison_actions')).'">'
                     .RowAction::link($currentQuotationUrl, __('purchasing.copy.current'), 'primary', null, [
                         'aria-label' => __('purchasing.copy.current').' - '.__('purchasing.copy.view_current_quotation'),
                     ]);
