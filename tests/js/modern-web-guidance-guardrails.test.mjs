@@ -13,7 +13,7 @@ import { bindLive } from '../../resources/js/filter-bar.js';
 import { isSameOriginHttpUrl, isTrustedSameOrigin } from '../../resources/js/origin-validator.js';
 import {
     acquireOverlayModality,
-    bindBootstrapModalModality,
+    bindNativeDialogModality,
     getActiveOverlayCount,
     releaseOverlayModality,
     releaseOverlaysWithin,
@@ -328,7 +328,7 @@ test('IME composition guard blocks Enter submit behaviorally (isComposing and ke
     }
 });
 
-test('overlay-modality inerts nested #mainWrapper > #main-content siblings, prevents stacked leaks, tracks Bootstrap modals, and restores focus', () => {
+test('overlay-modality inerts nested #mainWrapper > #main-content siblings, prevents stacked leaks, tracks native dialogs, and restores focus', () => {
     const makeNode = (id, { inert = false, classes = [], connected = true } = {}) => {
         const classSet = new Set(classes);
         const node = {
@@ -384,7 +384,7 @@ test('overlay-modality inerts nested #mainWrapper > #main-content siblings, prev
         },
     };
     resetOverlayModality(doc);
-    bindBootstrapModalModality(doc);
+    bindNativeDialogModality(doc);
 
     // 1. Open nested <x-ui.dialog> inside #mainWrapper > #main-content.
     acquireOverlayModality(nestedDialog, { triggerEl: triggerNested, doc });
@@ -431,12 +431,12 @@ test('overlay-modality inerts nested #mainWrapper > #main-content siblings, prev
     assert.equal(closedSidebar.inert, true, 'preexisting inert on closed sidebar MUST be preserved');
     assert.equal(body.classList.contains('ui-dialog-open'), false);
 
-    // 6. Bootstrap 5 modal lifecycle increments/decrements activeCount without mutating inert.
-    const bsModal = makeNode('bsModal');
-    docListeners.get('show.bs.modal')({ target: bsModal });
+    // 6. Native <dialog> lifecycle increments/decrements activeCount without mutating inert.
+    const nativeDialog = makeNode('nativeDialog');
+    docListeners.get('adasi:modal-show')({ target: nativeDialog });
     assert.equal(getActiveOverlayCount(doc), 1);
-    assert.equal(mainWrapper.inert, false, 'Bootstrap modal tracking must not conflict with Bootstrap own inert handling');
-    docListeners.get('hidden.bs.modal')({ target: bsModal });
+    assert.equal(mainWrapper.inert, false, 'Native dialog tracking must not conflict with Top-Layer inert handling');
+    docListeners.get('adasi:modal-hidden')({ target: nativeDialog });
     assert.equal(getActiveOverlayCount(doc), 0);
     assert.equal(dispatched.at(-1), 0);
 });
@@ -547,10 +547,10 @@ test('dialog and drawer components bind AdasiOverlayModality to $root, expose da
     assert.match(lightboxBlade, /clearTimeout\(/, 'image-lightbox must cancel pending close timeout on rapid reopen');
 
     const periodsIndex = readRepo('resources/views/purchasing/periods/index.blade.php');
-    assert.equal(/new\s+bootstrap\.Modal\(/.test(periodsIndex), false, 'periods/index.blade.php must use bootstrap.Modal.getOrCreateInstance');
+    assert.equal(/bootstrap\.Modal/.test(periodsIndex), false, 'periods/index.blade.php must use AdasiModal instead of bootstrap.Modal');
 
     const poShow = readRepo('resources/views/purchasing/po/show.blade.php');
-    assert.equal(/new\s+bootstrap\.Modal\(/.test(poShow), false, 'po/show.blade.php must use bootstrap.Modal.getOrCreateInstance');
+    assert.equal(/bootstrap\.Modal/.test(poShow), false, 'po/show.blade.php must use AdasiModal instead of bootstrap.Modal');
 });
 
 test('overlay-modality exempts #adasiLoader, resolves descendant release targets, prunes disconnected overlays, and cleans up container swaps', () => {
@@ -602,37 +602,41 @@ test('overlay-modality exempts #adasiLoader, resolves descendant release targets
     const closeBtn = makeNode('closeBtn');
     const triggerBtn = makeNode('triggerBtn');
     const header = makeNode('header');
-    const bsModal = makeNode('bsModal', { classes: ['modal', 'show'] });
-    const backdrop = makeNode('backdrop', { classes: ['modal-backdrop', 'show'] });
-    let bsHideCalled = false;
+    const nativeDialog = makeNode('nativeDialog', { classes: ['ui-native-dialog'] });
+    nativeDialog.open = true;
+    const popoverNode = makeNode('columnMenu');
+    popoverNode.matches = (sel) => sel === ':popover-open' && !popoverHidden;
+    let dialogHideCalled = false;
+    let popoverHidden = false;
+    popoverNode.hidePopover = () => { popoverHidden = true; };
 
     dialogRoot.append(closeBtn);
-    swapContainer.append(tableSection, dialogRoot, bsModal);
-    body.append(header, swapContainer, loader, backdrop);
+    swapContainer.append(tableSection, dialogRoot, nativeDialog, popoverNode);
+    body.append(header, swapContainer, loader);
 
     const doc = {
         body,
         activeElement: triggerBtn,
-        querySelectorAll(sel) {
-            if (sel === '.modal-backdrop') return backdrop.removed ? [] : [backdrop];
-            if (sel === '.modal.show') return bsModal.classList.contains('show') ? [bsModal] : [];
+        querySelectorAll() {
             return [];
         },
         defaultView: {
             dispatchEvent() {},
-            bootstrap: {
-                Modal: {
-                    getInstance: (el) => (el === bsModal ? {
-                        hide() {
-                            bsHideCalled = true;
-                            bsModal.classList.remove('show');
-                        },
-                    } : null),
-                },
+            AdasiModal: {
+                getInstance: (el) => (el === nativeDialog ? {
+                    hide() {
+                        dialogHideCalled = true;
+                        nativeDialog.open = false;
+                    },
+                } : null),
             },
         },
     };
-    swapContainer.querySelectorAll = (sel) => (sel.includes('.modal') ? [bsModal] : []);
+    swapContainer.querySelectorAll = (sel) => {
+        if (sel.includes('dialog')) return nativeDialog.open ? [nativeDialog] : [];
+        if (sel.includes('popover')) return [popoverNode];
+        return [];
+    };
 
     resetOverlayModality(doc);
 
@@ -659,20 +663,14 @@ test('overlay-modality exempts #adasiLoader, resolves descendant release targets
     assert.equal(header.inert, false, 'pruning disconnected overlay must restore inert on surviving siblings');
     assert.equal(body.classList.contains('ui-dialog-open'), false);
 
-    // 4. releaseOverlaysWithin(container) releases custom overlays AND cleans stranded Bootstrap modal scroll lock.
+    // 4. releaseOverlaysWithin(container) releases custom overlays, native dialogs, and open popovers.
     dialogRoot.isConnected = true;
     acquireOverlayModality(dialogRoot, { triggerEl: triggerBtn, doc });
-    body.classList.add('modal-open');
-    body.style.overflow = 'hidden';
-    body.style.paddingRight = '15px';
     releaseOverlaysWithin(swapContainer, { doc });
     assert.equal(getActiveOverlayCount(doc), 0);
     assert.equal(header.inert, false);
-    assert.equal(bsHideCalled, true);
-    assert.equal(body.classList.contains('modal-open'), false);
-    assert.equal(body.style.overflow, '');
-    assert.equal(body.style.paddingRight, '');
-    assert.equal(backdrop.removed, true);
+    assert.equal(dialogHideCalled, true);
+    assert.equal(popoverHidden, true);
 
     // 5. Distinct nested overlay root must NOT prematurely release its open parent overlay.
     const parentDrawer = makeNode('parentDrawer');

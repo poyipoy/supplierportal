@@ -69,7 +69,7 @@
                 </x-ui.status-chip>
 
                 @if($isSubmitted)
-                    <x-ui.button type="button" variant="primary" size="sm" data-bs-toggle="modal" data-bs-target="#confirmArrivalModal">
+                    <x-ui.button type="button" variant="primary" size="sm" data-ui-modal-open="#confirmArrivalModal">
                         <x-ui.icon name="check-circle" size="sm" />
                         <span>{{ __('shipments.copy.confirm_physical_arrival') }}</span>
                     </x-ui.button>
@@ -469,14 +469,14 @@
 
 {{-- Confirm Arrival Modal --}}
 @if($isSubmitted)
-<div class="modal fade" id="confirmArrivalModal" tabindex="-1" aria-labelledby="confirmArrivalModalLabel" aria-hidden="true">
+<dialog class="ui-native-dialog" id="confirmArrivalModal" aria-labelledby="confirmArrivalModalLabel" closedby="any">
     <div class="modal-dialog">
         <div class="modal-content">
             <form method="POST" action="{{ route('purchasing.shipments.confirm-arrival', $shipment) }}">
                 @csrf
                 <div class="modal-header">
                     <h5 class="modal-title tw:text-ui-base fw-bold" id="confirmArrivalModalLabel">{{ __('shipments.copy.confirm_physical_material_arrival') }}</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('shipments.copy.close') }}"></button>
+                    <button type="button" class="btn-close" data-ui-modal-close aria-label="{{ __('shipments.copy.close') }}"></button>
                 </div>
                 <div class="modal-body">
                     <p class="tw:text-ui-sm tw:text-on-surface-variant mb-3">
@@ -494,13 +494,13 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <x-ui.button type="button" variant="ghost" size="sm" data-bs-dismiss="modal">{{ __('shipments.copy.cancel') }}</x-ui.button>
+                    <x-ui.button type="button" variant="ghost" size="sm" data-ui-modal-close>{{ __('shipments.copy.cancel') }}</x-ui.button>
                     <x-ui.button type="submit" variant="primary" size="sm">{{ __('shipments.copy.confirm_arrival_notify_qc') }}</x-ui.button>
                 </div>
             </form>
         </div>
     </div>
-</div>
+</dialog>
 @endif
 @endsection
 

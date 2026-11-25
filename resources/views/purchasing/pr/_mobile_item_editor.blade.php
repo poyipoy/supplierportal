@@ -49,7 +49,7 @@
 </div>
 
 {{-- Mobile Material Modal Editor (Bottom Sheet / Fullscreen Dialog) --}}
-<div class="modal fade" id="mobileMaterialModal" tabindex="-1" aria-labelledby="mobileMaterialModalTitle" aria-hidden="true" data-bs-backdrop="static">
+<dialog class="ui-native-dialog" id="mobileMaterialModal" aria-labelledby="mobileMaterialModalTitle" closedby="none">
     <div class="modal-dialog modal-dialog-scrollable modal-fullscreen-sm-down modal-lg">
         <div class="modal-content tw:bg-surface tw:border tw:border-outline tw:rounded-ui-lg">
             {{-- Modal Header --}}
@@ -62,7 +62,7 @@
                         Tambah Material
                     </h5>
                 </div>
-                <button type="button" class="btn-close ui-focus-ring" data-bs-dismiss="modal" aria-label="Tutup"></button>
+                <button type="button" class="btn-close ui-focus-ring" data-ui-modal-close aria-label="Tutup"></button>
             </div>
 
             {{-- Modal Body --}}
@@ -207,7 +207,7 @@
 
             {{-- Modal Footer --}}
             <div class="modal-footer tw:flex tw:flex-col-reverse tw:sm:flex-row tw:gap-2 tw:border-t tw:border-outline-variant tw:bg-surface-container tw:p-3">
-                <x-ui.button type="button" variant="outline" size="sm" data-bs-dismiss="modal" class="tw:w-full tw:sm:w-auto tw:justify-center">
+                <x-ui.button type="button" variant="outline" size="sm" data-ui-modal-close class="tw:w-full tw:sm:w-auto tw:justify-center">
                     {{ __('purchasing.copy.cancel') }}
                 </x-ui.button>
                 <x-ui.button type="button" size="md" id="btnSaveMobileMaterialItem" class="tw:w-full tw:sm:w-auto tw:justify-center tw:min-h-11 tw:font-bold">
@@ -217,5 +217,5 @@
             </div>
         </div>
     </div>
-</div>
+</dialog>
 

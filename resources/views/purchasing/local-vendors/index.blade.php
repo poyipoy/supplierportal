@@ -67,8 +67,7 @@
                                         type="button"
                                         variant="primary"
                                         size="sm"
-                                        data-bs-toggle="modal"
-                                        data-bs-target="#approveReqModal-{{ $req->id }}"
+                                        data-ui-modal-open="#approveReqModal-{{ $req->id }}"
                                     >
                                         <x-ui.icon name="check" size="sm" />
                                         <span>{{ __('local_procurement.vendor_ui.approve') }}</span>
@@ -90,8 +89,7 @@
                                     type="button"
                                     variant="danger-outline"
                                     size="sm"
-                                    data-bs-toggle="modal"
-                                    data-bs-target="#rejectReqModal-{{ $req->id }}"
+                                    data-ui-modal-open="#rejectReqModal-{{ $req->id }}"
                                 >
                                     <x-ui.icon name="x" size="sm" />
                                     <span>{{ __('local_procurement.vendor_ui.reject') }}</span>
@@ -105,14 +103,14 @@
 
                     @if($canSelectDocToApprove)
                         {{-- Approve with Document Selection Modal --}}
-                        <div class="modal fade" id="approveReqModal-{{ $req->id }}" tabindex="-1" aria-hidden="true">
+                        <dialog class="ui-native-dialog" id="approveReqModal-{{ $req->id }}" aria-labelledby="approveReqModalTitle-{{ $req->id }}" closedby="any">
                             <div class="modal-dialog">
                                 <form method="POST" action="{{ route('purchasing.local-vendors.change-requests.approve', $req) }}">
                                     @csrf
                                     <div class="modal-content">
                                         <div class="modal-header">
-                                            <h5 class="modal-title tw:text-ui-sm tw:font-bold">{{ __('local_procurement.vendor_ui.approve_title') }}</h5>
-                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('local_invoice.actions.close') }}"></button>
+                                            <h5 id="approveReqModalTitle-{{ $req->id }}" class="modal-title tw:text-ui-sm tw:font-bold">{{ __('local_procurement.vendor_ui.approve_title') }}</h5>
+                                            <button type="button" class="btn-close" data-ui-modal-close aria-label="{{ __('local_invoice.actions.close') }}"></button>
                                         </div>
                                         <div class="modal-body tw:space-y-3">
                                             <div class="tw:p-2.5 tw:rounded-sm tw:bg-info/10 tw:border tw:border-info/20 tw:text-info tw:text-ui-xs">
@@ -133,24 +131,24 @@
                                             </div>
                                         </div>
                                         <div class="modal-footer">
-                                            <x-ui.button type="button" variant="ghost" size="sm" data-bs-dismiss="modal">{{ __('local_invoice.actions.cancel') }}</x-ui.button>
+                                            <x-ui.button type="button" variant="ghost" size="sm" data-ui-modal-close>{{ __('local_invoice.actions.cancel') }}</x-ui.button>
                                             <x-ui.button type="submit" variant="primary" size="sm">{{ __('local_procurement.vendor_ui.approve') }}</x-ui.button>
                                         </div>
                                     </div>
                                 </form>
                             </div>
-                        </div>
+                        </dialog>
                     @endif
 
                     {{-- Reject Modal --}}
-                    <div class="modal fade" id="rejectReqModal-{{ $req->id }}" tabindex="-1" aria-hidden="true">
+                    <dialog class="ui-native-dialog" id="rejectReqModal-{{ $req->id }}" aria-labelledby="rejectReqModalTitle-{{ $req->id }}" closedby="any">
                         <div class="modal-dialog">
                             <form method="POST" action="{{ route('purchasing.local-vendors.change-requests.reject', $req) }}">
                                 @csrf
                                 <div class="modal-content">
                                     <div class="modal-header">
-                                        <h5 class="modal-title tw:text-ui-sm tw:font-bold">{{ __('local_procurement.vendor_ui.reject_title') }}</h5>
-                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('local_invoice.actions.close') }}"></button>
+                                        <h5 id="rejectReqModalTitle-{{ $req->id }}" class="modal-title tw:text-ui-sm tw:font-bold">{{ __('local_procurement.vendor_ui.reject_title') }}</h5>
+                                        <button type="button" class="btn-close" data-ui-modal-close aria-label="{{ __('local_invoice.actions.close') }}"></button>
                                     </div>
                                     <div class="modal-body">
                                         <div class="mb-3">
@@ -159,13 +157,13 @@
                                         </div>
                                     </div>
                                     <div class="modal-footer">
-                                        <x-ui.button type="button" variant="ghost" size="sm" data-bs-dismiss="modal">{{ __('local_invoice.actions.cancel') }}</x-ui.button>
+                                        <x-ui.button type="button" variant="ghost" size="sm" data-ui-modal-close>{{ __('local_invoice.actions.cancel') }}</x-ui.button>
                                         <x-ui.button type="submit" variant="danger" size="sm">{{ __('local_procurement.vendor_ui.reject_submit') }}</x-ui.button>
                                     </div>
                                 </div>
                             </form>
                         </div>
-                    </div>
+                    </dialog>
                 @endforeach
             </div>
         </x-ui.card>

@@ -49,23 +49,23 @@
                     <span>{{ __('local_procurement.actions.edit_po') }}</span>
                 </x-ui.button>
 
-                <x-ui.button type="button" variant="outline" size="sm" data-bs-toggle="modal" data-bs-target="#closePoModal">
+                <x-ui.button type="button" variant="outline" size="sm" data-ui-modal-open="#closePoModal">
                     <x-ui.icon name="lock" size="sm" />
                     <span>{{ __('local_procurement.actions.close_po') }}</span>
                 </x-ui.button>
 
-                <x-ui.button type="button" variant="danger-outline" size="sm" data-bs-toggle="modal" data-bs-target="#cancelPoModal">
+                <x-ui.button type="button" variant="danger-outline" size="sm" data-ui-modal-open="#cancelPoModal">
                     <x-ui.icon name="x-circle" size="sm" />
                     <span>{{ __('local_procurement.actions.cancel_po') }}</span>
                 </x-ui.button>
 
-                <x-ui.button type="button" size="sm" variant="primary" data-bs-toggle="modal" data-bs-target="#addGrModal">
+                <x-ui.button type="button" size="sm" variant="primary" data-ui-modal-open="#addGrModal">
                     <x-ui.icon name="plus" size="sm" />
                     <span>{{ __('local_procurement.actions.add_gr') }}</span>
                 </x-ui.button>
             @elseif($purchaseOrder->status === 'CANCELLED')
                 @can('restore', $purchaseOrder)
-                    <x-ui.button type="button" size="sm" variant="primary" data-bs-toggle="modal" data-bs-target="#restorePoModal">{{ __('local_procurement.recovery.restore_po') }}</x-ui.button>
+                    <x-ui.button type="button" size="sm" variant="primary" data-ui-modal-open="#restorePoModal">{{ __('local_procurement.recovery.restore_po') }}</x-ui.button>
                 @endcan
             @endif
         </x-slot:actions>
@@ -162,7 +162,7 @@
 
 {{-- Modal Tambah GR Baru --}}
 @if($purchaseOrder->status === 'OPEN')
-    <div class="modal fade local-po-gr-modal" id="addGrModal" tabindex="-1" aria-labelledby="addGrModalTitle" aria-hidden="true">
+    <dialog id="addGrModal" class="ui-native-dialog local-po-gr-modal" aria-labelledby="addGrModalTitle" closedby="any">
         <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
             <div class="modal-content">
                 <form method="POST" action="{{ route($routePrefix.'.goods-receipts.store', $purchaseOrder) }}" enctype="multipart/form-data" class="tw:flex tw:flex-col tw:flex-1 tw:min-h-0 tw:overflow-hidden">
@@ -172,7 +172,7 @@
                             <x-ui.icon name="plus-circle" size="sm" class="tw:text-primary tw:shrink-0" />
                             <span>{{ __('local_procurement.actions.add_gr_full') }}</span>
                         </h2>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('local_invoice.actions.close') }}"></button>
+                        <button type="button" class="btn-close" data-ui-modal-close aria-label="{{ __('local_invoice.actions.close') }}"></button>
                     </div>
                     <div class="modal-body tw:min-w-0 tw:space-y-4">
                         <div class="tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface-container tw:px-3.5 tw:py-2.5 tw:text-ui-xs tw:min-w-0">
@@ -287,7 +287,7 @@
                         </div>
                     </div>
                     <div class="modal-footer tw:flex tw:flex-wrap tw:items-center tw:justify-end tw:gap-2">
-                        <x-ui.button type="button" variant="ghost" size="sm" data-bs-dismiss="modal">{{ __('local_invoice.actions.cancel') }}</x-ui.button>
+                        <x-ui.button type="button" variant="ghost" size="sm" data-ui-modal-close>{{ __('local_invoice.actions.cancel') }}</x-ui.button>
                         <x-ui.button type="submit" variant="primary" size="sm">
                             <x-ui.icon name="plus" size="sm" />
                             <span>{{ __('local_procurement.actions.save_gr') }}</span>
@@ -296,20 +296,20 @@
                 </form>
             </div>
         </div>
-    </div>
+    </dialog>
 
     {{-- Modal Konfirmasi Tutup PO --}}
-    <div class="modal fade" id="closePoModal" tabindex="-1" aria-hidden="true">
+    <dialog id="closePoModal" class="ui-native-dialog" aria-labelledby="closePoModalTitle" closedby="any">
         <div class="modal-dialog modal-dialog-centered">
             <form method="POST" action="{{ route($routePrefix.'.close', $purchaseOrder) }}">
                 @csrf
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title tw:text-ui-sm tw:font-bold tw:text-on-surface tw:flex tw:items-center tw:gap-2">
+                        <h5 id="closePoModalTitle" class="modal-title tw:text-ui-sm tw:font-bold tw:text-on-surface tw:flex tw:items-center tw:gap-2">
                             <x-ui.icon name="lock" size="sm" class="tw:text-warning" />
                             <span>{{ __('local_procurement.actions.close_po_full') }}</span>
                         </h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('local_invoice.actions.close') }}"></button>
+                        <button type="button" class="btn-close" data-ui-modal-close aria-label="{{ __('local_invoice.actions.close') }}"></button>
                     </div>
                     <div class="modal-body tw:space-y-2">
                         <p class="tw:text-ui-sm tw:text-on-surface tw:mb-0">
@@ -318,7 +318,7 @@
                         <p class="tw:text-ui-xs tw:text-on-surface-variant tw:mb-0">{{ __('local_procurement.surface.close_po_help') }}</p>
                     </div>
                     <div class="modal-footer">
-                        <x-ui.button type="button" variant="ghost" size="sm" data-bs-dismiss="modal">{{ __('local_invoice.actions.cancel') }}</x-ui.button>
+                        <x-ui.button type="button" variant="ghost" size="sm" data-ui-modal-close>{{ __('local_invoice.actions.cancel') }}</x-ui.button>
                         <x-ui.button type="submit" variant="primary" size="sm">
                             <x-ui.icon name="lock" size="sm" />
                             <span>{{ __('local_procurement.surface.close_po_yes') }}</span>
@@ -327,20 +327,20 @@
                 </div>
             </form>
         </div>
-    </div>
+    </dialog>
 
     {{-- Modal Konfirmasi Batal PO --}}
-    <div class="modal fade" id="cancelPoModal" tabindex="-1" aria-hidden="true">
+    <dialog id="cancelPoModal" class="ui-native-dialog" aria-labelledby="cancelPoModalTitle" closedby="any">
         <div class="modal-dialog modal-dialog-centered">
             <form method="POST" action="{{ route($routePrefix.'.cancel', $purchaseOrder) }}">
                 @csrf
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title tw:text-ui-sm tw:font-bold tw:text-error tw:flex tw:items-center tw:gap-2">
+                        <h5 id="cancelPoModalTitle" class="modal-title tw:text-ui-sm tw:font-bold tw:text-error tw:flex tw:items-center tw:gap-2">
                             <x-ui.icon name="alert-triangle" size="sm" />
                             <span>{{ __('local_procurement.actions.cancel_po_full') }}</span>
                         </h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('local_invoice.actions.close') }}"></button>
+                        <button type="button" class="btn-close" data-ui-modal-close aria-label="{{ __('local_invoice.actions.close') }}"></button>
                     </div>
                     <div class="modal-body tw:space-y-2">
                         <p class="tw:text-ui-sm tw:text-on-surface tw:mb-0">
@@ -349,7 +349,7 @@
                         <p class="tw:text-ui-xs tw:text-on-surface-variant tw:mb-0">{{ __('local_procurement.surface.cancel_po_help') }}</p>
                     </div>
                     <div class="modal-footer">
-                        <x-ui.button type="button" variant="ghost" size="sm" data-bs-dismiss="modal">{{ __('local_invoice.actions.cancel') }}</x-ui.button>
+                        <x-ui.button type="button" variant="ghost" size="sm" data-ui-modal-close>{{ __('local_invoice.actions.cancel') }}</x-ui.button>
                         <x-ui.button type="submit" variant="danger" size="sm">
                             <x-ui.icon name="trash-2" size="sm" />
                             <span>{{ __('local_procurement.surface.cancel_po_yes') }}</span>
@@ -358,7 +358,7 @@
                 </div>
             </form>
         </div>
-    </div>
+    </dialog>
 @endif
 @if($purchaseOrder->status === 'CANCELLED')
     @can('restore', $purchaseOrder)

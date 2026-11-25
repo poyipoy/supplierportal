@@ -14,7 +14,7 @@
                 <x-ui.icon name="arrow-left" size="sm" />
                 <span>{{ __('ga.review.claim_register') }}</span>
             </x-ui.button>
-            <x-ui.button type="button" variant="primary" size="sm" data-bs-toggle="modal" data-bs-target="#addEmployeeModal">
+            <x-ui.button type="button" variant="primary" size="sm" data-ui-modal-open="#addEmployeeModal">
                 <x-ui.icon name="plus" size="sm" />
                 <span>{{ __('ga.actions.add_employee') }}</span>
             </x-ui.button>
@@ -135,8 +135,7 @@
                                     <button
                                         type="button"
                                         class="ui-data-action ui-data-action--primary ui-motion ui-focus-ring tw:gap-1.5 tw:active:scale-[0.98]"
-                                        data-bs-toggle="modal"
-                                        data-bs-target="#editEmployeeModal-{{ $emp->id }}"
+                                        data-ui-modal-open="#editEmployeeModal-{{ $emp->id }}"
                                         aria-label="{{ __('ga.review.edit_employee', ['name' => $emp->name]) }}"
                                     >
                                         <x-ui.icon name="pencil" size="sm" class="tw:shrink-0" />
@@ -187,15 +186,15 @@
 
 {{-- Edit Employee Modals (placed outside table for valid HTML5 DOM & stacking) --}}
 @foreach($employees as $emp)
-    <div class="modal fade ui-density-modal" id="editEmployeeModal-{{ $emp->id }}" tabindex="-1" aria-hidden="true">
+    <dialog class="ui-native-dialog ui-density-modal" id="editEmployeeModal-{{ $emp->id }}" aria-labelledby="editEmployeeModalTitle-{{ $emp->id }}" closedby="any">
         <div class="modal-dialog">
             <form method="POST" action="{{ route('ga.employees.update', $emp) }}">
                 @csrf
                 @method('PUT')
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title tw:text-ui-sm tw:font-bold">{{ __('ga.actions.edit_employee') }}</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('local_invoice.actions.close') }}"></button>
+                        <h5 id="editEmployeeModalTitle-{{ $emp->id }}" class="modal-title tw:text-ui-sm tw:font-bold">{{ __('ga.actions.edit_employee') }}</h5>
+                        <button type="button" class="btn-close" data-ui-modal-close aria-label="{{ __('local_invoice.actions.close') }}"></button>
                     </div>
                     <div class="modal-body tw:space-y-3 tw:text-ui-xs">
                         <div>
@@ -235,7 +234,7 @@
                         </div>
                     </div>
                     <div class="modal-footer tw:gap-2">
-                        <x-ui.button type="button" variant="ghost" size="sm" data-bs-dismiss="modal">
+                        <x-ui.button type="button" variant="ghost" size="sm" data-ui-modal-close>
                             <span>{{ __('local_invoice.actions.cancel') }}</span>
                         </x-ui.button>
                         <x-ui.button type="submit" variant="primary" size="sm">
@@ -245,18 +244,18 @@
                 </div>
             </form>
         </div>
-    </div>
+    </dialog>
 @endforeach
 
 {{-- Add Employee Modal --}}
-<div class="modal fade ui-density-modal" id="addEmployeeModal" tabindex="-1" aria-hidden="true">
+<dialog class="ui-native-dialog ui-density-modal" id="addEmployeeModal" aria-labelledby="addEmployeeModalTitle" closedby="any">
     <div class="modal-dialog">
         <form method="POST" action="{{ route('ga.employees.store') }}">
             @csrf
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title tw:text-ui-sm tw:font-bold">{{ __('ga.actions.add_employee_full') }}</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('local_invoice.actions.close') }}"></button>
+                    <h5 id="addEmployeeModalTitle" class="modal-title tw:text-ui-sm tw:font-bold">{{ __('ga.actions.add_employee_full') }}</h5>
+                    <button type="button" class="btn-close" data-ui-modal-close aria-label="{{ __('local_invoice.actions.close') }}"></button>
                 </div>
                 <div class="modal-body tw:space-y-3 tw:text-ui-xs">
                     <div>
@@ -289,7 +288,7 @@
                     </div>
                 </div>
                 <div class="modal-footer tw:gap-2">
-                    <x-ui.button type="button" variant="ghost" size="sm" data-bs-dismiss="modal">
+                    <x-ui.button type="button" variant="ghost" size="sm" data-ui-modal-close>
                         <span>{{ __('local_invoice.actions.cancel') }}</span>
                     </x-ui.button>
                     <x-ui.button type="submit" variant="primary" size="sm">
@@ -300,5 +299,5 @@
             </div>
         </form>
     </div>
-</div>
+</dialog>
 @endsection

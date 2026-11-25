@@ -34,14 +34,17 @@ const escapeAttribute = (value) => String(value).replace(/[&<>"']/g, (character)
 const panelFocusables = (panel) => [...panel.querySelectorAll(FOCUSABLE)]
     .filter((element) => !element.hidden && element.getClientRects().length > 0);
 
-function ensureMobileScrim() {
-    if (mobileScrim) return mobileScrim;
-
-    mobileScrim = document.createElement('div');
-    mobileScrim.className = 'ui-calendar-mobile-scrim';
-    mobileScrim.hidden = true;
-    mobileScrim.addEventListener('click', () => activeController?.close({ restoreFocus: true }));
-    document.body.append(mobileScrim);
+function ensureMobileScrim(hostEl = null) {
+    const host = hostEl || activeController?.resolveLayerHost?.() || document.body;
+    if (!mobileScrim) {
+        mobileScrim = document.createElement('div');
+        mobileScrim.className = 'ui-calendar-mobile-scrim';
+        mobileScrim.hidden = true;
+        mobileScrim.addEventListener('click', () => activeController?.close({ restoreFocus: true }));
+    }
+    if (mobileScrim.parentNode !== host) {
+        host.append(mobileScrim);
+    }
 
     return mobileScrim;
 }
@@ -726,7 +729,7 @@ class CalendarController {
                 this.panel.hidden = true;
                 if (this.placeholder && this.placeholder.parentNode) {
                     this.placeholder.after(this.panel);
-                } else if (this.panel.parentNode === document.body) {
+                } else if (this.panel.parentNode && this.panel.parentNode !== this.placeholder?.parentNode) {
                     this.panel.remove();
                 }
             }
@@ -735,10 +738,18 @@ class CalendarController {
         if (restoreFocus) this.focusTrigger();
     }
 
+    resolveLayerHost() {
+        return this.placeholder?.closest?.('dialog[open]')
+            || this.input?.closest?.('dialog[open]')
+            || this.trigger?.closest?.('dialog[open]')
+            || document.body;
+    }
+
     movePanelToLayer() {
-        document.body.append(this.panel);
+        const host = this.resolveLayerHost();
+        host.append(this.panel);
         if (this.isMobile()) {
-            const scrim = ensureMobileScrim();
+            const scrim = ensureMobileScrim(host);
             scrim.hidden = false;
             document.body.classList.add('ui-calendar-sheet-open');
             window.requestAnimationFrame(() => scrim.classList.add('is-open'));

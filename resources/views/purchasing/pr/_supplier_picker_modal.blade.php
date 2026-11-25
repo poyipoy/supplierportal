@@ -34,8 +34,7 @@
         variant="outline"
         size="sm"
         class="tw:w-full tw:justify-between tw:text-start"
-        data-bs-toggle="modal"
-        data-bs-target="#{{ $modalId }}"
+        data-ui-modal-open="#{{ $modalId }}"
         aria-describedby="{{ $modalId }}Summary"
     >
         <span class="d-inline-flex align-items-center gap-2">
@@ -52,7 +51,7 @@
     @error('supplier_ids') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
     @error('supplier_ids.*') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
 
-    <div class="modal fade ui-density-modal" id="{{ $modalId }}" data-supplier-picker-modal="{{ $modalId }}" tabindex="-1" aria-labelledby="{{ $modalId }}Label" aria-hidden="true">
+    <dialog class="ui-native-dialog ui-density-modal" id="{{ $modalId }}" data-supplier-picker-modal="{{ $modalId }}" aria-labelledby="{{ $modalId }}Label" closedby="any">
         <div class="modal-dialog modal-dialog-scrollable modal-lg modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
@@ -60,7 +59,7 @@
                         <h6 class="modal-title fw-bold" id="{{ $modalId }}Label">{{ __('purchasing.copy.select_invited_suppliers') }}</h6>
                         <div class="tw:text-on-surface-variant tw:text-ui-xs tw:mt-0.5">{{ __('purchasing.copy.check_specific_suppliers_to_invite_for_this_pr_or_leave_empty_to_open_to_all_registered_suppliers') }}</div>
                     </div>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('purchasing.copy.close') }}"></button>
+                    <button type="button" class="btn-close" data-ui-modal-close aria-label="{{ __('purchasing.copy.close') }}"></button>
                 </div>
                 <div class="modal-body tw:p-3.5">
                     <div class="row g-2 align-items-center mb-3">
@@ -102,12 +101,12 @@
                     </div>
                 </div>
                 <div class="modal-footer tw:bg-surface-low border-top">
-                    <x-ui.button type="button" variant="ghost" size="sm" data-bs-dismiss="modal">{{ __('purchasing.copy.cancel') }}</x-ui.button>
-                    <x-ui.button type="button" size="sm" data-bs-dismiss="modal">{{ __('purchasing.copy.apply_selection') }}</x-ui.button>
+                    <x-ui.button type="button" variant="ghost" size="sm" data-ui-modal-close>{{ __('purchasing.copy.cancel') }}</x-ui.button>
+                    <x-ui.button type="button" size="sm" data-ui-modal-close>{{ __('purchasing.copy.apply_selection') }}</x-ui.button>
                 </div>
             </div>
         </div>
-    </div>
+    </dialog>
 </div>
 
 @once

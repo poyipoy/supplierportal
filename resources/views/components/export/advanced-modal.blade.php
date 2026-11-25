@@ -18,17 +18,17 @@
      data-default-csv-delimiter="{{ app()->getLocale() === 'id' ? ';' : ',' }}"
      data-filter-selectors='@json($filterSelectors)' data-initial-filters='@json($initialFilters)' data-export-copy='@json($copy)' data-export-table="{{ $table }}">
     <div class="tw:flex tw:items-center tw:gap-2">
-        <x-ui.button type="button" :id="$triggerId" variant="outline" size="sm" data-bs-toggle="modal" data-bs-target="#{{ $uid }}" data-export-open>
+        <x-ui.button type="button" :id="$triggerId" variant="outline" size="sm" data-ui-modal-open="#{{ $uid }}" data-export-open>
             <x-ui.icon name="file-spreadsheet" />{{ __('exports.advanced.title') }}
         </x-ui.button>
         <x-ui.button type="button" variant="outline" size="sm" data-export-quick><x-ui.icon name="download" size="sm" />{{ __('exports.advanced.quick') }}</x-ui.button>
     </div>
-    <div class="modal fade ui-export-designer-modal" id="{{ $uid }}" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="{{ $uid }}-title" aria-describedby="{{ $uid }}-help">
+    <dialog class="ui-native-dialog ui-export-designer-modal" id="{{ $uid }}" aria-labelledby="{{ $uid }}-title" aria-describedby="{{ $uid }}-help" closedby="any">
         <div class="modal-dialog modal-lg modal-dialog-scrollable">
             <div class="modal-content tw:border-outline tw:bg-surface tw:text-on-surface">
                 <div class="modal-header">
                     <h2 class="modal-title tw:text-ui-lg" id="{{ $uid }}-title" tabindex="-1">{{ __('exports.advanced.title') }}</h2>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('common.actions.close') }}"></button>
+                    <button type="button" class="btn-close" data-ui-modal-close aria-label="{{ __('common.actions.close') }}"></button>
                 </div>
                 <form action="{{ $action }}" method="POST" data-advanced-export-form data-managed-submit data-no-loader class="tw:flex tw:flex-col tw:min-h-0 tw:overflow-hidden">
                     @csrf
@@ -209,7 +209,7 @@
                     </div>
                     <div class="modal-footer tw:flex tw:flex-wrap tw:items-center tw:gap-2">
                         <div data-export-preview class="ui-export-preview tw:mr-auto tw:text-ui-xs tw:text-on-surface-variant ui-tabular-nums" role="status" aria-live="polite"></div>
-                        <x-ui.button type="button" variant="ghost" data-bs-dismiss="modal">{{ __('common.actions.cancel') }}</x-ui.button>
+                        <x-ui.button type="button" variant="ghost" data-ui-modal-close>{{ __('common.actions.cancel') }}</x-ui.button>
                         <x-ui.button type="submit" data-export-submit disabled>{{ __('exports.advanced.export') }}</x-ui.button>
                     </div>
                 </form>
@@ -231,7 +231,7 @@
                 <x-ui.button type="button" size="sm" variant="ghost" data-column-command="close-layer">{{ __('common.actions.cancel') }}</x-ui.button>
             </div>
         </div>
-    </div>
+    </dialog>
     <template data-export-column-template>
         <div data-export-column draggable="true" class="ui-column-header" role="option" tabindex="-1" aria-selected="false">
             <span data-column-letter class="ui-column-header__letter" aria-hidden="true"></span>

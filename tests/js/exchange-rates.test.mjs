@@ -153,8 +153,8 @@ function setup({ effective = false } = {}) {
     const content = workspace.appendChild(new ElementFake('div', { 'data-server-tabs-content': '' }));
     const config = workspace.appendChild(new ElementFake('script', { 'data-exchange-rates-config': '' }));
     config.textContent = JSON.stringify({ refreshLabel: 'Review latest rates', refreshFailed: 'Could not refresh rates.', saveUnknown: 'Save result unknown. Review the latest rates before trying again.' });
-    const modal = effective ? document.body.appendChild(new ElementFake('div', { id: 'rateModal' })) : null;
-    if (modal) modal.classList.add('show');
+    const modal = effective ? document.body.appendChild(new ElementFake('dialog', { id: 'rateModal' })) : null;
+    if (modal) modal.open = true;
     const reviewUrl = `http://portal.test/admin/exchange-rates?tab=${effective ? 'effective' : 'annual&annual_edit_year=2024'}`;
     const form = (modal ?? content).appendChild(new FormFake({
         id: effective ? 'effective-rate-form' : 'annual-rate-form',
@@ -225,12 +225,12 @@ function setup({ effective = false } = {}) {
             resetForm: () => { state.buttonResets++; submitter.disabled = false; },
         },
         AdasiToast: { success: (message) => toasts.push({ type: 'success', message }), error: (message) => toasts.push({ type: 'error', message }) },
-        bootstrap: { Modal: { getOrCreateInstance: () => ({ hide: () => {
+        AdasiModal: { getOrCreateInstance: () => ({ hide: () => {
             if (state.modalOpening) return;
             state.modalHides++;
-            modal.classList.remove('show');
-            modal.dispatchEvent({ type: 'hidden.bs.modal' });
-        } }) } },
+            modal.open = false;
+            modal.dispatchEvent({ type: 'adasi:modal-hidden' });
+        } }) },
     };
     bootExchangeRates(document);
 
@@ -417,7 +417,7 @@ test('a save completed while the effective modal is opening waits for shown then
         await settle();
         assert.equal(page.navigations.length, 0);
         page.state.modalOpening = false;
-        page.modal.dispatchEvent({ type: 'shown.bs.modal' });
+        page.modal.dispatchEvent({ type: 'adasi:modal-shown' });
         await settle();
         assert.equal(page.state.modalHides, 1);
         assert.equal(page.navigations.length, 1);

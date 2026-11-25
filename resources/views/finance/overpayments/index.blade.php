@@ -176,8 +176,7 @@
                                         type="button"
                                         size="sm"
                                         variant="primary"
-                                        data-bs-toggle="modal"
-                                        data-bs-target="#refundModal-{{ $refund->id }}"
+                                        data-ui-modal-open="#refundModal-{{ $refund->id }}"
                                         class="tw:whitespace-nowrap"
                                     >
                                         <x-ui.icon name="hand-coins" size="sm" />
@@ -213,12 +212,11 @@
     {{-- Modal Proses Pengembalian Dana (Ditempatkan di luar tabel agar DOM & Accessibility valid) --}}
     @foreach($overpayments as $refund)
         @if($refund->status === 'OPEN')
-            <div
-                class="modal fade"
+            <dialog
+                class="ui-native-dialog"
                 id="refundModal-{{ $refund->id }}"
-                tabindex="-1"
                 aria-labelledby="refundModalLabel-{{ $refund->id }}"
-                aria-hidden="true"
+                closedby="any"
             >
                 <div class="modal-dialog modal-dialog-centered modal-lg">
                     <form
@@ -243,7 +241,7 @@
                                         </p>
                                     </div>
                                 </div>
-                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('local_invoice.actions.close') }}"></button>
+                                <button type="button" class="btn-close" data-ui-modal-close aria-label="{{ __('local_invoice.actions.close') }}"></button>
                             </div>
 
                             {{-- Modal Body --}}
@@ -335,7 +333,7 @@
 
                             {{-- Modal Footer --}}
                             <div class="modal-footer tw:border-t tw:border-outline-variant/60 tw:px-6 tw:py-3 tw:bg-surface-container-low/50">
-                                <x-ui.button type="button" variant="ghost" size="sm" data-bs-dismiss="modal">
+                                <x-ui.button type="button" variant="ghost" size="sm" data-ui-modal-close>
                                     {{ __('local_invoice.actions.cancel') }}
                                 </x-ui.button>
                                 <x-ui.button type="submit" variant="primary" size="sm">
@@ -346,7 +344,7 @@
                         </div>
                     </form>
                 </div>
-            </div>
+            </dialog>
         @endif
     @endforeach
 </div>

@@ -498,8 +498,8 @@
         document.addEventListener('input', handleFieldMutation, true);
         document.addEventListener('change', handleFieldMutation, true);
 
-        // Reset form snapshots and interaction state when a Bootstrap modal is dismissed
-        document.addEventListener('hidden.bs.modal', (event) => {
+        // Reset form snapshots and interaction state when a dialog modal is dismissed
+        document.addEventListener('adasi:modal-hidden', (event) => {
             const modal = event.target;
             const forms = modal?.querySelectorAll?.('form') || [];
             forms.forEach((form) => {
@@ -531,7 +531,7 @@
             if (link.closest('[data-server-tabs-unsaved="managed"]')) return;
 
             // Allow elements explicitly marked to bypass dirty check or modal triggers
-            if (link.closest('[data-allow-dirty="true"], [data-quotation-form-export], [data-pr-form-export], [data-bs-toggle], [data-bs-dismiss]')) return;
+            if (link.closest('[data-allow-dirty="true"], [data-quotation-form-export], [data-pr-form-export], [data-bs-toggle], [data-bs-dismiss], [data-ui-modal-open], [data-ui-modal-close]')) return;
 
             // Prevent direct browser navigation and show custom AdasiAlert
             event.preventDefault();

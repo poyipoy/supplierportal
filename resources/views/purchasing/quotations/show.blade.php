@@ -249,7 +249,7 @@
                     @unless($poGenerationEnabled)
                         <x-ui.alert tone="warning" class="tw:mb-2">{{ __('procurement.po_generation.disabled_notice') }}</x-ui.alert>
                     @endunless
-                    <x-ui.button type="button" size="sm" class="tw:w-full tw:mb-2" data-bs-toggle="modal" data-bs-target="#generatePoModal" :disabled="! $poGenerationEnabled">
+                    <x-ui.button type="button" size="sm" class="tw:w-full tw:mb-2" data-ui-modal-open="#generatePoModal" :disabled="! $poGenerationEnabled">
                         <x-slot:leading><x-ui.icon name="receipt" /></x-slot:leading>
                         {{ __('purchasing.copy.generate_purchase_order') }}
                     </x-ui.button>
@@ -318,7 +318,7 @@
 </div>
 
 @if($canCreatePo)
-    <div class="modal fade" id="generatePoModal" tabindex="-1" aria-labelledby="generatePoModalTitle" aria-hidden="true">
+    <dialog class="ui-native-dialog" id="generatePoModal" aria-labelledby="generatePoModalTitle" closedby="any">
         <div class="modal-dialog modal-lg modal-dialog-scrollable modal-dialog-centered">
             <div class="modal-content">
                 <form action="{{ route('purchasing.quotations.generate-po', $quotation) }}" method="POST" id="generatePoForm" class="d-flex flex-column tw:flex-1 tw:min-h-0 tw:overflow-hidden">
@@ -330,7 +330,7 @@
                                 {{ $quotation->purchaseRequisition->pr_number ?? '-' }} &middot; {{ $supplierDisplayName }}
                             </div>
                         </div>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('purchasing.copy.close') }}"></button>
+                        <button type="button" class="btn-close" data-ui-modal-close aria-label="{{ __('purchasing.copy.close') }}"></button>
                     </div>
 
                     <div class="modal-body tw:space-y-4">
@@ -506,7 +506,7 @@
                     </div>
 
                     <div class="modal-footer tw:bg-surface-low">
-                        <x-ui.button type="button" variant="ghost" size="sm" data-bs-dismiss="modal">{{ __('purchasing.copy.cancel') }}</x-ui.button>
+                        <x-ui.button type="button" variant="ghost" size="sm" data-ui-modal-close>{{ __('purchasing.copy.cancel') }}</x-ui.button>
                         <x-ui.button type="submit" size="sm" id="generatePoSubmit" data-no-auto-spinner>
                             <span id="generatePoSpinner" class="ui-spinner" hidden aria-hidden="true"></span>
                             <span id="generatePoSubmitLabel">{{ __('purchasing.copy.confirm_generate_po') }}</span>
@@ -515,7 +515,7 @@
                 </form>
             </div>
         </div>
-    </div>
+    </dialog>
 @endif
 @endsection
 
@@ -556,8 +556,8 @@
 
         @if($reopenGeneratePoModal)
             const generatePoModalEl = document.getElementById('generatePoModal');
-            if (generatePoModalEl && window.bootstrap?.Modal) {
-                window.bootstrap.Modal.getOrCreateInstance(generatePoModalEl).show();
+            if (generatePoModalEl && window.AdasiModal) {
+                window.AdasiModal.getOrCreateInstance(generatePoModalEl)?.show();
             }
         @endif
     });

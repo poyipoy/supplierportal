@@ -1,4 +1,4 @@
-<div class="modal fade" id="prImportModal" tabindex="-1" aria-labelledby="prImportModalLabel" aria-hidden="true">
+<dialog class="ui-native-dialog" id="prImportModal" aria-labelledby="prImportModalLabel" closedby="any">
     <div class="modal-dialog modal-xl modal-dialog-scrollable modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
@@ -6,7 +6,7 @@
                     <h6 class="modal-title fw-bold" id="prImportModalLabel">{{ __('purchasing.copy.import_pr_materials_from_spreadsheet') }}</h6>
                     <div class="tw:text-on-surface-variant tw:text-ui-xs tw:mt-0.5">{{ __('purchasing.copy.validate_your_excel_spreadsheet_xlsx_xls_csv_before_inserting_into_the_requisition') }}</div>
                 </div>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('purchasing.copy.close') }}"></button>
+                <button type="button" class="btn-close" data-ui-modal-close aria-label="{{ __('purchasing.copy.close') }}"></button>
             </div>
             <div class="modal-body tw:p-3.5">
                 <div class="tw:grid tw:gap-4 tw:md:grid-cols-[minmax(0,1.4fr)_minmax(14rem,1fr)]">
@@ -77,7 +77,7 @@
                 </div>
             </div>
             <div class="modal-footer tw:bg-surface-low border-top">
-                <x-ui.button type="button" variant="ghost" size="sm" data-bs-dismiss="modal">{{ __('purchasing.copy.cancel') }}</x-ui.button>
+                <x-ui.button type="button" variant="ghost" size="sm" data-ui-modal-close>{{ __('purchasing.copy.cancel') }}</x-ui.button>
                 <x-ui.button type="button" variant="outline" size="sm" id="btnParsePrImport">
                     <span class="ui-spinner me-1 d-none" id="prImportSpinner" aria-hidden="true"></span>
                     {{ __('purchasing.copy.parse_validate') }}
@@ -88,7 +88,7 @@
             </div>
         </div>
     </div>
-</div>
+</dialog>
 
 @once
     @push('styles')
@@ -412,7 +412,7 @@
         prImportRows.forEach(appendImportedPrRow);
         renumberPrRows();
         checkRowCount();
-        bootstrap.Modal.getOrCreateInstance(document.getElementById('prImportModal')).hide();
+        window.AdasiModal?.getOrCreateInstance?.(document.getElementById('prImportModal'))?.hide();
         AdasiToast.show({
             type: 'success',
             title: prImportCopy.importApplied,
@@ -464,7 +464,7 @@
         modeSelect?.addEventListener('change', updateImportModeHelp);
         updateImportModeHelp();
 
-        document.getElementById('prImportModal')?.addEventListener('hidden.bs.modal', () => {
+        document.getElementById('prImportModal')?.addEventListener('adasi:modal-hidden', () => {
             if (prImportRequestInFlight) {
                 return;
             }

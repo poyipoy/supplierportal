@@ -15,7 +15,7 @@
             </a></li>
         <li><hr class="dropdown-divider"></li>
         <li>
-            <button type="button" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#prImportModal">
+            <button type="button" class="dropdown-item" data-ui-modal-open="#prImportModal">
                 <x-ui.icon name="file-spreadsheet" class="me-1" /> {{ __('purchasing.copy.import_excel') }}
             </button>
         </li>

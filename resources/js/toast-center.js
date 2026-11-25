@@ -48,7 +48,27 @@ export function registerToastCenter(Alpine, { navigateUrl = null, flushQueue = t
         && 'popover' in HTMLElement.prototype
         && typeof HTMLElement.prototype.showPopover === 'function';
 
+    let toastPromotionBound = false;
+
+    const promoteToastPopover = () => {
+        if (!supportsManualPopover || !toastRegionEl || !toastRegionEl.isConnected) return;
+        if (toastState.visible.length === 0) return;
+        try {
+            if (toastRegionEl.matches(':popover-open')) {
+                toastRegionEl.hidePopover();
+            }
+            toastRegionEl.showPopover();
+        } catch {}
+    };
+
+    const ensureToastPromotionListener = () => {
+        if (toastPromotionBound || typeof document === 'undefined' || typeof document.addEventListener !== 'function') return;
+        toastPromotionBound = true;
+        document.addEventListener('adasi:modal-shown', promoteToastPopover);
+    };
+
     const syncToastPopover = () => {
+        ensureToastPromotionListener();
         if (!supportsManualPopover || !toastRegionEl || !toastRegionEl.isConnected) return;
         if (!toastRegionEl.hasAttribute('popover')) {
             toastRegionEl.setAttribute('popover', 'manual');

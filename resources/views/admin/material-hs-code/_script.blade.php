@@ -7,8 +7,8 @@
 <script>
 (() => {
 const bootMaterialHsMaster = () => {
-    const materialModal = bootstrap.Modal.getOrCreateInstance(document.getElementById('materialModal'));
-    const ruleModal = bootstrap.Modal.getOrCreateInstance(document.getElementById('ruleModal'));
+    const materialModal = window.AdasiModal?.getOrCreateInstance?.(document.getElementById('materialModal'));
+    const ruleModal = window.AdasiModal?.getOrCreateInstance?.(document.getElementById('ruleModal'));
     const materialStoreUrl = @json(route($masterRoutePrefix.'.material-masters.store'));
     const materialUpdateUrl = @json(route($masterRoutePrefix.'.material-masters.update', 0));
     const materialStatusUrl = @json(route($masterRoutePrefix.'.material-masters.status', 0));

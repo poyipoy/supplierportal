@@ -32,16 +32,15 @@ export function bootExchangeRates(root = document) {
     unsaved?.registerDirtySource?.(() => state.saving || (!state.discarded && [...state.failed].some((form) => form.isConnected)));
 
     const hideModal = () => {
-        if (!modal?.classList.contains('show')) return Promise.resolve();
+        if (!modal?.open) return Promise.resolve();
         return new Promise((resolve) => {
-            const hide = () => window.bootstrap.Modal.getOrCreateInstance(modal).hide();
+            const hide = () => window.AdasiModal?.getOrCreateInstance?.(modal)?.hide();
             const finished = () => {
-                modal.removeEventListener('shown.bs.modal', hide);
+                modal.removeEventListener('adasi:modal-shown', hide);
                 resolve();
             };
-            modal.addEventListener('hidden.bs.modal', finished, { once: true });
-            // Bootstrap ignores hide() during its opening transition; retry when that transition ends.
-            modal.addEventListener('shown.bs.modal', hide, { once: true });
+            modal.addEventListener('adasi:modal-hidden', finished, { once: true });
+            modal.addEventListener('adasi:modal-shown', hide, { once: true });
             hide();
         });
     };
@@ -65,7 +64,7 @@ export function bootExchangeRates(root = document) {
         if (state.saving) return url === state.savedRedirect;
         if (state.discarded) return true;
         // Back closes the permanent modal first, retaining the entered values.
-        if (modal?.classList.contains('show')) {
+        if (modal?.open) {
             await hideModal();
             return false;
         }
@@ -269,7 +268,7 @@ export function bootExchangeRates(root = document) {
             unsaved?.setSubmitting(false);
             unsaved?.markClean();
             const modalForm = modal?.querySelector('[data-exchange-rates-save]');
-            if (modalForm && !modal.classList.contains('show')) {
+            if (modalForm && !modal.open) {
                 modalForm.reset();
                 modalForm.querySelectorAll('[data-adasi-date-picker], [data-adasi-date-range]').forEach((picker) => {
                     window.AdasiCalendar?.reset?.(picker);

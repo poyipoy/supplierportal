@@ -5,6 +5,7 @@
 <section
     x-data="adasiToastCenter"
     x-ref="region"
+    popover="manual"
     class="adasi-toast-region {{ $context === 'app' ? 'adasi-toast-region--app' : '' }}"
     aria-label="{{ __('common.notification.title') }}"
     aria-relevant="additions text"

@@ -206,11 +206,11 @@ export function bootLocalProcurementImports(root = document) {
             if (requestInFlight) return;
             if (entry.kind === kind) return resumeImport(entry);
             const target = document.getElementById(entry.kind === 'PO' ? 'localPoImportModal' : 'localGrImportModal');
-            if (!target || !window.bootstrap?.Modal) return;
+            if (!target || !window.AdasiModal) return;
             requestInFlight = true;
-            target.addEventListener('shown.bs.modal', () => target.dispatchEvent(new CustomEvent('adasi:resume-import', { detail: entry })), { once: true });
-            modal.addEventListener('hidden.bs.modal', () => window.bootstrap.Modal.getOrCreateInstance(target).show(), { once: true });
-            window.bootstrap.Modal.getOrCreateInstance(modal).hide();
+            target.addEventListener('adasi:modal-shown', () => target.dispatchEvent(new CustomEvent('adasi:resume-import', { detail: entry })), { once: true });
+            modal.addEventListener('adasi:modal-hidden', () => window.AdasiModal.getOrCreateInstance(target)?.show(), { once: true });
+            window.AdasiModal.getOrCreateInstance(modal)?.hide();
         }
         async function cancelImport(entry, buttons, trigger) {
             if (requestInFlight) return;
@@ -807,8 +807,8 @@ export function bootLocalProcurementImports(root = document) {
             progress.textContent = t('js.local_import.file_changed');
             if (cancelUrl) json(cancelUrl, { method: 'POST', body: new URLSearchParams({ _token: csrf() }) }).catch(() => {});
         });
-        modal.addEventListener('show.bs.modal', () => { resetSession(); return loadActiveImports(); });
-        modal.addEventListener('hidden.bs.modal', () => {
+        modal.addEventListener('adasi:modal-show', () => { resetSession(); return loadActiveImports(); });
+        modal.addEventListener('adasi:modal-hidden', () => {
             if (last?.status === 'IMPORTING') watchInBackground(statusUrl);
             resetSession();
         });

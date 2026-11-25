@@ -19,7 +19,7 @@
         </li>
         <li><hr class="dropdown-divider"></li>
         <li>
-            <button type="button" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#quotationImportModal">
+            <button type="button" class="dropdown-item" data-ui-modal-open="#quotationImportModal">
                 <x-ui.icon name="file-spreadsheet" class="me-1" /> {{ __('supplier.copy.import_excel') }}
             </button>
         </li>

@@ -1278,8 +1278,7 @@ document.addEventListener('click', (e) => {
         if (weightOverrideEl) weightOverrideEl.value = '0';
         if (remarkEl) remarkEl.value = '';
 
-        const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('mobileMaterialModal'));
-        modal.show();
+        window.AdasiModal?.getOrCreateInstance?.(document.getElementById('mobileMaterialModal'))?.show(addBtn);
         return;
     }
 
@@ -1366,8 +1365,7 @@ document.addEventListener('click', (e) => {
         if (weightOverrideEl) weightOverrideEl.value = rowEl.querySelector('.weight-manual-override')?.value || '0';
         if (remarkEl) remarkEl.value = rowEl.querySelector('.pr-item-remark')?.value || '';
 
-        const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('mobileMaterialModal'));
-        modal.show();
+        window.AdasiModal?.getOrCreateInstance?.(document.getElementById('mobileMaterialModal'))?.show(editBtn);
         return;
     }
 
@@ -1486,8 +1484,7 @@ document.addEventListener('click', (e) => {
         checkRowCount();
 
         const modalEl = document.getElementById('mobileMaterialModal');
-        const modal = bootstrap.Modal.getInstance(modalEl);
-        if (modal) modal.hide();
+        window.AdasiModal?.getInstance?.(modalEl)?.hide();
 
         renderMobileMaterialCards();
         return;

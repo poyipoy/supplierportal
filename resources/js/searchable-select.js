@@ -277,7 +277,7 @@ export function searchableSelect(config = {}) {
                     this.fetchSuggestions('', { immediate: true, replaceOptions: true });
                 }
                 const triggerRect = this.$refs?.triggerButton?.getBoundingClientRect?.();
-                const dialogBody = this.$refs?.triggerButton?.closest?.('[role="dialog"] .modal-body, [role="dialog"] .tw\\:overflow-y-auto, [role="dialog"]');
+                const dialogBody = this.$refs?.triggerButton?.closest?.('dialog.ui-native-dialog .modal-body, dialog.ui-native-dialog, [role="dialog"] .modal-body, [role="dialog"] .tw\\:overflow-y-auto, [role="dialog"]');
                 const boundsBottom = dialogBody?.getBoundingClientRect?.().bottom ?? globalThis.innerHeight ?? 800;
                 const boundsTop = dialogBody?.getBoundingClientRect?.().top ?? 0;
                 if (triggerRect) {

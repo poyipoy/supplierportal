@@ -12,7 +12,7 @@
             :description="__('purchasing.copy.open_and_close_annual_procurement_periods_that_control_when_requisitions_and_supplier_quotations_can')"
         >
             <x-slot:actions>
-                <x-ui.button type="button" size="sm" data-bs-toggle="modal" data-bs-target="#createModal">
+                <x-ui.button type="button" size="sm" data-ui-modal-open="#createModal">
                     <x-ui.icon name="plus-circle" size="sm" />
                     <span>{{ __('purchasing.copy.add_period') }}</span>
                 </x-ui.button>
@@ -38,14 +38,14 @@
     </div>
 
     {{-- Create Modal --}}
-    <div class="modal fade" id="createModal" tabindex="-1" aria-labelledby="createPeriodModalTitle" aria-hidden="true">
+    <dialog class="ui-native-dialog" id="createModal" aria-labelledby="createPeriodModalTitle" closedby="any">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <form action="{{ route('purchasing.periods.store') }}" method="POST">
                     @csrf
                     <div class="modal-header">
                         <h6 class="modal-title fw-bold" id="createPeriodModalTitle">{{ __('purchasing.copy.add_new_procurement_period') }}</h6>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('purchasing.copy.close') }}"></button>
+                        <button type="button" class="btn-close" data-ui-modal-close aria-label="{{ __('purchasing.copy.close') }}"></button>
                     </div>
                     <div class="modal-body">
                         <div class="tw:grid tw:gap-3">
@@ -57,16 +57,16 @@
                         </div>
                     </div>
                     <div class="modal-footer tw:bg-surface-low border-top">
-                        <x-ui.button type="button" variant="ghost" size="sm" data-bs-dismiss="modal">{{ __('purchasing.copy.cancel') }}</x-ui.button>
+                        <x-ui.button type="button" variant="ghost" size="sm" data-ui-modal-close>{{ __('purchasing.copy.cancel') }}</x-ui.button>
                         <x-ui.button type="submit" size="sm">{{ __('purchasing.copy.save_period') }}</x-ui.button>
                     </div>
                 </form>
             </div>
         </div>
-    </div>
+    </dialog>
 
     {{-- Edit Modal (Dynamic) --}}
-    <div class="modal fade" id="editModal" tabindex="-1" aria-labelledby="editPeriodModalTitle" aria-hidden="true">
+    <dialog class="ui-native-dialog" id="editModal" aria-labelledby="editPeriodModalTitle" closedby="any">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <form id="editForm" method="POST">
@@ -74,7 +74,7 @@
                     @method('PUT')
                     <div class="modal-header">
                         <h6 class="modal-title fw-bold" id="editPeriodModalTitle">{{ __('purchasing.copy.edit_procurement_period') }}</h6>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('purchasing.copy.close') }}"></button>
+                        <button type="button" class="btn-close" data-ui-modal-close aria-label="{{ __('purchasing.copy.close') }}"></button>
                     </div>
                     <div class="modal-body">
                         <div class="tw:grid tw:gap-3">
@@ -95,13 +95,13 @@
                         </div>
                     </div>
                     <div class="modal-footer tw:bg-surface-low border-top">
-                        <x-ui.button type="button" variant="ghost" size="sm" data-bs-dismiss="modal">{{ __('purchasing.copy.cancel') }}</x-ui.button>
+                        <x-ui.button type="button" variant="ghost" size="sm" data-ui-modal-close>{{ __('purchasing.copy.cancel') }}</x-ui.button>
                         <x-ui.button type="submit" size="sm">{{ __('purchasing.copy.save_changes') }}</x-ui.button>
                     </div>
                 </form>
             </div>
         </div>
-    </div>
+    </dialog>
 @endsection
 
 @push('scripts')
@@ -143,7 +143,7 @@
             if (editMonth) editMonth.value = btn.dataset.month ?? '';
             if (editYear) editYear.value = btn.dataset.year ?? '';
             if (editStatus) editStatus.value = btn.dataset.status ?? '';
-            bootstrap.Modal.getOrCreateInstance(document.getElementById('editModal')).show();
+            window.AdasiModal?.getOrCreateInstance?.(document.getElementById('editModal'))?.show(btn);
         });
     };
 

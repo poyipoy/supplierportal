@@ -195,7 +195,7 @@ class CancelledInvoiceRecoveryTest extends TestCase
             $this->assertStringContainsString('data-gr-restore', $feed->json('data.0.actions'));
             $pages['gr'] = $this->get(route('finance.local-procurement.show', $po))->assertOk()->assertSee('restorePoGrModal')->getContent();
             $po->update(['status' => 'CANCELLED']);
-            $pages['po'] = $this->get(route('finance.local-procurement.show', $po))->assertOk()->assertSee('data-bs-target="#restorePoModal"', false)->getContent();
+            $pages['po'] = $this->get(route('finance.local-procurement.show', $po))->assertOk()->assertSee('data-ui-modal-open="#restorePoModal"', false)->getContent();
             $po->update(['status' => 'OPEN']);
             if (getenv('RECOVERY_UI_FIXTURES') === '1') {
                 $root = storage_path('framework/testing/cancelled-recovery-ui');

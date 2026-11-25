@@ -260,9 +260,9 @@ export function handleValidationErrors(form, errors, message = '') {
         revealField(form, first.key, firstField);
     }
 
-    const firstDialog = firstField?.closest?.('[role="dialog"]') || null;
+    const firstDialog = firstField?.closest?.('dialog[open], dialog.ui-native-dialog, [role="dialog"]') || null;
     window.requestAnimationFrame(() => window.requestAnimationFrame(() => {
-        const dialogVisible = Boolean(firstDialog && firstDialog.offsetParent !== null);
+        const dialogVisible = Boolean(firstDialog && (firstDialog.open || firstDialog.offsetParent !== null));
         if (dialogVisible && firstField) {
             const comboboxTrigger = firstField.closest?.('[x-data^="searchableSelect"]')?.querySelector?.('[role="combobox"]');
             const target = comboboxTrigger || firstField;

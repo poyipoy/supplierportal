@@ -10,7 +10,7 @@ export function createAdvancedExport(root, { designer: suppliedDesigner } = {}) 
     if (controllers.has(root)) return controllers.get(root);
     const document = root.ownerDocument;
     const window = document.defaultView;
-    const modal = root.querySelector('.modal');
+    const modal = root.querySelector('dialog.ui-native-dialog, .ui-export-designer-modal');
     const form = root.querySelector('[data-advanced-export-form]');
     const submit = root.querySelector('[data-export-submit]');
     const quick = root.querySelector('[data-export-quick]');
@@ -167,11 +167,12 @@ export function createAdvancedExport(root, { designer: suppliedDesigner } = {}) 
         }
     };
     const clearError = () => { error.hidden = true; error.textContent = ''; if (retry) retry.hidden = true; };
+    const isModalOpen = () => Boolean(modal.open || modal.hasAttribute?.('open'));
     const showError = (message, reload = false) => {
         error.textContent = message; error.hidden = false;
         if (reload) status.textContent = '';
         if (retry) retry.hidden = !reload;
-        if (modal.classList.contains('show')) error.focus();
+        if (isModalOpen()) error.focus();
     };
     const cancelPreview = () => {
         if (previewTimer !== null) {
@@ -395,9 +396,9 @@ export function createAdvancedExport(root, { designer: suppliedDesigner } = {}) 
         return true;
     };
     const revealFailure = () => {
-        if (modal.classList.contains('show')) return;
+        if (isModalOpen()) return;
         preserveOnShow = true;
-        window.bootstrap.Modal.getOrCreateInstance(modal).show();
+        window.AdasiModal?.getOrCreateInstance?.(modal)?.show();
     };
     const dispatch = async (operation) => {
         if (!current(operation) || !ready || exportFlight) return;
@@ -416,7 +417,7 @@ export function createAdvancedExport(root, { designer: suppliedDesigner } = {}) 
                 onError: (message) => { if (current(operation)) showError(message); },
             });
             if (!current(operation)) return;
-            if (accepted) window.bootstrap.Modal.getOrCreateInstance(modal).hide();
+            if (accepted) window.AdasiModal?.getOrCreateInstance?.(modal)?.hide();
             else revealFailure();
         } finally {
             if (exportFlight === operation) exportFlight = null;
@@ -429,21 +430,21 @@ export function createAdvancedExport(root, { designer: suppliedDesigner } = {}) 
         catch (e) { if (current(operation)) showError(e.message || text('failed'), true); }
         finally { finish(operation); }
     };
-    listen(modal, 'show.bs.modal', (event) => {
+    listen(modal, 'adasi:modal-show', (event) => {
         opening = true;
         shown = false;
         if (preserveOnShow) { preserveOnShow = false; return; }
-        opener = event.relatedTarget || root.querySelector('[data-export-open]');
+        opener = event.relatedTarget || event.detail?.relatedTarget || root.querySelector('[data-export-open]');
         return runLoad(begin('load'));
     });
-    listen(modal, 'shown.bs.modal', () => {
+    listen(modal, 'adasi:modal-shown', () => {
         opening = false; shown = true; updateControls();
         if (ready && !previewState) schedulePreview(400);
         if (!error.hidden) error.focus();
         else root.querySelector('.modal-title')?.focus();
     });
-    listen(modal, 'hide.bs.modal', () => { opening = false; shown = false; closing = true; invalidate(); ready = false; previewState = null; renderPreview(); designer.suspend(); updateControls(); });
-    listen(modal, 'hidden.bs.modal', () => { closing = false; if (!disposed) opener?.focus(); });
+    listen(modal, 'adasi:modal-hide', () => { opening = false; shown = false; closing = true; invalidate(); ready = false; previewState = null; renderPreview(); designer.suspend(); updateControls(); });
+    listen(modal, 'adasi:modal-hidden', () => { closing = false; if (!disposed) opener?.focus(); });
     listen(quick, 'click', async () => {
         if (quick.disabled) return;
         opener = quick;
@@ -544,17 +545,15 @@ export function createAdvancedExport(root, { designer: suppliedDesigner } = {}) 
             if (disposed) return;
             disposed = true; invalidate(); designer.destroy();
             listeners.splice(0).forEach((remove) => remove()); controllers.delete(root);
-            const instance = window.bootstrap?.Modal.getInstance?.(modal);
+            const instance = window.AdasiModal?.getInstance?.(modal);
             if (!instance) return;
-            // Bootstrap owns a global resize listener. Release its instance too,
-            // after any in-flight transition has finished restoring body scroll.
             const dispose = () => instance.dispose();
-            const hide = () => { modal.addEventListener('hidden.bs.modal', dispose, { once: true }); instance.hide(); };
-            if (closing) modal.addEventListener('hidden.bs.modal', dispose, { once: true });
-            else if (opening) modal.addEventListener('shown.bs.modal', hide, { once: true });
-            else if (modal.classList.contains('show')) {
+            const hide = () => { modal.addEventListener('adasi:modal-hidden', dispose, { once: true }); instance.hide(); };
+            if (closing) modal.addEventListener('adasi:modal-hidden', dispose, { once: true });
+            else if (opening) modal.addEventListener('adasi:modal-shown', hide, { once: true });
+            else if (isModalOpen()) {
                 if (shown) hide();
-                else modal.addEventListener('shown.bs.modal', hide, { once: true });
+                else modal.addEventListener('adasi:modal-shown', hide, { once: true });
             } else dispose();
         },
     };

@@ -1,4 +1,4 @@
-<div class="modal fade local-import-modal" id="localGrImportModal" tabindex="-1" aria-labelledby="localGrImportModalLabel" aria-hidden="true">
+<dialog id="localGrImportModal" class="ui-native-dialog local-import-modal" aria-labelledby="localGrImportModalLabel" closedby="any">
     <div class="modal-dialog modal-xl modal-dialog-scrollable modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header tw:border-b tw:border-outline-variant tw:flex-wrap tw:gap-2">
@@ -10,7 +10,7 @@
                         {{ __('local_procurement.import.gr_help') }}
                     </div>
                 </div>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('local_invoice.actions.close') }}"></button>
+                <button type="button" class="btn-close" data-ui-modal-close aria-label="{{ __('local_invoice.actions.close') }}"></button>
                 <div class="tw:w-full">@include('finance.local-procurement._import_workflow')</div>
             </div>
 
@@ -126,7 +126,7 @@
             </div>
 
             <div class="modal-footer tw:bg-surface-container-lowest tw:border-t tw:border-outline-variant">
-                <x-ui.button type="button" variant="ghost" size="sm" data-bs-dismiss="modal">
+                <x-ui.button type="button" variant="ghost" size="sm" data-ui-modal-close>
                     {{ __('local_invoice.actions.close') }}
                 </x-ui.button>
                 <x-ui.button type="button" variant="outline" size="sm" id="btnParseLocalGrImport">
@@ -146,7 +146,7 @@
             </div>
         </div>
     </div>
-</div>
+</dialog>
 
 <div data-local-import="GR" data-import-preview="{{ route($routePrefix.'.import.gr.preview') }}" data-import-index="{{ route($routePrefix.'.imports.index') }}" data-modal-id="localGrImportModal" data-previous="{{ __('local_procurement.large_import.previous') }}" data-next="{{ __('local_procurement.large_import.next') }}" data-cancel="{{ __('local_procurement.large_import.cancel') }}" hidden></div>
 

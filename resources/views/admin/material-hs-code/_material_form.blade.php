@@ -1,4 +1,4 @@
-<div class="modal fade" id="materialModal" tabindex="-1" aria-labelledby="materialModalTitle" aria-hidden="true">
+<dialog class="ui-native-dialog" id="materialModal" aria-labelledby="materialModalTitle" closedby="any">
     <div class="modal-dialog modal-dialog-centered modal-lg">
         <form id="materialForm" method="POST" action="{{ route($masterRoutePrefix.'.material-masters.store') }}" class="modal-content">
             @csrf
@@ -11,7 +11,7 @@
                     <h2 class="modal-title fs-6 fw-bold tw:text-on-surface" id="materialModalTitle">{{ __('admin.copy.add_material_master') }}</h2>
                     <p class="tw:m-0 tw:mt-0.5 tw:text-ui-xs tw:text-on-surface-variant">{{ __('admin.copy.configure_material_identity_hs_classification_category_density_profile_and_manufacturer_scope') }}</p>
                 </div>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('admin.copy.close') }}"></button>
+                <button type="button" class="btn-close" data-ui-modal-close aria-label="{{ __('admin.copy.close') }}"></button>
             </div>
 
             <div class="modal-body tw:grid tw:gap-4 tw:p-5">
@@ -94,7 +94,7 @@
             </div>
 
             <div class="modal-footer tw:border-t tw:border-outline-variant tw:bg-surface-low tw:px-5 tw:py-3">
-                <x-ui.button type="button" variant="ghost" data-bs-dismiss="modal">{{ __('admin.copy.cancel') }}</x-ui.button>
+                <x-ui.button type="button" variant="ghost" data-ui-modal-close>{{ __('admin.copy.cancel') }}</x-ui.button>
                 <x-ui.button type="submit" id="btnSaveMaterial">
                     <span class="ui-spinner d-none me-1" id="spinnerSaveMaterial" aria-hidden="true"></span>
                     <x-ui.icon name="check" size="sm" />
@@ -103,4 +103,4 @@
             </div>
         </form>
     </div>
-</div>
+</dialog>

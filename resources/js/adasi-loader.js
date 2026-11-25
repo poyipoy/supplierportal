@@ -130,6 +130,7 @@ export function createDomView(doc = document, translate = t) {
     let wantsActive = false;
     let wantsSlow = false;
     let presented = false;
+    let isStageMounted = false;
 
     const resolveStageContainer = () => (
         doc.documentElement?.hasAttribute?.('data-workspace-shell')
@@ -149,6 +150,7 @@ export function createDomView(doc = document, translate = t) {
 
     const build = (onDismiss) => {
         const stage = resolveStageContainer();
+        isStageMounted = Boolean(stage);
         overlay = doc.createElement('div');
         overlay.className = stage ? 'adasi-loader-overlay adasi-loader-overlay--stage' : 'adasi-loader-overlay';
         overlay.id = 'adasiLoader';
@@ -201,7 +203,20 @@ export function createDomView(doc = document, translate = t) {
         text = overlay.querySelector?.('.adasi-loader-text') ?? textEl;
         dismiss = overlay.querySelector?.('.adasi-loader-dismiss') ?? dismissBtn;
         dismiss.addEventListener('click', onDismiss);
+        if (!stage && typeof overlay.showPopover === 'function') {
+            overlay.setAttribute?.('popover', 'manual');
+        }
         (stage || doc.body).appendChild(overlay);
+        if (typeof doc.addEventListener === 'function') {
+            doc.addEventListener('adasi:modal-shown', () => {
+                if (!presented || !wantsActive || resolveStageContainer()) return;
+                if (overlay?.getAttribute?.('popover') !== 'manual' || typeof overlay.showPopover !== 'function') return;
+                try {
+                    if (overlay.matches?.(':popover-open')) overlay.hidePopover();
+                    overlay.showPopover();
+                } catch {}
+            });
+        }
     };
 
     const view = {
@@ -217,9 +232,27 @@ export function createDomView(doc = document, translate = t) {
             const stage = resolveStageContainer();
             if (!overlay && (stage || doc.body)) {
                 build(() => this.onDismiss?.());
-            } else if (overlay && stage && overlay.parentElement !== stage) {
+                return;
+            }
+            if (!overlay) return;
+
+            const needsStageMove = Boolean(stage) && (overlay.parentElement ? overlay.parentElement !== stage : !isStageMounted);
+            const needsBodyMove = !stage && (overlay.parentElement ? overlay.parentElement !== doc.body : isStageMounted);
+            if (needsStageMove) {
+                if (typeof overlay.hidePopover === 'function' && overlay.matches?.(':popover-open')) {
+                    try { overlay.hidePopover(); } catch {}
+                }
+                overlay.removeAttribute?.('popover');
                 overlay.classList.add('adasi-loader-overlay--stage');
                 stage.appendChild(overlay);
+                isStageMounted = true;
+            } else if (needsBodyMove) {
+                overlay.classList.remove('adasi-loader-overlay--stage');
+                if (typeof overlay.showPopover === 'function') {
+                    overlay.setAttribute?.('popover', 'manual');
+                }
+                doc.body?.appendChild?.(overlay);
+                isStageMounted = false;
             }
         },
         activate() {
@@ -247,6 +280,15 @@ export function createDomView(doc = document, translate = t) {
             previousBusy = busyHost?.getAttribute?.('aria-busy') ?? null;
             busyHost?.setAttribute?.('aria-busy', 'true');
             overlay.classList.add('active');
+            if (!stage && typeof overlay.showPopover === 'function') {
+                if (!overlay.hasAttribute?.('popover')) {
+                    overlay.setAttribute?.('popover', 'manual');
+                }
+                try {
+                    if (overlay.matches?.(':popover-open')) overlay.hidePopover();
+                    overlay.showPopover();
+                } catch {}
+            }
             const focusInsideStage = !stage || Boolean(previousFocus?.closest?.('[data-workspace-frames]'));
             if (focusInsideStage) {
                 overlay.querySelector('.adasi-loader-card').focus({ preventScroll: true });
@@ -276,6 +318,9 @@ export function createDomView(doc = document, translate = t) {
             if (!overlay || !presented) return;
             presented = false;
             overlay.classList.remove('active');
+            if (typeof overlay.hidePopover === 'function' && overlay.matches?.(':popover-open')) {
+                try { overlay.hidePopover(); } catch {}
+            }
             inerted.forEach(({ node, wasInert }) => { node.inert = wasInert; });
             inerted = [];
             const host = busyHost || doc.body;
@@ -534,7 +579,8 @@ export function isPdfDownloadLink(link, win = globalThis.window) {
 
 export function isFullPageNavigation(link, win) {
     if ((link.target && link.target !== '_self') || link.hasAttribute('download')
-        || link.hasAttribute('data-bs-toggle') || link.hasAttribute('data-no-loader')
+        || link.hasAttribute('data-bs-toggle') || link.hasAttribute('data-ui-modal-open')
+        || link.hasAttribute('data-ui-modal-close') || link.hasAttribute('data-no-loader')
         || link.hasAttribute('data-download-pdf') || link.hasAttribute('data-pdf-download')) {
         return false;
     }

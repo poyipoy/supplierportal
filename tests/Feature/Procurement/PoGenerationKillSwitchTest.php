@@ -188,7 +188,7 @@ class PoGenerationKillSwitchTest extends TestCase
         $disabledAttribute = '\sdisabled(?=[\s>])';
         $pages = [
             route('purchasing.comparison.inter-supplier', ['pr_id' => $pr]) => '/<button[^>]*'.$disabledAttribute.'[^>]*id="btnGeneratePos"/',
-            route('purchasing.quotations.show', $quotation) => '/<button[^>]*'.$disabledAttribute.'[^>]*data-bs-target="#generatePoModal"/',
+            route('purchasing.quotations.show', $quotation) => '/<button[^>]*'.$disabledAttribute.'[^>]*data-ui-modal-open="#generatePoModal"/',
             route('purchasing.purchase-orders.consolidate-awards') => '/<button[^>]*'.$disabledAttribute.'[^>]*id="createConsolidatedPo"/',
         ];
 

@@ -409,8 +409,8 @@ test('search inputs do not mark interaction, autofill on untouched form updates 
     assert.equal(f.guard.hasUserInteracted(f.form), true);
     assert.equal(f.guard.isDirty(), true);
 
-    // 4. Closing a Bootstrap modal resets forms inside that modal
-    const modalEvent = new Event('hidden.bs.modal');
+    // 4. Closing a native dialog resets forms inside that modal
+    const modalEvent = new Event('adasi:modal-hidden');
     Object.defineProperty(modalEvent, 'target', {
         value: { querySelectorAll: (sel) => (sel === 'form' ? [f.form] : []) },
     });

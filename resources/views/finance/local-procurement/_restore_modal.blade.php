@@ -5,7 +5,7 @@
     $recoveryAction = $recoveryTarget ? route($routePrefix.($isPoRecovery ? '.restore' : '.goods-receipts.restore'), $recoveryTarget) : '';
     $hasRecoveryErrors = $recoveryBag->any() && $recoveryTarget;
 @endphp
-<div class="modal fade local-po-gr-modal" id="{{ $recoveryId }}" tabindex="-1" aria-labelledby="{{ $recoveryId }}Title" aria-hidden="true" data-recovery-modal data-recovery-reopen="{{ $hasRecoveryErrors ? '1' : '0' }}">
+<dialog id="{{ $recoveryId }}" class="ui-native-dialog local-po-gr-modal" aria-labelledby="{{ $recoveryId }}Title" closedby="any" data-recovery-modal data-recovery-reopen="{{ $hasRecoveryErrors ? '1' : '0' }}">
     <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable"><div class="modal-content">
         <form method="POST" action="{{ $recoveryAction }}">
             @csrf
@@ -13,7 +13,7 @@
             <input type="hidden" name="_recovery_target" value="{{ $recoveryTarget?->hash }}">
             <div class="modal-header">
                 <h2 class="modal-title tw:text-ui-base tw:font-semibold" id="{{ $recoveryId }}Title">{{ __('local_procurement.recovery.'.$recoveryKind.'_title') }}</h2>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('local_invoice.actions.close') }}"></button>
+                <button type="button" class="btn-close" data-ui-modal-close aria-label="{{ __('local_invoice.actions.close') }}"></button>
             </div>
             <div class="modal-body tw:space-y-4">
                 <p class="tw:font-semibold tw:break-all" data-gr-modal-number>{{ $isPoRecovery ? $recoveryTarget?->po_number : $recoveryTarget?->gr_number }}</p>
@@ -34,9 +34,9 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <x-ui.button type="button" variant="ghost" data-bs-dismiss="modal">{{ __('local_invoice.actions.cancel') }}</x-ui.button>
+                <x-ui.button type="button" variant="ghost" data-ui-modal-close>{{ __('local_invoice.actions.cancel') }}</x-ui.button>
                 <x-ui.button type="submit">{{ __('local_procurement.recovery.submit') }}</x-ui.button>
             </div>
         </form>
     </div></div>
-</div>
+</dialog>

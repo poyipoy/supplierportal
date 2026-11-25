@@ -575,8 +575,7 @@
                             variant="danger-outline"
                             size="sm"
                             class="w-100"
-                            data-bs-toggle="modal"
-                            data-bs-target="#revisionModal"
+                            data-ui-modal-open="#revisionModal"
                         >
                             <x-ui.icon name="rotate-ccw" size="sm" />
                             <span>{{ __('finance.invoice_ui.request_revision') }}</span>
@@ -587,7 +586,7 @@
 
             @if(in_array($invoice->status, [\App\Models\LocalInvoice::STATUS_WAITING_PHYSICAL_DOCUMENT, \App\Models\LocalInvoice::STATUS_UNDER_VERIFICATION, \App\Models\LocalInvoice::STATUS_NEED_REVISION], true))
                 <x-ui.card :title="__('finance.actions.reject_invoice')" :description="__('finance.invoice_ui.reject_help')">
-                    <x-ui.button type="button" variant="danger-outline" size="sm" class="w-100" data-bs-toggle="modal" data-bs-target="#rejectModal">
+                    <x-ui.button type="button" variant="danger-outline" size="sm" class="w-100" data-ui-modal-open="#rejectModal">
                         <x-ui.icon name="x-circle" size="sm" /> {{ __('finance.actions.reject_invoice') }}
                     </x-ui.button>
                 </x-ui.card>
@@ -617,14 +616,14 @@
 </div>
 
 {{-- Request Revision Modal --}}
-<div class="modal fade" id="revisionModal" tabindex="-1" aria-labelledby="revisionModalLabel" aria-hidden="true">
+<dialog class="ui-native-dialog" id="revisionModal" aria-labelledby="revisionModalLabel" closedby="any">
     <div class="modal-dialog">
         <form method="POST" action="{{ route('finance.invoices.request-revision', $invoice) }}">
             @csrf
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title tw:text-ui-sm tw:font-bold" id="revisionModalLabel">{{ __('finance.invoice_ui.revision_title') }}</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('local_invoice.actions.close') }}"></button>
+                    <button type="button" class="btn-close" data-ui-modal-close aria-label="{{ __('local_invoice.actions.close') }}"></button>
                 </div>
                 <div class="modal-body">
                     <p class="tw:text-ui-xs tw:text-on-surface-variant tw:mb-3">
@@ -636,27 +635,27 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <x-ui.button type="button" variant="ghost" size="sm" data-bs-dismiss="modal">{{ __('local_invoice.actions.cancel') }}</x-ui.button>
+                    <x-ui.button type="button" variant="ghost" size="sm" data-ui-modal-close>{{ __('local_invoice.actions.cancel') }}</x-ui.button>
                     <x-ui.button type="submit" variant="danger" size="sm">{{ __('ga.verification.send_revision') }}</x-ui.button>
                 </div>
             </div>
         </form>
     </div>
-</div>
+</dialog>
 
 @if(in_array($invoice->status, [\App\Models\LocalInvoice::STATUS_WAITING_PHYSICAL_DOCUMENT, \App\Models\LocalInvoice::STATUS_UNDER_VERIFICATION, \App\Models\LocalInvoice::STATUS_NEED_REVISION], true))
-<div class="modal fade" id="rejectModal" tabindex="-1" aria-labelledby="rejectModalLabel" aria-hidden="true">
+<dialog class="ui-native-dialog" id="rejectModal" aria-labelledby="rejectModalLabel" closedby="any">
     <div class="modal-dialog">
         <form method="POST" action="{{ route('finance.invoices.reject', $invoice) }}">
             @csrf
             <div class="modal-content">
-                <div class="modal-header"><h5 class="modal-title tw:text-ui-sm tw:font-bold" id="rejectModalLabel">{{ __('finance.actions.reject_invoice') }}</h5><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('local_invoice.actions.close') }}"></button></div>
+                <div class="modal-header"><h5 class="modal-title tw:text-ui-sm tw:font-bold" id="rejectModalLabel">{{ __('finance.actions.reject_invoice') }}</h5><button type="button" class="btn-close" data-ui-modal-close aria-label="{{ __('local_invoice.actions.close') }}"></button></div>
                 <div class="modal-body"><label for="reject-notes" class="form-label tw:text-ui-xs tw:font-semibold">{{ __('finance.labels.rejection_reason') }} <span class="text-danger">*</span></label><textarea name="notes" id="reject-notes" class="form-control form-control-sm" rows="3" maxlength="2000" required></textarea></div>
-                <div class="modal-footer"><x-ui.button type="button" variant="ghost" size="sm" data-bs-dismiss="modal">{{ __('local_invoice.actions.cancel') }}</x-ui.button><x-ui.button type="submit" variant="danger" size="sm">{{ __('finance.actions.reject_release') }}</x-ui.button></div>
+                <div class="modal-footer"><x-ui.button type="button" variant="ghost" size="sm" data-ui-modal-close>{{ __('local_invoice.actions.cancel') }}</x-ui.button><x-ui.button type="submit" variant="danger" size="sm">{{ __('finance.actions.reject_release') }}</x-ui.button></div>
             </div>
         </form>
     </div>
-</div>
+</dialog>
 @endif
 @endsection
 

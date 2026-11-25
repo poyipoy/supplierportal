@@ -341,7 +341,7 @@
 
                 prScroll.addEventListener('mousedown', function(e) {
                     if (e.button !== 0) return;
-                    if (e.target.closest('input, select, textarea, button, a, label, [role="button"], .dropdown-menu, .modal, .material-search-results')) {
+                    if (e.target.closest('input, select, textarea, button, a, label, [role="button"], .dropdown-menu, dialog, .ui-native-dialog, .material-search-results')) {
                         return;
                     }
                     isDown = true;

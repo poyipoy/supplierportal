@@ -49,7 +49,7 @@ function boot({ dataTable = false, focusables = [] } = {}) {
     const DataTable = Object.assign(function FakeDataTable() { return table; }, { ext: {} });
     const window = {
         location: { origin: 'https://portal.example', reload() {} },
-        bootstrap: { Modal: { getOrCreateInstance: () => ({ show() { showCount++; } }) } },
+        AdasiModal: { getOrCreateInstance: () => ({ show() { showCount++; } }) },
         ...(dataTable ? { DataTable } : {}),
     };
     vm.runInNewContext(`${source}\nbootLocalPoGrTable(document);`, { document: root, window, URL });
@@ -88,9 +88,9 @@ test('GR recovery rejects foreign and script actions', () => {
 test('GR recovery focuses the reason and returns focus to its trigger', () => {
     const app = boot();
     const button = app.click();
-    app.modalListeners.get('shown.bs.modal')?.();
+    app.modalListeners.get('adasi:modal-shown')?.();
     assert.equal(app.reason.focusCount, 1);
-    app.modalListeners.get('hidden.bs.modal')?.();
+    app.modalListeners.get('adasi:modal-hidden')?.();
     assert.equal(button.focusCount, 1);
 });
 
@@ -123,6 +123,6 @@ test('GR recovery returns focus to the status filter after a table redraw remove
     const app = boot();
     const button = app.click();
     button.isConnected = false;
-    app.modalListeners.get('hidden.bs.modal')?.();
+    app.modalListeners.get('adasi:modal-hidden')?.();
     assert.equal(app.filter.focusCount, 1);
 });

@@ -162,7 +162,7 @@ export function createColumnDesigner(root, { text, onStateChange } = {}) {
     const searchInput = root.querySelector('[data-column-search]');
     const searchStatus = root.querySelector('[data-column-search-status]');
     const searchHiddenHost = root.querySelector('[data-column-search-hidden]');
-    const modal = root.querySelector('.modal');
+    const modal = root.querySelector('dialog.ui-native-dialog, .ui-export-designer-modal');
     if (!host || !scroll || !emptyRows || !template?.content?.firstElementChild || !fieldset || !menu || !unhide || !hiddenSelect || !modal) {
         throw new Error('Column designer markup is incomplete.');
     }

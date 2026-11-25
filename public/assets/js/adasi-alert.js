@@ -36,10 +36,19 @@
         return result;
     };
 
+    const resolveAlertTarget = (options = {}) => {
+        if (options.target) return options.target;
+        const openDialogs = typeof document?.querySelectorAll === 'function'
+            ? [...document.querySelectorAll('dialog[open]')]
+            : [];
+        return openDialogs.length ? openDialogs[openDialogs.length - 1] : document.body;
+    };
+
     const baseOptions = (options, type, confirmTone) => ({
         titleText: asText(options.title, ''),
         ...contentOptions(options),
         icon: type,
+        target: resolveAlertTarget(options),
         buttonsStyling: false,
         customClass: classes(confirmTone),
         showClass: { popup: 'adasi-alert-show' },

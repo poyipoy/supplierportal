@@ -473,8 +473,8 @@
             }
         });
 
-        // Drop any active page-fade animation before Bootstrap shows a modal so the ancestor never traps it behind .modal-backdrop.
-        document.addEventListener('show.bs.modal', (event) => {
+        // Drop any active page-fade animation before a dialog opens so no ancestor stalls mid-transition.
+        document.addEventListener('adasi:modal-show', (event) => {
             if (!(event.target instanceof Element)) {
                 return;
             }
@@ -825,6 +825,8 @@
                         || link.hasAttribute('data-chat-drawer')
                         || link.hasAttribute('data-open-chat-conversation')
                         || link.hasAttribute('data-bs-toggle')
+                        || link.hasAttribute('data-ui-modal-open')
+                        || link.hasAttribute('data-ui-modal-close')
                     ) {
                         return;
                     }
@@ -1055,7 +1057,7 @@
             if (active && (['INPUT', 'TEXTAREA', 'SELECT'].includes(active.tagName) || active.isContentEditable)) {
                 return;
             }
-            if (document.querySelector('.modal.show')) {
+            if (document.querySelector('dialog[open], .modal.show')) {
                 return;
             }
 

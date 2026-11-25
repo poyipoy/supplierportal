@@ -1,4 +1,4 @@
-<div class="modal fade" id="uploadGrBulkModal" tabindex="-1" aria-labelledby="uploadGrBulkModalLabel" aria-hidden="true">
+<dialog class="ui-native-dialog" id="uploadGrBulkModal" aria-labelledby="uploadGrBulkModalLabel" closedby="any">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header tw:border-b tw:border-outline-variant">
@@ -10,7 +10,7 @@
                         {{ __('local_procurement.gr_documents.help') }}
                     </div>
                 </div>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('local_invoice.actions.close') }}"></button>
+                <button type="button" class="btn-close" data-ui-modal-close aria-label="{{ __('local_invoice.actions.close') }}"></button>
             </div>
 
             <form method="POST" action="{{ route($routePrefix.'.upload-gr') }}" enctype="multipart/form-data" id="uploadGrBulkForm" data-async-submit data-async-summary-skip-file-errors="true">
@@ -53,7 +53,7 @@
                 </div>
 
                 <div class="modal-footer tw:bg-surface-container-lowest tw:border-t tw:border-outline-variant">
-                    <x-ui.button type="button" variant="ghost" size="sm" data-bs-dismiss="modal">
+                    <x-ui.button type="button" variant="ghost" size="sm" data-ui-modal-close>
                         {{ __('local_invoice.actions.cancel') }}
                     </x-ui.button>
                     <x-ui.button type="submit" size="sm" variant="primary" id="btnSubmitGrUpload">
@@ -64,5 +64,5 @@
             </form>
         </div>
     </div>
-</div>
+</dialog>
 

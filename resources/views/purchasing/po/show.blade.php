@@ -999,12 +999,12 @@
 </div>
 
 {{-- Update Document Modal --}}
-<div class="modal fade" id="updateDocModal" tabindex="-1" aria-labelledby="modalDocTitle" aria-hidden="true">
+<dialog class="ui-native-dialog" id="updateDocModal" aria-labelledby="modalDocTitle" closedby="any">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
                 <h6 class="modal-title fw-bold" id="modalDocTitle">{{ __('purchasing.copy.update_document_status') }}</h6>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('purchasing.copy.close') }}"></button>
+                <button type="button" class="btn-close" data-ui-modal-close aria-label="{{ __('purchasing.copy.close') }}"></button>
             </div>
             <div class="modal-body tw:p-3.5">
                 <input type="hidden" id="modalDocId">
@@ -1014,7 +1014,7 @@
                 </div>
             </div>
             <div class="modal-footer tw:bg-surface-low border-top">
-                <x-ui.button type="button" variant="ghost" size="sm" data-bs-dismiss="modal">{{ __('purchasing.copy.cancel') }}</x-ui.button>
+                <x-ui.button type="button" variant="ghost" size="sm" data-ui-modal-close>{{ __('purchasing.copy.cancel') }}</x-ui.button>
                 <x-ui.button type="button" size="sm" id="btnSaveDocStatus">
                     <span class="ui-spinner d-none me-1" id="docSpinner" aria-hidden="true"></span>
                     {{ __('purchasing.copy.save_changes') }}
@@ -1022,27 +1022,27 @@
             </div>
         </div>
     </div>
-</div>
+</dialog>
 
 {{-- Shared Progress History Modal --}}
-<div class="modal fade" id="progressHistoryModal" tabindex="-1" aria-labelledby="progressHistoryModalLabel" aria-hidden="true">
+<dialog class="ui-native-dialog" id="progressHistoryModal" aria-labelledby="progressHistoryModalLabel" closedby="any">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title tw:text-ui-base fw-bold" id="progressHistoryModalLabel">
                     {{ __('purchasing.copy.material_progress_history') }}
                 </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('purchasing.copy.close') }}"></button>
+                <button type="button" class="btn-close" data-ui-modal-close aria-label="{{ __('purchasing.copy.close') }}"></button>
             </div>
             <div class="modal-body" id="progressHistoryModalBody">
                 <x-ui.inline-loader :label="__('purchasing.copy.loading_history')" class="tw:py-6" />
             </div>
             <div class="modal-footer">
-                <x-ui.button type="button" variant="ghost" size="sm" data-bs-dismiss="modal">{{ __('purchasing.copy.close') }}</x-ui.button>
+                <x-ui.button type="button" variant="ghost" size="sm" data-ui-modal-close>{{ __('purchasing.copy.close') }}</x-ui.button>
             </div>
         </div>
     </div>
-</div>
+</dialog>
 
 {{-- Gate 2 (Decision B): Shipment-Scoped Customs Document Status Dialog --}}
 <x-ui.dialog
@@ -2121,8 +2121,7 @@
 
                     const updateModalEl = document.getElementById('updateDocModal');
                     if (updateModalEl) {
-                        const modal = bootstrap.Modal.getOrCreateInstance(updateModalEl);
-                        modal.show();
+                        window.AdasiModal?.getOrCreateInstance?.(updateModalEl)?.show(updateBtn);
                     }
                     return;
                 }
@@ -2200,8 +2199,7 @@
                         bodyEl.querySelector('.ui-inline-loading__text').textContent = loadingLabel;
                     }
 
-                    const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
-                    modal.show();
+                    window.AdasiModal?.getOrCreateInstance?.(modalEl)?.show(historyBtn);
 
                     fetch(historyUrl, {
                         headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
@@ -2392,7 +2390,7 @@
 
                     const updateModalEl = document.getElementById('updateDocModal');
                     if (updateModalEl) {
-                        bootstrap.Modal.getInstance(updateModalEl)?.hide();
+                        window.AdasiModal?.getInstance?.(updateModalEl)?.hide();
                     }
 
                     AdasiToast.show({

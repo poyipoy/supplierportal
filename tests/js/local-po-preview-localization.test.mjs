@@ -105,10 +105,10 @@ function boot(locale, kind = 'PO', jobs = null, bothKinds = false, { storage = n
     };
     let hides = 0;
     const modalActions = [];
-    window.bootstrap = { Modal: { getOrCreateInstance: element => ({
-        hide() { hides++; modalActions.push(element.fire('hidden.bs.modal')); },
-        show() { modalActions.push((async () => { await element.fire('show.bs.modal'); await element.fire('shown.bs.modal'); })()); },
-    }) } };
+    window.AdasiModal = { getOrCreateInstance: element => ({
+        hide() { hides++; modalActions.push(element.fire('adasi:modal-hidden')); },
+        show() { modalActions.push((async () => { await element.fire('adasi:modal-show'); await element.fire('adasi:modal-shown'); })()); },
+    }) };
     const malicious = '<img src=x onerror=alert(1)>';
     const job = entry => ({ created_at: '12 Oct 2026 17:14', processed_rows: 544, ...entry });
     let recentJobs = (jobs ?? [
@@ -196,7 +196,7 @@ for (const locale of ['en', 'id']) for (const kind of ['PO', 'GR']) {
         const app = boot(locale, kind);
         const name = kind === 'PO' ? 'Po' : 'Gr';
         app.setStatus('READY');
-        await app.modal.fire('show.bs.modal');
+        await app.modal.fire('adasi:modal-show');
         assert.equal(app.created.some(element => element.tag === 'select' || element.tag === 'option'), false);
         assert.deepEqual(app.requests.map(request => request.url), ['/imports?active=1&include_recoverable=1']);
         assert.equal(app.get(`btnConfirmLocal${name}Import`).disabled, true);
@@ -211,8 +211,8 @@ for (const locale of ['en', 'id']) for (const kind of ['PO', 'GR']) {
         await app.get(`btnParseLocal${name}Import`).fire('click');
         app.setJobs([{ kind, filename: 'Newer.xlsx', status_url: '/imports/newer' }]);
         const requestCount = app.requests.length;
-        await app.modal.fire('hidden.bs.modal');
-        await app.modal.fire('show.bs.modal');
+        await app.modal.fire('adasi:modal-hidden');
+        await app.modal.fire('adasi:modal-show');
         await app.tick();
         assert.equal(app.requests.length, requestCount + 1);
         assert.equal(app.requests.some(request => request.url.endsWith('/cancel')), false);
@@ -224,7 +224,7 @@ for (const locale of ['en', 'id']) for (const kind of ['PO', 'GR']) {
     test(`${locale} ${kind}: no recent batch leaves new upload available without a dropdown`, async () => {
         const app = boot(locale, kind, []);
         const name = kind === 'PO' ? 'Po' : 'Gr';
-        await app.modal.fire('show.bs.modal');
+        await app.modal.fire('adasi:modal-show');
         assert.equal(app.created.some(element => element.tag === 'select'), false);
         assert.deepEqual(app.requests.map(request => request.url), ['/imports?active=1&include_recoverable=1']);
         assert.equal(app.get(`btnParseLocal${name}Import`).disabled, false);
@@ -240,8 +240,8 @@ test('closing and reopening clears a READY preview, token, messages, counters an
     await app.get('btnParseLocalPoImport').fire('click');
     app.setStatus('READY'); await app.tick();
     assert.equal(app.get('localPoImportToken').value, 'opaque-token');
-    await app.modal.fire('hidden.bs.modal');
-    await app.modal.fire('show.bs.modal');
+    await app.modal.fire('adasi:modal-hidden');
+    await app.modal.fire('adasi:modal-show');
     assert.equal(app.get('localPoImportToken').value, '');
     assert.equal(app.get('localPoImportPreviewBody').children.length, 0);
     assert.equal(app.get('localPoImportErrorsList').children.length, 0);
@@ -259,8 +259,8 @@ test('a stale poll response cannot restore the old preview after the modal is re
     app.setStatus('READY');
     const release = app.holdNextResponse('/imports/current');
     const pending = app.tick();
-    await app.modal.fire('hidden.bs.modal');
-    await app.modal.fire('show.bs.modal');
+    await app.modal.fire('adasi:modal-hidden');
+    await app.modal.fire('adasi:modal-show');
     release(); await pending;
     assert.equal(app.get('localPoImportToken').value, '');
     assert.equal(app.get('btnConfirmLocalPoImport').disabled, true);
@@ -300,8 +300,8 @@ test('a stale upload response cannot attach its batch to a newly opened modal', 
     const app = boot('id', 'GR');
     const release = app.holdNextResponse('/preview');
     const pending = app.get('btnParseLocalGrImport').fire('click');
-    await app.modal.fire('hidden.bs.modal');
-    await app.modal.fire('show.bs.modal');
+    await app.modal.fire('adasi:modal-hidden');
+    await app.modal.fire('adasi:modal-show');
     release(); await pending;
     assert.deepEqual(app.requests.map(request => request.url), ['/preview', '/imports?active=1&include_recoverable=1']);
     assert.equal(app.get('btnParseLocalGrImport').disabled, false);
@@ -311,7 +311,7 @@ test('a stale upload response cannot attach its batch to a newly opened modal', 
 test('a READY preview can be resumed after reopening and only confirms on explicit submit', async () => {
     const app = boot('en');
     app.setStatus('READY');
-    await app.modal.fire('show.bs.modal');
+    await app.modal.fire('adasi:modal-show');
     const resume = app.recoveryRow('/imports/current');
     assert.equal(resume.primaryLabel, 'Review file');
     assert.equal(app.get('localPoImportToken').value, '');
@@ -326,7 +326,7 @@ test('a READY preview can be resumed after reopening and only confirms on explic
 
 test('an import of the other kind can be cancelled after confirming, freeing the shared slot without uploading', async () => {
     const app = boot('en', 'GR', [{ kind: 'PO', filename: 'Unfinished PO.xlsx', status: 'READY', status_url: '/imports/po' }]);
-    await app.modal.fire('show.bs.modal');
+    await app.modal.fire('adasi:modal-show');
     await app.recoveryRow('/imports/po').cancel.fire('click');
     assert.equal(app.dialogs.length, 1);
     assert.match(app.dialogs[0].text, /Unfinished PO\.xlsx/);
@@ -340,7 +340,7 @@ test('an import of the other kind can be cancelled after confirming, freeing the
 
 test('declining the cancel confirmation keeps the import untouched', async () => {
     const app = boot('en', 'GR', [{ kind: 'GR', filename: 'Keep.xlsx', status: 'READY', status_url: '/imports/keep' }]);
-    await app.modal.fire('show.bs.modal');
+    await app.modal.fire('adasi:modal-show');
     app.setConfirmAnswer(false);
     await app.recoveryRow('/imports/keep').cancel.fire('click');
     assert.equal(app.dialogs.length, 1);
@@ -354,7 +354,7 @@ test('after a confirmed cancel, focus lands on a stable control instead of the r
         { kind: 'GR', filename: 'Drop.xlsx', status: 'READY', status_url: '/imports/drop' },
         { kind: 'PO', filename: 'Stay.xlsx', status: 'READY', status_url: '/imports/stay' },
     ]);
-    await app.modal.fire('show.bs.modal');
+    await app.modal.fire('adasi:modal-show');
     await app.recoveryRow('/imports/drop').cancel.fire('click');
     assert.ok(app.focused() === app.recovery.refresh, 'remaining list keeps focus on Refresh');
     await app.recoveryRow('/imports/stay').cancel.fire('click');
@@ -365,8 +365,8 @@ test('after a confirmed cancel, focus lands on a stable control instead of the r
 test('a stale unfinished import response cannot repopulate a closed modal', async () => {
     const app = boot('en');
     const release = app.holdNextResponse('/imports?active=1&include_recoverable=1');
-    const pending = app.modal.fire('show.bs.modal');
-    await app.modal.fire('hidden.bs.modal');
+    const pending = app.modal.fire('adasi:modal-show');
+    await app.modal.fire('adasi:modal-hidden');
     release(); await pending;
     assert.deepEqual(app.recovery.list.children, []);
     assert.equal(app.recovery.panel.hidden, true);
@@ -375,7 +375,7 @@ test('a stale unfinished import response cannot repopulate a closed modal', asyn
 test('continuing a PO import from the GR modal opens its PO preview without automatic confirmation', async () => {
     const app = boot('en', 'GR', [{ kind: 'PO', filename: 'Pending PO.xlsx', status: 'READY', status_url: '/imports/po' }], true);
     app.setStatus('READY');
-    await app.modal.fire('show.bs.modal');
+    await app.modal.fire('adasi:modal-show');
     await app.recoveryRow('/imports/po').primary.fire('click');
     await app.finishModalActions();
     assert.equal(app.get('localPoImportToken').value, 'opaque-token');
@@ -386,7 +386,7 @@ test('continuing a PO import from the GR modal opens its PO preview without auto
 
 test('imports being saved show a note instead of a cancel action', async () => {
     const app = boot('en', 'GR', [{ kind: 'GR', filename: 'Saving.xlsx', status: 'IMPORTING', status_url: '/imports/saving' }]);
-    await app.modal.fire('show.bs.modal');
+    await app.modal.fire('adasi:modal-show');
     const row = app.recoveryRow('/imports/saving');
     assert.equal(row.cancel, null);
     assert.equal(row.note.textContent, 'Saving — cannot be cancelled');
@@ -395,7 +395,7 @@ test('imports being saved show a note instead of a cancel action', async () => {
 
 test('the recovery panel stays hidden when there are no unfinished imports', async () => {
     const app = boot('en', 'GR', []);
-    await app.modal.fire('show.bs.modal');
+    await app.modal.fire('adasi:modal-show');
     assert.equal(app.recovery.panel.hidden, true);
     assert.deepEqual(app.recovery.list.children, []);
     assert.deepEqual(app.recoveryTimers(), []);
@@ -407,7 +407,7 @@ for (const locale of ['en', 'id']) {
             { kind: 'GR', filename: 'Ready.xlsx', status: 'READY', status_url: '/imports/ready' },
             { kind: 'PO', filename: 'Queued.csv', status: 'QUEUED', status_url: '/imports/queued', processed_rows: 1204 },
         ]);
-        await app.modal.fire('show.bs.modal');
+        await app.modal.fire('adasi:modal-show');
         assert.equal(app.recovery.panel.hidden, false);
         assert.equal(app.recovery.slots.textContent, locale === 'en' ? '2 of 2 import slots in use' : '2 dari 2 slot import terpakai');
         const [ready, queued] = app.recoveryRows();
@@ -424,13 +424,13 @@ for (const locale of ['en', 'id']) {
 
 test('the list refreshes itself only while an import is still processing and announces readiness once', async () => {
     const app = boot('en', 'GR', [{ kind: 'GR', filename: 'Sept.xls', status: 'QUEUED', status_url: '/imports/sept' }]);
-    await app.modal.fire('show.bs.modal');
+    await app.modal.fire('adasi:modal-show');
     assert.equal(app.recoveryTimers().length, 1);
     app.setJobs([{ kind: 'GR', filename: 'Sept.xls', status: 'READY', status_url: '/imports/sept' }]);
     await app.recoveryTimers().at(-1)();
     assert.equal(app.recovery.announcer.textContent, 'Sept.xls is ready to confirm.');
     assert.equal(app.recoveryTimers().length, 1, 'no further refresh once every import is ready');
-    await app.modal.fire('hidden.bs.modal');
+    await app.modal.fire('adasi:modal-hidden');
     const requestCount = app.requests.length;
     await app.recoveryTimers().at(-1)();
     assert.equal(app.requests.length, requestCount, 'a closed modal never refreshes the list');
@@ -438,7 +438,7 @@ test('the list refreshes itself only while an import is still processing and ann
 
 test('a refresh keeps keyboard focus on the same action', async () => {
     const app = boot('en', 'GR', [{ kind: 'GR', filename: 'Sept.xls', status: 'VALIDATING', status_url: '/imports/sept' }]);
-    await app.modal.fire('show.bs.modal');
+    await app.modal.fire('adasi:modal-show');
     app.recoveryRow('/imports/sept').cancel.focus();
     await app.recoveryTimers().at(-1)();
     assert.equal(app.recoveryRow('/imports/sept').cancel.querySelector('[data-button-label]').textContent, 'Cancel import');
@@ -448,7 +448,7 @@ test('a refresh keeps keyboard focus on the same action', async () => {
 test('a list that fails to load reveals the panel with an alert and keeps refresh available', async () => {
     const app = boot('en', 'GR');
     app.failNext('/imports?active=1&include_recoverable=1');
-    await app.modal.fire('show.bs.modal');
+    await app.modal.fire('adasi:modal-show');
     assert.equal(app.recovery.panel.hidden, false);
     assert.equal(app.recovery.error.hidden, false);
     assert.equal(app.recovery.error.textContent, 'Server unavailable');
@@ -505,7 +505,7 @@ for (const locale of ['en', 'id']) for (const kind of ['PO', 'GR']) {
             assert.equal(app.requests.some(request => request.url === '/confirm'), false);
         }
         app.setSummary({ [`new_${kind.toLowerCase()}`]: 0, [`existing_${kind.toLowerCase()}`]: 10 });
-        await app.modal.fire('show.bs.modal');
+        await app.modal.fire('adasi:modal-show');
         await app.recoveryRow('/imports/current').primary.fire('click');
         assert.equal(app.get(`btnConfirmLocal${name}Import`).disabled, true);
         const progress = app.created.find(element => element.role === 'status');
@@ -547,7 +547,7 @@ for (const locale of ['en', 'id']) for (const kind of ['PO', 'GR']) {
         await confirmUntil(app, kind, 'COMPLETED');
         const name = kind === 'PO' ? 'Po' : 'Gr';
         assert.equal(app.get(`local${name}ImportSummaryMessage`).textContent, completedText(locale, kind));
-        await app.modal.fire('hidden.bs.modal');
+        await app.modal.fire('adasi:modal-hidden');
         assert.equal(app.reloads(), 0);
     });
 }
@@ -600,7 +600,7 @@ test('a confirmation rejected by the worker keeps the modal open and reports the
 test('resuming an import that is still being saved displays the result when it completes', async () => {
     const app = boot('en', 'GR', [{ kind: 'GR', filename: 'Saving.xlsx', status: 'IMPORTING', status_url: '/imports/current' }]);
     app.setStatus('IMPORTING');
-    await app.modal.fire('show.bs.modal');
+    await app.modal.fire('adasi:modal-show');
     await app.recoveryRow('/imports/current').primary.fire('click');
     app.setStatus('COMPLETED'); await app.tick(); await app.finishModalActions();
     assert.equal(app.reloads(), 0);
@@ -613,7 +613,7 @@ for (const [terminal, expectReload] of [['COMPLETED', true], ['FAILED', false]])
         await app.get('btnParseLocalGrImport').fire('click');
         app.setStatus('READY'); await app.tick();
         await app.form.fire('submit');
-        await app.modal.fire('hidden.bs.modal');
+        await app.modal.fire('adasi:modal-hidden');
         const before = app.requests.filter(request => request.url === '/imports/current').length;
         app.setStatus(terminal); await app.tick();
         assert.equal(app.requests.filter(request => request.url === '/imports/current').length, before + 1);
@@ -628,9 +628,9 @@ test('a background completion never reloads over a new preview in progress', asy
     await app.get('btnParseLocalGrImport').fire('click');
     app.setStatus('READY'); await app.tick();
     await app.form.fire('submit');
-    await app.modal.fire('hidden.bs.modal');
+    await app.modal.fire('adasi:modal-hidden');
     const watcherTick = app.lastTimer();
-    await app.modal.fire('show.bs.modal');
+    await app.modal.fire('adasi:modal-show');
     app.get('localGrImportFile').files = [{ name: 'next.xlsx' }];
     await app.get('btnParseLocalGrImport').fire('click');
     app.setStatus('COMPLETED'); await watcherTick();
@@ -643,9 +643,9 @@ test('resuming the import being watched stops the background watcher', async () 
     await app.get('btnParseLocalGrImport').fire('click');
     app.setStatus('READY'); await app.tick();
     await app.form.fire('submit');
-    await app.modal.fire('hidden.bs.modal');
+    await app.modal.fire('adasi:modal-hidden');
     const watcherTick = app.lastTimer();
-    await app.modal.fire('show.bs.modal');
+    await app.modal.fire('adasi:modal-show');
     await app.recoveryRow('/imports/current').primary.fire('click');
     const before = app.requests.length;
     await watcherTick();
@@ -726,7 +726,7 @@ test('recoverable validation failures do not occupy active import slots', async 
         { kind: 'PO', filename: 'Running.xlsx', status: 'QUEUED', status_url: '/imports/running' },
         { kind: 'GR', filename: 'Fix.xlsx', status: 'VALIDATION_FAILED', can_revalidate: true, status_url: '/imports/fix' },
     ]);
-    await app.modal.fire('show.bs.modal');
+    await app.modal.fire('adasi:modal-show');
     assert.equal(app.recovery.slots.textContent, '1 of 2 import slots in use');
     assert.ok(app.recoveryRows().some(row => row.file === 'Fix.xlsx'));
 });
@@ -745,7 +745,7 @@ test('grouped imports use distinct file descriptions and failed files are in the
         {kind:'GR',filename:'Queued.xlsx',status:'QUEUED',status_url:'/imports/q'},
         {kind:'GR',filename:'Fix.xlsx',status:'VALIDATION_FAILED',can_revalidate:true,status_url:'/imports/f'},
     ]);
-    await app.modal.fire('show.bs.modal');
+    await app.modal.fire('adasi:modal-show');
     assert.equal(app.recovery.processingList.children.length,1);
     assert.equal(app.recovery.followUpList.children.length,1);
     assert.equal(app.recovery.processingGroup.hidden,false);

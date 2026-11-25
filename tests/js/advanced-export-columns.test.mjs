@@ -36,19 +36,19 @@ function harness() {
     const win = { location: { href: 'https://portal.test/purchasing/purchase-orders' }, AbortController, fetch: async (url, init) => { requests.push({ url, init }); if (!auto) { const d = deferred(); pending.push({ ...d, url, init }); return d.promise; } return response(url.includes('/definitions/') ? definition() : { data: [] }); } };
     doc.defaultView = win;
     const root = new Element(doc); root.dataset = { exportKey: 'purchasing.po', definitionUrl: '/definitions/purchasing.po', presetsUrl: '/presets', presetStoreUrl: '/presets', filterSelectors: '{}', initialFilters: '{}', exportCopy: JSON.stringify({ failed: 'Failed', invalid_columns: 'Invalid columns', save_failed: 'Save failed', saved: 'Saved', loading: 'Loading', default_columns: 'Default' }) };
-    const selectors = ['.modal', '[data-advanced-export-form]', '[data-export-submit]', '[data-export-quick]', '[data-export-status]', '[data-export-error]', '[data-export-preset]', '[data-export-format]', '[data-export-preset-name]', '[data-export-default]', '[data-export-relative]', '[data-export-days]', '[data-export-save]', '[data-export-update]', '[data-export-delete]', '[data-export-open]', '[data-export-retry]', '.modal-title'];
+    const selectors = ['dialog.ui-native-dialog, .ui-export-designer-modal', '[data-advanced-export-form]', '[data-export-submit]', '[data-export-quick]', '[data-export-status]', '[data-export-error]', '[data-export-preset]', '[data-export-format]', '[data-export-preset-name]', '[data-export-default]', '[data-export-relative]', '[data-export-days]', '[data-export-save]', '[data-export-update]', '[data-export-delete]', '[data-export-open]', '[data-export-retry]', '.modal-title'];
     for (const key of selectors) root.nodes.set(key, new Element(doc));
     const form = root.querySelector('[data-advanced-export-form]'); form.action = 'https://portal.test/purchasing/export/purchase-orders'; const token = new Element(doc); token.value = 'token'; form.nodes.set('[name="_token"]', token);
     root.querySelector('[data-export-format]').value = 'xlsx';
     root.querySelector('[data-export-error]').hidden = true;
-    const modal = root.querySelector('.modal');
-    const bs = { async show() { modal.classList.add('show'); await modal.emit('show.bs.modal'); await modal.emit('shown.bs.modal'); }, async hide() { await modal.emit('hide.bs.modal'); modal.classList.remove('show'); await modal.emit('hidden.bs.modal'); } };
-    win.bootstrap = { Modal: { getOrCreateInstance: () => bs } };
+    const modal = root.querySelector('dialog.ui-native-dialog, .ui-export-designer-modal');
+    const modalCtrl = { async show() { modal.open = true; await modal.emit('adasi:modal-show'); await modal.emit('adasi:modal-shown'); }, async hide() { await modal.emit('adasi:modal-hide'); modal.open = false; await modal.emit('adasi:modal-hidden'); } };
+    win.AdasiModal = { getOrCreateInstance: () => modalCtrl };
     win.AdasiAsyncExport = { startExport: async (target, options) => { exports.push(options.body); return sdk ? sdk(options) : true; } };
     let state; let enabled; let configureCalls = 0;
     const designer = { configure(c, selected) { const next = createColumnState(c, selected); state = next; configureCalls++; }, setColumns(columns) { state = transitionColumns(state, { type: 'preset', columns }); }, reset() { state = transitionColumns(state, { type: 'reset' }); }, serialize() { return serializeColumns(state); }, setEnabled(value) { enabled = value; }, suspend() { enabled = false; }, destroy() {}, focus() {}, getState: () => state };
     const api = createAdvancedExport(root, { designer });
-    return { root, api, designer, requests, exports, pending, doc, win, modal, bs, get state() { return state; }, get enabled() { return enabled; }, get configureCalls() { return configureCalls; }, manual() { auto = false; }, sdk(fn) { sdk = fn; }, el: (selector) => root.querySelector(selector), command(command) { state = transitionColumns(state, command); }, async open() { modal.classList.add('show'); await modal.emit('show.bs.modal'); await modal.emit('shown.bs.modal'); }, close: () => bs.hide() };
+    return { root, api, designer, requests, exports, pending, doc, win, modal, modalCtrl, get state() { return state; }, get enabled() { return enabled; }, get configureCalls() { return configureCalls; }, manual() { auto = false; }, sdk(fn) { sdk = fn; }, el: (selector) => root.querySelector(selector), command(command) { state = transitionColumns(state, command); }, async open() { modal.open = true; await modal.emit('adasi:modal-show'); await modal.emit('adasi:modal-shown'); }, close: () => modalCtrl.hide() };
 }
 
 test('controller boot is idempotent and exports the exact ordered visible state with existing request shape', async () => {
@@ -56,7 +56,7 @@ test('controller boot is idempotent and exports the exact ordered visible state 
     await h.open(); h.command({ type: 'hide', key: 'status' }); h.command({ type: 'move-left', key: 'remark' });
     await h.el('[data-advanced-export-form]').emit('submit');
     assert.deepEqual(h.exports, [{ options: { columns: ['remark', 'po_number'], format: 'xlsx' } }]);
-    assert.equal(h.configureCalls, 1); assert.equal(h.requests.length, 2); assert.equal(h.modal.classList.contains('show'), false);
+    assert.equal(h.configureCalls, 1); assert.equal(h.requests.length, 2); assert.equal(Boolean(h.modal.open), false);
 });
 
 test('save, reload presented preset, and export use the same serializer and preserve hidden persistence contract', async () => {
@@ -81,7 +81,7 @@ test('close then reversed stale load cannot replace a newer catalog or enable cu
 test('stale rejection and finally cannot show errors or reopen a manually closed modal', async () => {
     const h = harness(); h.manual(); const quick = h.el('[data-export-quick]').emit('click'); await h.close();
     h.pending[0].reject(new Error('old failure')); h.pending[1].resolve(response({ data: [] })); await quick;
-    assert.equal(h.modal.classList.contains('show'), false); assert.equal(h.el('[data-export-error]').hidden, true); assert.equal(h.configureCalls, 0);
+    assert.equal(Boolean(h.modal.open), false); assert.equal(h.el('[data-export-error]').hidden, true); assert.equal(h.configureCalls, 0);
 });
 
 test('failed preset POST preserves valid configuration and releases only its own busy operation', async () => {
@@ -107,37 +107,37 @@ test('late accepted export does not dismiss a newer modal intent or cancel the a
     const h = harness(); await h.open(); const accepted = deferred(); h.sdk(() => accepted.promise);
     const exporting = h.el('[data-advanced-export-form]').emit('submit'); await h.close(); await h.open();
     assert.equal(h.el('[data-export-submit]').disabled, true); accepted.resolve(true); await exporting;
-    assert.equal(h.modal.classList.contains('show'), true); assert.equal(h.exports.length, 1); assert.equal(h.el('[data-export-submit]').disabled, false); assert.deepEqual(h.designer.serialize(), ['po_number', 'status', 'remark']);
+    assert.equal(Boolean(h.modal.open), true); assert.equal(h.exports.length, 1); assert.equal(h.el('[data-export-submit]').disabled, false); assert.deepEqual(h.designer.serialize(), ['po_number', 'status', 'remark']);
 });
 
 test('destroy invalidates in-flight work and releases controller event handlers', async () => {
     const h = harness(); h.manual(); const opening = h.open(); h.api.destroy(); h.pending[0].resolve(response(definition())); h.pending[1].resolve(response({ data: [] })); await opening;
-    assert.equal(h.configureCalls, 0); assert.equal(h.modal.listeners.get('show.bs.modal').size, 0);
+    assert.equal(h.configureCalls, 0); assert.equal(h.modal.listeners.get('adasi:modal-show').size, 0);
 });
 
-test('fast metadata cannot enable worksheet actions before Bootstrap finishes showing and owns focus', async () => {
-    const h = harness(); h.modal.classList.add('show');
-    await h.modal.emit('show.bs.modal');
+test('fast metadata cannot enable worksheet actions before dialog finishes showing and owns focus', async () => {
+    const h = harness(); h.modal.open = true;
+    await h.modal.emit('adasi:modal-show');
     assert.equal(h.el('[data-export-submit]').disabled, true);
     assert.equal(h.enabled, false);
-    await h.modal.emit('shown.bs.modal');
+    await h.modal.emit('adasi:modal-shown');
     assert.equal(h.el('[data-export-submit]').disabled, false);
     assert.equal(h.enabled, true);
 });
 
-test('destroy also disposes the Bootstrap instance after a closed modal so global resize listeners release the root', async () => {
+test('destroy also disposes the AdasiModal instance after a closed dialog so resources release the root', async () => {
     const h = harness(); await h.open(); await h.close();
-    let disposed = 0; h.win.bootstrap.Modal.getInstance = () => ({ dispose() { disposed++; } });
+    let disposed = 0; h.win.AdasiModal.getInstance = () => ({ dispose() { disposed++; } });
     h.api.destroy(); h.api.destroy();
     assert.equal(disposed, 1);
 });
 
-test('destroy during the opening backdrop waits for shown before hiding and disposing the modal element', async () => {
+test('destroy waits for shown before hiding and disposing an opening modal element', async () => {
     const h = harness(); let disposals = 0; let hides = 0;
-    h.win.bootstrap.Modal.getInstance = () => ({ dispose() { disposals++; }, hide() { hides++; return h.modal.emit('hidden.bs.modal'); } });
-    const opening = h.modal.emit('show.bs.modal');
+    h.win.AdasiModal.getInstance = () => ({ dispose() { disposals++; }, hide() { hides++; return h.modal.emit('adasi:modal-hidden'); } });
+    const opening = h.modal.emit('adasi:modal-show');
     h.api.destroy(); assert.equal(disposals, 0);
-    await h.modal.emit('shown.bs.modal'); await opening;
+    await h.modal.emit('adasi:modal-shown'); await opening;
     assert.equal(hides, 1); assert.equal(disposals, 1);
 });
 
@@ -186,7 +186,7 @@ test('CSV delimiter selector toggles on CSV format, sends csv_delimiter, and deb
         }),
     };
     const keys = [
-        '.modal', '[data-advanced-export-form]', '[data-export-submit]', '[data-export-quick]',
+        'dialog.ui-native-dialog, .ui-export-designer-modal', '[data-advanced-export-form]', '[data-export-submit]', '[data-export-quick]',
         '[data-export-status]', '[data-export-error]', '[data-export-preset]', '[data-export-format]',
         '[data-export-csv-delimiter-group]', '[data-export-csv-delimiter]', '[data-export-preview]',
         '[data-export-preset-name]', '[data-export-default]', '[data-export-relative]', '[data-export-days]',
@@ -199,9 +199,9 @@ test('CSV delimiter selector toggles on CSV format, sends csv_delimiter, and deb
     root.querySelector('[data-export-format]').value = 'xlsx';
     root.querySelector('[data-export-csv-delimiter]').value = ';';
     root.querySelector('[data-export-error]').hidden = true;
-    const modal = root.querySelector('.modal');
-    const bs = { async show() { modal.classList.add('show'); await modal.emit('show.bs.modal'); await modal.emit('shown.bs.modal'); }, async hide() { await modal.emit('hide.bs.modal'); modal.classList.remove('show'); await modal.emit('hidden.bs.modal'); } };
-    win.bootstrap = { Modal: { getOrCreateInstance: () => bs } };
+    const modal = root.querySelector('dialog.ui-native-dialog, .ui-export-designer-modal');
+    const modalCtrl = { async show() { modal.open = true; await modal.emit('adasi:modal-show'); await modal.emit('adasi:modal-shown'); }, async hide() { await modal.emit('adasi:modal-hide'); modal.open = false; await modal.emit('adasi:modal-hidden'); } };
+    win.AdasiModal = { getOrCreateInstance: () => modalCtrl };
     win.AdasiAsyncExport = { startExport: async (_target, options) => { exports.push(options.body); return true; } };
     let state;
     const designer = {
@@ -212,9 +212,9 @@ test('CSV delimiter selector toggles on CSV format, sends csv_delimiter, and deb
         setEnabled() {}, suspend() {}, destroy() {}, focus() {}, getState: () => state,
     };
     createAdvancedExport(root, { designer });
-    modal.classList.add('show');
-    await modal.emit('show.bs.modal');
-    await modal.emit('shown.bs.modal');
+    modal.open = true;
+    await modal.emit('adasi:modal-show');
+    await modal.emit('adasi:modal-shown');
 
     // CSV delimiter hidden initially for XLSX
     assert.equal(root.querySelector('[data-export-csv-delimiter-group]').hidden, true);
@@ -276,7 +276,7 @@ test('relative date range panel stays hidden until checked and quick day presets
         }),
     };
     const keys = [
-        '.modal', '[data-advanced-export-form]', '[data-export-submit]', '[data-export-quick]',
+        'dialog.ui-native-dialog, .ui-export-designer-modal', '[data-advanced-export-form]', '[data-export-submit]', '[data-export-quick]',
         '[data-export-status]', '[data-export-error]', '[data-export-preset]', '[data-export-format]',
         '[data-export-preset-name]', '[data-export-default]', '[data-export-relative]', '[data-export-relative-panel]',
         '[data-export-days]', '[data-export-preview]', '[data-export-save]', '[data-export-update]', '[data-export-delete]',
@@ -301,9 +301,9 @@ test('relative date range panel stays hidden until checked and quick day presets
     form.lists.set('[data-filter-name="start_date"], [data-filter-name="end_date"]', [startInput, endInput]);
     root.querySelector('[data-export-format]').value = 'xlsx';
     root.querySelector('[data-export-error]').hidden = true;
-    const modal = root.querySelector('.modal');
-    const bs = { async show() { modal.classList.add('show'); await modal.emit('show.bs.modal'); await modal.emit('shown.bs.modal'); }, async hide() { await modal.emit('hide.bs.modal'); modal.classList.remove('show'); await modal.emit('hidden.bs.modal'); } };
-    win.bootstrap = { Modal: { getOrCreateInstance: () => bs } };
+    const modal = root.querySelector('dialog.ui-native-dialog, .ui-export-designer-modal');
+    const modalCtrl = { async show() { modal.open = true; await modal.emit('adasi:modal-show'); await modal.emit('adasi:modal-shown'); }, async hide() { await modal.emit('adasi:modal-hide'); modal.open = false; await modal.emit('adasi:modal-hidden'); } };
+    win.AdasiModal = { getOrCreateInstance: () => modalCtrl };
     win.AdasiAsyncExport = { startExport: async (_target, options) => { exports.push(options.body); return true; } };
     let state;
     const designer = {
@@ -314,9 +314,9 @@ test('relative date range panel stays hidden until checked and quick day presets
         setEnabled() {}, suspend() {}, destroy() {}, focus() {}, getState: () => state,
     };
     createAdvancedExport(root, { designer });
-    modal.classList.add('show');
-    await modal.emit('show.bs.modal');
-    await modal.emit('shown.bs.modal');
+    modal.open = true;
+    await modal.emit('adasi:modal-show');
+    await modal.emit('adasi:modal-shown');
 
     // Legacy URL ?po_number=... hydrates unified search input.
     assert.equal(searchInput.value, 'PO/LEGACY/9');
@@ -402,7 +402,7 @@ test('export submit marks form managed, renders a single spinner preserving butt
     // Resolve export -> modal closes -> spinner removed cleanly
     inflight.resolve(true);
     await exportPromise;
-    assert.equal(h.modal.classList.contains('show'), false);
+    assert.equal(Boolean(h.modal.open), false);
     assert.equal(submit.querySelectorAll('.ui-spinner').length, 0);
     assert.equal(submit.attributes.has('aria-busy'), false);
 

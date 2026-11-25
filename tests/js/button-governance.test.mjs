@@ -321,7 +321,7 @@ test('remaining ghost buttons conform to the Ghost Allow-List', () => {
         'expand_all', 'collapse_all', 'selectall', 'clearall',
         'view_all', 'view_full_history', 'all_claims', 'all_pos', 'manage_drp', 'open_register', 'view_rate_history',
         'dashboard.all', 'resetsection', 'resetall', 'reset-notification-preferences', 'data-editor-reset',
-        'data-bs-dismiss="modal"', 'close-ui-dialog', 'close-layer', 'data-filter-bar-reset', 'data-export-reset',
+        'data-ui-modal-close', 'close-ui-dialog', 'close-layer', 'data-filter-bar-reset', 'data-export-reset',
         'data-remark-cancel', 'data-notes-cancel', 'voidopen = false', 'manual_divider',
     ];
     const violations = [];

@@ -44,7 +44,7 @@
             @include('admin.exchange-rates._annual_matrix')
             <x-ui.data-table :title="__('admin.copy.administrative_attention')" :description="__('admin.copy.current_exchange_rate_readiness_from_the_configured_currency_set')">
                 <x-slot:toolbar>
-                    <x-ui.button type="button" size="sm" data-bs-toggle="modal" data-bs-target="#kursModal"><x-ui.icon name="plus" /> {{ __('admin.copy.add_effective_rate') }}</x-ui.button>
+                    <x-ui.button type="button" size="sm" data-ui-modal-open="#kursModal"><x-ui.icon name="plus" /> {{ __('admin.copy.add_effective_rate') }}</x-ui.button>
                 </x-slot:toolbar>
                 <table class="table table-hover align-middle tw:m-0 tw:w-full tw:text-ui-sm">
                     <thead class="table-light"><tr><th scope="col">{{ __('admin.copy.currency') }}</th><th scope="col" class="text-end">{{ __('admin.copy.current_rate_to_idr') }}</th><th scope="col">{{ __('admin.copy.effective_date') }}</th><th scope="col">{{ __('admin.copy.readiness') }}</th></tr></thead>
@@ -117,17 +117,17 @@
     </x-ui.dashboard-layout>
 </div>
 
-<div class="modal fade" id="kursModal" tabindex="-1" aria-labelledby="kursModalTitle" aria-hidden="true">
+<dialog class="ui-native-dialog" id="kursModal" aria-labelledby="kursModalTitle" closedby="any">
     <div class="modal-dialog modal-sm modal-dialog-centered">
         <form action="{{ route('admin.kurs.update') }}" method="POST" class="modal-content">
             @csrf
-            <div class="modal-header"><div><h2 class="modal-title fs-6 fw-bold" id="kursModalTitle">{{ __('admin.copy.add_effective_rate') }}</h2><p class="mb-0 mt-1 small text-muted">{{ __('admin.copy.the_new_value_is_appended_to_rate_history') }}</p></div><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('admin.copy.close') }}"></button></div>
+            <div class="modal-header"><div><h2 class="modal-title fs-6 fw-bold" id="kursModalTitle">{{ __('admin.copy.add_effective_rate') }}</h2><p class="mb-0 mt-1 small text-muted">{{ __('admin.copy.the_new_value_is_appended_to_rate_history') }}</p></div><button type="button" class="btn-close" data-ui-modal-close aria-label="{{ __('admin.copy.close') }}"></button></div>
             <div class="modal-body tw:grid tw:gap-4">
                 <x-ui.select name="currency" :label="__('admin.copy.currency')" :options="\App\Models\ExchangeRate::currencyOptions()" required />
                 <x-ui.input name="rate_to_idr" type="number" :label="__('admin.copy.rate_to_idr')" step="0.01" min="0.01" :placeholder="__('admin.copy.example_16500')" required />
             </div>
-            <div class="modal-footer"><x-ui.button type="button" variant="ghost" data-bs-dismiss="modal">{{ __('admin.copy.cancel') }}</x-ui.button><x-ui.button type="submit"><x-ui.icon name="save" /> {{ __('admin.copy.save_rate') }}</x-ui.button></div>
+            <div class="modal-footer"><x-ui.button type="button" variant="ghost" data-ui-modal-close>{{ __('admin.copy.cancel') }}</x-ui.button><x-ui.button type="submit"><x-ui.icon name="save" /> {{ __('admin.copy.save_rate') }}</x-ui.button></div>
         </form>
     </div>
-</div>
+</dialog>
 @endsection

@@ -10,19 +10,19 @@
         :eyebrow="__('local_procurement.register.eyebrow')"
     >
         <x-slot:actions>
-            <x-ui.button type="button" variant="outline" size="sm" data-bs-toggle="modal" data-bs-target="#uploadPoDocumentModal">
+            <x-ui.button type="button" variant="outline" size="sm" data-ui-modal-open="#uploadPoDocumentModal">
                 <x-ui.icon name="file-up" size="sm" />
                 <span>{{ __('local_procurement.actions.upload_po') }}</span>
             </x-ui.button>
-            <x-ui.button type="button" variant="outline" size="sm" data-bs-toggle="modal" data-bs-target="#uploadGrBulkModal">
+            <x-ui.button type="button" variant="outline" size="sm" data-ui-modal-open="#uploadGrBulkModal">
                 <x-ui.icon name="file-up" size="sm" />
                 <span>{{ __('local_procurement.gr_documents.action') }}</span>
             </x-ui.button>
-            <x-ui.button type="button" variant="outline" size="sm" data-bs-toggle="modal" data-bs-target="#localPoImportModal">
+            <x-ui.button type="button" variant="outline" size="sm" data-ui-modal-open="#localPoImportModal">
                 <x-ui.icon name="file-spreadsheet" size="sm" />
                 <span>{{ __('local_procurement.import.po') }}</span>
             </x-ui.button>
-            <x-ui.button type="button" variant="outline" size="sm" data-bs-toggle="modal" data-bs-target="#localGrImportModal">
+            <x-ui.button type="button" variant="outline" size="sm" data-ui-modal-open="#localGrImportModal">
                 <x-ui.icon name="package-check" size="sm" />
                 <span>{{ __('local_procurement.import.gr') }}</span>
             </x-ui.button>

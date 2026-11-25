@@ -19,7 +19,7 @@ function getDocState(doc) {
             activeStack: [],
             ownedNodes: new Set(),
             ownedBaseline: new WeakMap(),
-            bootstrapModals: new Set(),
+            nativeDialogs: new Set(),
             observer: null,
         };
         stateByDoc.set(doc, state);
@@ -74,12 +74,12 @@ function collectBackgroundSiblings(overlayEl, doc) {
 }
 
 function emitModalityChange(doc, state) {
-    const activeCount = state.activeStack.length + state.bootstrapModals.size;
+    const activeCount = state.activeStack.length + state.nativeDialogs.size;
     doc.defaultView?.dispatchEvent?.(new CustomEvent('adasi:overlay-modality-change', {
         detail: {
             activeCount,
             overlayCount: state.activeStack.length,
-            bootstrapModalCount: state.bootstrapModals.size,
+            nativeDialogCount: state.nativeDialogs.size,
         },
     }));
 }
@@ -124,7 +124,7 @@ function syncObserver(doc, state) {
         return;
     }
 
-    const shouldObserve = state.activeStack.length > 0 || state.bootstrapModals.size > 0;
+    const shouldObserve = state.activeStack.length > 0 || state.nativeDialogs.size > 0;
     if (shouldObserve && !state.observer) {
         state.observer = new MutationObserver(() => {
             pruneDisconnected(doc, state);
@@ -134,34 +134,6 @@ function syncObserver(doc, state) {
         state.observer.disconnect();
         state.observer = null;
     }
-}
-
-function cleanupStrandedBootstrapState(doc) {
-    if (!doc?.body) return false;
-    const remainingOpen = Array.from(doc.querySelectorAll?.('.modal.show') || [])
-        .filter((el) => el && el.isConnected !== false);
-    if (remainingOpen.length > 0) return false;
-
-    let cleaned = false;
-    for (const backdrop of Array.from(doc.querySelectorAll?.('.modal-backdrop') || [])) {
-        backdrop?.remove?.();
-        cleaned = true;
-    }
-    if (doc.body.classList?.contains?.('modal-open')) {
-        doc.body.classList.remove('modal-open');
-        cleaned = true;
-    }
-    if (doc.body.style) {
-        if (doc.body.style.overflow) {
-            doc.body.style.overflow = '';
-            cleaned = true;
-        }
-        if (doc.body.style.paddingRight) {
-            doc.body.style.paddingRight = '';
-            cleaned = true;
-        }
-    }
-    return cleaned;
 }
 
 function pruneDisconnected(doc, state) {
@@ -176,17 +148,11 @@ function pruneDisconnected(doc, state) {
         }
     }
 
-    let bootstrapRemoved = false;
-    for (const modal of Array.from(state.bootstrapModals)) {
+    for (const modal of Array.from(state.nativeDialogs)) {
         if (!modal || modal.isConnected === false) {
-            state.bootstrapModals.delete(modal);
-            bootstrapRemoved = true;
+            state.nativeDialogs.delete(modal);
             changed = true;
         }
-    }
-
-    if (bootstrapRemoved) {
-        cleanupStrandedBootstrapState(doc);
     }
 
     if (changed) {
@@ -198,26 +164,26 @@ function pruneDisconnected(doc, state) {
     return changed;
 }
 
-export function bindBootstrapModalModality(doc = globalThis.document) {
+export function bindNativeDialogModality(doc = globalThis.document) {
     if (!doc || typeof doc.addEventListener !== 'function' || boundBootstrapDocs.has(doc)) return;
     boundBootstrapDocs.add(doc);
 
-    doc.addEventListener('show.bs.modal', (event) => {
+    doc.addEventListener('adasi:modal-show', (event) => {
         const modal = event.target;
         if (!modal) return;
         const state = getDocState(doc);
-        if (!state.bootstrapModals.has(modal)) {
-            state.bootstrapModals.add(modal);
+        if (!state.nativeDialogs.has(modal)) {
+            state.nativeDialogs.add(modal);
             syncObserver(doc, state);
             emitModalityChange(doc, state);
         }
     });
 
-    doc.addEventListener('hidden.bs.modal', (event) => {
+    doc.addEventListener('adasi:modal-hidden', (event) => {
         const modal = event.target;
         if (!modal) return;
         const state = getDocState(doc);
-        if (state.bootstrapModals.delete(modal)) {
+        if (state.nativeDialogs.delete(modal)) {
             syncObserver(doc, state);
             emitModalityChange(doc, state);
         }
@@ -229,7 +195,6 @@ export function bindBootstrapModalModality(doc = globalThis.document) {
         if (state) {
             pruneDisconnected(doc, state);
         }
-        cleanupStrandedBootstrapState(doc);
     });
 }
 
@@ -340,27 +305,43 @@ export function releaseOverlaysWithin(container, { doc = globalThis.document } =
         releaseOverlayModality(matchingOverlays[i], { restoreFocus: false, doc });
     }
 
-    const bsModals = new Set(Array.from(container.querySelectorAll?.('.modal') || []));
-    for (const modal of Array.from(state.bootstrapModals)) {
+    const nativeDialogs = new Set(Array.from(container.querySelectorAll?.('dialog.ui-native-dialog[open], dialog[open]') || []));
+    for (const modal of Array.from(state.nativeDialogs)) {
         if (isInside(modal)) {
-            bsModals.add(modal);
+            nativeDialogs.add(modal);
         }
     }
 
-    let touchedBootstrap = false;
-    for (const modal of bsModals) {
-        touchedBootstrap = true;
+    let touchedDialogs = false;
+    for (const modal of nativeDialogs) {
+        touchedDialogs = true;
         try {
-            doc.defaultView?.bootstrap?.Modal?.getInstance?.(modal)?.hide?.();
+            const inst = doc.defaultView?.AdasiModal?.getInstance?.(modal);
+            if (inst?.hide) {
+                inst.hide('container-swap');
+            } else if (typeof modal.close === 'function' && modal.open) {
+                modal.close();
+            } else {
+                modal.removeAttribute?.('open');
+                try { modal.open = false; } catch {}
+            }
         } catch {
-            // Best-effort hide before DOM swap removes the modal subtree.
+            // Best-effort hide before DOM swap removes the dialog subtree.
         }
-        modal.classList?.remove?.('show');
-        state.bootstrapModals.delete(modal);
+        state.nativeDialogs.delete(modal);
     }
 
-    if (touchedBootstrap || doc.body.classList?.contains?.('modal-open')) {
-        cleanupStrandedBootstrapState(doc);
+    for (const popover of Array.from(container.querySelectorAll?.('[popover]') || [])) {
+        if (typeof popover.hidePopover === 'function' && popover.matches?.(':popover-open')) {
+            try {
+                popover.hidePopover();
+            } catch {
+                // Best-effort hide before DOM swap removes the popover subtree.
+            }
+        }
+    }
+
+    if (touchedDialogs) {
         syncObserver(doc, state);
         emitModalityChange(doc, state);
     }
@@ -371,14 +352,14 @@ export function getActiveOverlayCount(doc = globalThis.document) {
     const state = stateByDoc.get(doc);
     if (!state) return 0;
     pruneDisconnected(doc, state);
-    return state.activeStack.length + state.bootstrapModals.size;
+    return state.activeStack.length + state.nativeDialogs.size;
 }
 
 export function resetOverlayModality(doc = globalThis.document) {
     if (!doc) return;
     const state = stateByDoc.get(doc);
     if (!state) return;
-    state.bootstrapModals.clear();
+    state.nativeDialogs.clear();
     while (state.activeStack.length > 0) {
         const top = state.activeStack[state.activeStack.length - 1];
         releaseOverlayModality(top, { restoreFocus: false, doc });
@@ -388,7 +369,7 @@ export function resetOverlayModality(doc = globalThis.document) {
 }
 
 if (typeof document !== 'undefined') {
-    bindBootstrapModalModality(document);
+    bindNativeDialogModality(document);
 }
 
 if (typeof window !== 'undefined') {

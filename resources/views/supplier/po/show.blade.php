@@ -169,8 +169,7 @@
                                 size="sm"
                                 id="btnBulkUpdateProgress"
                                 disabled
-                                data-bs-toggle="modal"
-                                data-bs-target="#bulkUpdateProgressModal"
+                                data-ui-modal-open="#bulkUpdateProgressModal"
                             >
                                 <x-ui.icon name="list-checks" size="sm" />
                                 <span>{{ __('supplier.copy.update_selected') }} (<span id="bulkUpdateSelectedCount">0</span>)</span>
@@ -267,8 +266,7 @@
                                                     <x-ui.button type="button"
                                                             variant="outline-primary"
                                                             size="sm"
-                                                            data-bs-toggle="modal"
-                                                            data-bs-target="#updateProgressModal{{ $p['award_id'] }}">
+                                                            data-ui-modal-open="#updateProgressModal{{ $p['award_id'] }}">
                                                         {{ __('supplier.copy.update') }}
                                                     </x-ui.button>
                                                 @else
@@ -535,7 +533,7 @@
 @if(isset($itemProjections))
     @foreach($itemProjections as $p)
         @if($p['can_update'])
-            <div class="modal fade" id="updateProgressModal{{ $p['award_id'] }}" tabindex="-1" aria-labelledby="updateProgressModalLabel{{ $p['award_id'] }}" aria-hidden="true">
+            <dialog class="ui-native-dialog" id="updateProgressModal{{ $p['award_id'] }}" aria-labelledby="updateProgressModalLabel{{ $p['award_id'] }}" closedby="any">
                 <div class="modal-dialog">
                     <div class="modal-content">
                         <form method="POST" action="{{ route('supplier.purchase-orders.item-progress.update', ['po_id' => $po, 'award_id' => $p['award']]) }}" class="progress-update-form">
@@ -544,7 +542,7 @@
                                 <h5 class="modal-title tw:text-ui-base fw-bold" id="updateProgressModalLabel{{ $p['award_id'] }}">
                                     {{ __('common.final_review.update_progress', ['material' => $p['material_name']]) }}
                                 </h5>
-                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('supplier.copy.close') }}"></button>
+                                <button type="button" class="btn-close" data-ui-modal-close aria-label="{{ __('supplier.copy.close') }}"></button>
                             </div>
                             <div class="modal-body">
                                 <div class="alert alert-info py-2 px-3 tw:text-ui-xs mb-3">
@@ -587,20 +585,20 @@
                                 </div>
                             </div>
                             <div class="modal-footer">
-                                <x-ui.button type="button" variant="ghost" size="sm" data-bs-dismiss="modal">{{ __('supplier.copy.cancel') }}</x-ui.button>
+                                <x-ui.button type="button" variant="ghost" size="sm" data-ui-modal-close>{{ __('supplier.copy.cancel') }}</x-ui.button>
                                 <x-ui.button type="submit" variant="primary" size="sm">{{ __('supplier.copy.save_progress_update') }}</x-ui.button>
                             </div>
                         </form>
                     </div>
                 </div>
-            </div>
+            </dialog>
         @endif
     @endforeach
 @endif
 
 @if(isset($itemProjections) && $itemProjections->where('can_update', true)->isNotEmpty())
     {{-- Bulk Progress Update Modal --}}
-    <div class="modal fade" id="bulkUpdateProgressModal" tabindex="-1" aria-labelledby="bulkUpdateProgressModalLabel" aria-hidden="true">
+    <dialog class="ui-native-dialog" id="bulkUpdateProgressModal" aria-labelledby="bulkUpdateProgressModalLabel" closedby="any">
         <div class="modal-dialog">
             <div class="modal-content">
                 <form method="POST" action="{{ route('supplier.purchase-orders.item-progress.bulk-update', ['po_id' => $po]) }}" id="bulkProgressUpdateForm">
@@ -610,7 +608,7 @@
                         <h5 class="modal-title tw:text-ui-base fw-bold" id="bulkUpdateProgressModalLabel">
                             {{ __('supplier.copy.bulk_update_material_progress') }}
                         </h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('supplier.copy.close') }}"></button>
+                        <button type="button" class="btn-close" data-ui-modal-close aria-label="{{ __('supplier.copy.close') }}"></button>
                     </div>
                     <div class="modal-body">
                         <div class="alert alert-info py-2 px-3 tw:text-ui-xs mb-3" role="status" aria-live="polite">
@@ -657,34 +655,34 @@
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <x-ui.button type="button" variant="ghost" size="sm" data-bs-dismiss="modal">{{ __('supplier.copy.cancel') }}</x-ui.button>
+                        <x-ui.button type="button" variant="ghost" size="sm" data-ui-modal-close>{{ __('supplier.copy.cancel') }}</x-ui.button>
                         <x-ui.button type="submit" variant="primary" size="sm" id="bulkProgressSubmitBtn">{{ __('supplier.copy.save_progress_update') }}</x-ui.button>
                     </div>
                 </form>
             </div>
         </div>
-    </div>
+    </dialog>
 @endif
 
 {{-- Shared Progress History Modal --}}
-<div class="modal fade" id="progressHistoryModal" tabindex="-1" aria-labelledby="progressHistoryModalLabel" aria-hidden="true">
+<dialog class="ui-native-dialog" id="progressHistoryModal" aria-labelledby="progressHistoryModalLabel" closedby="any">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title tw:text-ui-base fw-bold" id="progressHistoryModalLabel">
                     {{ __('supplier.copy.material_progress_history') }}
                 </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('supplier.copy.close') }}"></button>
+                <button type="button" class="btn-close" data-ui-modal-close aria-label="{{ __('supplier.copy.close') }}"></button>
             </div>
             <div class="modal-body" id="progressHistoryModalBody">
                 <x-ui.inline-loader :label="__('supplier.copy.loading_history')" class="tw:py-6" />
             </div>
             <div class="modal-footer">
-                <x-ui.button type="button" variant="ghost" size="sm" data-bs-dismiss="modal">{{ __('supplier.copy.close') }}</x-ui.button>
+                <x-ui.button type="button" variant="ghost" size="sm" data-ui-modal-close>{{ __('supplier.copy.close') }}</x-ui.button>
             </div>
         </div>
     </div>
-</div>
+</dialog>
 
 @push('scripts')
 <script>
@@ -822,7 +820,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     if (bulkModalEl) {
-        bulkModalEl.addEventListener('show.bs.modal', syncBulkSelectionState);
+        bulkModalEl.addEventListener('adasi:modal-show', syncBulkSelectionState);
     }
 
     syncBulkSelectionState();
@@ -893,8 +891,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 bodyEl.querySelector('.ui-inline-loading__text').textContent = loadingLabel;
             }
 
-            const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
-            modal.show();
+            window.AdasiModal?.getOrCreateInstance?.(modalEl)?.show(this);
 
             fetch(historyUrl, {
                 headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }

@@ -6985,4 +6985,210 @@ thead .ui-sticky-col-right,
     min-width: 120px;
 }
 
+/* Native <dialog> modals (Sub-Phase 1C-1) — Top Layer, zero transform on dialog[open], token-only. */
+dialog.ui-native-dialog:not([open]) {
+    display: none;
+}
+
+dialog.ui-native-dialog {
+    --ui-dialog-max-width: 31.25rem;
+    box-sizing: border-box;
+    width: min(var(--ui-dialog-max-width), calc(100vw - 1.5rem));
+    max-width: calc(100vw - 1.5rem);
+    max-height: calc(100dvh - 2rem);
+    margin: auto;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--md-on-surface);
+    overflow: visible;
+    overscroll-behavior: contain;
+}
+
+dialog.ui-native-dialog:has(> .modal-sm) {
+    --ui-dialog-max-width: 18.75rem;
+}
+
+dialog.ui-native-dialog:has(> .modal-lg) {
+    --ui-dialog-max-width: 50rem;
+}
+
+dialog.ui-native-dialog:has(> .modal-xl) {
+    --ui-dialog-max-width: 71.25rem;
+}
+
+dialog.ui-native-dialog[open] {
+    display: flex;
+    flex-direction: column;
+}
+
+dialog.ui-native-dialog::backdrop {
+    background: var(--ui-dialog-scrim);
+}
+
+dialog.ui-native-dialog > .modal-dialog {
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    pointer-events: auto;
+}
+
+dialog.ui-native-dialog > .modal-dialog > .modal-content,
+dialog.ui-native-dialog > .modal-dialog > form > .modal-content {
+    width: 100%;
+    background-color: var(--ui-dialog-bg);
+    color: var(--md-on-surface);
+    border: 1px solid var(--md-outline);
+    border-radius: var(--md-shape-lg);
+    box-shadow: var(--ui-shadow-2);
+}
+
+dialog.ui-native-dialog:has(> .modal-dialog-scrollable) {
+    overflow: hidden;
+}
+
+dialog.ui-native-dialog > .modal-dialog-scrollable {
+    max-height: calc(100dvh - 2rem);
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+dialog.ui-native-dialog > .modal-dialog-scrollable > .modal-content,
+dialog.ui-native-dialog > .modal-dialog-scrollable > form,
+dialog.ui-native-dialog > .modal-dialog-scrollable > form > .modal-content {
+    max-height: calc(100dvh - 2rem);
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+dialog.ui-native-dialog > .modal-dialog-scrollable .modal-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+}
+
+:where(dialog.ui-native-dialog) :where(.modal-header) {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--ui-space-3);
+    padding: var(--ui-space-4) var(--ui-space-5);
+    border-bottom: 1px solid var(--md-outline-variant);
+}
+
+:where(dialog.ui-native-dialog) :where(.modal-body) {
+    padding: var(--ui-space-4) var(--ui-space-5);
+}
+
+:where(dialog.ui-native-dialog) :where(.modal-footer) {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: var(--ui-space-2);
+    padding: var(--ui-space-3) var(--ui-space-5);
+    border-top: 1px solid var(--md-outline-variant);
+}
+
+dialog.ui-session-modal > .ui-scrim {
+    display: none;
+}
+
+dialog.ui-session-modal:not([open]) {
+    display: none;
+}
+
+dialog.ui-session-modal[open] {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100vw;
+    max-width: 100vw;
+    height: 100dvh;
+    max-height: 100dvh;
+    margin: 0;
+    padding: var(--ui-space-4);
+    border: 0;
+    background: transparent;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+
+dialog.ui-session-modal::backdrop {
+    background: var(--ui-dialog-scrim);
+}
+
+.adasi-loader-overlay[popover]:not(:popover-open) {
+    display: none;
+}
+
+.adasi-loader-overlay[popover]:popover-open {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    max-width: none;
+    height: 100%;
+    max-height: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--ui-dialog-scrim);
+}
+
+@media (max-width: 575.98px) {
+    dialog.ui-native-dialog:has(> .modal-fullscreen-sm-down)[open],
+    dialog.ui-native-dialog.ui-export-designer-modal[open] {
+        width: 100vw;
+        max-width: 100vw;
+        height: 100dvh;
+        max-height: 100dvh;
+        margin: 0;
+    }
+
+    dialog.ui-native-dialog:has(> .modal-fullscreen-sm-down)[open] > .modal-dialog,
+    dialog.ui-native-dialog:has(> .modal-fullscreen-sm-down)[open] > .modal-dialog > .modal-content,
+    dialog.ui-native-dialog:has(> .modal-fullscreen-sm-down)[open] > .modal-dialog > form,
+    dialog.ui-native-dialog:has(> .modal-fullscreen-sm-down)[open] > .modal-dialog > form > .modal-content,
+    dialog.ui-native-dialog.ui-export-designer-modal[open] > .modal-dialog,
+    dialog.ui-native-dialog.ui-export-designer-modal[open] > .modal-dialog > .modal-content {
+        height: 100dvh;
+        max-height: 100dvh;
+        border-radius: 0;
+    }
+}
+
+@media (max-width: 991.98px) {
+    dialog.ui-native-dialog:has(> .modal-fullscreen-lg-down)[open] {
+        width: 100vw;
+        max-width: 100vw;
+        height: 100dvh;
+        max-height: 100dvh;
+        margin: 0;
+    }
+
+    dialog.ui-native-dialog:has(> .modal-fullscreen-lg-down)[open] > .modal-dialog,
+    dialog.ui-native-dialog:has(> .modal-fullscreen-lg-down)[open] > .modal-dialog > .modal-content,
+    dialog.ui-native-dialog:has(> .modal-fullscreen-lg-down)[open] > .modal-dialog > form,
+    dialog.ui-native-dialog:has(> .modal-fullscreen-lg-down)[open] > .modal-dialog > form > .modal-content {
+        height: 100dvh;
+        max-height: 100dvh;
+        border-radius: 0;
+    }
+}
+
+@media (forced-colors: active) {
+    dialog.ui-native-dialog > .modal-dialog > .modal-content,
+    dialog.ui-native-dialog > .modal-dialog > form > .modal-content {
+        border: 1px solid CanvasText;
+    }
+}
+
 @import "./workspace-shell.css";

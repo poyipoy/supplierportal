@@ -60,13 +60,14 @@
         </x-ui.button>
     </div>
 
-    {{-- Blocking ERP Session Ended modal teleported to body to sit cleanly above drawers and Bootstrap modals --}}
+    {{-- Blocking ERP Session Ended modal teleported to body to sit cleanly above drawers and native dialogs --}}
     <template x-teleport="body">
-        <div
+        <dialog
             x-show="open"
             x-cloak
             data-session-expired-modal
-            class="ui-session-modal tw:fixed tw:inset-0 tw:overflow-y-auto tw:p-4"
+            closedby="none"
+            class="ui-session-modal"
         >
             <div class="ui-scrim tw:fixed tw:inset-0" aria-hidden="true"></div>
 
@@ -219,6 +220,6 @@
                     </footer>
                 </section>
             </div>
-        </div>
+        </dialog>
     </template>
 </div>

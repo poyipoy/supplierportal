@@ -260,7 +260,7 @@
     {{-- Modal Konfirmasi Bayar Batch (Ditempatkan di luar tabel agar HTML5 DOM & Alpine.js valid) --}}
     @foreach($batches as $batch)
         @if(in_array($batch->status, [\App\Models\PaymentBatch::STATUS_FINALIZED, \App\Models\PaymentBatch::STATUS_PARTIALLY_PAID]) && ! $batch->hasUnvoucheredSupplierItems())
-            <div class="modal fade" id="markPaidModal-{{ $batch->id }}" tabindex="-1" aria-hidden="true"
+            <dialog class="ui-native-dialog" id="markPaidModal-{{ $batch->id }}" aria-labelledby="markPaidModalTitle-{{ $batch->id }}" closedby="any"
                  x-data="{
                      hasAdjustment: false,
                      adjustments: {},
@@ -293,11 +293,11 @@
                         @csrf
                         <div class="modal-content">
                             <div class="modal-header">
-                                <h5 class="modal-title tw:text-ui-sm tw:font-bold tw:text-on-surface tw:flex tw:items-center tw:gap-2">
+                                <h5 id="markPaidModalTitle-{{ $batch->id }}" class="modal-title tw:text-ui-sm tw:font-bold tw:text-on-surface tw:flex tw:items-center tw:gap-2">
                                     <x-ui.icon name="badge-check" size="sm" class="tw:text-success" />
                                     <span>{{ __('finance.drp_ui.mark_paid_title', ['number' => $batch->batch_number]) }}</span>
                                 </h5>
-                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('local_invoice.actions.close') }}"></button>
+                                <button type="button" class="btn-close" data-ui-modal-close aria-label="{{ __('local_invoice.actions.close') }}"></button>
                             </div>
                             <div class="modal-body tw:space-y-3">
                                 <div class="tw:rounded-lg tw:bg-surface-container tw:p-3 tw:text-ui-xs tw:space-y-1">
@@ -554,7 +554,7 @@
                                 </div>
                             </div>
                             <div class="modal-footer">
-                                <x-ui.button type="button" variant="ghost" size="sm" data-bs-dismiss="modal">{{ __('local_invoice.actions.cancel') }}</x-ui.button>
+                                <x-ui.button type="button" variant="ghost" size="sm" data-ui-modal-close>{{ __('local_invoice.actions.cancel') }}</x-ui.button>
                                 <x-ui.button type="submit" variant="primary" size="sm">
                                     <x-ui.icon name="badge-check" size="sm" />
                                     <span>{{ __('local_invoice.interaction.confirm') }}</span>
@@ -563,7 +563,7 @@
                         </div>
                     </form>
                 </div>
-            </div>
+            </dialog>
         @endif
     @endforeach
 </div>

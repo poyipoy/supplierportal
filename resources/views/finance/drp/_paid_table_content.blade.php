@@ -198,8 +198,7 @@
                                             type="button"
                                             size="sm"
                                             variant="primary"
-                                            data-bs-toggle="modal"
-                                            data-bs-target="#markPaidModal-{{ $batch->id }}"
+                                            data-ui-modal-open="#markPaidModal-{{ $batch->id }}"
                                         >
                                             <x-ui.icon name="badge-check" size="sm" />
                                             <span>{{ __('finance.payment.mark_paid') }}</span>

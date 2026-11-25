@@ -1,4 +1,4 @@
-<div class="modal fade" id="uploadPoDocumentModal" tabindex="-1" aria-labelledby="uploadPoDocumentModalLabel" aria-hidden="true">
+<dialog class="ui-native-dialog" id="uploadPoDocumentModal" aria-labelledby="uploadPoDocumentModalLabel" closedby="any">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header tw:border-b tw:border-outline-variant">
@@ -10,7 +10,7 @@
                         {{ __('local_procurement.documents.upload_help') }}
                     </div>
                 </div>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('local_invoice.actions.close') }}"></button>
+                <button type="button" class="btn-close" data-ui-modal-close aria-label="{{ __('local_invoice.actions.close') }}"></button>
             </div>
 
             <form method="POST" action="{{ route($routePrefix.'.upload-po') }}" enctype="multipart/form-data" id="uploadPoDocumentForm" data-async-submit data-po-document-upload data-async-summary-skip-file-errors="true" data-uploading="{{ __('po_documents.uploading') }}" data-offline="{{ __('po_documents.offline') }}">
@@ -70,7 +70,7 @@
                     <p data-po-upload-status role="status" aria-live="polite" class="tw:text-ui-xs tw:mb-0"></p>
                     <progress data-po-upload-progress hidden max="100" aria-label="{{ __('po_documents.progress') }}"></progress>
                     <x-ui.button type="button" variant="outline-primary" size="sm" data-po-upload-retry hidden>{{ __('po_documents.retry') }}</x-ui.button>
-                    <x-ui.button type="button" variant="ghost" size="sm" data-bs-dismiss="modal">
+                    <x-ui.button type="button" variant="ghost" size="sm" data-ui-modal-close>
                         {{ __('local_invoice.actions.cancel') }}
                     </x-ui.button>
                     <x-ui.button type="submit" size="sm" variant="primary" id="btnSubmitPoUpload">
@@ -81,4 +81,4 @@
             </form>
         </div>
     </div>
-</div>
+</dialog>

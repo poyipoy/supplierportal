@@ -57,8 +57,7 @@
                     type="button"
                     variant="danger-outline"
                     size="sm"
-                    data-bs-toggle="modal"
-                    data-bs-target="#cancelBatchModal"
+                    data-ui-modal-open="#cancelBatchModal"
                 >
                     <x-ui.icon name="x-circle" size="sm" />
                     <span>{{ __('finance.drp.cancel') }}</span>
@@ -192,8 +191,7 @@
                                         type="button"
                                         variant="outline"
                                         size="sm"
-                                        data-bs-toggle="modal"
-                                        data-bs-target="#voucherModal-{{ $group->id }}"
+                                        data-ui-modal-open="#voucherModal-{{ $group->id }}"
                                     >
                                         <x-ui.icon name="receipt" size="sm" />
                                         <span>{{ __('common.labels_review.voucher') }}</span>
@@ -208,8 +206,7 @@
                                         type="button"
                                         variant="outline"
                                         size="sm"
-                                        data-bs-toggle="modal"
-                                        data-bs-target="#feeModal-{{ $group->id }}"
+                                        data-ui-modal-open="#feeModal-{{ $group->id }}"
                                     >
                                         <x-ui.icon name="edit-3" size="sm" />
                                         <span>{{ __('finance.payment.review_fee') }}</span>
@@ -354,7 +351,7 @@
                                                 </form>
                                             @endif
                                         @elseif($batch->status === \App\Models\PaymentBatch::STATUS_DRAFT)
-                                            <x-ui.button type="button" variant="danger-outline" size="sm" data-bs-toggle="modal" data-bs-target="#removeItemModal-{{ $item->id }}">{{ __('common.actions.remove') }}</x-ui.button>
+                                            <x-ui.button type="button" variant="danger-outline" size="sm" data-ui-modal-open="#removeItemModal-{{ $item->id }}">{{ __('common.actions.remove') }}</x-ui.button>
                                         @endif
                                     </td>
                                 </tr>
@@ -366,14 +363,14 @@
                 @if($batch->status === \App\Models\PaymentBatch::STATUS_DRAFT)
                     {{-- Remove Item Modals (placed outside table for valid DOM & stacking) --}}
                     @foreach($group->items as $item)
-                        <div class="modal fade" id="removeItemModal-{{ $item->id }}" tabindex="-1" aria-hidden="true">
+                        <dialog class="ui-native-dialog" id="removeItemModal-{{ $item->id }}" aria-labelledby="removeItemModalTitle-{{ $item->id }}" closedby="any">
                             <div class="modal-dialog">
                                 <form method="POST" action="{{ route('finance.drp.remove-item', $item) }}">
                                     @csrf
                                     <div class="modal-content">
                                         <div class="modal-header">
-                                            <h5 class="modal-title tw:text-ui-sm tw:font-bold">{{ __('finance.drp_ui.remove_title') }}</h5>
-                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('local_invoice.actions.close') }}"></button>
+                                            <h5 class="modal-title tw:text-ui-sm tw:font-bold" id="removeItemModalTitle-{{ $item->id }}">{{ __('finance.drp_ui.remove_title') }}</h5>
+                                            <button type="button" class="btn-close" data-ui-modal-close aria-label="{{ __('local_invoice.actions.close') }}"></button>
                                         </div>
                                         <div class="modal-body">
                                             <p class="tw:text-ui-xs tw:text-on-surface-variant">
@@ -385,27 +382,27 @@
                                             </div>
                                         </div>
                                         <div class="modal-footer">
-                                            <x-ui.button type="button" variant="ghost" size="sm" data-bs-dismiss="modal">{{ __('local_invoice.actions.cancel') }}</x-ui.button>
+                                            <x-ui.button type="button" variant="ghost" size="sm" data-ui-modal-close>{{ __('local_invoice.actions.cancel') }}</x-ui.button>
                                             <x-ui.button type="submit" variant="danger" size="sm">{{ __('finance.drp_ui.remove') }}</x-ui.button>
                                         </div>
                                     </div>
                                 </form>
                             </div>
-                        </div>
+                        </dialog>
                     @endforeach
                 @endif
 
                 {{-- Modals for this Group: Assign Voucher, Mark Paid, Override Fee --}}
                 {{-- 1. Voucher Modal --}}
                 @if($batch->batch_type === \App\Models\PaymentBatch::TYPE_GA)
-                <div class="modal fade" id="voucherModal-{{ $group->id }}" tabindex="-1" aria-hidden="true">
+                <dialog class="ui-native-dialog" id="voucherModal-{{ $group->id }}" aria-labelledby="voucherModalTitle-{{ $group->id }}" closedby="any">
                     <div class="modal-dialog">
                         <form method="POST" action="{{ route('finance.drp.assign-voucher', $group) }}">
                             @csrf
                             <div class="modal-content">
                                 <div class="modal-header">
-                                    <h5 class="modal-title tw:text-ui-sm tw:font-bold">{{ __('finance.drp_ui.voucher_issue') }}</h5>
-                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('local_invoice.actions.close') }}"></button>
+                                    <h5 class="modal-title tw:text-ui-sm tw:font-bold" id="voucherModalTitle-{{ $group->id }}">{{ __('finance.drp_ui.voucher_issue') }}</h5>
+                                    <button type="button" class="btn-close" data-ui-modal-close aria-label="{{ __('local_invoice.actions.close') }}"></button>
                                 </div>
                                 <div class="modal-body">
                                     <div class="mb-3">
@@ -423,27 +420,27 @@
                                     </div>
                                 </div>
                                 <div class="modal-footer">
-                                    <x-ui.button type="button" variant="ghost" size="sm" data-bs-dismiss="modal">{{ __('local_invoice.actions.close') }}</x-ui.button>
+                                    <x-ui.button type="button" variant="ghost" size="sm" data-ui-modal-close>{{ __('local_invoice.actions.close') }}</x-ui.button>
                                     <x-ui.button type="submit" variant="primary" size="sm">{{ __('finance.voucher.save') }}</x-ui.button>
                                 </div>
                             </div>
                         </form>
                     </div>
-                </div>
+                </dialog>
 
                 {{-- Mark Paid Modal removed — settlement centralized via DRP Paid --}}
                 @endif
 
                 {{-- 3. Override Fee Modal --}}
                 @if($batch->status === \App\Models\PaymentBatch::STATUS_DRAFT && $batch->batch_type === \App\Models\PaymentBatch::TYPE_SUPPLIER)
-                    <div class="modal fade" id="feeModal-{{ $group->id }}" tabindex="-1" aria-hidden="true">
+                    <dialog class="ui-native-dialog" id="feeModal-{{ $group->id }}" aria-labelledby="feeModalTitle-{{ $group->id }}" closedby="any">
                         <div class="modal-dialog">
                             <form method="POST" action="{{ route('finance.drp.override-fee', $group) }}">
                                 @csrf
                                 <div class="modal-content">
                                     <div class="modal-header">
-                                        <h5 class="modal-title tw:text-ui-sm tw:font-bold">{{ __('finance.drp_ui.fee_adjustment') }}</h5>
-                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('local_invoice.actions.close') }}"></button>
+                                        <h5 class="modal-title tw:text-ui-sm tw:font-bold" id="feeModalTitle-{{ $group->id }}">{{ __('finance.drp_ui.fee_adjustment') }}</h5>
+                                        <button type="button" class="btn-close" data-ui-modal-close aria-label="{{ __('local_invoice.actions.close') }}"></button>
                                     </div>
                                     <div class="modal-body">
                                         <div class="mb-3">
@@ -456,13 +453,13 @@
                                         </div>
                                     </div>
                                     <div class="modal-footer">
-                                        <x-ui.button type="button" variant="ghost" size="sm" data-bs-dismiss="modal">{{ __('local_invoice.actions.cancel') }}</x-ui.button>
+                                        <x-ui.button type="button" variant="ghost" size="sm" data-ui-modal-close>{{ __('local_invoice.actions.cancel') }}</x-ui.button>
                                         <x-ui.button type="submit" variant="primary" size="sm">{{ __('finance.payment.save_fee') }}</x-ui.button>
                                     </div>
                                 </div>
                             </form>
                         </div>
-                    </div>
+                    </dialog>
                 @endif
             </x-ui.card>
         @endforeach
@@ -470,14 +467,14 @@
 
     {{-- Cancel Batch Modal --}}
     @if($batch->status === \App\Models\PaymentBatch::STATUS_DRAFT)
-        <div class="modal fade" id="cancelBatchModal" tabindex="-1" aria-hidden="true">
+        <dialog class="ui-native-dialog" id="cancelBatchModal" aria-labelledby="cancelBatchModalTitle" closedby="any">
             <div class="modal-dialog">
                 <form method="POST" action="{{ route('finance.drp.cancel', $batch) }}">
                     @csrf
                     <div class="modal-content">
                         <div class="modal-header">
-                            <h5 class="modal-title tw:text-ui-sm tw:font-bold text-danger">{{ __('finance.drp.cancel_full') }}</h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('local_invoice.actions.close') }}"></button>
+                            <h5 class="modal-title tw:text-ui-sm tw:font-bold text-danger" id="cancelBatchModalTitle">{{ __('finance.drp.cancel_full') }}</h5>
+                            <button type="button" class="btn-close" data-ui-modal-close aria-label="{{ __('local_invoice.actions.close') }}"></button>
                         </div>
                         <div class="modal-body">
                             <p class="tw:text-ui-xs tw:text-on-surface-variant">
@@ -489,13 +486,13 @@
                             </div>
                         </div>
                         <div class="modal-footer">
-                            <x-ui.button type="button" variant="ghost" size="sm" data-bs-dismiss="modal">{{ __('local_invoice.actions.cancel') }}</x-ui.button>
+                            <x-ui.button type="button" variant="ghost" size="sm" data-ui-modal-close>{{ __('local_invoice.actions.cancel') }}</x-ui.button>
                             <x-ui.button type="submit" variant="danger" size="sm">{{ __('finance.drp_ui.cancel_yes') }}</x-ui.button>
                         </div>
                     </div>
                 </form>
             </div>
-        </div>
+        </dialog>
     @endif
 </div>
 @endsection

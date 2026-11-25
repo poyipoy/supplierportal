@@ -12,7 +12,7 @@
     <x-ui.page-header :title="__($rp.'.title')" :description="__($rp.'.description')" :eyebrow="__('navigation.master_data')">
         <x-slot:actions>
             <span data-reference-prices-rules-action @if($activeTab !== 'rules') hidden @endif class="tw:inline-flex tw:items-center tw:gap-2">
-                <x-ui.button type="button" size="sm" variant="outline" data-bs-toggle="modal" data-bs-target="#referencePriceAddCategoryModal">
+                <x-ui.button type="button" size="sm" variant="outline" data-ui-modal-open="#referencePriceAddCategoryModal">
                     <x-ui.icon name="plus" size="sm" />
                     <span>{{ __($rp.'.rules.add_category') }}</span>
                 </x-ui.button>
@@ -22,7 +22,7 @@
                 </x-ui.button>
             </span>
             <span data-reference-prices-legacy-action @if($activeTab !== 'legacy') hidden @endif>
-                <x-ui.button type="button" size="sm" variant="primary" data-bs-toggle="modal" data-bs-target="#referencePriceCreateModal">
+                <x-ui.button type="button" size="sm" variant="primary" data-ui-modal-open="#referencePriceCreateModal">
                     <x-ui.icon name="plus" size="sm" />
                     <span>{{ __($rp.'.add') }}</span>
                 </x-ui.button>
@@ -68,14 +68,14 @@
 </x-ui.dialog>
 
 {{-- MODAL: Add Category --}}
-<div class="modal fade" id="referencePriceAddCategoryModal" tabindex="-1" aria-labelledby="addCatModalLabel" aria-hidden="true">
+<dialog class="ui-native-dialog" id="referencePriceAddCategoryModal" aria-labelledby="addCatModalLabel" closedby="any">
     <div class="modal-dialog">
         <form method="POST" action="{{ route($prefix.'.rules.category.save') }}" class="modal-content" id="referencePriceAddCategoryForm">
             @csrf
             <input type="hidden" name="form_mode" value="create">
             <div class="modal-header">
                 <h5 class="modal-title" id="addCatModalLabel">{{ __($rp.'.rules.add_category') }}</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" class="btn-close" data-ui-modal-close aria-label="Close"></button>
             </div>
             <div class="modal-body tw:grid tw:gap-3">
                 @if(session('error') && old('form_mode') === 'create')
@@ -89,15 +89,15 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <x-ui.button type="button" variant="outline" size="sm" data-bs-dismiss="modal">{{ __($rp.'.cancel') }}</x-ui.button>
+                <x-ui.button type="button" variant="outline" size="sm" data-ui-modal-close>{{ __($rp.'.cancel') }}</x-ui.button>
                 <x-ui.button type="submit" variant="primary" size="sm">{{ __($rp.'.save') }}</x-ui.button>
             </div>
         </form>
     </div>
-</div>
+</dialog>
 
 {{-- MODAL: Edit Category --}}
-<div class="modal fade" id="referencePriceEditCategoryModal" tabindex="-1" aria-labelledby="editCatModalLabel" aria-hidden="true">
+<dialog class="ui-native-dialog" id="referencePriceEditCategoryModal" aria-labelledby="editCatModalLabel" closedby="any">
     <div class="modal-dialog">
         <form method="POST" action="{{ route($prefix.'.rules.category.save') }}" class="modal-content" id="referencePriceEditCategoryForm">
             @csrf
@@ -105,7 +105,7 @@
             <input type="hidden" name="rule_id" id="editRuleId" value="{{ old('form_mode') === 'edit' ? old('rule_id') : '' }}">
             <div class="modal-header">
                 <h5 class="modal-title" id="editCatModalLabel">{{ __($rp.'.rules.edit_category') }}</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" class="btn-close" data-ui-modal-close aria-label="Close"></button>
             </div>
             <div class="modal-body tw:grid tw:gap-3">
                 @if(session('error') && old('form_mode') === 'edit')
@@ -119,21 +119,21 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <x-ui.button type="button" variant="outline" size="sm" data-bs-dismiss="modal">{{ __($rp.'.cancel') }}</x-ui.button>
+                <x-ui.button type="button" variant="outline" size="sm" data-ui-modal-close>{{ __($rp.'.cancel') }}</x-ui.button>
                 <x-ui.button type="submit" variant="primary" size="sm">{{ __($rp.'.save') }}</x-ui.button>
             </div>
         </form>
     </div>
-</div>
+</dialog>
 
 {{-- Legacy Modals (Create, Supersede, Void, Notes) --}}
-<div class="modal fade" id="referencePriceCreateModal" tabindex="-1" aria-labelledby="referencePriceCreateTitle" aria-hidden="true">
+<dialog class="ui-native-dialog" id="referencePriceCreateModal" aria-labelledby="referencePriceCreateTitle" closedby="any">
     <div class="modal-dialog modal-dialog-centered">
         <form method="POST" action="{{ route($prefix.'.store') }}" class="modal-content">
             @csrf
             <div class="modal-header">
                 <h2 class="modal-title tw:text-ui-md tw:font-bold" id="referencePriceCreateTitle">{{ __($rp.'.add') }}</h2>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __($rp.'.cancel') }}"></button>
+                <button type="button" class="btn-close" data-ui-modal-close aria-label="{{ __($rp.'.cancel') }}"></button>
             </div>
             <div class="modal-body tw:grid tw:gap-3">
                 <x-ui.searchable-select name="material_code" id="referencePriceMaterialCode" :label="__($rp.'.material_code')" :options="$materialOptions" required :placeholder="__($rp.'.search_placeholder')" />
@@ -158,20 +158,20 @@
                 <x-ui.textarea name="notes" id="referencePriceNotes" :label="__($rp.'.notes')" rows="2" maxlength="1000">{{ old('notes') }}</x-ui.textarea>
             </div>
             <div class="modal-footer">
-                <x-ui.button type="button" variant="outline" size="sm" data-bs-dismiss="modal">{{ __($rp.'.cancel') }}</x-ui.button>
+                <x-ui.button type="button" variant="outline" size="sm" data-ui-modal-close>{{ __($rp.'.cancel') }}</x-ui.button>
                 <x-ui.button type="submit" variant="primary" size="sm">{{ __($rp.'.save') }}</x-ui.button>
             </div>
         </form>
     </div>
-</div>
+</dialog>
 
-<div class="modal fade" id="referencePriceSupersedeModal" tabindex="-1" aria-labelledby="referencePriceSupersedeTitle" aria-hidden="true">
+<dialog class="ui-native-dialog" id="referencePriceSupersedeModal" aria-labelledby="referencePriceSupersedeTitle" closedby="any">
     <div class="modal-dialog modal-dialog-centered">
         <form method="POST" action="" class="modal-content" data-reference-price-form>
             @csrf
             <div class="modal-header">
                 <h2 class="modal-title tw:text-ui-md tw:font-bold" id="referencePriceSupersedeTitle" data-title-template="{{ __($rp.'.supersede_title', ['material' => '__MATERIAL__']) }}">{{ __($rp.'.supersede') }}</h2>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __($rp.'.cancel') }}"></button>
+                <button type="button" class="btn-close" data-ui-modal-close aria-label="{{ __($rp.'.cancel') }}"></button>
             </div>
             <div class="modal-body tw:grid tw:gap-3">
                 <p class="tw:m-0 tw:text-ui-xs tw:text-on-surface-variant">{{ __($rp.'.supersede_help') }}</p>
@@ -181,51 +181,51 @@
                 <x-ui.textarea name="notes" id="supersedeNotes" :label="__($rp.'.notes')" rows="2" maxlength="1000" />
             </div>
             <div class="modal-footer">
-                <x-ui.button type="button" variant="outline" size="sm" data-bs-dismiss="modal">{{ __($rp.'.cancel') }}</x-ui.button>
+                <x-ui.button type="button" variant="outline" size="sm" data-ui-modal-close>{{ __($rp.'.cancel') }}</x-ui.button>
                 <x-ui.button type="submit" variant="primary" size="sm">{{ __($rp.'.save') }}</x-ui.button>
             </div>
         </form>
     </div>
-</div>
+</dialog>
 
-<div class="modal fade" id="referencePriceVoidModal" tabindex="-1" aria-labelledby="referencePriceVoidTitle" aria-hidden="true">
+<dialog class="ui-native-dialog" id="referencePriceVoidModal" aria-labelledby="referencePriceVoidTitle" closedby="any">
     <div class="modal-dialog modal-dialog-centered">
         <form method="POST" action="" class="modal-content" data-reference-price-form>
             @csrf
             <div class="modal-header">
                 <h2 class="modal-title tw:text-ui-md tw:font-bold" id="referencePriceVoidTitle" data-title-template="{{ __($rp.'.void_title', ['material' => '__MATERIAL__']) }}">{{ __($rp.'.void') }}</h2>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __($rp.'.cancel') }}"></button>
+                <button type="button" class="btn-close" data-ui-modal-close aria-label="{{ __($rp.'.cancel') }}"></button>
             </div>
             <div class="modal-body">
                 <x-ui.textarea name="void_reason" id="voidReason" :label="__($rp.'.void_reason')" rows="3" required minlength="3" maxlength="1000" />
             </div>
             <div class="modal-footer">
-                <x-ui.button type="button" variant="outline" size="sm" data-bs-dismiss="modal">{{ __($rp.'.cancel') }}</x-ui.button>
+                <x-ui.button type="button" variant="outline" size="sm" data-ui-modal-close>{{ __($rp.'.cancel') }}</x-ui.button>
                 <x-ui.button type="submit" variant="danger" size="sm">{{ __($rp.'.void') }}</x-ui.button>
             </div>
         </form>
     </div>
-</div>
+</dialog>
 
-<div class="modal fade" id="referencePriceNotesModal" tabindex="-1" aria-labelledby="referencePriceNotesTitle" aria-hidden="true">
+<dialog class="ui-native-dialog" id="referencePriceNotesModal" aria-labelledby="referencePriceNotesTitle" closedby="any">
     <div class="modal-dialog modal-dialog-centered">
         <form method="POST" action="" class="modal-content" data-reference-price-form>
             @csrf
             @method('PATCH')
             <div class="modal-header">
                 <h2 class="modal-title tw:text-ui-md tw:font-bold" id="referencePriceNotesTitle">{{ __($rp.'.edit_notes') }}</h2>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __($rp.'.cancel') }}"></button>
+                <button type="button" class="btn-close" data-ui-modal-close aria-label="{{ __($rp.'.cancel') }}"></button>
             </div>
             <div class="modal-body">
                 <x-ui.textarea name="notes" id="notesValue" :label="__($rp.'.notes')" rows="3" maxlength="1000" />
             </div>
             <div class="modal-footer">
-                <x-ui.button type="button" variant="outline" size="sm" data-bs-dismiss="modal">{{ __($rp.'.cancel') }}</x-ui.button>
+                <x-ui.button type="button" variant="outline" size="sm" data-ui-modal-close>{{ __($rp.'.cancel') }}</x-ui.button>
                 <x-ui.button type="submit" variant="primary" size="sm">{{ __($rp.'.save') }}</x-ui.button>
             </div>
         </form>
     </div>
-</div>
+</dialog>
 
 @push('scripts')
 <script>
@@ -247,11 +247,11 @@
             });
         }
 
-        // Populate Edit Category modal cleanly on show.bs.modal (supports click, keyboard, and programmatic opens)
+        // Populate Edit Category modal cleanly on adasi:modal-show (supports click, keyboard, and programmatic opens)
         const editCategoryModal = document.getElementById('referencePriceEditCategoryModal');
         if (editCategoryModal) {
-            editCategoryModal.addEventListener('show.bs.modal', function (event) {
-                const btn = event.relatedTarget;
+            editCategoryModal.addEventListener('adasi:modal-show', function (event) {
+                const btn = event.relatedTarget || event.detail?.relatedTarget;
                 if (!btn) return;
                 const ruleIdInput = document.getElementById('editRuleId');
                 const keyInput = document.getElementById('editCatKey');
@@ -323,8 +323,8 @@
         });
 
         // Event delegation for Legacy modals (supersede, void, notes)
-        document.addEventListener('show.bs.modal', function (event) {
-            const trigger = event.relatedTarget;
+        document.addEventListener('adasi:modal-show', function (event) {
+            const trigger = event.relatedTarget || event.detail?.relatedTarget;
             const modal = event.target;
             const form = modal ? modal.querySelector('[data-reference-price-form]') : null;
             if (!trigger || !form) return;
@@ -352,11 +352,11 @@
         });
 
         @if(($errors->any() || session('error')) && old('form_mode') === 'create')
-        window.bootstrap?.Modal.getOrCreateInstance(document.getElementById('referencePriceAddCategoryModal'))?.show();
+        window.AdasiModal?.getOrCreateInstance?.(document.getElementById('referencePriceAddCategoryModal'))?.show();
         @elseif(($errors->any() || session('error')) && old('form_mode') === 'edit')
-        window.bootstrap?.Modal.getOrCreateInstance(document.getElementById('referencePriceEditCategoryModal'))?.show();
+        window.AdasiModal?.getOrCreateInstance?.(document.getElementById('referencePriceEditCategoryModal'))?.show();
         @elseif($errors->any() && old('material_code') !== null)
-        window.bootstrap?.Modal.getOrCreateInstance(document.getElementById('referencePriceCreateModal'))?.show();
+        window.AdasiModal?.getOrCreateInstance?.(document.getElementById('referencePriceCreateModal'))?.show();
         @endif
     };
 

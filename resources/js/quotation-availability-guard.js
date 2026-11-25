@@ -69,7 +69,7 @@ export function createQuotationAvailabilityController({
             control.setAttribute('aria-disabled', 'true');
         });
 
-        form.querySelectorAll('a[data-quotation-form-export], [data-bs-target="#quotationImportModal"]').forEach((anchor) => {
+        form.querySelectorAll('a[data-quotation-form-export], [data-ui-modal-open="#quotationImportModal"]').forEach((anchor) => {
             if (banner && banner.contains(anchor)) return;
             anchor.setAttribute('aria-disabled', 'true');
             anchor.classList?.add('disabled');
@@ -79,10 +79,10 @@ export function createQuotationAvailabilityController({
         const importModal = documentRef?.getElementById?.('quotationImportModal');
         if (importModal) {
             importModal.querySelectorAll('button, input, select').forEach((control) => {
-                if (control.hasAttribute('data-bs-dismiss')) return;
+                if (control.hasAttribute('data-ui-modal-close')) return;
                 control.disabled = true;
             });
-            windowRef?.bootstrap?.Modal?.getInstance?.(importModal)?.hide?.();
+            windowRef?.AdasiModal?.getInstance?.(importModal)?.hide?.() ?? importModal.close?.();
         }
     };
 

@@ -1356,7 +1356,7 @@
 </div>
 
 {{-- Excel Import Modal --}}
-<div class="modal fade" id="quotationImportModal" tabindex="-1" aria-labelledby="quotationImportModalLabel" aria-hidden="true">
+<dialog class="ui-native-dialog" id="quotationImportModal" aria-labelledby="quotationImportModalLabel" closedby="any">
     <div class="modal-dialog modal-xl modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header">
@@ -1364,7 +1364,7 @@
                     <h6 class="modal-title fw-bold" id="quotationImportModalLabel">{{ __('supplier.copy.import_quotation_items_from_spreadsheet') }}</h6>
                     <div class="tw:text-on-surface-variant tw:text-ui-xs">{{ __('supplier.copy.imported_values_are_mapped_by_pr_item_id_and_are_not_committed_to_database_until_saved') }}</div>
                 </div>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('supplier.copy.close') }}"></button>
+                <button type="button" class="btn-close" data-ui-modal-close aria-label="{{ __('supplier.copy.close') }}"></button>
             </div>
             <div class="modal-body p-4">
                 <div class="row g-3">
@@ -1422,7 +1422,7 @@
                 </div>
             </div>
             <div class="modal-footer tw:bg-surface-low border-top">
-                <x-ui.button type="button" variant="ghost" size="sm" data-bs-dismiss="modal">{{ __('supplier.copy.cancel') }}</x-ui.button>
+                <x-ui.button type="button" variant="ghost" size="sm" data-ui-modal-close>{{ __('supplier.copy.cancel') }}</x-ui.button>
                 <x-ui.button type="button" variant="outline" size="sm" id="btnParseQuotationImport">
                     <span class="ui-spinner me-1 d-none" id="quotationImportSpinner" aria-hidden="true"></span>
                     {{ __('supplier.copy.parse_validate') }}
@@ -1433,7 +1433,7 @@
             </div>
         </div>
     </div>
-</div>
+</dialog>
 
 <div id="exchangeRates" class="d-none"></div>
 @endsection
@@ -1777,7 +1777,7 @@
 
         recalculateQuotationTotals();
         updateCommercialTermsState();
-        bootstrap.Modal.getOrCreateInstance(document.getElementById('quotationImportModal')).hide();
+        window.AdasiModal?.getOrCreateInstance?.(document.getElementById('quotationImportModal'))?.hide();
         const changedFieldCount = window.AdasiI18n.choice('supplier.js.field_change_count', changedFields);
         AdasiToast.show({
             type: 'success',
@@ -3126,7 +3126,7 @@
             recalculateQuotationTotals();
         });
 
-        document.getElementById('quotationImportModal')?.addEventListener('hidden.bs.modal', () => {
+        document.getElementById('quotationImportModal')?.addEventListener('adasi:modal-hidden', () => {
             if (quotationImportRequestInFlight) {
                 return;
             }
@@ -3164,7 +3164,7 @@
 
             qScroll.addEventListener('mousedown', function(e) {
                 if (e.button !== 0) return;
-                if (e.target.closest('input, select, textarea, button, a, label, [role="button"], .dropdown-menu, .modal')) {
+                if (e.target.closest('input, select, textarea, button, a, label, [role="button"], .dropdown-menu, dialog, .ui-native-dialog')) {
                     return;
                 }
                 isDown = true;

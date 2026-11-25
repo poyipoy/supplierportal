@@ -101,12 +101,40 @@ export function adasiSessionModal(initialCopy = {}) {
         },
 
         init() {
+            const syncTopLayer = () => {
+                const modalEl = resolveModalElement(this);
+                if (!this.open || !modalEl) return;
+                if (modalEl.open && typeof modalEl.close === 'function' && typeof modalEl.showModal === 'function') {
+                    const openDialogs = typeof document?.querySelectorAll === 'function'
+                        ? [...document.querySelectorAll('dialog[open]')]
+                        : [];
+                    if (openDialogs[openDialogs.length - 1] !== modalEl) {
+                        modalEl.close();
+                        modalEl.showModal();
+                    }
+                    return;
+                }
+                if (typeof modalEl.showModal === 'function' && modalEl.isConnected !== false) {
+                    if (!modalEl.open) modalEl.showModal();
+                } else {
+                    modalEl.setAttribute?.('open', '');
+                }
+            };
+
+            document?.addEventListener?.('cancel', (event) => {
+                if (this.open && event?.target === resolveModalElement(this)) {
+                    event.preventDefault?.();
+                }
+            }, true);
+            document?.addEventListener?.('adasi:modal-shown', syncTopLayer);
+
             this.$watch('open', (value) => {
                 const isOpen = Boolean(value);
                 const modality = typeof window !== 'undefined' ? window.AdasiOverlayModality : null;
+                const modalEl = resolveModalElement(this);
                 if (isOpen) {
                     window.AdasiLightbox?.close?.({ restoreFocus: false });
-                    const modalEl = resolveModalElement(this);
+                    syncTopLayer();
                     if (modality && modalEl) {
                         acquiredModalEl = modalEl;
                         modality.acquire(modalEl, { triggerEl: this.returnFocus });
@@ -114,6 +142,11 @@ export function adasiSessionModal(initialCopy = {}) {
                         document.body?.classList?.toggle?.('ui-dialog-open', true);
                     }
                     return;
+                }
+                if (modalEl?.open && typeof modalEl.close === 'function') {
+                    modalEl.close();
+                } else {
+                    modalEl?.removeAttribute?.('open');
                 }
                 releaseModalModality();
             });

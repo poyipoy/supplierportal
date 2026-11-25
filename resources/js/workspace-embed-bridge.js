@@ -153,6 +153,7 @@ export function bootWorkspaceEmbedBridge() {
             anchor.hasAttribute('download')
             || anchor.getAttribute('target') === '_blank'
             || anchor.dataset.bsToggle
+            || anchor.hasAttribute('data-ui-modal-open')
             || anchor.hasAttribute('data-server-tab')
             || anchor.hasAttribute('data-tabs-link')
             || anchor.closest?.('[data-server-tabs-nav]')
@@ -204,10 +205,10 @@ export function bootWorkspaceEmbedBridge() {
                 }));
             }
 
-            const bsModal = element?.closest?.('.modal.show');
-            if (bsModal) {
+            const openDialog = element?.closest?.('dialog.ui-native-dialog[open]');
+            if (openDialog) {
                 try {
-                    window.bootstrap?.Modal?.getInstance?.(bsModal)?.hide();
+                    window.AdasiModal?.getInstance?.(openDialog)?.hide?.() ?? openDialog.close?.();
                 } catch {
                     // Best-effort cleanup when handing off to another WorkspaceShell tab.
                 }

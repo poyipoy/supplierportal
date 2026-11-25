@@ -5,15 +5,16 @@ export function bootLocalPoGrTable(root = document) {
     const recoveryModals = root.querySelectorAll('[data-recovery-modal]');
     for (const modal of recoveryModals) {
         const form = modal.querySelector('form');
-        modal.addEventListener('show.bs.modal', event => {
-            if (event.relatedTarget) modal.recoveryTrigger = event.relatedTarget;
+        modal.addEventListener('adasi:modal-show', event => {
+            const trigger = event.relatedTarget || event.detail?.relatedTarget;
+            if (trigger) modal.recoveryTrigger = trigger;
         });
         form.addEventListener('submit', event => {
             const reason = form.querySelector('[name="reason"]');
             reason.value = reason.value.trim();
             if (!form.reportValidity()) event.preventDefault();
         });
-        modal.addEventListener('shown.bs.modal', () => {
+        modal.addEventListener('adasi:modal-shown', () => {
             (modal.querySelector('[aria-invalid="true"]') || form.querySelector('[name="reason"]'))?.focus();
         });
         modal.addEventListener('keydown', event => {
@@ -27,10 +28,10 @@ export function bootLocalPoGrTable(root = document) {
                 (event.shiftKey ? last : first).focus();
             }
         });
-        modal.addEventListener('hidden.bs.modal', () => {
+        modal.addEventListener('adasi:modal-hidden', () => {
             (modal.recoveryTrigger?.isConnected ? modal.recoveryTrigger : filter)?.focus();
         });
-        if (modal.dataset.recoveryReopen === '1') window.bootstrap.Modal.getOrCreateInstance(modal).show();
+        if (modal.dataset.recoveryReopen === '1') window.AdasiModal?.getOrCreateInstance?.(modal)?.show();
     }
     root.addEventListener('click', event => {
         const button = event.target.closest('[data-gr-document]');
@@ -51,11 +52,11 @@ export function bootLocalPoGrTable(root = document) {
         if (form) form.action = action.href;
         const numberEl = modal.querySelector('[data-gr-modal-number]');
         if (numberEl) numberEl.textContent = button.dataset.grNumber;
-        modal.addEventListener('shown.bs.modal', () => {
+        modal.addEventListener('adasi:modal-shown', () => {
             (modal.querySelector('[aria-invalid="true"]') || form?.querySelector('input[type="file"]'))?.focus();
         }, { once: true });
-        modal.addEventListener('hidden.bs.modal', () => (button?.isConnected ? button : filter)?.focus(), { once: true });
-        window.bootstrap.Modal.getOrCreateInstance(modal).show();
+        modal.addEventListener('adasi:modal-hidden', () => (button?.isConnected ? button : filter)?.focus(), { once: true });
+        window.AdasiModal?.getOrCreateInstance?.(modal)?.show(button);
     });
     root.addEventListener('click', event => {
         const button = event.target.closest('[data-gr-restore]');
@@ -77,7 +78,7 @@ export function bootLocalPoGrTable(root = document) {
         modal.querySelector('[data-gr-modal-number]').textContent = button.dataset.grNumber;
         modal.querySelector('[name="_recovery_target"]').value = button.dataset.grHash;
         modal.recoveryTrigger = button;
-        window.bootstrap.Modal.getOrCreateInstance(modal).show();
+        window.AdasiModal?.getOrCreateInstance?.(modal)?.show(button);
     });
     if (typeof window.DataTable !== 'function') {
         root.querySelector('[data-gr-table-error]').hidden = false;
@@ -127,7 +128,7 @@ export function bootLocalPoGrTable(root = document) {
             }
             window.AdasiCalendar?.reset(form.querySelector('[name="gr_date"]'));
         }
-        modal.addEventListener('hidden.bs.modal', () => (button?.isConnected ? button : filter)?.focus(), { once: true });
-        window.bootstrap.Modal.getOrCreateInstance(modal).show();
+        modal.addEventListener('adasi:modal-hidden', () => (button?.isConnected ? button : filter)?.focus(), { once: true });
+        window.AdasiModal?.getOrCreateInstance?.(modal)?.show(button);
     });
 }

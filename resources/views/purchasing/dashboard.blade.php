@@ -252,7 +252,7 @@
             {{-- Exchange Rate Quick Reference --}}
             <x-ui.card :title="__('purchasing.copy.exchange_rate_benchmark')">
                 <x-slot:actions>
-                    <x-ui.button type="button" variant="outline" size="sm" data-bs-toggle="modal" data-bs-target="#kursModal">
+                    <x-ui.button type="button" variant="outline" size="sm" data-ui-modal-open="#kursModal">
                         <x-ui.icon name="square-pen" />
                         {{ __('purchasing.copy.update_rate') }}
                     </x-ui.button>
@@ -404,14 +404,14 @@
 </div>
 
 {{-- Exchange Rate Update Modal --}}
-<div class="modal fade" id="kursModal" tabindex="-1" aria-labelledby="purchasingKursModalTitle" aria-hidden="true">
+<dialog class="ui-native-dialog" id="kursModal" aria-labelledby="purchasingKursModalTitle" closedby="any">
     <div class="modal-dialog modal-sm">
         <div class="modal-content">
             <form action="{{ route('purchasing.kurs.update') }}" method="POST">
                 @csrf
                 <div class="modal-header">
                     <h6 class="modal-title fw-bold" id="purchasingKursModalTitle">{{ __('purchasing.copy.update_exchange_rate') }}</h6>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('purchasing.copy.close') }}"></button>
+                    <button type="button" class="btn-close" data-ui-modal-close aria-label="{{ __('purchasing.copy.close') }}"></button>
                 </div>
                 <div class="modal-body">
                     <div class="mb-3">
@@ -436,7 +436,7 @@
             </form>
         </div>
     </div>
-</div>
+</dialog>
 @endsection
 
 @push('scripts')

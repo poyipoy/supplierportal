@@ -1,4 +1,4 @@
-<div class="modal fade" id="ruleModal" tabindex="-1" aria-labelledby="ruleModalTitle" aria-hidden="true">
+<dialog class="ui-native-dialog" id="ruleModal" aria-labelledby="ruleModalTitle" closedby="any">
     <div class="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable modal-fullscreen-lg-down">
         <form id="ruleForm" method="POST" action="{{ route($masterRoutePrefix.'.hs-code-rules.store') }}" class="modal-content">
             @csrf
@@ -12,7 +12,7 @@
                     <h2 class="modal-title fs-6 fw-bold tw:text-on-surface" id="ruleModalTitle">{{ __('admin.copy.add_hs_code_classification_rule') }}</h2>
                     <p class="tw:m-0 tw:mt-0.5 tw:text-ui-xs tw:text-on-surface-variant">{{ __('admin.copy.deterministic_rule_configuration_matching_material_category_cross_section_shape_and_dimension_parame') }}</p>
                 </div>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('admin.copy.close') }}"></button>
+                <button type="button" class="btn-close" data-ui-modal-close aria-label="{{ __('admin.copy.close') }}"></button>
             </div>
 
             <div class="modal-body tw:grid tw:gap-5 tw:p-5">
@@ -173,7 +173,7 @@
             </div>
 
             <div class="modal-footer tw:border-t tw:border-outline-variant tw:bg-surface-low tw:px-5 tw:py-3">
-                <x-ui.button type="button" variant="ghost" data-bs-dismiss="modal">{{ __('admin.copy.cancel') }}</x-ui.button>
+                <x-ui.button type="button" variant="ghost" data-ui-modal-close>{{ __('admin.copy.cancel') }}</x-ui.button>
                 <x-ui.button type="submit" id="btnSaveRule">
                     <span class="ui-spinner d-none me-1" id="spinnerSaveRule" aria-hidden="true"></span>
                     <x-ui.icon name="check" size="sm" />
@@ -182,4 +182,4 @@
             </div>
         </form>
     </div>
-</div>
+</dialog>
