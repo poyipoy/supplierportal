@@ -11,7 +11,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Quick reference
 
 ### Stack & commands
-- PHP 8.2, Laravel 12, MySQL (Laragon). Blade + Bootstrap 5 compat layer + Tailwind 4 with the `tw:` prefix, Alpine, Vite 7. Server-rendered; no API layer.
+- PHP 8.2, Laravel 12, MySQL (Laragon). Blade + Tailwind 4 with the `tw:` prefix + ADASI `x-ui.*` / `.ui-*` design system, Alpine 3.4.2, Vite 7, DataTables 3.1.5 (zero jQuery, zero Bootstrap). Server-rendered; no API layer.
 - Install: `composer install` and `npm.cmd install`. Do not use `composer setup` on an existing DB (it runs `migrate --force`).
 - Run: `composer dev` (serve + `queue:listen --queue=exports,default` + `queue:listen --queue=imports` + pail + vite).
 - Test: `composer test` (Unit+Feature, serial, several minutes), `composer test:parallel` (Parallel suite in 4 processes, then Serial, as CI `deep` does), `php artisan test --filter=Name`, `node --test tests/js/<file>.test.mjs`. CI (`.github/workflows/tests.yml`) runs a regression subset, the core workflow suites, JS tests and the build on PRs and pushes to `master`, and the full suite on MySQL 8.0 and MariaDB 11.4 on `master`, nightly and on demand (AGENTS.md, Workflow Verifikasi).
