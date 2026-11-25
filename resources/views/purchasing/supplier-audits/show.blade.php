@@ -207,7 +207,7 @@
                 <x-ui.textarea name="note" id="supplier_audit_revision_note" :label="__('supplier_audit.fields.revision_note')" rows="4" required maxlength="2000" />
                 <label class="tw:inline-flex tw:min-h-10 tw:cursor-pointer tw:items-center tw:gap-2 tw:text-ui-sm" for="supplier_audit_change_due_date">
                     <input type="hidden" name="change_due_date" value="0">
-                    <input type="checkbox" class="form-check-input tw:m-0" id="supplier_audit_change_due_date" name="change_due_date" value="1" x-model="changeDue">
+                    <input type="checkbox" class="ui-check tw:m-0" id="supplier_audit_change_due_date" name="change_due_date" value="1" x-model="changeDue">
                     <span>{{ __('supplier_audit.deadline.change_on_revision') }}</span>
                 </label>
                 @if($deadlinePassed)

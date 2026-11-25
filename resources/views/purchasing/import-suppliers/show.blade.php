@@ -43,10 +43,10 @@
                 </span>
             </header>
 
-            <div class="table-responsive">
-                <table class="table align-middle tw:m-0 tw:text-ui-sm">
+            <div class="ui-table-responsive">
+                <table class="ui-table tw:align-middle tw:m-0 tw:text-ui-sm">
                     <caption class="tw:sr-only">{{ __('supplier_contact.directory.pending_title') }}</caption>
-                    <thead class="table-light">
+                    <thead>
                         <tr>
                             <th scope="col" class="tw:w-1/4 tw:text-ui-xs tw:font-semibold"><span class="tw:sr-only">{{ __('supplier_contact.common.contact_title') }}</span></th>
                             <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('supplier_contact.directory.current_title') }}</th>

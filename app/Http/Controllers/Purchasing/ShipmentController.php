@@ -49,7 +49,7 @@ class ShipmentController extends Controller
                 ->addColumn('shipment_number_display', function ($shp) {
                     $url = route('purchasing.shipments.show', $shp);
 
-                    return '<a href="'.e($url).'" class="fw-bold text-primary text-decoration-none">'.e($shp->shipment_number).'</a>';
+                    return '<a href="'.e($url).'" class="tw:font-bold tw:text-primary tw:no-underline">'.e($shp->shipment_number).'</a>';
                 })
                 ->addColumn('supplier_name', fn ($shp) => e($shp->supplier->company_name ?? $shp->supplier->name ?? '-'))
                 ->addColumn('consolidated_pos', function ($shp) {
@@ -58,14 +58,14 @@ class ShipmentController extends Controller
                         return '<span class="tw:text-on-surface-variant">-</span>';
                     }
 
-                    return $pos->map(fn ($po) => '<span class="ui-status-chip ui-status-chip--neutral me-1">'.e($po->po_number).'</span>')->implode('');
+                    return $pos->map(fn ($po) => '<span class="ui-status-chip ui-status-chip--neutral tw:me-1">'.e($po->po_number).'</span>')->implode('');
                 })
                 ->addColumn('items_count', fn ($shp) => '<span class="ui-tabular-nums">'.e($regionalFormatter->number((string) $shp->items->count(), 'plain')).'</span>')
                 ->addColumn('total_qty', function ($shp) use ($regionalFormatter) {
                     $total = (int) $shp->items->sum('shipped_qty');
                     $text = number_format($total);
 
-                    return '<span class="fw-bold text-primary ui-tabular-nums">'.e($regionalFormatter->number($text, 'international')).' pcs</span>';
+                    return '<span class="tw:font-bold tw:text-primary ui-tabular-nums">'.e($regionalFormatter->number($text, 'international')).' pcs</span>';
                 })
                 ->addColumn('actual_weight', function ($shp) use ($regionalFormatter) {
                     $total = (float) $shp->items->sum('actual_weight_kg');
@@ -76,14 +76,14 @@ class ShipmentController extends Controller
                 ->addColumn('total_weight', function ($shp) {
                     $total = (float) $shp->items->sum('actual_weight_kg');
 
-                    return '<span class="fw-bold text-primary ui-tabular-nums">'.NumberFormat::maxDecimals($total).' Kg</span>';
+                    return '<span class="tw:font-bold tw:text-primary ui-tabular-nums">'.NumberFormat::maxDecimals($total).' Kg</span>';
                 })
                 ->addColumn('shipment_date', fn ($shp) => $shp->shipment_date ? '<span class="ui-tabular-nums">'.e($shp->shipment_date->format('d M Y')).'</span>' : '-')
                 ->addColumn('shipment_date_display', fn ($shp) => $shp->shipment_date ? '<span class="ui-tabular-nums">'.e($regionalFormatter->date($shp->shipment_date, 'human')).'</span>' : '-')
                 ->addColumn('estimated_arrival', fn ($shp) => $shp->estimated_arrival_date ? '<span class="ui-tabular-nums">'.e($regionalFormatter->date($shp->estimated_arrival_date, 'human')).'</span>' : '-')
                 ->addColumn('actual_arrival', function ($shp) use ($regionalFormatter) {
                     if ($shp->actual_arrival_date) {
-                        return '<span class="ui-tabular-nums text-success fw-semibold">'.e($regionalFormatter->date($shp->actual_arrival_date, 'human')).'</span>';
+                        return '<span class="ui-tabular-nums tw:text-success tw:font-semibold">'.e($regionalFormatter->date($shp->actual_arrival_date, 'human')).'</span>';
                     }
 
                     return '<span class="tw:text-on-surface-variant">-</span>';

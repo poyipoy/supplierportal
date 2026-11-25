@@ -21,15 +21,15 @@
 
         {{-- 2. Balanced Data Table --}}
         <x-ui.data-table density="compact">
-            <table class="table table-hover align-middle mb-0 tw:text-ui-sm w-100" id="periodsTable">
-                <thead class="table-light">
+            <table class="ui-table ui-table--hover tw:align-middle tw:mb-0 tw:text-ui-sm tw:w-full" id="periodsTable">
+                <thead>
                     <tr>
                         <th scope="col">{{ __('purchasing.copy.period_name') }}</th>
                         <th scope="col">{{ __('purchasing.copy.scope') }}</th>
                         <th scope="col">{{ __('purchasing.copy.year') }}</th>
-                        <th scope="col" class="text-center">{{ __('purchasing.copy.status') }}</th>
+                        <th scope="col" class="tw:text-center">{{ __('purchasing.copy.status') }}</th>
                         <th scope="col">{{ __('purchasing.copy.created_by') }}</th>
-                        <th scope="col" class="tw:text-right text-end" style="width: 80px;">{{ __('common.table.action') }}</th>
+                        <th scope="col" class="tw:text-end" style="width: 80px;">{{ __('common.table.action') }}</th>
                     </tr>
                 </thead>
                 <tbody></tbody>
@@ -44,7 +44,7 @@
                 <form action="{{ route('purchasing.periods.store') }}" method="POST">
                     @csrf
                     <div class="modal-header">
-                        <h6 class="modal-title fw-bold" id="createPeriodModalTitle">{{ __('purchasing.copy.add_new_procurement_period') }}</h6>
+                        <h6 class="modal-title tw:font-bold" id="createPeriodModalTitle">{{ __('purchasing.copy.add_new_procurement_period') }}</h6>
                         <button type="button" class="btn-close" data-ui-modal-close aria-label="{{ __('purchasing.copy.close') }}"></button>
                     </div>
                     <div class="modal-body">
@@ -56,7 +56,7 @@
                             </x-ui.select>
                         </div>
                     </div>
-                    <div class="modal-footer tw:bg-surface-low border-top">
+                    <div class="modal-footer tw:bg-surface-low tw:border-t tw:border-outline-variant">
                         <x-ui.button type="button" variant="ghost" size="sm" data-ui-modal-close>{{ __('purchasing.copy.cancel') }}</x-ui.button>
                         <x-ui.button type="submit" size="sm">{{ __('purchasing.copy.save_period') }}</x-ui.button>
                     </div>
@@ -73,7 +73,7 @@
                     @csrf
                     @method('PUT')
                     <div class="modal-header">
-                        <h6 class="modal-title fw-bold" id="editPeriodModalTitle">{{ __('purchasing.copy.edit_procurement_period') }}</h6>
+                        <h6 class="modal-title tw:font-bold" id="editPeriodModalTitle">{{ __('purchasing.copy.edit_procurement_period') }}</h6>
                         <button type="button" class="btn-close" data-ui-modal-close aria-label="{{ __('purchasing.copy.close') }}"></button>
                     </div>
                     <div class="modal-body">
@@ -94,7 +94,7 @@
                             </x-ui.select>
                         </div>
                     </div>
-                    <div class="modal-footer tw:bg-surface-low border-top">
+                    <div class="modal-footer tw:bg-surface-low tw:border-t tw:border-outline-variant">
                         <x-ui.button type="button" variant="ghost" size="sm" data-ui-modal-close>{{ __('purchasing.copy.cancel') }}</x-ui.button>
                         <x-ui.button type="submit" size="sm">{{ __('purchasing.copy.save_changes') }}</x-ui.button>
                     </div>
@@ -116,12 +116,12 @@
             serverSide: true,
             ajax: '{{ route("purchasing.periods.index") }}',
             columns: [
-                { data: 'name_display', name: 'name', className: 'fw-bold tw:text-on-surface' },
+                { data: 'name_display', name: 'name', className: 'tw:font-bold tw:text-on-surface' },
                 { data: 'month_display', name: 'month', className: 'tw:text-on-surface-variant' },
                 { data: 'year_display', name: 'year', className: 'tw:text-on-surface-variant' },
-                { data: 'status_badge', name: 'status', searchable: false, className: 'text-center' },
+                { data: 'status_badge', name: 'status', searchable: false, className: 'tw:text-center' },
                 { data: 'creator_name', name: 'creator_name', orderable: false, className: 'tw:text-on-surface-variant' },
-                { data: 'action', name: 'action', orderable: false, searchable: false, className: 'text-end' }
+                { data: 'action', name: 'action', orderable: false, searchable: false, className: 'tw:text-end' }
             ],
             language: {},
 

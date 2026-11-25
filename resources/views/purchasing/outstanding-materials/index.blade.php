@@ -71,7 +71,7 @@
                 id="outstandingSearchInput"
                 type="search"
                 name="search"
-                class="form-control form-control-sm ui-filter-bar__search-input"
+                class="ui-input ui-input--sm ui-filter-bar__search-input"
                 value="{{ $filters['search'] ?? '' }}"
                 placeholder="{{ __('purchasing.outstanding_materials.search_placeholder') }}"
                 aria-label="{{ __('purchasing.outstanding_materials.search_placeholder') }}"
@@ -80,7 +80,7 @@
 
         <x-slot:filters>
             <label for="outstandingStatusFilter" class="tw:sr-only">{{ __('purchasing.outstanding_materials.col_status') }}</label>
-            <select id="outstandingStatusFilter" name="status" class="form-select form-select-sm tw:w-full tw:min-w-0 tw:sm:w-44" aria-label="{{ __('purchasing.outstanding_materials.col_status') }}">
+            <select id="outstandingStatusFilter" name="status" class="ui-select ui-select--sm tw:w-full tw:min-w-0 tw:sm:w-44" aria-label="{{ __('purchasing.outstanding_materials.col_status') }}">
                 <option value="">{{ __('purchasing.outstanding_materials.all_statuses') }}</option>
                 @foreach($statusOptions as $key => $label)
                     <option value="{{ $key }}" @selected(($filters['status'] ?? '') === $key)>{{ $label }}</option>
@@ -88,7 +88,7 @@
             </select>
 
             <label for="outstandingSupplierFilter" class="tw:sr-only">{{ __('purchasing.outstanding_materials.col_supplier') }}</label>
-            <select id="outstandingSupplierFilter" name="supplier_id" class="form-select form-select-sm tw:w-full tw:min-w-0 tw:sm:w-52" aria-label="{{ __('purchasing.outstanding_materials.col_supplier') }}">
+            <select id="outstandingSupplierFilter" name="supplier_id" class="ui-select ui-select--sm tw:w-full tw:min-w-0 tw:sm:w-52" aria-label="{{ __('purchasing.outstanding_materials.col_supplier') }}">
                 <option value="">{{ __('purchasing.outstanding_materials.all_suppliers') }}</option>
                 @foreach($suppliers as $supplier)
                     <option value="{{ $supplier->getRouteKey() }}" @selected((string) ($filters['supplier_id'] ?? '') === (string) $supplier->getRouteKey())>

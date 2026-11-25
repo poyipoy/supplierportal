@@ -116,6 +116,7 @@ for (const path of viewPaths) {
     test(`progress history renderer accepts only literal status tones: ${path}`, async () => {
         const source = await readFile(new URL(path, import.meta.url), 'utf8');
         const rendererSource = extractRenderer(source);
+        const expectedBoldClass = path.includes('/purchasing/') ? 'tw:font-bold' : 'fw-bold';
 
         for (const tone of ['success', 'info', 'warning', 'neutral']) {
             const {created, document} = createDocument();
@@ -124,7 +125,7 @@ for (const path of viewPaths) {
             const chip = created.find(element => element.className.startsWith('ui-status-chip '));
 
             assert.ok(tree);
-            assert.equal(chip.className, `ui-status-chip ui-status-chip--${tone} fw-bold`);
+            assert.equal(chip.className, `ui-status-chip ui-status-chip--${tone} ${expectedBoldClass}`);
         }
         for (const tone of ['success extra', 'neutral\" data-x=\"1', '<img>', '']) {
             const {created, document} = createDocument();
@@ -133,7 +134,7 @@ for (const path of viewPaths) {
             const chip = created.find(element => element.className.startsWith('ui-status-chip '));
 
             assert.ok(tree);
-            assert.equal(chip.className, 'ui-status-chip ui-status-chip--neutral fw-bold');
+            assert.equal(chip.className, `ui-status-chip ui-status-chip--neutral ${expectedBoldClass}`);
             assert.equal(created.some(element => ['img', 'script'].includes(element.tagName)), false);
             assert.equal(created.some(element => Object.keys(element.attributes).length > 0), false);
         }

@@ -33,16 +33,16 @@
         :title="__('finance.drp.ga_list')"
         :description="__('finance.drp.ga_recorded')"
     >
-        <div class="table-responsive">
-            <table class="table table-hover align-middle tw:m-0 tw:text-ui-sm w-100">
-                <thead class="table-light">
+        <div class="ui-table-responsive">
+            <table class="ui-table ui-table--hover tw:align-middle tw:m-0 tw:text-ui-sm tw:w-full">
+                <thead>
                     <tr>
                         <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('finance.drp_surface.batch_number') }}</th>
                         <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('local_invoice.labels.date') }}</th>
                         <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('ga.labels.active_employees') }}</th>
-                        <th scope="col" class="tw:text-ui-xs tw:font-semibold text-end">{{ __('finance.drp.total_amount_rp') }}</th>
+                        <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-end">{{ __('finance.drp.total_amount_rp') }}</th>
                         <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('local_invoice.labels.status') }}</th>
-                        <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-right text-end">{{ __('common.table.action') }}</th>
+                        <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-end">{{ __('common.table.action') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -53,7 +53,7 @@
                             </td>
                             <td>{{ $regionalFormatter->date($batch->created_at, 'human') }}</td>
                             <td>{{ trans_choice('common.final_copy.employee_count', $batch->groups_count) }}</td>
-                            <td class="text-end ui-tabular-nums tw:font-semibold tw:text-primary">
+                            <td class="tw:text-end ui-tabular-nums tw:font-semibold tw:text-primary">
                                 Rp {{ $regionalFormatter->money($batch->total_subtotal, 0) }}
                             </td>
                             <td>
@@ -61,7 +61,7 @@
                                     {{ \App\Support\StatusHelper::localFinanceLabel($batch->status) }}
                                 </x-ui.status-chip>
                             </td>
-                            <td class="tw:text-right text-end">
+                            <td class="tw:text-end">
                                 <x-ui.row-action
                                     :href="route('purchasing.drp.show', $batch)"
                                     :context="$batch->batch_number"
@@ -70,7 +70,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="text-center tw:py-8 tw:text-on-surface-variant tw:text-ui-sm">
+                            <td colspan="6" class="tw:text-center tw:py-8 tw:text-on-surface-variant tw:text-ui-sm">
                                 {{ __('finance.drp.empty_ga') }}
                             </td>
                         </tr>

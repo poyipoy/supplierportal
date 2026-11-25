@@ -43,7 +43,7 @@
             <input
                 type="search"
                 id="filter_search"
-                class="form-control form-control-sm ui-filter-bar__search-input"
+                class="ui-input ui-input--sm ui-filter-bar__search-input"
                 placeholder="{{ __('shipments.copy.search_shipment_po_or_supplier') }}"
                 autocomplete="off"
                 aria-label="{{ __('shipments.copy.search_shipment_registry') }}"
@@ -53,7 +53,7 @@
 
         <x-slot:filters>
             <label for="filter_status" class="tw:sr-only">{{ __('shipments.copy.filter_by_status') }}</label>
-            <select id="filter_status" class="form-select form-select-sm tw:w-full tw:min-w-0 tw:sm:w-44" aria-label="{{ __('shipments.copy.filter_by_status') }}">
+            <select id="filter_status" class="ui-select ui-select--sm tw:w-full tw:min-w-0 tw:sm:w-44" aria-label="{{ __('shipments.copy.filter_by_status') }}">
                 <option value="">{{ __('shipments.copy.all_statuses') }}</option>
                 <option value="draft" @selected(request('status') === 'draft')>{{ __('shipments.copy.draft') }}</option>
                 <option value="submitted" @selected(request('status') === 'submitted')>{{ __('shipments.copy.in_transit') }}</option>
@@ -65,7 +65,7 @@
         <x-slot:advanced>
             <div>
                 <label for="filter_supplier" class="tw:block tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:mb-1.5">{{ __('shipments.copy.supplier') }}</label>
-                <select id="filter_supplier" class="form-select form-select-sm tw:w-full" aria-label="{{ __('shipments.copy.filter_by_supplier') }}">
+                <select id="filter_supplier" class="ui-select ui-select--sm tw:w-full" aria-label="{{ __('shipments.copy.filter_by_supplier') }}">
                     <option value="">{{ __('shipments.copy.all_suppliers') }}</option>
                     @foreach($suppliers as $supplier)
                         <option value="{{ $supplier->getRouteKey() }}" @selected((string) request('supplier_id') === (string) $supplier->getRouteKey())>
@@ -99,21 +99,21 @@
 
     {{-- 3. Balanced Data Table --}}
     <x-ui.data-table density="compact">
-        <table class="table table-hover align-middle mb-0 tw:text-ui-sm w-100" id="shipmentTable">
-            <thead class="table-light">
+        <table class="ui-table ui-table--hover tw:align-middle tw:mb-0 tw:text-ui-sm tw:w-full" id="shipmentTable">
+            <thead>
                 <tr>
                     <th scope="col">{{ __('shipments.copy.shipment_no') }}</th>
                     <th scope="col">{{ __('shipments.copy.supplier') }}</th>
                     <th scope="col">{{ __('shipments.copy.consolidated_pos') }}</th>
-                    <th scope="col" class="text-center">{{ __('shipments.copy.items') }}</th>
-                    <th scope="col" class="text-center">{{ __('shipments.copy.total_qty') }}</th>
-                    <th scope="col" class="text-center">{{ __('shipments.copy.actual_weight') }}</th>
+                    <th scope="col" class="tw:text-center">{{ __('shipments.copy.items') }}</th>
+                    <th scope="col" class="tw:text-center">{{ __('shipments.copy.total_qty') }}</th>
+                    <th scope="col" class="tw:text-center">{{ __('shipments.copy.actual_weight') }}</th>
                     <th scope="col">{{ __('shipments.copy.shipment_date') }}</th>
                     <th scope="col">{{ __('shipments.copy.est_arrival') }}</th>
                     <th scope="col">{{ __('shipments.copy.actual_arrival') }}</th>
                     <th scope="col">{{ __('shipments.copy.missing_documents') }}</th>
-                    <th scope="col" class="text-center">{{ __('shipments.copy.status') }}</th>
-                    <th scope="col" class="tw:text-right text-end" style="width: 96px;">{{ __('common.table.action') }}</th>
+                    <th scope="col" class="tw:text-center">{{ __('shipments.copy.status') }}</th>
+                    <th scope="col" class="tw:text-end" style="width: 96px;">{{ __('common.table.action') }}</th>
                 </tr>
             </thead>
             <tbody>
@@ -124,38 +124,38 @@
                         $totalKg = (float) $shp->items->sum('actual_weight_kg');
                     @endphp
                     <tr>
-                        <td class="fw-bold tw:text-on-surface">
-                            <a href="{{ route('purchasing.shipments.show', $shp) }}" class="text-primary text-decoration-none">
+                        <td class="tw:font-bold tw:text-on-surface">
+                            <a href="{{ route('purchasing.shipments.show', $shp) }}" class="tw:text-primary tw:no-underline">
                                 {{ $shp->shipment_number }}
                             </a>
                         </td>
-                        <td class="fw-semibold">{{ $shp->supplier->company_name ?? $shp->supplier->name ?? '-' }}</td>
+                        <td class="tw:font-semibold">{{ $shp->supplier->company_name ?? $shp->supplier->name ?? '-' }}</td>
                         <td>
                             @if($pos->isEmpty())
                                 <span class="tw:text-on-surface-variant">-</span>
                             @else
                                 @foreach($pos as $po)
-                                    <span class="ui-status-chip ui-status-chip--neutral me-1">{{ $po->po_number }}</span>
+                                    <span class="ui-status-chip ui-status-chip--neutral tw:me-1">{{ $po->po_number }}</span>
                                 @endforeach
                             @endif
                         </td>
-                        <td class="text-center ui-tabular-nums">{{ $regionalFormatter->number((string) $shp->items->count(), 'plain') }}</td>
-                        <td class="text-center fw-bold text-primary ui-tabular-nums">{{ $regionalFormatter->number(number_format($totalQty), 'international') }} pcs</td>
-                        <td class="text-center ui-tabular-nums tw:text-on-surface-variant">{{ $regionalFormatter->number(\App\Support\NumberFormat::maxDecimals($totalKg), 'decimal') }} Kg</td>
+                        <td class="tw:text-center ui-tabular-nums">{{ $regionalFormatter->number((string) $shp->items->count(), 'plain') }}</td>
+                        <td class="tw:text-center tw:font-bold tw:text-primary ui-tabular-nums">{{ $regionalFormatter->number(number_format($totalQty), 'international') }} pcs</td>
+                        <td class="tw:text-center ui-tabular-nums tw:text-on-surface-variant">{{ $regionalFormatter->number(\App\Support\NumberFormat::maxDecimals($totalKg), 'decimal') }} Kg</td>
                         <td class="tw:text-on-surface-variant ui-tabular-nums">{{ $shp->shipment_date ? $regionalFormatter->date($shp->shipment_date, 'human') : '-' }}</td>
                         <td class="tw:text-on-surface-variant ui-tabular-nums">{{ $shp->estimated_arrival_date ? $regionalFormatter->date($shp->estimated_arrival_date, 'human') : '-' }}</td>
                         <td class="tw:text-on-surface-variant ui-tabular-nums">
                             @if($shp->actual_arrival_date)
-                                <span class="text-success fw-bold">{{ $regionalFormatter->date($shp->actual_arrival_date, 'human') }}</span>
+                                <span class="tw:text-success tw:font-bold">{{ $regionalFormatter->date($shp->actual_arrival_date, 'human') }}</span>
                             @else
                                 <span class="tw:text-on-surface-variant">-</span>
                             @endif
                         </td>
                         <td>{!! \App\Support\StatusHelper::shipmentMissingDocumentsHtml($shp) !!}</td>
-                        <td class="text-center">
+                        <td class="tw:text-center">
                             {!! \App\Support\StatusHelper::badge(\App\Support\StatusHelper::shipmentBadge($shp->status), \App\Support\StatusHelper::shipmentLabel($shp->status)) !!}
                         </td>
-                        <td class="tw:text-right text-end">
+                        <td class="tw:text-end">
                             <x-ui.row-action
                                 :href="route('purchasing.shipments.show', $shp)"
                                 :context="$shp->shipment_number"
@@ -164,7 +164,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="12" class="text-center py-4 tw:text-on-surface-variant">{{ __('shipments.copy.no_shipments_matching_filter_criteria') }}</td>
+                        <td colspan="12" class="tw:text-center tw:py-4 tw:text-on-surface-variant">{{ __('shipments.copy.no_shipments_matching_filter_criteria') }}</td>
                     </tr>
                 @endforelse
             </tbody>
@@ -195,18 +195,18 @@
                 }
             },
             columns: [
-                { data: 'shipment_number_display', name: 'shipment_number', className: 'fw-bold tw:text-on-surface' },
+                { data: 'shipment_number_display', name: 'shipment_number', className: 'tw:font-bold tw:text-on-surface' },
                 { data: 'supplier_name', name: 'supplier.name', orderable: false },
                 { data: 'consolidated_pos', name: 'consolidated_pos', orderable: false },
-                { data: 'items_count', name: 'items_count', className: 'text-center', orderable: false, searchable: false },
-                { data: 'total_qty', name: 'total_qty', className: 'text-center', orderable: false, searchable: false },
-                { data: 'actual_weight', name: 'actual_weight', className: 'text-center', orderable: false, searchable: false },
+                { data: 'items_count', name: 'items_count', className: 'tw:text-center', orderable: false, searchable: false },
+                { data: 'total_qty', name: 'total_qty', className: 'tw:text-center', orderable: false, searchable: false },
+                { data: 'actual_weight', name: 'actual_weight', className: 'tw:text-center', orderable: false, searchable: false },
                 { data: 'shipment_date_display', name: 'shipment_date', className: 'tw:text-on-surface-variant' },
                 { data: 'estimated_arrival', name: 'estimated_arrival_date', className: 'tw:text-on-surface-variant' },
                 { data: 'actual_arrival', name: 'actual_arrival_date', className: 'tw:text-on-surface-variant' },
                 { data: 'missing_documents', name: 'missing_documents', orderable: false, searchable: false },
-                { data: 'status_badge', name: 'status', className: 'text-center' },
-                { data: 'action', name: 'action', orderable: false, searchable: false, className: 'text-end' }
+                { data: 'status_badge', name: 'status', className: 'tw:text-center' },
+                { data: 'action', name: 'action', orderable: false, searchable: false, className: 'tw:text-end' }
             ],
 
             order: []

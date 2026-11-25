@@ -112,7 +112,7 @@
                     id="quotationPrSearch"
                     type="text"
                     name="pr_number"
-                    class="form-control form-control-sm ui-filter-bar__search-input"
+                    class="ui-input ui-input--sm ui-filter-bar__search-input"
                     value="{{ request('pr_number') }}"
                     placeholder="{{ __('purchasing.copy.pr_number_req') }}"
                     aria-label="{{ __('purchasing.copy.filter_by_pr_number') }}"
@@ -121,7 +121,7 @@
 
             <x-slot:filters>
                 <label for="quotationStatusFilter" class="tw:sr-only">{{ __('purchasing.copy.filter_by_status') }}</label>
-                <select id="quotationStatusFilter" name="status" class="form-select form-select-sm tw:w-full tw:min-w-0 tw:sm:w-44" aria-label="{{ __('purchasing.copy.filter_by_status') }}">
+                <select id="quotationStatusFilter" name="status" class="ui-select ui-select--sm tw:w-full tw:min-w-0 tw:sm:w-44" aria-label="{{ __('purchasing.copy.filter_by_status') }}">
                     <option value="">{{ __('purchasing.copy.all_statuses') }}</option>
                     <option value="submitted" {{ request('status') == 'submitted' ? 'selected' : '' }}>{{ __('purchasing.copy.submitted') }}</option>
                     <option value="all_unavailable" {{ request('status') == 'all_unavailable' ? 'selected' : '' }}>{{ __('purchasing.copy.all_unavailable') }}</option>
@@ -151,7 +151,7 @@
             <x-slot:advanced>
                 <div>
                     <label for="quotationSupplierFilter" class="tw:block tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:mb-1.5">{{ __('purchasing.copy.supplier') }}</label>
-                    <select id="quotationSupplierFilter" name="supplier_id" class="form-select form-select-sm tw:w-full" aria-label="{{ __('purchasing.copy.filter_by_supplier') }}">
+                    <select id="quotationSupplierFilter" name="supplier_id" class="ui-select ui-select--sm tw:w-full" aria-label="{{ __('purchasing.copy.filter_by_supplier') }}">
                         <option value="">{{ __('purchasing.copy.all_suppliers_3a7a53') }}</option>
                         @foreach($suppliers as $supplier)
                             <option value="{{ $supplier->getRouteKey() }}" {{ request('supplier_id') === $supplier->getRouteKey() ? 'selected' : '' }}>
@@ -163,7 +163,7 @@
 
                 <div>
                     <label for="quotationCurrencyFilter" class="tw:block tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:mb-1.5">{{ __('purchasing.copy.currency') }}</label>
-                    <select id="quotationCurrencyFilter" name="currency" class="form-select form-select-sm tw:w-full" aria-label="{{ __('purchasing.copy.filter_by_currency') }}">
+                    <select id="quotationCurrencyFilter" name="currency" class="ui-select ui-select--sm tw:w-full" aria-label="{{ __('purchasing.copy.filter_by_currency') }}">
                         <option value="">{{ __('purchasing.copy.all_curr') }}</option>
                         @foreach(\App\Models\ExchangeRate::CURRENCIES as $currency)
                             <option value="{{ $currency }}" {{ request('currency') == $currency ? 'selected' : '' }}>{{ \App\Models\ExchangeRate::currencyLabel($currency) }}</option>
@@ -179,42 +179,42 @@
 
         {{-- 3. Balanced Data Table --}}
         <x-ui.data-table density="compact">
-            <div class="table-responsive" id="quotationTableContainer">
-                <table class="table table-hover align-middle mb-0 tw:text-ui-sm w-100">
-                    <thead class="table-light">
+            <div class="ui-table-responsive" id="quotationTableContainer">
+                <table class="ui-table ui-table--hover tw:align-middle tw:mb-0 tw:text-ui-sm tw:w-full">
+                    <thead>
                         <tr>
-                            <th scope="col" style="width: 40px;" class="text-center">{{ __('purchasing.copy.no') }}</th>
+                            <th scope="col" style="width: 40px;" class="tw:text-center">{{ __('purchasing.copy.no') }}</th>
                             <th scope="col">{{ __('purchasing.copy.supplier') }}</th>
                             <th scope="col">{{ __('purchasing.copy.pr_no') }}</th>
                             <th scope="col">{{ __('purchasing.copy.period') }}</th>
-                            <th scope="col" class="text-center">{{ __('purchasing.copy.currency') }}</th>
-                            <th scope="col" class="text-center">{{ __('purchasing.copy.items') }}</th>
-                            <th scope="col" class="text-center">{{ __('purchasing.copy.status') }}</th>
+                            <th scope="col" class="tw:text-center">{{ __('purchasing.copy.currency') }}</th>
+                            <th scope="col" class="tw:text-center">{{ __('purchasing.copy.items') }}</th>
+                            <th scope="col" class="tw:text-center">{{ __('purchasing.copy.status') }}</th>
                             <th scope="col">{{ __('purchasing.copy.date_submitted') }}</th>
                             <th scope="col">
                                 {{ __('purchasing.copy.valid_until') }}
-                                <x-ui.icon name="info" class="ms-1 text-muted" data-ui-tooltip="{{ __('purchasing.copy.expired_quotations_cannot_be_used_to_create_a_po_until_the_supplier_submits_a_revision') }}" />
+                                <x-ui.icon name="info" class="tw:ms-1 tw:text-on-surface-variant" data-ui-tooltip="{{ __('purchasing.copy.expired_quotations_cannot_be_used_to_create_a_po_until_the_supplier_submits_a_revision') }}" />
                             </th>
-                            <th scope="col" class="tw:text-right text-end" style="min-width: 96px;">{{ __('common.table.action') }}</th>
+                            <th scope="col" class="tw:text-end" style="min-width: 96px;">{{ __('common.table.action') }}</th>
                         </tr>
                     </thead>
                     <tbody>
                         @forelse($quotations as $i => $q)
                             <tr>
-                                <td class="text-center tw:text-on-surface-variant">{{ $quotations->firstItem() + $i }}</td>
+                                <td class="tw:text-center tw:text-on-surface-variant">{{ $quotations->firstItem() + $i }}</td>
                                 <td>
-                                    <div class="d-flex align-items-center gap-2">
-                                        <x-ui.icon name="building" size="sm" class="text-primary flex-shrink-0" />
-                                        <span class="fw-bold tw:text-on-surface">{{ $q->supplier->name }}</span>
+                                    <div class="tw:flex tw:items-center tw:gap-2">
+                                        <x-ui.icon name="building" size="sm" class="tw:text-primary tw:shrink-0" />
+                                        <span class="tw:font-bold tw:text-on-surface">{{ $q->supplier->name }}</span>
                                     </div>
                                 </td>
                                 <td>
-                                    <span class="fw-bold text-primary">{{ $q->purchaseRequisition->pr_number ?? '-' }}</span>
+                                    <span class="tw:font-bold tw:text-primary">{{ $q->purchaseRequisition->pr_number ?? '-' }}</span>
                                 </td>
                                 <td>{{ $q->purchaseRequisition->period->display_label ?? $q->purchaseRequisition->period->name ?? '-' }}</td>
-                                <td class="text-center"><span class="ui-status-chip ui-status-chip--neutral">{{ $q->currency }}</span></td>
-                                <td class="text-center fw-medium">{{ $regionalFormatter->number((string) $q->items->count(), 'plain') }}</td>
-                                <td class="text-center">
+                                <td class="tw:text-center"><span class="ui-status-chip ui-status-chip--neutral">{{ $q->currency }}</span></td>
+                                <td class="tw:text-center tw:font-medium">{{ $regionalFormatter->number((string) $q->items->count(), 'plain') }}</td>
+                                <td class="tw:text-center">
                                     <x-status-badge type="quotation" :status="$q->status" />
                                 </td>
                                 <td class="tw:text-on-surface-variant">{{ $q->submitted_at ? $regionalFormatter->timestamp($q->submitted_at, 'datetime_comma') : '-' }}</td>
@@ -223,13 +223,13 @@
                                         $validityMeta = \App\Support\StatusHelper::quotationValidityMeta($q->validity_period, $q->status);
                                     @endphp
                                     @if($q->validity_period)
-                                        <div class="fw-semibold tw:text-on-surface">{{ $regionalFormatter->date($q->validity_period, 'human') }}</div>
+                                        <div class="tw:font-semibold tw:text-on-surface">{{ $regionalFormatter->date($q->validity_period, 'human') }}</div>
                                         {!! \App\Support\StatusHelper::badgeWithTooltip($validityMeta['class'], $validityMeta['label'], $validityMeta['description']) !!}
                                     @else
                                         {!! \App\Support\StatusHelper::badgeWithTooltip($validityMeta['class'], $validityMeta['label'], $validityMeta['description']) !!}
                                     @endif
                                 </td>
-                                <td class="tw:text-right text-end">
+                                <td class="tw:text-end">
                                     <x-ui.row-action
                                         :href="\App\Support\PurchasingNavigation::toRoute('purchasing.quotations.show', $q)"
                                         :context="$q->purchaseRequisition->pr_number ?? $q->supplier->name"
@@ -238,7 +238,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="10" class="text-center py-4">
+                                <td colspan="10" class="tw:text-center tw:py-4">
                                     <x-ui.empty-state icon="inbox" :title="__('purchasing.copy.no_quotations_received')" :description="__('purchasing.copy.submitted_supplier_quotations_will_appear_here')" />
                                 </td>
                             </tr>

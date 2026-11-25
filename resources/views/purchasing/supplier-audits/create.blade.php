@@ -138,7 +138,7 @@
                                 <li>
                                     <label class="tw:m-0 tw:flex tw:min-h-11 tw:items-center tw:gap-3 tw:px-3 tw:py-2"
                                         :class="row.disabled ? 'tw:cursor-not-allowed tw:opacity-60' : 'tw:cursor-pointer tw:hover:bg-surface-container'">
-                                        <input type="checkbox" name="supplier_ids[]" class="form-check-input tw:m-0 tw:shrink-0"
+                                        <input type="checkbox" name="supplier_ids[]" class="ui-check tw:m-0 tw:shrink-0"
                                             :value="row.value" :disabled="row.disabled" x-model="selected">
                                         <span class="tw:min-w-0 tw:flex-1">
                                             <span class="tw:block tw:truncate tw:text-ui-sm tw:font-medium tw:text-on-surface" x-text="row.label"></span>

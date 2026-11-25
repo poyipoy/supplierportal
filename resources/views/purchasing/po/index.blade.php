@@ -33,7 +33,7 @@
             <input
                 type="search"
                 id="filter_po_number"
-                class="form-control form-control-sm ui-filter-bar__search-input"
+                class="ui-input ui-input--sm ui-filter-bar__search-input"
                 placeholder="{{ __('purchasing.copy.e_g_po_05_2026_001_or_supplier_name') }}"
                 autocomplete="off"
                 aria-label="{{ __('purchasing.copy.search_po_supplier_or_pr') }}"
@@ -43,7 +43,7 @@
 
         <x-slot:filters>
             <label for="filter_status" class="tw:sr-only">{{ __('purchasing.copy.filter_by_status') }}</label>
-            <select id="filter_status" class="form-select form-select-sm tw:w-full tw:min-w-0 tw:sm:w-44" aria-label="{{ __('purchasing.copy.filter_by_status') }}">
+            <select id="filter_status" class="ui-select ui-select--sm tw:w-full tw:min-w-0 tw:sm:w-44" aria-label="{{ __('purchasing.copy.filter_by_status') }}">
                 <option value="">{{ __('purchasing.copy.all_statuses') }}</option>
                 <option value="active" @selected(request('status') === 'active')>{{ __('purchasing.copy.active') }}</option>
                 <option value="waiting_qc" @selected(request('status') === 'waiting_qc')>{{ __('purchasing.copy.waiting_qc') }}</option>
@@ -54,7 +54,7 @@
             </select>
 
             <label for="filter_supplier" class="tw:sr-only">{{ __('purchasing.copy.filter_by_supplier') }}</label>
-            <select id="filter_supplier" class="form-select form-select-sm tw:w-full tw:min-w-0 tw:sm:w-48" aria-label="{{ __('purchasing.copy.filter_by_supplier') }}">
+            <select id="filter_supplier" class="ui-select ui-select--sm tw:w-full tw:min-w-0 tw:sm:w-48" aria-label="{{ __('purchasing.copy.filter_by_supplier') }}">
                 <option value="">{{ __('purchasing.copy.all_suppliers_3a7a53') }}</option>
                 @foreach($suppliers as $supplier)
                     <option value="{{ $supplier->getRouteKey() }}" @selected((string) request('supplier_id') === (string) $supplier->getRouteKey())>{{ $supplier->name }}</option>
@@ -78,18 +78,18 @@
         :master-frameless="true"
     >
         <x-ui.data-table density="compact">
-            <table class="table table-hover align-middle mb-0 tw:text-ui-sm w-100" id="poTable">
-                <thead class="table-light">
+            <table class="ui-table ui-table--hover tw:align-middle tw:mb-0 tw:text-ui-sm tw:w-full" id="poTable">
+                <thead>
                     <tr>
                         <th scope="col">{{ __('purchasing.copy.po_number') }}</th>
                         <th scope="col">{{ __('purchasing.copy.supplier') }}</th>
                         <th scope="col">{{ __('purchasing.copy.period') }}</th>
                         <th scope="col">{{ __('purchasing.copy.reference_pr') }}</th>
                         <th scope="col">{{ __('purchasing.copy.remark') }}</th>
-                        <th scope="col" class="text-end">{{ __('purchasing.copy.total_idr') }}</th>
-                        <th scope="col" class="text-center">{{ __('purchasing.copy.status') }}</th>
+                        <th scope="col" class="tw:text-end">{{ __('purchasing.copy.total_idr') }}</th>
+                        <th scope="col" class="tw:text-center">{{ __('purchasing.copy.status') }}</th>
                         <th scope="col">{{ __('purchasing.copy.estimated_arrival') }}</th>
-                        <th scope="col" class="tw:text-right text-end" style="width: 96px;">{{ __('common.table.action') }}</th>
+                        <th scope="col" class="tw:text-end" style="width: 96px;">{{ __('common.table.action') }}</th>
                     </tr>
                 </thead>
                 <tbody></tbody>
@@ -121,15 +121,15 @@
                 }
             },
             columns: [
-                { data: 'po_number_display', name: 'po_number', className: 'fw-bold tw:text-on-surface' },
+                { data: 'po_number_display', name: 'po_number', className: 'tw:font-bold tw:text-on-surface' },
                 { data: 'supplier_name', name: 'supplier_name', orderable: false },
                 { data: 'period_name', name: 'period_name', orderable: false },
                 { data: 'pr_reference', name: 'pr_reference', orderable: false },
                 { data: 'remark_display', name: 'remark_display', orderable: false, className: 'tw:text-on-surface-variant' },
-                { data: 'total_idr', name: 'total_idr', className: 'text-end fw-semibold tw:text-on-surface ui-tabular-nums', orderable: false, searchable: false },
-                { data: 'status_badge', name: 'status', className: 'text-center' },
+                { data: 'total_idr', name: 'total_idr', className: 'tw:text-end tw:font-semibold tw:text-on-surface ui-tabular-nums', orderable: false, searchable: false },
+                { data: 'status_badge', name: 'status', className: 'tw:text-center' },
                 { data: 'estimated_date', name: 'estimated_arrival', className: 'tw:text-on-surface-variant' },
-                { data: 'action', name: 'action', orderable: false, searchable: false, className: 'text-end' }
+                { data: 'action', name: 'action', orderable: false, searchable: false, className: 'tw:text-end' }
             ],
             language: {},
 

@@ -63,17 +63,17 @@
             {{-- 1. Procurement Context --}}
             <x-ui.card :title="__('procurement.quotation.procurement_context')" data-quotation-section="context">
                 <div class="tw:grid tw:gap-3 tw:sm:grid-cols-2 tw:lg:grid-cols-3">
-                    <div class="tw:p-2.5 tw:bg-surface-low border rounded">
-                        <div class="tw:text-on-surface-variant tw:text-ui-xs fw-semibold tw:uppercase">{{ __('purchasing.copy.pr_number') }}</div>
-                        <div class="fw-bold text-primary tw:text-ui-sm tw:mt-0.5">{{ $quotation->purchaseRequisition->pr_number ?? '-' }}</div>
+                    <div class="tw:p-2.5 tw:bg-surface-low tw:border tw:border-outline-variant tw:rounded-ui-sm">
+                        <div class="tw:text-on-surface-variant tw:text-ui-xs tw:font-semibold tw:uppercase">{{ __('purchasing.copy.pr_number') }}</div>
+                        <div class="tw:font-bold tw:text-primary tw:text-ui-sm tw:mt-0.5">{{ $quotation->purchaseRequisition->pr_number ?? '-' }}</div>
                     </div>
-                    <div class="tw:p-2.5 tw:bg-surface-low border rounded">
-                        <div class="tw:text-on-surface-variant tw:text-ui-xs fw-semibold tw:uppercase">{{ __('purchasing.copy.procurement_period') }}</div>
-                        <div class="fw-semibold tw:text-on-surface tw:text-ui-sm tw:mt-0.5">{{ $quotation->purchaseRequisition->period->display_label ?? $quotation->purchaseRequisition->period->name ?? '-' }}</div>
+                    <div class="tw:p-2.5 tw:bg-surface-low tw:border tw:border-outline-variant tw:rounded-ui-sm">
+                        <div class="tw:text-on-surface-variant tw:text-ui-xs tw:font-semibold tw:uppercase">{{ __('purchasing.copy.procurement_period') }}</div>
+                        <div class="tw:font-semibold tw:text-on-surface tw:text-ui-sm tw:mt-0.5">{{ $quotation->purchaseRequisition->period->display_label ?? $quotation->purchaseRequisition->period->name ?? '-' }}</div>
                     </div>
-                    <div class="tw:p-2.5 tw:bg-surface-low border rounded">
-                        <div class="tw:text-on-surface-variant tw:text-ui-xs fw-semibold tw:uppercase">{{ __('purchasing.copy.currency') }}</div>
-                        <div class="fw-bold tw:text-on-surface tw:text-ui-sm tw:mt-0.5"><span class="ui-status-chip ui-status-chip--neutral">{{ $quotation->currency }}</span></div>
+                    <div class="tw:p-2.5 tw:bg-surface-low tw:border tw:border-outline-variant tw:rounded-ui-sm">
+                        <div class="tw:text-on-surface-variant tw:text-ui-xs tw:font-semibold tw:uppercase">{{ __('purchasing.copy.currency') }}</div>
+                        <div class="tw:font-bold tw:text-on-surface tw:text-ui-sm tw:mt-0.5"><span class="ui-status-chip ui-status-chip--neutral">{{ $quotation->currency }}</span></div>
                     </div>
                 </div>
                 <div class="tw:mt-3">
@@ -84,17 +84,17 @@
             {{-- 2. Commercial Terms & Logistics --}}
             <x-ui.card :title="__('procurement.quotation.commercial_terms')" data-quotation-section="terms">
                 <div class="tw:grid tw:gap-3 tw:sm:grid-cols-2 tw:lg:grid-cols-3">
-                    <div class="tw:p-2.5 tw:bg-surface-low border rounded">
-                        <div class="tw:text-on-surface-variant tw:text-ui-xs fw-semibold tw:uppercase">{{ __('purchasing.copy.date_submitted') }}</div>
-                        <div class="fw-semibold tw:text-on-surface tw:text-ui-sm tw:mt-0.5">{{ $quotation->submitted_at ? $regionalFormatter->timestamp($quotation->submitted_at, 'datetime_comma') : '-' }}</div>
+                    <div class="tw:p-2.5 tw:bg-surface-low tw:border tw:border-outline-variant tw:rounded-ui-sm">
+                        <div class="tw:text-on-surface-variant tw:text-ui-xs tw:font-semibold tw:uppercase">{{ __('purchasing.copy.date_submitted') }}</div>
+                        <div class="tw:font-semibold tw:text-on-surface tw:text-ui-sm tw:mt-0.5">{{ $quotation->submitted_at ? $regionalFormatter->timestamp($quotation->submitted_at, 'datetime_comma') : '-' }}</div>
                     </div>
-                    <div class="tw:p-2.5 tw:bg-surface-low border rounded">
-                        <div class="tw:text-on-surface-variant tw:text-ui-xs fw-semibold tw:uppercase">{{ __('purchasing.copy.supplier_estimate_delivery') }}</div>
-                        <div class="fw-semibold tw:text-on-surface tw:text-ui-sm tw:mt-0.5">{{ $quotation->estimated_delivery ? $regionalFormatter->date($quotation->estimated_delivery) : '-' }}</div>
+                    <div class="tw:p-2.5 tw:bg-surface-low tw:border tw:border-outline-variant tw:rounded-ui-sm">
+                        <div class="tw:text-on-surface-variant tw:text-ui-xs tw:font-semibold tw:uppercase">{{ __('purchasing.copy.supplier_estimate_delivery') }}</div>
+                        <div class="tw:font-semibold tw:text-on-surface tw:text-ui-sm tw:mt-0.5">{{ $quotation->estimated_delivery ? $regionalFormatter->date($quotation->estimated_delivery) : '-' }}</div>
                     </div>
-                    <div class="tw:p-2.5 tw:bg-surface-low border rounded">
-                        <div class="tw:text-on-surface-variant tw:text-ui-xs fw-semibold tw:uppercase">{{ __('purchasing.copy.quotation_valid_until') }}</div>
-                        <div class="fw-semibold tw:text-on-surface tw:text-ui-sm tw:mt-0.5">
+                    <div class="tw:p-2.5 tw:bg-surface-low tw:border tw:border-outline-variant tw:rounded-ui-sm">
+                        <div class="tw:text-on-surface-variant tw:text-ui-xs tw:font-semibold tw:uppercase">{{ __('purchasing.copy.quotation_valid_until') }}</div>
+                        <div class="tw:font-semibold tw:text-on-surface tw:text-ui-sm tw:mt-0.5">
                             @if($quotation->validity_period)
                                 {{ $regionalFormatter->date($quotation->validity_period) }}
                                 {!! \App\Support\StatusHelper::badgeWithTooltip($validityMeta['class'] . ' ms-1', $validityMeta['label'], $validityMeta['description']) !!}
@@ -103,13 +103,13 @@
                             @endif
                         </div>
                     </div>
-                    <div class="tw:sm:col-span-2 tw:lg:col-span-3 tw:p-2.5 tw:bg-surface-low border rounded">
-                        <div class="tw:text-on-surface-variant tw:text-ui-xs fw-semibold tw:uppercase">{{ __('purchasing.copy.payment_terms_conditions') }}</div>
+                    <div class="tw:sm:col-span-2 tw:lg:col-span-3 tw:p-2.5 tw:bg-surface-low tw:border tw:border-outline-variant tw:rounded-ui-sm">
+                        <div class="tw:text-on-surface-variant tw:text-ui-xs tw:font-semibold tw:uppercase">{{ __('purchasing.copy.payment_terms_conditions') }}</div>
                         <div class="tw:text-on-surface tw:text-ui-sm tw:mt-0.5">{{ $quotation->payment_terms ?? '-' }}</div>
                     </div>
                     @if($quotation->general_notes)
-                        <div class="tw:sm:col-span-2 tw:lg:col-span-3 tw:p-2.5 tw:bg-surface-low border rounded tw:text-ui-xs tw:text-on-surface">
-                            <span class="fw-bold d-block tw:mb-0.5">{{ __('purchasing.copy.supplier_notes') }}</span>
+                        <div class="tw:sm:col-span-2 tw:lg:col-span-3 tw:p-2.5 tw:bg-surface-low tw:border tw:border-outline-variant tw:rounded-ui-sm tw:text-ui-xs tw:text-on-surface">
+                            <span class="tw:font-bold tw:block tw:mb-0.5">{{ __('purchasing.copy.supplier_notes') }}</span>
                             {{ $quotation->general_notes }}
                         </div>
                     @endif
@@ -118,8 +118,8 @@
 
             {{-- 3. Status & Follow-up --}}
             <x-ui.card :title="__('procurement.quotation.status_follow_up')" data-quotation-section="status">
-                <div class="d-flex flex-wrap align-items-center tw:gap-2">
-                    <span class="tw:text-ui-xs fw-semibold tw:uppercase tw:text-on-surface-variant">{{ __('procurement.quotation.current_status') }}</span>
+                <div class="tw:flex tw:flex-wrap tw:items-center tw:gap-2">
+                    <span class="tw:text-ui-xs tw:font-semibold tw:uppercase tw:text-on-surface-variant">{{ __('procurement.quotation.current_status') }}</span>
                     <x-status-badge type="quotation" :status="$quotation->status" />
                 </div>
                 @if($quotation->status === 'revision_requested')
@@ -128,8 +128,8 @@
                     <x-ui.alert tone="error" :title="__('purchasing.copy.quotation_expired')" class="tw:mt-3">{{ __('purchasing.copy.the_supplier_must_resubmit_a_valid_offer_before_a_po_can_be_created') }}</x-ui.alert>
                 @endif
                 @if($quotation->reviewer_notes)
-                    <div class="mt-3 tw:p-2.5 bg-warning-subtle border border-warning-subtle rounded tw:text-ui-xs text-warning-emphasis">
-                        <span class="fw-bold d-block tw:mb-0.5"><x-ui.icon name="square-pen" size="sm" class="me-1" />{{ __('purchasing.copy.purchasing_reviewer_notes') }}</span>
+                    <div class="tw:mt-3 tw:p-2.5 tw:bg-warning-container tw:border tw:border-warning/40 tw:rounded-ui-sm tw:text-ui-xs tw:text-warning-container-foreground">
+                        <span class="tw:font-bold tw:block tw:mb-0.5"><x-ui.icon name="square-pen" size="sm" class="tw:me-1" />{{ __('purchasing.copy.purchasing_reviewer_notes') }}</span>
                         {{ $quotation->reviewer_notes }}
                     </div>
                 @endif
@@ -145,12 +145,12 @@
         <aside class="tw:grid tw:gap-4">
             {{-- Supplier Details Card --}}
             <x-ui.card :title="__('purchasing.copy.supplier_profile')">
-                <div class="fw-bold tw:text-on-surface tw:text-ui-sm">{{ $supplierDisplayName }}</div>
+                <div class="tw:font-bold tw:text-on-surface tw:text-ui-sm">{{ $supplierDisplayName }}</div>
                 <div class="tw:text-on-surface-variant tw:text-ui-xs tw:mt-0.5">{{ $quotation->supplier->email }}</div>
                 @if($quotation->supplier->supplier)
-                    <div class="tw:text-on-surface-variant tw:text-ui-xs mt-2 pt-2 border-top">
-                        <div class="mb-1"><x-ui.icon name="map-pin" size="sm" class="me-1 tw:text-on-surface-variant" />{{ $quotation->supplier->supplier->address ?? '-' }}</div>
-                        <div><x-ui.icon name="phone" size="sm" class="me-1 tw:text-on-surface-variant" />{{ $quotation->supplier->supplier->phone ?? '-' }}</div>
+                    <div class="tw:text-on-surface-variant tw:text-ui-xs tw:mt-2 tw:pt-2 tw:border-t tw:border-outline-variant">
+                        <div class="tw:mb-1"><x-ui.icon name="map-pin" size="sm" class="tw:me-1 tw:text-on-surface-variant" />{{ $quotation->supplier->supplier->address ?? '-' }}</div>
+                        <div><x-ui.icon name="phone" size="sm" class="tw:me-1 tw:text-on-surface-variant" />{{ $quotation->supplier->supplier->phone ?? '-' }}</div>
                     </div>
                 @endif
                 {{-- Decision 10: Supplier PIC ("–" when absent). --}}
@@ -164,14 +164,14 @@
                         @csrf
                         <input type="hidden" name="return_url" value="{{ \App\Support\PurchasingNavigation::currentUrlForReturn() }}">
                         <x-ui.button type="submit" variant="outline" size="sm" class="tw:w-full tw:justify-between">
-                            <span class="d-inline-flex align-items-center gap-2">
+                            <span class="tw:inline-flex tw:items-center tw:gap-2">
                                 <x-ui.icon name="message-square" size="sm" />
-                                <span class="fw-semibold">{{ __('purchasing.copy.chat_with_supplier') }}</span>
+                                <span class="tw:font-semibold">{{ __('purchasing.copy.chat_with_supplier') }}</span>
                             </span>
                             <x-ui.icon name="chevron-right" size="sm" />
                         </x-ui.button>
                     </form>
-                    <div class="tw:text-on-surface-variant tw:text-ui-xs mt-2">
+                    <div class="tw:text-on-surface-variant tw:text-ui-xs tw:mt-2">
                         {{ __('purchasing.copy.clarify_specifications_lead_times_mtc_certificates_or_price_before_creating_a_po') }}
                     </div>
                 @else
@@ -184,9 +184,9 @@
             {{-- Conversion Rate Snapshot --}}
             <x-ui.card :title="__('purchasing.copy.conversion_rate_snapshot')" :description="__('purchasing.copy.applied_quotation_exchange_rate_snapshot')">
                 @if($quotationRate)
-                    <div class="p-3 tw:bg-surface-low border rounded text-center">
-                        <div class="tw:text-on-surface-variant tw:text-ui-xs fw-semibold tw:uppercase">{{ $quotation->currency }} → IDR</div>
-                        <div class="fw-bold text-primary fs-5 mt-1">Rp {{ $regionalFormatter->groupedDecimal($quotationRate->rate_to_idr) }}</div>
+                    <div class="tw:p-3 tw:bg-surface-low tw:border tw:border-outline-variant tw:rounded-ui-sm tw:text-center">
+                        <div class="tw:text-on-surface-variant tw:text-ui-xs tw:font-semibold tw:uppercase">{{ $quotation->currency }} → IDR</div>
+                        <div class="tw:font-bold tw:text-primary tw:text-ui-lg tw:mt-1">Rp {{ $regionalFormatter->groupedDecimal($quotationRate->rate_to_idr) }}</div>
                         <div class="tw:text-on-surface-variant tw:text-ui-xs tw:mt-0.5">{{ __('common.final_review.snapshot_date', ['date' => $regionalFormatter->date($quotationRate->valid_from)]) }}</div>
                     </div>
                 @else
@@ -218,9 +218,9 @@
                     <form action="{{ route('purchasing.quotations.request-revision', $quotation) }}" method="POST" class="tw:mb-2.5" id="requestRevisionForm" data-managed-submit>
                         @csrf
                         <input type="hidden" name="return_url" value="{{ request('return_url') }}">
-                        <div class="mb-2">
-                            <label class="form-label small fw-semibold tw:text-on-surface mb-1" for="revisionNote">{{ __('purchasing.copy.revision_notes') }}</label>
-                            <textarea name="revision_note" id="revisionNote" class="form-control form-control-sm" rows="2" maxlength="1000" required placeholder="{{ __('purchasing.copy.specify_what_needs_to_be_revised_price_validity_lead_time') }}"></textarea>
+                        <div class="tw:mb-2">
+                            <label class="ui-label tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:mb-1" for="revisionNote">{{ __('purchasing.copy.revision_notes') }}</label>
+                            <textarea name="revision_note" id="revisionNote" class="ui-textarea tw:text-ui-xs tw:px-2 tw:py-1" rows="2" maxlength="1000" required placeholder="{{ __('purchasing.copy.specify_what_needs_to_be_revised_price_validity_lead_time') }}"></textarea>
                         </div>
                         <x-ui.button type="submit" variant="outline" size="sm" class="tw:w-full">
                             <x-slot:leading><x-ui.icon name="rotate-ccw" /></x-slot:leading>
@@ -232,9 +232,9 @@
                     @if($hasAvailableItems)
                         <form action="{{ route('purchasing.quotations.reject', $quotation) }}" method="POST" class="tw:mb-2.5">
                             @csrf
-                            <div class="mb-2">
-                                <label class="form-label small fw-semibold tw:text-on-surface mb-1" for="reviewerNotes">{{ __('purchasing.copy.rejection_reason') }}</label>
-                                <textarea name="reviewer_notes" id="reviewerNotes" class="form-control form-control-sm" rows="2" maxlength="1000" required placeholder="{{ __('purchasing.copy.state_reason_for_rejecting_offer') }}"></textarea>
+                            <div class="tw:mb-2">
+                                <label class="ui-label tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:mb-1" for="reviewerNotes">{{ __('purchasing.copy.rejection_reason') }}</label>
+                                <textarea name="reviewer_notes" id="reviewerNotes" class="ui-textarea tw:text-ui-xs tw:px-2 tw:py-1" rows="2" maxlength="1000" required placeholder="{{ __('purchasing.copy.state_reason_for_rejecting_offer') }}"></textarea>
                             </div>
                             <x-ui.button type="submit" variant="danger" size="sm" class="tw:w-full">
                                 <x-slot:leading><x-ui.icon name="circle-x" /></x-slot:leading>
@@ -271,8 +271,8 @@
                             @csrf
                             <input type="hidden" name="return_url" value="{{ request('return_url') }}">
                             <x-ui.alert tone="warning" :title="__('purchasing.copy.validity_update_required')" class="tw:mb-2">{{ __('purchasing.copy.request_the_supplier_to_extend_the_expired_offer') }}</x-ui.alert>
-                            <div class="mb-2">
-                                <textarea name="revision_note" id="revisionNote" class="form-control form-control-sm" rows="2" maxlength="1000" required placeholder="{{ __('purchasing.copy.please_update_validity_date_and_re_confirm_pricing') }}"></textarea>
+                            <div class="tw:mb-2">
+                                <textarea name="revision_note" id="revisionNote" class="ui-textarea tw:text-ui-xs tw:px-2 tw:py-1" rows="2" maxlength="1000" required placeholder="{{ __('purchasing.copy.please_update_validity_date_and_re_confirm_pricing') }}"></textarea>
                             </div>
                             <x-ui.button type="submit" variant="outline" size="sm" class="tw:w-full">
                                 <x-slot:leading><x-ui.icon name="rotate-ccw" /></x-slot:leading>
@@ -303,10 +303,10 @@
             {{-- Attachments List --}}
             @if($quotation->attachments->count() > 0)
                 <x-ui.card :title="trans_choice('common.closure.attachment_count', $quotation->attachments->count())" padding="none">
-                    <div class="list-group list-group-flush">
+                    <div class="tw:divide-y tw:divide-outline-variant">
                         @foreach($quotation->attachments as $att)
-                            <a href="{{ route('attachments.show', $att) }}" class="list-group-item list-group-item-action py-2 px-3 tw:text-ui-xs d-flex justify-content-between align-items-center" target="_blank">
-                                <span class="text-truncate"><x-ui.icon name="paperclip" size="sm" class="tw:me-1.5 tw:text-on-surface-variant" />{{ $att->file_name }}</span>
+                            <a href="{{ route('attachments.show', $att) }}" class="tw:py-2 tw:px-3 tw:text-ui-xs tw:flex tw:justify-between tw:items-center tw:bg-surface tw:transition-colors tw:hover:bg-surface-container tw:no-underline tw:text-on-surface" target="_blank">
+                                <span class="tw:truncate"><x-ui.icon name="paperclip" size="sm" class="tw:me-1.5 tw:text-on-surface-variant" />{{ $att->file_name }}</span>
                                 <x-ui.icon name="download" size="sm" class="tw:text-on-surface-variant" />
                             </a>
                         @endforeach
@@ -321,11 +321,11 @@
     <dialog class="ui-native-dialog" id="generatePoModal" aria-labelledby="generatePoModalTitle" closedby="any">
         <div class="modal-dialog modal-lg modal-dialog-scrollable modal-dialog-centered">
             <div class="modal-content">
-                <form action="{{ route('purchasing.quotations.generate-po', $quotation) }}" method="POST" id="generatePoForm" class="d-flex flex-column tw:flex-1 tw:min-h-0 tw:overflow-hidden">
+                <form action="{{ route('purchasing.quotations.generate-po', $quotation) }}" method="POST" id="generatePoForm" class="tw:flex tw:flex-col tw:flex-1 tw:min-h-0 tw:overflow-hidden">
                     @csrf
                     <div class="modal-header">
                         <div>
-                            <h5 class="modal-title fw-bold" id="generatePoModalTitle">{{ __('purchasing.copy.generate_purchase_order') }}</h5>
+                            <h5 class="modal-title tw:font-bold" id="generatePoModalTitle">{{ __('purchasing.copy.generate_purchase_order') }}</h5>
                             <div class="tw:text-ui-xs tw:text-on-surface-variant tw:mt-0.5">
                                 {{ $quotation->purchaseRequisition->pr_number ?? '-' }} &middot; {{ $supplierDisplayName }}
                             </div>
@@ -355,27 +355,27 @@
                             </div>
                         </div>
 
-                        <div class="table-responsive tw:rounded-ui-sm tw:border tw:border-outline-variant">
-                            <table class="table table-sm align-middle mb-0 tw:text-ui-xs">
-                                <thead class="table-light">
+                        <div class="ui-table-responsive tw:rounded-ui-sm tw:border tw:border-outline-variant">
+                            <table class="ui-table ui-table--sm tw:align-middle tw:mb-0 tw:text-ui-xs">
+                                <thead>
                                     <tr>
                                         <th scope="col">{{ __('purchasing.copy.material') }}</th>
-                                        <th scope="col" class="text-end">{{ __('purchasing.copy.quantity') }}</th>
+                                        <th scope="col" class="tw:text-end">{{ __('purchasing.copy.quantity') }}</th>
                                         @if($orderedQuantityWriteEnabled)
                                             <th scope="col" style="min-width: 11rem;">{{ __('procurement.ordered_quantity.order_qty') }}</th>
                                         @endif
-                                        <th scope="col" class="text-end">{{ __('purchasing.copy.total_weight_kg_c45d9d') }}</th>
-                                        <th scope="col" class="text-end">{{ __('purchasing.copy.price_kg_5a0171') }}</th>
-                                        <th scope="col" class="text-end">{{ __('purchasing.copy.amount') }}</th>
+                                        <th scope="col" class="tw:text-end">{{ __('purchasing.copy.total_weight_kg_c45d9d') }}</th>
+                                        <th scope="col" class="tw:text-end">{{ __('purchasing.copy.price_kg_5a0171') }}</th>
+                                        <th scope="col" class="tw:text-end">{{ __('purchasing.copy.amount') }}</th>
                                         <th scope="col">{{ __('purchasing.copy.po_scope') }}</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     @foreach($directPoItems as $preview)
                                         @php($previewItem = $preview['item'])
-                                        <tr @class(['table-light' => ! $preview['eligible']])>
-                                            <td class="fw-semibold ui-col-data-name">{{ $previewItem->prItem->material_name ?? '-' }}</td>
-                                            <td class="text-end ui-tabular-nums">{{ $previewItem->prItem?->quantity_value ?? '-' }}</td>
+                                        <tr @class(['tw:bg-surface-container-low' => ! $preview['eligible']])>
+                                            <td class="tw:font-semibold ui-col-data-name">{{ $previewItem->prItem->material_name ?? '-' }}</td>
+                                            <td class="tw:text-end ui-tabular-nums">{{ $previewItem->prItem?->quantity_value ?? '-' }}</td>
                                             @if($orderedQuantityWriteEnabled)
                                                 <td>
                                                     @if($preview['eligible'] && $previewItem->prItem)
@@ -397,13 +397,13 @@
                                                     @endif
                                                 </td>
                                             @endif
-                                            <td class="text-end ui-tabular-nums">
+                                            <td class="tw:text-end ui-tabular-nums">
                                                 {{ \App\Support\NumberFormat::maxDecimals($previewItem->offered_total_weight ?? $previewItem->prItem?->total_weight ?? 0) }}
                                             </td>
-                                            <td class="text-end ui-tabular-nums">
+                                            <td class="tw:text-end ui-tabular-nums">
                                                 {{ $previewItem->price_per_kg !== null ? $regionalFormatter->groupedDecimal($previewItem->price_per_kg, 4) : '-' }}
                                             </td>
-                                            <td class="text-end ui-tabular-nums">
+                                            <td class="tw:text-end ui-tabular-nums">
                                                 {{ $preview['eligible'] ? $regionalFormatter->groupedDecimal($preview['amount']) : '-' }}
                                             </td>
                                             <td>
@@ -416,15 +416,15 @@
                                         </tr>
                                     @endforeach
                                 </tbody>
-                                <tfoot class="table-light fw-bold">
+                                <tfoot class="tw:bg-surface-container-low tw:font-bold">
                                     <tr>
-                                        <td colspan="{{ $orderedQuantityWriteEnabled ? 5 : 4 }}" class="text-end">{{ __('purchasing.copy.po_total') }} ({{ $quotation->currency }})</td>
-                                        <td class="text-end ui-tabular-nums">{{ $regionalFormatter->groupedDecimal($directPoTotalAmount) }}</td>
+                                        <td colspan="{{ $orderedQuantityWriteEnabled ? 5 : 4 }}" class="tw:text-end">{{ __('purchasing.copy.po_total') }} ({{ $quotation->currency }})</td>
+                                        <td class="tw:text-end ui-tabular-nums">{{ $regionalFormatter->groupedDecimal($directPoTotalAmount) }}</td>
                                         <td></td>
                                     </tr>
                                     <tr>
-                                        <td colspan="{{ $orderedQuantityWriteEnabled ? 5 : 4 }}" class="text-end">{{ __('purchasing.copy.estimated_total_idr') }}</td>
-                                        <td class="text-end text-primary ui-tabular-nums">
+                                        <td colspan="{{ $orderedQuantityWriteEnabled ? 5 : 4 }}" class="tw:text-end">{{ __('purchasing.copy.estimated_total_idr') }}</td>
+                                        <td class="tw:text-end tw:text-primary ui-tabular-nums">
                                             {{ $directPoTotalIdr !== null ? 'Rp '.$regionalFormatter->groupedDecimal($directPoTotalIdr) : '-' }}
                                         </td>
                                         <td></td>
@@ -448,9 +448,9 @@
                                 />
                             </div>
                             <div>
-                                <label for="directPoNotes" class="form-label small fw-semibold tw:text-on-surface">{{ __('purchasing.copy.po_notes_remarks') }}</label>
+                                <label for="directPoNotes" class="ui-label tw:text-ui-xs tw:font-semibold tw:text-on-surface">{{ __('purchasing.copy.po_notes_remarks') }}</label>
                                 <textarea
-                                    class="form-control form-control-sm"
+                                    class="ui-textarea tw:text-ui-xs tw:px-2 tw:py-1"
                                     id="directPoNotes"
                                     name="notes"
                                     rows="2"
@@ -463,13 +463,13 @@
                         <div class="tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface-low tw:p-3">
                             <div class="tw:grid tw:gap-3 tw:md:grid-cols-2 tw:items-start">
                                 <div>
-                                    <label for="directPoPortOfDischarge" class="form-label small fw-semibold tw:text-on-surface">
-                                        {{ __('purchasing.copy.confirm_port_of_discharge_label') }} <span class="text-danger">*</span>
+                                    <label for="directPoPortOfDischarge" class="ui-label tw:text-ui-xs tw:font-semibold tw:text-on-surface">
+                                        {{ __('purchasing.copy.confirm_port_of_discharge_label') }} <span class="tw:text-error">*</span>
                                     </label>
                                     <select
                                         name="port_of_discharge"
                                         id="directPoPortOfDischarge"
-                                        class="form-select form-select-sm @error('port_of_discharge') is-invalid @enderror"
+                                        class="ui-select ui-select--sm @error('port_of_discharge') is-invalid @enderror"
                                         required
                                     >
                                         @foreach(\App\Support\Procurement\LogisticsTerms::ports() as $portCode)
@@ -479,25 +479,25 @@
                                         @endforeach
                                     </select>
                                     @error('port_of_discharge')
-                                        <div class="invalid-feedback">{{ $message }}</div>
+                                        <div class="ui-field-error">{{ $message }}</div>
                                     @enderror
                                 </div>
                                 <div class="tw:md:pt-6">
-                                    <div class="form-check tw:mb-0">
+                                    <div class="ui-check-group tw:mb-0">
                                         <input
                                             type="checkbox"
                                             name="confirm_port_of_discharge"
                                             id="directConfirmPortOfDischarge"
                                             value="1"
-                                            class="form-check-input @error('confirm_port_of_discharge') is-invalid @enderror"
+                                            class="ui-check @error('confirm_port_of_discharge') is-invalid @enderror"
                                             required
                                             @checked(old('confirm_port_of_discharge'))
                                         >
-                                        <label for="directConfirmPortOfDischarge" class="form-check-label tw:text-ui-xs fw-semibold tw:text-on-surface tw:cursor-pointer">
+                                        <label for="directConfirmPortOfDischarge" class="tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:cursor-pointer">
                                             {{ __('purchasing.copy.confirm_port_of_discharge_checkbox') }}
                                         </label>
                                         @error('confirm_port_of_discharge')
-                                            <div class="invalid-feedback d-block">{{ $message }}</div>
+                                            <div class="ui-field-error tw:block">{{ $message }}</div>
                                         @enderror
                                     </div>
                                 </div>

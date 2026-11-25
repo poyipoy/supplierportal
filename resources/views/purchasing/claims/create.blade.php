@@ -86,29 +86,29 @@
                         <x-ui.icon-button :href="\App\Support\PurchasingNavigation::toRoute('qc.inspections.show', $inspection)" icon="external-link" :label="__('claims.copy.view_full_qc_inspection_report')" variant="outline" size="sm" />
                     </x-slot:actions>
 
-                    <div class="tw:grid tw:gap-2.5 mb-3">
-                        <div class="p-2 tw:bg-surface-low border rounded">
-                            <div class="tw:text-on-surface-variant tw:text-ui-xs fw-semibold tw:uppercase">{{ __('claims.copy.po_number') }}</div>
-                            <div class="fw-bold tw:text-on-surface tw:text-ui-sm tw:mt-0.5">{{ $inspection->purchaseOrder->po_number }}</div>
+                    <div class="tw:grid tw:gap-2.5 tw:mb-3">
+                        <div class="tw:p-2 tw:bg-surface-low tw:border tw:border-outline-variant tw:rounded-ui-sm">
+                            <div class="tw:text-on-surface-variant tw:text-ui-xs tw:font-semibold tw:uppercase">{{ __('claims.copy.po_number') }}</div>
+                            <div class="tw:font-bold tw:text-on-surface tw:text-ui-sm tw:mt-0.5">{{ $inspection->purchaseOrder->po_number }}</div>
                         </div>
-                        <div class="p-2 tw:bg-surface-low border rounded">
-                            <div class="tw:text-on-surface-variant tw:text-ui-xs fw-semibold tw:uppercase">{{ __('claims.copy.supplier') }}</div>
-                            <div class="fw-semibold tw:text-on-surface tw:text-ui-sm tw:mt-0.5">{{ $inspection->purchaseOrder->supplier->name }}</div>
+                        <div class="tw:p-2 tw:bg-surface-low tw:border tw:border-outline-variant tw:rounded-ui-sm">
+                            <div class="tw:text-on-surface-variant tw:text-ui-xs tw:font-semibold tw:uppercase">{{ __('claims.copy.supplier') }}</div>
+                            <div class="tw:font-semibold tw:text-on-surface tw:text-ui-sm tw:mt-0.5">{{ $inspection->purchaseOrder->supplier->name }}</div>
                         </div>
-                        <div class="p-2 tw:bg-surface-low border rounded">
-                            <div class="tw:text-on-surface-variant tw:text-ui-xs fw-semibold tw:uppercase">{{ __('claims.copy.inspection_date') }}</div>
-                            <div class="fw-semibold tw:text-on-surface tw:text-ui-sm tw:mt-0.5">{{ app(\App\Services\RegionalDisplayFormatter::class)->date($inspection->inspected_at, 'human') }}</div>
+                        <div class="tw:p-2 tw:bg-surface-low tw:border tw:border-outline-variant tw:rounded-ui-sm">
+                            <div class="tw:text-on-surface-variant tw:text-ui-xs tw:font-semibold tw:uppercase">{{ __('claims.copy.inspection_date') }}</div>
+                            <div class="tw:font-semibold tw:text-on-surface tw:text-ui-sm tw:mt-0.5">{{ app(\App\Services\RegionalDisplayFormatter::class)->date($inspection->inspected_at, 'human') }}</div>
                         </div>
                     </div>
 
-                    <div class="mb-3">
-                        <div class="fw-bold text-danger tw:text-ui-xs tw:uppercase mb-1">{{ __('claims.copy.defective_items_ng') }}</div>
-                        <ul class="list-group list-group-flush border rounded overflow-hidden">
+                    <div class="tw:mb-3">
+                        <div class="tw:font-bold tw:text-error tw:text-ui-xs tw:uppercase tw:mb-1">{{ __('claims.copy.defective_items_ng') }}</div>
+                        <ul class="tw:list-none tw:m-0 tw:p-0 tw:divide-y tw:divide-outline-variant tw:border tw:border-outline-variant tw:rounded-ui-sm tw:overflow-hidden">
                             @foreach($inspection->items->where('status', 'ng') as $item)
-                                <li class="list-group-item py-2 tw:px-2.5 tw:text-ui-xs">
-                                    <span class="fw-bold tw:text-on-surface d-block">{{ $item->prItem->material_name }}</span>
+                                <li class="tw:py-2 tw:px-2.5 tw:text-ui-xs tw:bg-surface">
+                                    <span class="tw:font-bold tw:text-on-surface tw:block">{{ $item->prItem->material_name }}</span>
                                     @if($item->notes)
-                                        <span class="tw:text-on-surface-variant fst-italic">{{ __('common.final_copy.qc_remarks') }} {{ $item->notes }}</span>
+                                        <span class="tw:text-on-surface-variant tw:italic">{{ __('common.final_copy.qc_remarks') }} {{ $item->notes }}</span>
                                     @endif
                                 </li>
                             @endforeach
@@ -117,12 +117,12 @@
 
                     @if($inspection->attachments->count() > 0)
                         <div>
-                            <div class="fw-bold tw:text-on-surface-variant tw:text-ui-xs tw:uppercase mb-1">{{ __('claims.copy.qc_evidence_photos') }}</div>
-                            <div class="row g-2">
+                            <div class="tw:font-bold tw:text-on-surface-variant tw:text-ui-xs tw:uppercase tw:mb-1">{{ __('claims.copy.qc_evidence_photos') }}</div>
+                            <div class="tw:grid tw:grid-cols-3 tw:gap-2">
                                 @foreach($inspection->attachments as $att)
-                                    <div class="col-4">
-                                        <a href="{{ route('attachments.show', $att) }}" class="d-block border rounded overflow-hidden tw:h-20 tw:bg-surface-low image-preview-trigger" title="{{ $att->file_name }}">
-                                            <img src="{{ route('attachments.show', $att) }}" alt="{{ $att->file_name }}" class="w-100 h-100 tw:object-cover">
+                                    <div>
+                                        <a href="{{ route('attachments.show', $att) }}" class="tw:block tw:border tw:border-outline-variant tw:rounded-ui-sm tw:overflow-hidden tw:h-20 tw:bg-surface-low image-preview-trigger" title="{{ $att->file_name }}">
+                                            <img src="{{ route('attachments.show', $att) }}" alt="{{ $att->file_name }}" class="tw:w-full tw:h-full tw:object-cover">
                                         </a>
                                     </div>
                                 @endforeach

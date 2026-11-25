@@ -32,44 +32,44 @@
         <div class="tw:grid tw:min-w-0 tw:gap-4">
             {{-- Claim Details Card --}}
             <x-ui.card :title="__('claims.copy.claim_particulars')">
-                <div class="tw:grid tw:gap-3 tw:sm:grid-cols-2 tw:lg:grid-cols-4 mb-4">
-                    <div class="tw:p-2.5 tw:bg-surface-low border rounded">
-                        <div class="tw:text-on-surface-variant tw:text-ui-xs fw-semibold tw:uppercase">{{ __('claims.copy.po_number') }}</div>
-                        <div class="fw-bold tw:text-on-surface tw:text-ui-sm tw:mt-0.5">{{ $claim->purchaseOrder->po_number }}</div>
+                <div class="tw:grid tw:gap-3 tw:sm:grid-cols-2 tw:lg:grid-cols-4 tw:mb-4">
+                    <div class="tw:p-2.5 tw:bg-surface-low tw:border tw:border-outline-variant tw:rounded-ui-sm">
+                        <div class="tw:text-on-surface-variant tw:text-ui-xs tw:font-semibold tw:uppercase">{{ __('claims.copy.po_number') }}</div>
+                        <div class="tw:font-bold tw:text-on-surface tw:text-ui-sm tw:mt-0.5">{{ $claim->purchaseOrder->po_number }}</div>
                     </div>
-                    <div class="tw:p-2.5 tw:bg-surface-low border rounded">
-                        <div class="tw:text-on-surface-variant tw:text-ui-xs fw-semibold tw:uppercase">{{ __('claims.copy.supplier') }}</div>
-                        <div class="fw-semibold tw:text-on-surface tw:text-ui-sm tw:mt-0.5">{{ $claim->purchaseOrder->supplier->name }}</div>
+                    <div class="tw:p-2.5 tw:bg-surface-low tw:border tw:border-outline-variant tw:rounded-ui-sm">
+                        <div class="tw:text-on-surface-variant tw:text-ui-xs tw:font-semibold tw:uppercase">{{ __('claims.copy.supplier') }}</div>
+                        <div class="tw:font-semibold tw:text-on-surface tw:text-ui-sm tw:mt-0.5">{{ $claim->purchaseOrder->supplier->name }}</div>
                     </div>
-                    <div class="tw:p-2.5 tw:bg-surface-low border rounded">
-                        <div class="tw:text-on-surface-variant tw:text-ui-xs fw-semibold tw:uppercase">{{ __('claims.copy.submitted_by') }}</div>
-                        <div class="fw-semibold tw:text-on-surface tw:text-ui-sm tw:mt-0.5">{{ $claim->submitter->name }}</div>
+                    <div class="tw:p-2.5 tw:bg-surface-low tw:border tw:border-outline-variant tw:rounded-ui-sm">
+                        <div class="tw:text-on-surface-variant tw:text-ui-xs tw:font-semibold tw:uppercase">{{ __('claims.copy.submitted_by') }}</div>
+                        <div class="tw:font-semibold tw:text-on-surface tw:text-ui-sm tw:mt-0.5">{{ $claim->submitter->name }}</div>
                         <div class="tw:text-on-surface-variant tw:text-ui-xs">{{ $regionalFormatter->timestamp($claim->created_at, 'datetime_comma') }}</div>
                     </div>
-                    <div class="tw:p-2.5 tw:bg-surface-low border rounded">
-                        <div class="tw:text-on-surface-variant tw:text-ui-xs fw-semibold tw:uppercase">{{ __('claims.copy.response_deadline') }}</div>
-                        <div class="fw-bold text-danger tw:text-ui-sm tw:mt-0.5">{{ $claim->deadline ? $regionalFormatter->date($claim->deadline, 'full_human') : '-' }}</div>
+                    <div class="tw:p-2.5 tw:bg-surface-low tw:border tw:border-outline-variant tw:rounded-ui-sm">
+                        <div class="tw:text-on-surface-variant tw:text-ui-xs tw:font-semibold tw:uppercase">{{ __('claims.copy.response_deadline') }}</div>
+                        <div class="tw:font-bold tw:text-error tw:text-ui-sm tw:mt-0.5">{{ $claim->deadline ? $regionalFormatter->date($claim->deadline, 'full_human') : '-' }}</div>
                     </div>
                 </div>
 
-                <div class="mb-4">
-                    <div class="tw:text-on-surface-variant tw:text-ui-xs fw-semibold tw:uppercase mb-1">{{ __('claims.copy.problem_description') }}</div>
-                    <div class="p-3 tw:bg-surface-low rounded border tw:text-on-surface tw:text-ui-sm tw:whitespace-pre-line">{{ $claim->description }}</div>
+                <div class="tw:mb-4">
+                    <div class="tw:text-on-surface-variant tw:text-ui-xs tw:font-semibold tw:uppercase tw:mb-1">{{ __('claims.copy.problem_description') }}</div>
+                    <div class="tw:p-3 tw:bg-surface-low tw:rounded-ui-sm tw:border tw:border-outline-variant tw:text-on-surface tw:text-ui-sm tw:whitespace-pre-line">{{ $claim->description }}</div>
                 </div>
 
-                <div class="mb-4">
-                    <div class="tw:text-on-surface-variant tw:text-ui-xs fw-semibold tw:uppercase mb-1">{{ __('claims.copy.expected_resolution') }}</div>
-                    <div class="p-3 tw:bg-surface-low rounded border tw:text-on-surface tw:text-ui-sm tw:whitespace-pre-line">{{ $claim->resolution_expected }}</div>
+                <div class="tw:mb-4">
+                    <div class="tw:text-on-surface-variant tw:text-ui-xs tw:font-semibold tw:uppercase tw:mb-1">{{ __('claims.copy.expected_resolution') }}</div>
+                    <div class="tw:p-3 tw:bg-surface-low tw:rounded-ui-sm tw:border tw:border-outline-variant tw:text-on-surface tw:text-ui-sm tw:whitespace-pre-line">{{ $claim->resolution_expected }}</div>
                 </div>
 
                 @if($claim->inspection->attachments->count() > 0)
                     <div>
-                        <div class="tw:text-on-surface-variant tw:text-ui-xs fw-semibold tw:uppercase mb-2">{{ __('claims.copy.qc_evidence_attachments') }}</div>
-                        <div class="row g-2">
+                        <div class="tw:text-on-surface-variant tw:text-ui-xs tw:font-semibold tw:uppercase tw:mb-2">{{ __('claims.copy.qc_evidence_attachments') }}</div>
+                        <div class="tw:grid tw:grid-cols-3 tw:md:grid-cols-4 tw:lg:grid-cols-6 tw:gap-2">
                             @foreach($claim->inspection->attachments as $att)
-                                <div class="col-4 col-md-3 col-lg-2">
-                                    <a href="{{ route('attachments.show', $att) }}" class="d-block border rounded overflow-hidden tw:h-24 tw:bg-surface-low image-preview-trigger" title="{{ $att->file_name }}">
-                                        <img src="{{ route('attachments.show', $att) }}" alt="{{ $att->file_name }}" class="w-100 h-100 tw:object-cover">
+                                <div>
+                                    <a href="{{ route('attachments.show', $att) }}" class="tw:block tw:border tw:border-outline-variant tw:rounded-ui-sm tw:overflow-hidden tw:h-24 tw:bg-surface-low image-preview-trigger" title="{{ $att->file_name }}">
+                                        <img src="{{ route('attachments.show', $att) }}" alt="{{ $att->file_name }}" class="tw:w-full tw:h-full tw:object-cover">
                                     </a>
                                 </div>
                             @endforeach
@@ -81,23 +81,23 @@
             {{-- Supplier Response --}}
             @if($claim->status !== 'pending')
             <x-ui.card :title="__('claims.copy.supplier_response_and_resolution')" :description="__('claims.copy.formal_reply_and_evidence_submitted_by_supplier')">
-                    <div class="tw:text-on-surface-variant tw:text-ui-xs mb-2">{{ __('common.final_copy.responded') }} {{ $regionalFormatter->timestamp($claim->updated_at, 'datetime_comma') }}</div>
-                    <div class="p-3 tw:bg-surface-low rounded border tw:text-on-surface tw:text-ui-sm tw:whitespace-pre-line mb-3">
+                    <div class="tw:text-on-surface-variant tw:text-ui-xs tw:mb-2">{{ __('common.final_copy.responded') }} {{ $regionalFormatter->timestamp($claim->updated_at, 'datetime_comma') }}</div>
+                    <div class="tw:p-3 tw:bg-surface-low tw:rounded-ui-sm tw:border tw:border-outline-variant tw:text-on-surface tw:text-ui-sm tw:whitespace-pre-line tw:mb-3">
                         {{ $claim->supplier_response ?? __('claims.copy.no_written_response_text_provided') }}
                     </div>
 
                     @if($claim->attachments && $claim->attachments->count() > 0)
                         <div>
-                            <div class="tw:text-on-surface-variant tw:text-ui-xs fw-semibold tw:uppercase mb-2">{{ __('claims.copy.supplier_attachments') }}</div>
-                            <div class="row g-2">
+                            <div class="tw:text-on-surface-variant tw:text-ui-xs tw:font-semibold tw:uppercase tw:mb-2">{{ __('claims.copy.supplier_attachments') }}</div>
+                            <div class="tw:grid tw:grid-cols-2 tw:md:grid-cols-3 tw:gap-2">
                                 @foreach($claim->attachments as $att)
                                     @php
                                         $isImage = str_starts_with($att->file_type ?? '', 'image/') || preg_match('/\.(jpe?g|png|webp|gif|bmp|svg)$/i', $att->file_name);
                                     @endphp
-                                    <div class="col-6 col-md-4">
-                                        <a href="{{ route('attachments.show', $att) }}" {{ $isImage ? 'class=image-preview-trigger' : 'target=_blank' }} class="d-flex align-items-center gap-2 tw:p-2.5 border rounded text-decoration-none tw:bg-surface tw:hover:bg-surface-low" title="{{ $att->file_name }}">
-                                            <x-ui.icon :name="$isImage ? 'image' : 'file-text'" size="sm" class="text-primary flex-shrink-0" />
-                                            <span class="tw:text-ui-xs text-truncate tw:text-on-surface fw-medium">{{ $att->file_name }}</span>
+                                    <div>
+                                        <a href="{{ route('attachments.show', $att) }}" {{ $isImage ? 'class=image-preview-trigger' : 'target=_blank' }} class="tw:flex tw:items-center tw:gap-2 tw:p-2.5 tw:border tw:border-outline-variant tw:rounded-ui-sm tw:no-underline tw:bg-surface tw:hover:bg-surface-low" title="{{ $att->file_name }}">
+                                            <x-ui.icon :name="$isImage ? 'image' : 'file-text'" size="sm" class="tw:text-primary tw:shrink-0" />
+                                            <span class="tw:text-ui-xs tw:truncate tw:text-on-surface tw:font-medium">{{ $att->file_name }}</span>
                                         </a>
                                     </div>
                                 @endforeach
@@ -130,19 +130,19 @@
 
             {{-- QC Reference NG Items --}}
             <x-ui.card :title="__('claims.copy.defective_items_ng')" padding="none">
-                <ul class="list-group list-group-flush">
+                <ul class="tw:list-none tw:m-0 tw:p-0 tw:divide-y tw:divide-outline-variant">
                     @foreach($claim->inspection->items->where('status', 'ng') as $item)
-                        <li class="list-group-item py-2 px-3 tw:text-ui-xs">
-                            <span class="fw-bold tw:text-on-surface d-block">{{ $item->prItem->material_name }}</span>
+                        <li class="tw:py-2 tw:px-3 tw:text-ui-xs tw:bg-surface">
+                            <span class="tw:font-bold tw:text-on-surface tw:block">{{ $item->prItem->material_name }}</span>
                             @if($item->notes)
-                                <span class="tw:text-on-surface-variant fst-italic">{{ __('common.final_copy.qc_notes') }} {{ $item->notes }}</span>
+                                <span class="tw:text-on-surface-variant tw:italic">{{ __('common.final_copy.qc_notes') }} {{ $item->notes }}</span>
                             @endif
                         </li>
                     @endforeach
                 </ul>
-                <div class="tw:p-2.5 text-center border-top tw:bg-surface-low">
+                <div class="tw:p-2.5 tw:text-center tw:border-t tw:border-outline-variant tw:bg-surface-low">
                     <x-ui.button :href="\App\Support\PurchasingNavigation::toRoute('qc.inspections.show', $claim->inspection)" variant="outline" size="sm">
-                        <x-ui.icon name="external-link" size="sm" class="me-1" />
+                        <x-ui.icon name="external-link" size="sm" class="tw:me-1" />
                         {{ __('claims.copy.view_full_qc_inspection_report') }}
                     </x-ui.button>
                 </div>

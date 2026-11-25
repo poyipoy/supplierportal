@@ -63,7 +63,7 @@
         :record-nav="$recordNav ?? null"
     >
         <x-slot:actions>
-            <div class="tw:flex tw:flex-wrap tw:gap-2 align-items-center">
+            <div class="tw:flex tw:flex-wrap tw:gap-2 tw:items-center">
                 <x-ui.status-chip :tone="\App\Support\StatusHelper::shipmentTone($shipment->status)" size="md">
                     {{ \App\Support\StatusHelper::shipmentLabel($shipment->status) }}
                 </x-ui.status-chip>
@@ -82,37 +82,37 @@
     <div class="shipment-tracking-strip" aria-label="{{ __('shipments.copy.shipment_fulfillment_progress') }}">
         @if($isCancelled)
             <div class="shipment-tracking-step is-cancelled">
-                <div class="tw:text-ui-xs fw-semibold text-danger">{{ __('shipments.copy.status') }}</div>
-                <div class="fw-bold fs-6 text-danger">{{ __('shipments.copy.cancelled') }}</div>
-                <div class="tw:text-ui-xs text-danger mt-1">{{ __('shipments.copy.delivery_batch_was_revoked') }}</div>
+                <div class="tw:text-ui-xs tw:font-semibold tw:text-error">{{ __('shipments.copy.status') }}</div>
+                <div class="tw:font-bold tw:text-ui-base tw:text-error">{{ __('shipments.copy.cancelled') }}</div>
+                <div class="tw:text-ui-xs tw:text-error tw:mt-1">{{ __('shipments.copy.delivery_batch_was_revoked') }}</div>
             </div>
         @else
             {{-- Step 1: Draft --}}
             <div class="shipment-tracking-step {{ $isDraft ? 'is-active' : 'is-completed' }}">
-                <div class="d-flex align-items-center justify-content-between">
-                    <span class="tw:text-ui-xs fw-semibold tw:text-on-surface-variant">{{ __('shipments.copy.step_1') }}</span>
-                    <x-ui.icon :name="$isDraft ? 'circle-dot' : 'check'" size="sm" :class="$isDraft ? 'text-primary' : 'text-success'" />
+                <div class="tw:flex tw:items-center tw:justify-between">
+                    <span class="tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant">{{ __('shipments.copy.step_1') }}</span>
+                    <x-ui.icon :name="$isDraft ? 'circle-dot' : 'check'" size="sm" :class="$isDraft ? 'tw:text-primary' : 'tw:text-success'" />
                 </div>
-                <div class="fw-bold fs-6 tw:text-on-surface">{{ __('shipments.copy.draft_allocation') }}</div>
-                <div class="tw:text-ui-xs tw:text-on-surface-variant mt-1">
+                <div class="tw:font-bold tw:text-ui-base tw:text-on-surface">{{ __('shipments.copy.draft_allocation') }}</div>
+                <div class="tw:text-ui-xs tw:text-on-surface-variant tw:mt-1">
                     {{ $regionalFormatter->timestamp($shipment->created_at, 'date') }}
                 </div>
             </div>
 
             {{-- Step 2: Dispatched / In Transit --}}
             <div class="shipment-tracking-step {{ $isSubmitted ? 'is-active' : ($isArrived ? 'is-completed' : '') }}">
-                <div class="d-flex align-items-center justify-content-between">
-                    <span class="tw:text-ui-xs fw-semibold tw:text-on-surface-variant">{{ __('shipments.copy.step_2') }}</span>
+                <div class="tw:flex tw:items-center tw:justify-between">
+                    <span class="tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant">{{ __('shipments.copy.step_2') }}</span>
                     @if($isArrived)
-                        <x-ui.icon name="check" size="sm" class="text-success" />
+                        <x-ui.icon name="check" size="sm" class="tw:text-success" />
                     @elseif($isSubmitted)
-                        <x-ui.icon name="truck" size="sm" class="text-primary" />
+                        <x-ui.icon name="truck" size="sm" class="tw:text-primary" />
                     @else
                         <x-ui.icon name="circle" size="sm" class="tw:text-on-surface-variant" />
                     @endif
                 </div>
-                <div class="fw-bold fs-6 tw:text-on-surface">{{ __('shipments.copy.in_transit') }}</div>
-                <div class="tw:text-ui-xs tw:text-on-surface-variant mt-1">
+                <div class="tw:font-bold tw:text-ui-base tw:text-on-surface">{{ __('shipments.copy.in_transit') }}</div>
+                <div class="tw:text-ui-xs tw:text-on-surface-variant tw:mt-1">
                     @if($shipment->shipment_date)
                         {{ __('shipments.audit_ui.dispatched_on', ['date' => $regionalFormatter->date($shipment->shipment_date, 'human')]) }}
                     @else
@@ -123,18 +123,18 @@
 
             {{-- Step 3: Arrived at Plant --}}
             <div class="shipment-tracking-step {{ $isArrived && !$hasQc ? 'is-active' : ($isArrived && $hasQc ? 'is-completed' : '') }}">
-                <div class="d-flex align-items-center justify-content-between">
-                    <span class="tw:text-ui-xs fw-semibold tw:text-on-surface-variant">{{ __('shipments.copy.step_3') }}</span>
+                <div class="tw:flex tw:items-center tw:justify-between">
+                    <span class="tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant">{{ __('shipments.copy.step_3') }}</span>
                     @if($isArrived && $hasQc)
-                        <x-ui.icon name="check" size="sm" class="text-success" />
+                        <x-ui.icon name="check" size="sm" class="tw:text-success" />
                     @elseif($isArrived)
-                        <x-ui.icon name="package-check" size="sm" class="text-primary" />
+                        <x-ui.icon name="package-check" size="sm" class="tw:text-primary" />
                     @else
                         <x-ui.icon name="circle" size="sm" class="tw:text-on-surface-variant" />
                     @endif
                 </div>
-                <div class="fw-bold fs-6 tw:text-on-surface">{{ __('shipments.copy.arrived_at_plant') }}</div>
-                <div class="tw:text-ui-xs tw:text-on-surface-variant mt-1">
+                <div class="tw:font-bold tw:text-ui-base tw:text-on-surface">{{ __('shipments.copy.arrived_at_plant') }}</div>
+                <div class="tw:text-ui-xs tw:text-on-surface-variant tw:mt-1">
                     @if($shipment->actual_arrival_date)
                         {{ __('common.final_copy.arrived') }} {{ $regionalFormatter->date($shipment->actual_arrival_date, 'human') }}
                     @elseif($shipment->estimated_arrival_date)
@@ -147,17 +147,17 @@
 
             {{-- Step 4: Quality Control --}}
             <div class="shipment-tracking-step {{ $hasQc ? 'is-completed' : '' }}">
-                <div class="d-flex align-items-center justify-content-between">
-                    <span class="tw:text-ui-xs fw-semibold tw:text-on-surface-variant">{{ __('shipments.copy.step_4') }}</span>
+                <div class="tw:flex tw:items-center tw:justify-between">
+                    <span class="tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant">{{ __('shipments.copy.step_4') }}</span>
                     @if($hasQc)
                         @php $allOk = $shipment->qcInspections->every(fn($i) => $i->status === 'ok'); @endphp
-                        <x-ui.icon :name="$allOk ? 'check-circle' : 'alert-circle'" size="sm" :class="$allOk ? 'text-success' : 'text-danger'" />
+                        <x-ui.icon :name="$allOk ? 'check-circle' : 'alert-circle'" size="sm" :class="$allOk ? 'tw:text-success' : 'tw:text-error'" />
                     @else
                         <x-ui.icon name="circle" size="sm" class="tw:text-on-surface-variant" />
                     @endif
                 </div>
-                <div class="fw-bold fs-6 tw:text-on-surface">{{ __('shipments.copy.qc_inspection') }}</div>
-                <div class="tw:text-ui-xs tw:text-on-surface-variant mt-1">
+                <div class="tw:font-bold tw:text-ui-base tw:text-on-surface">{{ __('shipments.copy.qc_inspection') }}</div>
+                <div class="tw:text-ui-xs tw:text-on-surface-variant tw:mt-1">
                     @if($hasQc)
                         {{ trans_choice('shipments.audit_ui.inspection_reports', $shipment->qcInspections->count(), ['count' => $shipment->qcInspections->count()]) }}
                     @elseif($isArrived)
@@ -173,17 +173,17 @@
     {{-- 3. Delivery Package Overview Card --}}
     <x-ui.card :title="__('shipments.copy.delivery_package_overview')">
         <div class="tw:grid tw:gap-3 tw:sm:grid-cols-2 tw:lg:grid-cols-5">
-            <div class="p-3 tw:bg-surface-low border tw:border-outline-variant rounded">
-                <div class="tw:text-on-surface-variant tw:text-ui-xs fw-semibold tw:uppercase">{{ __('shipments.copy.supplier') }}</div>
-                <div class="fw-bold tw:text-on-surface fs-6 mt-1">
+            <div class="tw:p-3 tw:bg-surface-low tw:border tw:border-outline-variant tw:rounded-ui-sm">
+                <div class="tw:text-on-surface-variant tw:text-ui-xs tw:font-semibold tw:uppercase">{{ __('shipments.copy.supplier') }}</div>
+                <div class="tw:font-bold tw:text-on-surface tw:text-ui-base tw:mt-1">
                     {{ $shipment->supplier->company_name ?? $shipment->supplier->name }}
                 </div>
             </div>
-            <div class="p-3 tw:bg-surface-low border tw:border-outline-variant rounded">
-                <div class="tw:text-on-surface-variant tw:text-ui-xs fw-semibold tw:uppercase">{{ __('shipments.copy.consolidated_pos') }}</div>
-                <div class="fw-bold tw:text-on-surface fs-6 mt-1 d-flex flex-wrap gap-1">
+            <div class="tw:p-3 tw:bg-surface-low tw:border tw:border-outline-variant tw:rounded-ui-sm">
+                <div class="tw:text-on-surface-variant tw:text-ui-xs tw:font-semibold tw:uppercase">{{ __('shipments.copy.consolidated_pos') }}</div>
+                <div class="tw:font-bold tw:text-on-surface tw:text-ui-base tw:mt-1 tw:flex tw:flex-wrap tw:gap-1">
                     @forelse($pos as $po)
-                        <a href="{{ route('purchasing.purchase-orders.show', $po) }}" class="text-primary text-decoration-none">
+                        <a href="{{ route('purchasing.purchase-orders.show', $po) }}" class="tw:text-primary tw:no-underline">
                             <span class="ui-status-chip ui-status-chip--neutral">{{ $po->po_number }}</span>
                         </a>
                     @empty
@@ -191,23 +191,23 @@
                     @endforelse
                 </div>
             </div>
-            <div class="p-3 tw:bg-surface-low border tw:border-outline-variant rounded">
-                <div class="tw:text-on-surface-variant tw:text-ui-xs fw-semibold tw:uppercase">{{ __('shipments.copy.total_consignment_qty') }}</div>
-                <div class="fw-bold text-primary fs-6 mt-1 ui-tabular-nums">
+            <div class="tw:p-3 tw:bg-surface-low tw:border tw:border-outline-variant tw:rounded-ui-sm">
+                <div class="tw:text-on-surface-variant tw:text-ui-xs tw:font-semibold tw:uppercase">{{ __('shipments.copy.total_consignment_qty') }}</div>
+                <div class="tw:font-bold tw:text-primary tw:text-ui-base tw:mt-1 ui-tabular-nums">
                     {{ $regionalFormatter->number(number_format($totalQty), 'international') }} pcs
                 </div>
             </div>
-            <div class="p-3 tw:bg-surface-low border tw:border-outline-variant rounded">
-                <div class="tw:text-on-surface-variant tw:text-ui-xs fw-semibold tw:uppercase">{{ __('shipments.copy.actual_weight') }}</div>
-                <div class="fw-semibold tw:text-on-surface fs-6 mt-1 ui-tabular-nums">
+            <div class="tw:p-3 tw:bg-surface-low tw:border tw:border-outline-variant tw:rounded-ui-sm">
+                <div class="tw:text-on-surface-variant tw:text-ui-xs tw:font-semibold tw:uppercase">{{ __('shipments.copy.actual_weight') }}</div>
+                <div class="tw:font-semibold tw:text-on-surface tw:text-ui-base tw:mt-1 ui-tabular-nums">
                     {{ $regionalFormatter->number(\App\Support\NumberFormat::maxDecimals($totalWeight), 'decimal') }} Kg
                 </div>
             </div>
-            <div class="p-3 tw:bg-surface-low border tw:border-outline-variant rounded">
-                <div class="tw:text-on-surface-variant tw:text-ui-xs fw-semibold tw:uppercase">{{ __('shipments.copy.logistics_timeline') }}</div>
-                <div class="fw-semibold tw:text-on-surface fs-6 mt-1">
+            <div class="tw:p-3 tw:bg-surface-low tw:border tw:border-outline-variant tw:rounded-ui-sm">
+                <div class="tw:text-on-surface-variant tw:text-ui-xs tw:font-semibold tw:uppercase">{{ __('shipments.copy.logistics_timeline') }}</div>
+                <div class="tw:font-semibold tw:text-on-surface tw:text-ui-base tw:mt-1">
                     @if($shipment->actual_arrival_date)
-                        <span class="text-success fw-bold">{{ __('common.final_copy.arrived') }} {{ $regionalFormatter->date($shipment->actual_arrival_date, 'human') }}</span>
+                        <span class="tw:text-success tw:font-bold">{{ __('common.final_copy.arrived') }} {{ $regionalFormatter->date($shipment->actual_arrival_date, 'human') }}</span>
                     @elseif($shipment->estimated_arrival_date)
                         <span>{{ __('purchasing.copy.estimated_arrival') }}: {{ $regionalFormatter->date($shipment->estimated_arrival_date, 'human') }}</span>
                     @else
@@ -218,19 +218,19 @@
         </div>
 
         @if($shipment->notes)
-            <div class="mt-3 p-3 tw:bg-surface-container tw:border tw:border-outline-variant rounded tw:text-ui-xs">
+            <div class="tw:mt-3 tw:p-3 tw:bg-surface-container tw:border tw:border-outline-variant tw:rounded-ui-sm tw:text-ui-xs">
                 <strong>{{ __('shipments.copy.logistics_notes') }}</strong> {{ $shipment->notes }}
             </div>
         @endif
 
-        <dl class="mt-3 tw:grid tw:gap-3 tw:sm:grid-cols-2 tw:text-ui-xs tw:m-0">
+        <dl class="tw:mt-3 tw:grid tw:gap-3 tw:sm:grid-cols-2 tw:text-ui-xs tw:m-0">
             <div>
-                <dt class="tw:text-on-surface-variant fw-semibold">{{ __('shipments.copy.invoice_number') }}</dt>
-                <dd class="tw:m-0 fw-semibold tw:text-on-surface">{{ $shipment->invoice_number ?: '-' }}</dd>
+                <dt class="tw:text-on-surface-variant tw:font-semibold">{{ __('shipments.copy.invoice_number') }}</dt>
+                <dd class="tw:m-0 tw:font-semibold tw:text-on-surface">{{ $shipment->invoice_number ?: '-' }}</dd>
             </div>
             <div>
-                <dt class="tw:text-on-surface-variant fw-semibold">{{ __('shipments.copy.supplier_reference') }}</dt>
-                <dd class="tw:m-0 fw-semibold tw:text-on-surface">{{ $shipment->supplier_reference ?: '-' }}</dd>
+                <dt class="tw:text-on-surface-variant tw:font-semibold">{{ __('shipments.copy.supplier_reference') }}</dt>
+                <dd class="tw:m-0 tw:font-semibold tw:text-on-surface">{{ $shipment->supplier_reference ?: '-' }}</dd>
             </div>
         </dl>
     </x-ui.card>
@@ -248,12 +248,12 @@
                     @endphp
                     @if($canVerifyAll)
                         <x-ui.button type="button" variant="primary" size="sm" id="btnVerifyAllDocs">
-                            <x-ui.icon name="check-check" size="sm" class="me-1" />
+                            <x-ui.icon name="check-check" size="sm" class="tw:me-1" />
                             <span>{{ __('shipments.copy.verify_all_documents') }}</span>
                         </x-ui.button>
                     @endif
                     <x-ui.button type="button" variant="outline" size="sm" id="btnSaveAllDocStatuses" disabled>
-                        <x-ui.icon name="save" size="sm" class="me-1" />
+                        <x-ui.icon name="save" size="sm" class="tw:me-1" />
                         <span>{{ __('shipments.copy.save_all_statuses') }}</span>
                     </x-ui.button>
                 </div>
@@ -272,31 +272,31 @@
                         default => strtoupper($doc->doc_type),
                     };
                 @endphp
-                <div class="p-3 border tw:border-outline-variant rounded tw:bg-surface-low d-flex flex-column justify-content-between gap-2" data-purchasing-doc-card="{{ $doc->doc_type }}">
+                <div class="tw:p-3 tw:border tw:border-outline-variant tw:rounded-ui-sm tw:bg-surface-low tw:flex tw:flex-col tw:justify-between tw:gap-2" data-purchasing-doc-card="{{ $doc->doc_type }}">
                     <div>
-                        <div class="d-flex align-items-center justify-content-between gap-1">
-                            <span class="fw-bold tw:text-ui-xs tw:text-on-surface">{{ $docLabel }}</span>
+                        <div class="tw:flex tw:items-center tw:justify-between tw:gap-1">
+                            <span class="tw:font-bold tw:text-ui-xs tw:text-on-surface">{{ $docLabel }}</span>
                             <x-ui.status-chip :tone="\App\Support\StatusHelper::shipmentDocTone($doc->status)" size="sm">
                                 {{ \App\Support\StatusHelper::shipmentDocLabel($doc->status) }}
                             </x-ui.status-chip>
                         </div>
 
-                        <div class="mt-2 tw:text-ui-xs">
+                        <div class="tw:mt-2 tw:text-ui-xs">
                             @if($doc->document_number)
-                                <div class="tw:text-on-surface-variant mb-1">
-                                    <span class="fw-semibold">{{ __('common.labels_review.reference') }}</span> {{ $doc->document_number }}
+                                <div class="tw:text-on-surface-variant tw:mb-1">
+                                    <span class="tw:font-semibold">{{ __('common.labels_review.reference') }}</span> {{ $doc->document_number }}
                                 </div>
                             @endif
 
                             @if($attachment)
-                                <a href="{{ route('attachments.show', $attachment) }}" target="_blank" class="text-primary text-decoration-none d-inline-flex align-items-center gap-1 fw-medium">
+                                <a href="{{ route('attachments.show', $attachment) }}" target="_blank" class="tw:text-primary tw:no-underline tw:inline-flex tw:items-center tw:gap-1 tw:font-medium">
                                     <x-ui.icon name="paperclip" size="sm" />
-                                    <span class="text-truncate" style="max-width: 170px;" title="{{ $attachment->file_name }}">
+                                    <span class="tw:truncate" style="max-width: 170px;" title="{{ $attachment->file_name }}">
                                         {{ $attachment->file_name }}
                                     </span>
                                 </a>
                             @else
-                                <span class="tw:text-on-surface-variant fst-italic">{{ __('shipments.copy.no_file_uploaded_yet') }}</span>
+                                <span class="tw:text-on-surface-variant tw:italic">{{ __('shipments.copy.no_file_uploaded_yet') }}</span>
                             @endif
 
                             @include('shipments._document_revision', ['doc' => $doc])
@@ -305,13 +305,13 @@
 
                     {{-- Status Update Form: same rules as the PO page dialog --}}
                     @if(in_array($shipment->status, \App\Support\Procurement\CustomsDocumentationProgressCalculator::ACTIVE_SHIPMENT_STATUSES, true))
-                        <form method="POST" action="{{ route('purchasing.shipments.documents.status', ['id' => $shipment, 'document_id' => $doc->id]) }}" class="pt-2 border-top tw:border-outline-variant" data-shipment-doc-status-form data-doc-id="{{ $doc->id }}" data-doc-type="{{ $doc->doc_type }}">
+                        <form method="POST" action="{{ route('purchasing.shipments.documents.status', ['id' => $shipment, 'document_id' => $doc->id]) }}" class="tw:pt-2 tw:border-t tw:border-outline-variant" data-shipment-doc-status-form data-doc-id="{{ $doc->id }}" data-doc-type="{{ $doc->doc_type }}">
                             @csrf
                             @method('PUT')
                             <input type="hidden" name="expected_status" value="{{ $doc->status }}">
                             <input type="hidden" name="expected_attachment" value="{{ $attachment?->hash }}">
-                            <div class="input-group input-group-sm">
-                                <select name="status" class="form-select form-select-sm" aria-label="{{ __('documents.a11y.change_status', ['document' => $docLabel]) }}">
+                            <div class="ui-input-group ui-input-group--sm">
+                                <select name="status" class="ui-select ui-select--sm" aria-label="{{ __('documents.a11y.change_status', ['document' => $docLabel]) }}">
                                     @php
                                         $docTargets = \App\Support\Procurement\CustomsDocumentationProgressCalculator::ALLOWED_TARGETS[$doc->doc_type] ?? [];
                                     @endphp
@@ -325,16 +325,16 @@
                                         </option>
                                     @endforeach
                                 </select>
-                                <button type="submit" class="btn btn-outline-secondary btn-sm" title="{{ __('shipments.copy.save_status') }}">
+                                <button type="submit" class="ui-button ui-button--outline ui-button--sm" title="{{ __('shipments.copy.save_status') }}">
                                     {{ __('shipments.copy.update') }}
                                 </button>
                             </div>
-                            <label for="doc-reason-{{ $doc->id }}" class="form-label tw:text-ui-xs tw:text-on-surface-variant mt-2 mb-1">{{ __('documents.sync.reason_label') }}</label>
-                            <textarea id="doc-reason-{{ $doc->id }}" name="reason" rows="2" maxlength="1000" class="form-control form-control-sm tw:text-ui-xs" placeholder="{{ __('documents.sync.reason_placeholder') }}" aria-describedby="doc-reason-hint-{{ $doc->id }}"></textarea>
+                            <label for="doc-reason-{{ $doc->id }}" class="ui-label tw:text-ui-xs tw:text-on-surface-variant tw:mt-2 tw:mb-1">{{ __('documents.sync.reason_label') }}</label>
+                            <textarea id="doc-reason-{{ $doc->id }}" name="reason" rows="2" maxlength="1000" class="ui-textarea tw:text-ui-xs tw:px-2 tw:py-1" placeholder="{{ __('documents.sync.reason_placeholder') }}" aria-describedby="doc-reason-hint-{{ $doc->id }}"></textarea>
                             <p id="doc-reason-hint-{{ $doc->id }}" class="tw:m-0 tw:mt-1 tw:text-ui-xs tw:text-on-surface-variant">{{ __('documents.sync.reason_required_hint') }}</p>
                         </form>
                     @else
-                        <p class="pt-2 border-top tw:border-outline-variant tw:m-0 tw:text-ui-xs tw:text-on-surface-variant">
+                        <p class="tw:pt-2 tw:border-t tw:border-outline-variant tw:m-0 tw:text-ui-xs tw:text-on-surface-variant">
                             {{ __('documents.sync.reasons.invalid_shipment_status') }}
                         </p>
                     @endif
@@ -348,16 +348,16 @@
         :title="__('shipments.copy.consignment_line_items')"
         :description="__('shipments.copy.material_batches_delivered_in_this_physical_consignment')"
     >
-        <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0 tw:text-ui-xs">
-                <thead class="table-light">
+        <div class="ui-table-responsive">
+            <table class="ui-table ui-table--hover tw:align-middle tw:mb-0 tw:text-ui-xs">
+                <thead>
                     <tr>
                         <th scope="col">{{ __('shipments.copy.po_number') }}</th>
                         <th scope="col">{{ __('shipments.copy.pr_reference') }}</th>
                         <th scope="col">{{ __('shipments.copy.material_name') }}</th>
                         <th scope="col">{{ __('shipments.copy.shape_specs') }}</th>
-                        <th scope="col" class="text-end">{{ __('shipments.copy.shipped_qty') }}</th>
-                        <th scope="col" class="text-end">{{ __('shipments.copy.actual_weight') }}</th>
+                        <th scope="col" class="tw:text-end">{{ __('shipments.copy.shipped_qty') }}</th>
+                        <th scope="col" class="tw:text-end">{{ __('shipments.copy.actual_weight') }}</th>
                         <th scope="col">{{ __('shipments.copy.item_notes') }}</th>
                     </tr>
                 </thead>
@@ -369,8 +369,8 @@
                             $pr = $prItem?->purchaseRequisition;
                         @endphp
                         <tr>
-                            <td class="fw-bold">
-                                <a href="{{ route('purchasing.purchase-orders.show', $po) }}" class="text-primary text-decoration-none">
+                            <td class="tw:font-bold">
+                                <a href="{{ route('purchasing.purchase-orders.show', $po) }}" class="tw:text-primary tw:no-underline">
                                     {{ $po->po_number }}
                                 </a>
                             </td>
@@ -381,7 +381,7 @@
                                     <span class="tw:text-on-surface-variant">-</span>
                                 @endif
                             </td>
-                            <td class="fw-semibold tw:text-on-surface ui-col-data-name">
+                            <td class="tw:font-semibold tw:text-on-surface ui-col-data-name">
                                 {{ $prItem->material_name ?? __('shipments.copy.material_item') }}
                             </td>
                             <td class="tw:text-on-surface-variant ui-col-data-name">
@@ -391,10 +391,10 @@
                                 @if($prItem?->d_outer) | OD: {{ $prItem->d_outer }}mm @endif
                                 @if($prItem?->length) | L: {{ $prItem->length }}mm @endif
                             </td>
-                            <td class="text-end fw-bold text-primary ui-tabular-nums">
+                            <td class="tw:text-end tw:font-bold tw:text-primary ui-tabular-nums">
                                 {{ $regionalFormatter->number(number_format($item->shipped_qty), 'international') }} pcs
                             </td>
-                            <td class="text-end ui-tabular-nums tw:text-on-surface-variant">
+                            <td class="tw:text-end ui-tabular-nums tw:text-on-surface-variant">
                                 {{ $regionalFormatter->number(\App\Support\NumberFormat::maxDecimals($item->actual_weight_kg), 'decimal') }} Kg
                             </td>
                             <td class="tw:text-on-surface-variant ui-col-data-name">
@@ -414,21 +414,21 @@
             :description="__('shipments.copy.incoming_quality_inspection_events_recorded_for_this_shipment_consignment')"
         >
             @if($shipment->qcInspections->isEmpty())
-                <div class="alert alert-warning d-flex align-items-center gap-2 mb-0 tw:text-ui-xs">
+                <div class="tw:rounded-ui-sm tw:border tw:border-warning/40 tw:bg-warning-container tw:text-warning-container-foreground tw:px-3 tw:py-2.5 tw:flex tw:items-center tw:gap-2 tw:mb-0 tw:text-ui-xs" role="alert">
                     <x-ui.icon name="triangle-alert" size="sm" />
                     <div>
                         {{ __('shipments.copy.material_arrival_has_been_confirmed_inspection_is_currently_queued_and_awaiting_action_from_the_qual') }}
                     </div>
                 </div>
             @else
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0 tw:text-ui-xs">
-                        <thead class="table-light">
+                <div class="ui-table-responsive">
+                    <table class="ui-table ui-table--hover tw:align-middle tw:mb-0 tw:text-ui-xs">
+                        <thead>
                             <tr>
                                 <th scope="col">{{ __('shipments.copy.inspection_date') }}</th>
                                 <th scope="col">{{ __('shipments.copy.inspector') }}</th>
-                                <th scope="col" class="text-center">{{ __('shipments.copy.qc_result') }}</th>
-                                <th scope="col" class="tw:text-right text-end">{{ __('common.table.action') }}</th>
+                                <th scope="col" class="tw:text-center">{{ __('shipments.copy.qc_result') }}</th>
+                                <th scope="col" class="tw:text-end">{{ __('common.table.action') }}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -437,15 +437,15 @@
                                     <td class="ui-tabular-nums">
                                         {{ $insp->inspected_at ? $regionalFormatter->timestamp($insp->inspected_at, 'datetime_comma') : '-' }}
                                     </td>
-                                    <td class="fw-semibold ui-col-data-name">
+                                    <td class="tw:font-semibold ui-col-data-name">
                                         {{ $insp->inspector->name ?? '-' }}
                                     </td>
-                                    <td class="text-center">
+                                    <td class="tw:text-center">
                                         <x-ui.status-chip :tone="$insp->status === 'ok' ? 'success' : 'error'">
                                             {{ \App\Support\StatusHelper::qcLabel($insp->status) }}
                                         </x-ui.status-chip>
                                     </td>
-                                    <td class="tw:text-right text-end">
+                                    <td class="tw:text-end">
                                         <x-ui.row-action
                                             :href="route('qc.inspections.show', $insp)"
                                             :context="$insp->inspected_at ? $regionalFormatter->timestamp($insp->inspected_at, 'datetime_comma') : $shipment->shipment_number"
@@ -475,14 +475,14 @@
             <form method="POST" action="{{ route('purchasing.shipments.confirm-arrival', $shipment) }}">
                 @csrf
                 <div class="modal-header">
-                    <h5 class="modal-title tw:text-ui-base fw-bold" id="confirmArrivalModalLabel">{{ __('shipments.copy.confirm_physical_material_arrival') }}</h5>
+                    <h5 class="modal-title tw:text-ui-base tw:font-bold" id="confirmArrivalModalLabel">{{ __('shipments.copy.confirm_physical_material_arrival') }}</h5>
                     <button type="button" class="btn-close" data-ui-modal-close aria-label="{{ __('shipments.copy.close') }}"></button>
                 </div>
                 <div class="modal-body">
-                    <p class="tw:text-ui-sm tw:text-on-surface-variant mb-3">
+                    <p class="tw:text-ui-sm tw:text-on-surface-variant tw:mb-3">
                         {{ __('shipments.copy.recording_physical_arrival_confirms_that_consignment') }} <strong>{{ $shipment->shipment_number }}</strong> {{ __('shipments.copy.has_physically_reached_the_plant_warehouse_this_will_notify_the_qc_department_to_conduct_incoming_ma') }}
                     </p>
-                    <div class="mb-3">
+                    <div class="tw:mb-3">
                         <x-ui.date-picker
                             name="actual_arrival_date"
                             id="actual_arrival_date"

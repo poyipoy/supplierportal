@@ -72,7 +72,7 @@
         <nav class="tw:inline-flex tw:items-center tw:gap-1.5 tw:rounded-ui-md tw:border tw:border-outline tw:bg-surface-container tw:p-1.5 tw:shadow-none" aria-label="{{ __('common.accessibility.drp_tabs') }}">
             <a
                 href="{{ route('purchasing.drp.paid.index', array_merge(request()->query(), ['tab' => 'unpaid'])) }}"
-                class="ui-focus-ring ui-motion tw:inline-flex tw:items-center tw:gap-2 tw:rounded-ui-sm tw:px-3.5 tw:py-1.5 tw:text-ui-xs tw:font-semibold tw:no-underline {{ $tab === 'unpaid' ? 'tw:bg-primary tw:text-primary-foreground tw-shadow-xs' : 'tw:text-on-surface-variant tw:hover:bg-surface tw:hover:text-on-surface' }}"
+                class="ui-focus-ring ui-motion tw:inline-flex tw:items-center tw:gap-2 tw:rounded-ui-sm tw:px-3.5 tw:py-1.5 tw:text-ui-xs tw:font-semibold tw:no-underline {{ $tab === 'unpaid' ? 'tw:bg-primary tw:text-primary-foreground tw:shadow-xs' : 'tw:text-on-surface-variant tw:hover:bg-surface tw:hover:text-on-surface' }}"
                 data-server-tab
                 data-tab-name="unpaid"
             >
@@ -84,7 +84,7 @@
             </a>
             <a
                 href="{{ route('purchasing.drp.paid.index', array_merge(request()->query(), ['tab' => 'paid'])) }}"
-                class="ui-focus-ring ui-motion tw:inline-flex tw:items-center tw:gap-2 tw:rounded-ui-sm tw:px-3.5 tw:py-1.5 tw:text-ui-xs tw:font-semibold tw:no-underline {{ $tab === 'paid' ? 'tw:bg-primary tw:text-primary-foreground tw-shadow-xs' : 'tw:text-on-surface-variant tw:hover:bg-surface tw:hover:text-on-surface' }}"
+                class="ui-focus-ring ui-motion tw:inline-flex tw:items-center tw:gap-2 tw:rounded-ui-sm tw:px-3.5 tw:py-1.5 tw:text-ui-xs tw:font-semibold tw:no-underline {{ $tab === 'paid' ? 'tw:bg-primary tw:text-primary-foreground tw:shadow-xs' : 'tw:text-on-surface-variant tw:hover:bg-surface tw:hover:text-on-surface' }}"
                 data-server-tab
                 data-tab-name="paid"
             >
@@ -96,7 +96,7 @@
             </a>
             <a
                 href="{{ route('purchasing.drp.paid.index', array_merge(request()->query(), ['tab' => 'all'])) }}"
-                class="ui-focus-ring ui-motion tw:inline-flex tw:items-center tw:gap-2 tw:rounded-ui-sm tw:px-3.5 tw:py-1.5 tw:text-ui-xs tw:font-semibold tw:no-underline {{ $tab === 'all' ? 'tw:bg-primary tw:text-primary-foreground tw-shadow-xs' : 'tw:text-on-surface-variant tw:hover:bg-surface tw:hover:text-on-surface' }}"
+                class="ui-focus-ring ui-motion tw:inline-flex tw:items-center tw:gap-2 tw:rounded-ui-sm tw:px-3.5 tw:py-1.5 tw:text-ui-xs tw:font-semibold tw:no-underline {{ $tab === 'all' ? 'tw:bg-primary tw:text-primary-foreground tw:shadow-xs' : 'tw:text-on-surface-variant tw:hover:bg-surface tw:hover:text-on-surface' }}"
                 data-server-tab
                 data-tab-name="all"
             >
@@ -197,7 +197,7 @@
                 id="drp-paid-search"
                 value="{{ $q }}"
                 placeholder="{{ __('finance.drp.filter_placeholder') }}"
-                class="form-control form-control-sm ui-filter-bar__search-input"
+                class="ui-input ui-input--sm ui-filter-bar__search-input"
                 maxlength="100"
                 autocomplete="off"
             >
@@ -205,7 +205,7 @@
 
         <x-slot:filters>
             <label for="drp-type" class="tw:sr-only">{{ __('finance.drp.type') }}</label>
-            <select id="drp-type" name="type" class="form-select form-select-sm tw:w-full tw:min-w-0 tw:sm:w-40">
+            <select id="drp-type" name="type" class="ui-select ui-select--sm tw:w-full tw:min-w-0 tw:sm:w-40">
                 <option value="">{{ __('local_invoice.labels.all_types') }}</option>
                 <option value="SUPPLIER" @selected($type === 'SUPPLIER')>{{ __('local_invoice.labels.supplier') }}</option>
                 <option value="GA" @selected($type === 'GA')>{{ __('navigation.general_affairs') }}</option>
@@ -215,7 +215,7 @@
         <x-slot:advanced>
             <div>
                 <label for="drp-overpayment-status" class="tw:block tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:mb-1.5">{{ __('finance.drp_surface.overpayment_status') }}</label>
-                <select id="drp-overpayment-status" name="overpayment_status" class="form-select form-select-sm tw:w-full">
+                <select id="drp-overpayment-status" name="overpayment_status" class="ui-select ui-select--sm tw:w-full">
                     <option value="all" @selected(($overpaymentStatus ?? 'all') === 'all')>{{ __('finance.refund.all') }}</option>
                     <option value="has_overpayment" @selected(($overpaymentStatus ?? '') === 'has_overpayment')>{{ __('local_invoice.labels.overpayment') }}</option>
                     <option value="open" @selected(($overpaymentStatus ?? '') === 'open')>{{ __('finance.refund.open_status') }}</option>

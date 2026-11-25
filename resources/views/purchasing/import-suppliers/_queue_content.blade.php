@@ -39,7 +39,7 @@
                     placeholder="{{ __('supplier_contact.placeholders.search') }}"
                     maxlength="100"
                     autocomplete="off"
-                    class="form-control form-control-sm ui-filter-bar__search-input"
+                    class="ui-input ui-input--sm ui-filter-bar__search-input"
                 />
             </x-slot:search>
 
@@ -62,13 +62,13 @@
         @endif
     </x-slot:emptyState>
 
-    <table class="table table-hover align-middle tw:m-0 tw:text-ui-sm w-100">
-        <thead class="table-light">
+    <table class="ui-table ui-table--hover tw:align-middle tw:m-0 tw:text-ui-sm tw:w-full">
+        <thead>
             <tr>
                 <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('supplier_contact.directory.col_supplier') }}</th>
                 <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('supplier_contact.directory.col_contact') }}</th>
                 <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('supplier_contact.directory.col_status') }}</th>
-                <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-right text-end">{{ __('common.table.action') }}</th>
+                <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-end">{{ __('common.table.action') }}</th>
             </tr>
         </thead>
         <tbody>
@@ -99,7 +99,7 @@
                             <span class="tw:text-on-surface-variant">&ndash;</span>
                         @endif
                     </td>
-                    <td class="tw:text-right text-end">
+                    <td class="tw:text-end">
                         <x-ui.row-action
                             :href="route('purchasing.import-suppliers.show', $vendorUser)"
                             :context="$companyName"

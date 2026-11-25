@@ -30,26 +30,26 @@
         :description="__('purchasing.copy.the_supplier_currency_and_exchange_rate_are_locked_based_on_the_accepted_quotation')"
     >
         <div class="tw:grid tw:gap-3 tw:sm:grid-cols-2 tw:lg:grid-cols-4">
-            <div class="p-3 tw:bg-surface-low border rounded">
-                <div class="tw:text-on-surface-variant tw:text-ui-xs fw-semibold tw:uppercase">{{ __('purchasing.copy.supplier') }}</div>
-                <div class="fw-bold tw:text-on-surface fs-6 mt-1">{{ $quotation->supplier->name }}</div>
+            <div class="tw:p-3 tw:bg-surface-low tw:border tw:border-outline-variant tw:rounded-ui-sm">
+                <div class="tw:text-on-surface-variant tw:text-ui-xs tw:font-semibold tw:uppercase">{{ __('purchasing.copy.supplier') }}</div>
+                <div class="tw:font-bold tw:text-on-surface tw:text-ui-base tw:mt-1">{{ $quotation->supplier->name }}</div>
             </div>
-            <div class="p-3 tw:bg-surface-low border rounded">
-                <div class="tw:text-on-surface-variant tw:text-ui-xs fw-semibold tw:uppercase">{{ __('purchasing.copy.primary_pr_reference') }}</div>
-                <div class="fw-bold text-primary fs-6 mt-1">{{ $quotation->purchaseRequisition->pr_number ?? '-' }}</div>
+            <div class="tw:p-3 tw:bg-surface-low tw:border tw:border-outline-variant tw:rounded-ui-sm">
+                <div class="tw:text-on-surface-variant tw:text-ui-xs tw:font-semibold tw:uppercase">{{ __('purchasing.copy.primary_pr_reference') }}</div>
+                <div class="tw:font-bold tw:text-primary tw:text-ui-base tw:mt-1">{{ $quotation->purchaseRequisition->pr_number ?? '-' }}</div>
             </div>
-            <div class="p-3 tw:bg-surface-low border rounded">
-                <div class="tw:text-on-surface-variant tw:text-ui-xs fw-semibold tw:uppercase">{{ __('purchasing.copy.procurement_period') }}</div>
-                <div class="fw-semibold tw:text-on-surface fs-6 mt-1">{{ $quotation->purchaseRequisition->period->display_label ?? $quotation->purchaseRequisition->period->name }}</div>
+            <div class="tw:p-3 tw:bg-surface-low tw:border tw:border-outline-variant tw:rounded-ui-sm">
+                <div class="tw:text-on-surface-variant tw:text-ui-xs tw:font-semibold tw:uppercase">{{ __('purchasing.copy.procurement_period') }}</div>
+                <div class="tw:font-semibold tw:text-on-surface tw:text-ui-base tw:mt-1">{{ $quotation->purchaseRequisition->period->display_label ?? $quotation->purchaseRequisition->period->name }}</div>
             </div>
-            <div class="p-3 tw:bg-surface-low border rounded">
-                <div class="tw:text-on-surface-variant tw:text-ui-xs fw-semibold tw:uppercase">{{ __('purchasing.copy.locked_currency_exchange_rate') }}</div>
-                <div class="fw-bold tw:text-on-surface fs-6 mt-1">
-                    <span class="ui-status-chip ui-status-chip--neutral me-1">{{ $quotation->currency }}</span>
+            <div class="tw:p-3 tw:bg-surface-low tw:border tw:border-outline-variant tw:rounded-ui-sm">
+                <div class="tw:text-on-surface-variant tw:text-ui-xs tw:font-semibold tw:uppercase">{{ __('purchasing.copy.locked_currency_exchange_rate') }}</div>
+                <div class="tw:font-bold tw:text-on-surface tw:text-ui-base tw:mt-1">
+                    <span class="ui-status-chip ui-status-chip--neutral tw:me-1">{{ $quotation->currency }}</span>
                     @if($rate)
                         <span class="tw:text-on-surface tw:text-ui-xs ui-tabular-nums">1 {{ $quotation->currency }} = Rp {{ number_format($rate->rate_to_idr, 0, ',', '.') }}</span>
                     @else
-                        <span class="text-danger tw:text-ui-xs">{{ __('purchasing.copy.exchange_rate_not_found') }}</span>
+                        <span class="tw:text-error tw:text-ui-xs">{{ __('purchasing.copy.exchange_rate_not_found') }}</span>
                     @endif
                 </div>
             </div>
@@ -68,8 +68,8 @@
                 </span>
             </x-slot:actions>
 
-            <div class="border rounded overflow-hidden">
-                <div class="list-group list-group-flush">
+            <div class="tw:border tw:border-outline-variant tw:rounded-ui-sm tw:overflow-hidden">
+                <div class="tw:divide-y tw:divide-outline-variant">
                     @foreach($otherQuotations as $oq)
                         @php
                             $prNumber = $oq->purchaseRequisition->pr_number ?? '-';
@@ -93,10 +93,10 @@
                             $oqRate = $oq->exchange_rate;
                             $oqIdr = $oqTotal * ($oqRate ? $oqRate->rate_to_idr : 1);
                         @endphp
-                        <label class="list-group-item list-group-item-action d-flex align-items-center gap-3 tw:py-2.5 px-3 consolidate-item tw:cursor-pointer" for="oq_{{ $oq->id }}">
-                            <input type="checkbox" class="form-check-input consolidate-check mt-0" id="oq_{{ $oq->id }}" value="{{ $oq->id }}" data-items='@json($oqItems)' data-pr-number="{{ $prNumber }}">
-                            <div class="flex-grow-1">
-                                <div class="fw-bold tw:text-on-surface tw:text-ui-sm pr-label">{{ $prNumber }}</div>
+                        <label class="tw:flex tw:items-center tw:gap-3 tw:py-2.5 tw:px-3 tw:bg-surface tw:transition-colors tw:hover:bg-surface-container consolidate-item tw:cursor-pointer" for="oq_{{ $oq->id }}">
+                            <input type="checkbox" class="ui-check consolidate-check tw:mt-0" id="oq_{{ $oq->id }}" value="{{ $oq->id }}" data-items='@json($oqItems)' data-pr-number="{{ $prNumber }}">
+                            <div class="tw:flex-1">
+                                <div class="tw:font-bold tw:text-on-surface tw:text-ui-sm pr-label">{{ $prNumber }}</div>
                                 <div class="tw:text-on-surface-variant tw:text-ui-xs">
                                      {{ $oq->purchaseRequisition->period->display_label ?? $oq->purchaseRequisition->period->name ?? '-' }} &bull; {{ trans_choice('purchasing.copy.item_count', $oq->items->count(), ['count' => $oq->items->count()]) }}
                                     @if($oq->exchange_rate)
@@ -104,8 +104,8 @@
                                     @endif
                                 </div>
                             </div>
-                            <div class="text-end">
-                                <div class="fw-bold tw:text-on-surface tw:text-ui-sm">{{ number_format($oqTotal, 2) }} {{ $oq->currency }}</div>
+                            <div class="tw:text-end">
+                                <div class="tw:font-bold tw:text-on-surface tw:text-ui-sm">{{ number_format($oqTotal, 2) }} {{ $oq->currency }}</div>
                                 <div class="tw:text-on-surface-variant tw:text-ui-xs">≈ Rp {{ number_format($oqIdr, 0, ',', '.') }}</div>
                             </div>
                         </label>
@@ -126,19 +126,19 @@
             </span>
         </x-slot:actions>
 
-        <div class="table-responsive border rounded overflow-hidden">
-            <table class="table table-hover align-middle mb-0 tw:text-ui-xs w-100">
-                <thead class="table-light text-center">
+        <div class="ui-table-responsive tw:border tw:border-outline-variant tw:rounded-ui-sm tw:overflow-hidden">
+            <table class="ui-table ui-table--hover tw:align-middle tw:mb-0 tw:text-ui-xs tw:w-full">
+                <thead class="tw:text-center">
                     <tr>
                         <th scope="col" style="width: 40px;">{{ __('purchasing.copy.no') }}</th>
                         <th scope="col">{{ __('purchasing.copy.pr_no') }}</th>
                         <th scope="col">{{ __('purchasing.copy.material') }}</th>
-                        <th scope="col" class="text-center">{{ __('purchasing.copy.qty') }}</th>
-                        <th scope="col" class="text-end">{{ __('purchasing.copy.weight_unit_kg_e8ab70') }}</th>
-                        <th scope="col" class="text-end">{{ __('purchasing.copy.total_weight_kg_a35c48') }}</th>
-                        <th scope="col" class="text-end">{{ __('purchasing.copy.price_kg') }} ({{ $quotation->currency }})</th>
-                        <th scope="col" class="text-end">{{ __('purchasing.copy.amount') }} ({{ $quotation->currency }})</th>
-                        <th scope="col" class="text-end">{{ __('purchasing.copy.est_idr') }}</th>
+                        <th scope="col" class="tw:text-center">{{ __('purchasing.copy.qty') }}</th>
+                        <th scope="col" class="tw:text-end">{{ __('purchasing.copy.weight_unit_kg_e8ab70') }}</th>
+                        <th scope="col" class="tw:text-end">{{ __('purchasing.copy.total_weight_kg_a35c48') }}</th>
+                        <th scope="col" class="tw:text-end">{{ __('purchasing.copy.price_kg') }} ({{ $quotation->currency }})</th>
+                        <th scope="col" class="tw:text-end">{{ __('purchasing.copy.amount') }} ({{ $quotation->currency }})</th>
+                        <th scope="col" class="tw:text-end">{{ __('purchasing.copy.est_idr') }}</th>
                     </tr>
                 </thead>
                 <tbody id="materialTableBody">
@@ -151,29 +151,29 @@
                             $totalAmount += $amount;
                             $totalIdr += $idr;
                         @endphp
-                        <tr class="{{ $isAvail ? '' : 'table-secondary tw:opacity-75' }}">
-                            <td class="text-center tw:text-on-surface-variant ui-tabular-nums">{{ $no++ }}</td>
-                            <td class="fw-bold text-primary">{{ $quotation->purchaseRequisition->pr_number ?? '-' }}</td>
-                            <td class="fw-semibold tw:text-on-surface">
+                        <tr class="{{ $isAvail ? '' : 'tw:bg-surface-container-high tw:opacity-75' }}">
+                            <td class="tw:text-center tw:text-on-surface-variant ui-tabular-nums">{{ $no++ }}</td>
+                            <td class="tw:font-bold tw:text-primary">{{ $quotation->purchaseRequisition->pr_number ?? '-' }}</td>
+                            <td class="tw:font-semibold tw:text-on-surface">
                                 {{ $item->prItem->material_name }}
                                 @if(!$isAvail)
-                                    <span class="ui-status-chip ui-status-chip--error ms-1">{{ __('purchasing.copy.not_available') }}</span>
+                                    <span class="ui-status-chip ui-status-chip--error tw:ms-1">{{ __('purchasing.copy.not_available') }}</span>
                                 @endif
                             </td>
-                            <td class="text-center ui-tabular-nums">{{ $isAvail ? number_format($item->available_qty ?? $item->prItem->quantity_value, 0) : '—' }}</td>
-                            <td class="text-end ui-tabular-nums tw:text-on-surface-variant">{{ $isAvail ? \App\Support\NumberFormat::maxDecimals($item->offered_weight_per_unit ?? $item->prItem->weight_needed) : '—' }}</td>
-                            <td class="text-end fw-bold text-primary ui-tabular-nums">{{ $isAvail ? \App\Support\NumberFormat::maxDecimals($item->offered_total_weight ?? $item->prItem->total_weight) : '—' }}</td>
-                            <td class="text-end ui-tabular-nums tw:text-on-surface-variant">{{ $isAvail && $item->price_per_kg !== null ? \App\Support\NumberFormat::maxDecimals($item->price_per_kg, 4) : '—' }}</td>
-                            <td class="text-end fw-semibold ui-tabular-nums">{{ $isAvail ? number_format($amount, 2) : '—' }}</td>
-                            <td class="text-end fw-bold tw:text-on-surface ui-tabular-nums">{{ $isAvail ? 'Rp '.number_format($idr, 0, ',', '.') : '—' }}</td>
+                            <td class="tw:text-center ui-tabular-nums">{{ $isAvail ? number_format($item->available_qty ?? $item->prItem->quantity_value, 0) : '—' }}</td>
+                            <td class="tw:text-end ui-tabular-nums tw:text-on-surface-variant">{{ $isAvail ? \App\Support\NumberFormat::maxDecimals($item->offered_weight_per_unit ?? $item->prItem->weight_needed) : '—' }}</td>
+                            <td class="tw:text-end tw:font-bold tw:text-primary ui-tabular-nums">{{ $isAvail ? \App\Support\NumberFormat::maxDecimals($item->offered_total_weight ?? $item->prItem->total_weight) : '—' }}</td>
+                            <td class="tw:text-end ui-tabular-nums tw:text-on-surface-variant">{{ $isAvail && $item->price_per_kg !== null ? \App\Support\NumberFormat::maxDecimals($item->price_per_kg, 4) : '—' }}</td>
+                            <td class="tw:text-end tw:font-semibold ui-tabular-nums">{{ $isAvail ? number_format($amount, 2) : '—' }}</td>
+                            <td class="tw:text-end tw:font-bold tw:text-on-surface ui-tabular-nums">{{ $isAvail ? 'Rp '.number_format($idr, 0, ',', '.') : '—' }}</td>
                         </tr>
                     @endforeach
                 </tbody>
-                <tfoot class="table-light fw-bold border-top">
+                <tfoot class="tw:bg-surface-container-low tw:font-bold tw:border-t tw:border-outline-variant">
                     <tr>
-                        <td colspan="7" class="text-end tw:text-on-surface">{{ __('purchasing.copy.grand_total') }}</td>
-                        <td class="text-end tw:text-on-surface ui-tabular-nums" id="grandTotalAmount">{{ number_format($totalAmount, 2) }} {{ $quotation->currency }}</td>
-                        <td class="text-end text-primary ui-tabular-nums fs-6" id="grandTotalIdr">Rp {{ number_format($totalIdr, 0, ',', '.') }}</td>
+                        <td colspan="7" class="tw:text-end tw:text-on-surface">{{ __('purchasing.copy.grand_total') }}</td>
+                        <td class="tw:text-end tw:text-on-surface ui-tabular-nums" id="grandTotalAmount">{{ number_format($totalAmount, 2) }} {{ $quotation->currency }}</td>
+                        <td class="tw:text-end tw:text-primary ui-tabular-nums tw:text-ui-base" id="grandTotalIdr">Rp {{ number_format($totalIdr, 0, ',', '.') }}</td>
                     </tr>
                 </tfoot>
             </table>
@@ -296,15 +296,15 @@
 
                 const tr = document.createElement('tr');
                 tr.append(
-                    createCell('text-center tw:text-on-surface-variant ui-tabular-nums', String(i + 1)),
-                    createCell('fw-bold text-primary', item.pr_number ?? '-'),
-                    createCell('fw-semibold tw:text-on-surface', item.material ?? ''),
-                    createCell('text-center ui-tabular-nums', formatNumber(item.quantity, 0)),
-                    createCell('text-end ui-tabular-nums tw:text-on-surface-variant', formatNumber(item.weight_unit, 2)),
-                    createCell('text-end fw-bold text-primary ui-tabular-nums', formatNumber(item.weight, 2)),
-                    createCell('text-end ui-tabular-nums tw:text-on-surface-variant', formatNumber(item.price, 4)),
-                    createCell('text-end fw-semibold ui-tabular-nums', formatNumber(item.amount, 2)),
-                    createCell('text-end fw-bold tw:text-on-surface ui-tabular-nums', `Rp ${formatNumber(idr, 0)}`)
+                    createCell('tw:text-center tw:text-on-surface-variant ui-tabular-nums', String(i + 1)),
+                    createCell('tw:font-bold tw:text-primary', item.pr_number ?? '-'),
+                    createCell('tw:font-semibold tw:text-on-surface', item.material ?? ''),
+                    createCell('tw:text-center ui-tabular-nums', formatNumber(item.quantity, 0)),
+                    createCell('tw:text-end ui-tabular-nums tw:text-on-surface-variant', formatNumber(item.weight_unit, 2)),
+                    createCell('tw:text-end tw:font-bold tw:text-primary ui-tabular-nums', formatNumber(item.weight, 2)),
+                    createCell('tw:text-end ui-tabular-nums tw:text-on-surface-variant', formatNumber(item.price, 4)),
+                    createCell('tw:text-end tw:font-semibold ui-tabular-nums', formatNumber(item.amount, 2)),
+                    createCell('tw:text-end tw:font-bold tw:text-on-surface ui-tabular-nums', `Rp ${formatNumber(idr, 0)}`)
                 );
                 fragment.appendChild(tr);
             });

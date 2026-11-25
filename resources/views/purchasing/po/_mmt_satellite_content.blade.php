@@ -2,16 +2,16 @@
     @if($orderedLines->isEmpty())
         <x-ui.empty-state icon="package" :title="__('purchasing.mmt.empty.items')" class="tw:py-6" />
     @else
-        <div class="table-responsive">
-            <table class="table table-hover align-middle tw:m-0 tw:text-ui-xs w-100">
-                <thead class="table-light">
+        <div class="ui-table-responsive">
+            <table class="ui-table ui-table--hover tw:align-middle tw:m-0 tw:text-ui-xs tw:w-full">
+                <thead>
                     <tr>
-                        <th scope="col" class="text-center" style="width: 36px;">{{ __('purchasing.copy.no') }}</th>
+                        <th scope="col" class="tw:text-center" style="width: 36px;">{{ __('purchasing.copy.no') }}</th>
                         <th scope="col">{{ __('purchasing.copy.material') }}</th>
-                        <th scope="col" class="text-center">{{ __('purchasing.copy.qty') }}</th>
-                        <th scope="col" class="text-end">{{ __('purchasing.copy.total_weight') }}</th>
-                        <th scope="col" class="text-end">{{ __('purchasing.copy.price_kg') }}</th>
-                        <th scope="col" class="text-end">{{ __('purchasing.copy.amount') }}</th>
+                        <th scope="col" class="tw:text-center">{{ __('purchasing.copy.qty') }}</th>
+                        <th scope="col" class="tw:text-end">{{ __('purchasing.copy.total_weight') }}</th>
+                        <th scope="col" class="tw:text-end">{{ __('purchasing.copy.price_kg') }}</th>
+                        <th scope="col" class="tw:text-end">{{ __('purchasing.copy.amount') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -21,19 +21,19 @@
                             $currency = $item->quotation?->currency ?? $po->currency;
                         @endphp
                         <tr>
-                            <td class="text-center ui-tabular-nums tw:text-on-surface-variant">{{ $idx + 1 }}</td>
+                            <td class="tw:text-center ui-tabular-nums tw:text-on-surface-variant">{{ $idx + 1 }}</td>
                             <td class="tw:font-semibold tw:text-on-surface ui-col-data-name">
                                 <div>{{ $item->prItem?->material_name ?? '-' }}</div>
                                 @if($item->prItem?->shape)
                                     <div class="tw:text-[11px] tw:font-normal tw:text-on-surface-variant">{{ $item->available_dimension_label }}</div>
                                 @endif
                             </td>
-                            <td class="text-center ui-tabular-nums">{{ $line->qty }} pcs</td>
-                            <td class="text-end ui-tabular-nums">{{ $regionalFormatter->number(\App\Support\NumberFormat::maxDecimals($line->kg), 'decimal') }} kg</td>
-                            <td class="text-end ui-tabular-nums tw:text-on-surface-variant">
+                            <td class="tw:text-center ui-tabular-nums">{{ $line->qty }} pcs</td>
+                            <td class="tw:text-end ui-tabular-nums">{{ $regionalFormatter->number(\App\Support\NumberFormat::maxDecimals($line->kg), 'decimal') }} kg</td>
+                            <td class="tw:text-end ui-tabular-nums tw:text-on-surface-variant">
                                 {{ $line->pricePerKg !== null ? $regionalFormatter->groupedDecimal($line->pricePerKg, 4).' '.$currency : '—' }}
                             </td>
-                            <td class="text-end ui-tabular-nums tw:font-semibold tw:text-on-surface">
+                            <td class="tw:text-end ui-tabular-nums tw:font-semibold tw:text-on-surface">
                                 {{ $regionalFormatter->groupedDecimal($line->amount).' '.$currency }}
                             </td>
                         </tr>
@@ -46,15 +46,15 @@
     @if($shipments->isEmpty())
         <x-ui.empty-state icon="truck" :title="__('purchasing.mmt.empty.shipments')" class="tw:py-6" />
     @else
-        <div class="table-responsive">
-            <table class="table table-hover align-middle tw:m-0 tw:text-ui-xs w-100">
-                <thead class="table-light">
+        <div class="ui-table-responsive">
+            <table class="ui-table ui-table--hover tw:align-middle tw:m-0 tw:text-ui-xs tw:w-full">
+                <thead>
                     <tr>
                         <th scope="col">{{ __('shipments.copy.shipment_no') }}</th>
                         <th scope="col">{{ __('shipments.copy.shipment_date') }}</th>
                         <th scope="col">{{ __('shipments.copy.target_actual_arrival') }}</th>
-                        <th scope="col" class="text-center">{{ __('shipments.copy.status') }}</th>
-                        <th scope="col" class="tw:text-right text-end">{{ __('common.table.action') }}</th>
+                        <th scope="col" class="tw:text-center">{{ __('shipments.copy.status') }}</th>
+                        <th scope="col" class="tw:text-end">{{ __('common.table.action') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -73,12 +73,12 @@
                                     —
                                 @endif
                             </td>
-                            <td class="text-center">
+                            <td class="tw:text-center">
                                 <x-ui.status-chip :tone="\App\Support\StatusHelper::shipmentTone($shipment->status)">
                                     {{ \App\Support\StatusHelper::shipmentLabel($shipment->status) }}
                                 </x-ui.status-chip>
                             </td>
-                            <td class="tw:text-right text-end">
+                            <td class="tw:text-end">
                                 <x-ui.row-action
                                     :href="\App\Support\PurchasingNavigation::toRoute('purchasing.shipments.show', $shipment)"
                                     :context="$shipment->shipment_number"
@@ -94,15 +94,15 @@
     @if($claims->isEmpty())
         <x-ui.empty-state icon="alert-triangle" :title="__('purchasing.mmt.empty.claims')" class="tw:py-6" />
     @else
-        <div class="table-responsive">
-            <table class="table table-hover align-middle tw:m-0 tw:text-ui-xs w-100">
-                <thead class="table-light">
+        <div class="ui-table-responsive">
+            <table class="ui-table ui-table--hover tw:align-middle tw:m-0 tw:text-ui-xs tw:w-full">
+                <thead>
                     <tr>
                         <th scope="col">{{ __('claims.copy.claim_id') }}</th>
                         <th scope="col">{{ __('claims.copy.expected_resolution') }}</th>
                         <th scope="col">{{ __('claims.copy.response_deadline') }}</th>
-                        <th scope="col" class="text-center">{{ __('claims.copy.status') }}</th>
-                        <th scope="col" class="tw:text-right text-end">{{ __('common.table.action') }}</th>
+                        <th scope="col" class="tw:text-center">{{ __('claims.copy.status') }}</th>
+                        <th scope="col" class="tw:text-end">{{ __('common.table.action') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -113,12 +113,12 @@
                             <td class="ui-tabular-nums tw:text-on-surface-variant">
                                 {{ $claim->deadline ? $regionalFormatter->date($claim->deadline, 'human') : '—' }}
                             </td>
-                            <td class="text-center">
+                            <td class="tw:text-center">
                                 <x-ui.status-chip :tone="\App\Support\StatusHelper::claimTone($claim->status)">
                                     {{ \App\Support\StatusHelper::claimLabel($claim->status) }}
                                 </x-ui.status-chip>
                             </td>
-                            <td class="tw:text-right text-end">
+                            <td class="tw:text-end">
                                 <x-ui.row-action
                                     :href="\App\Support\PurchasingNavigation::toRoute('purchasing.claims.show', $claim)"
                                     :context="$claim->claim_number"

@@ -47,13 +47,13 @@
             @endif
         </x-slot:toolbar>
 
-        <table class="table table-hover align-middle mb-0 op-queue-table tw:text-ui-sm">
-            <thead class="table-light">
+        <table class="ui-table ui-table--hover tw:align-middle tw:mb-0 op-queue-table tw:text-ui-sm">
+            <thead>
                 <tr>
                     <th scope="col">{{ __('purchasing.copy.operational_checklist_item') }}</th>
-                    <th scope="col" class="tw:w-40 text-center">{{ __('purchasing.copy.count_severity') }}</th>
+                    <th scope="col" class="tw:w-40 tw:text-center">{{ __('purchasing.copy.count_severity') }}</th>
                     <th scope="col">{{ __('purchasing.copy.description_workflow_impact') }}</th>
-                    <th scope="col" class="tw:w-32 tw:text-right text-end">{{ __('common.table.action') }}</th>
+                    <th scope="col" class="tw:w-32 tw:text-end">{{ __('common.table.action') }}</th>
                 </tr>
             </thead>
             <tbody>
@@ -64,12 +64,12 @@
                     @endphp
                     <tr>
                         <td>
-                            <div class="d-flex align-items-center tw:gap-2.5">
+                            <div class="tw:flex tw:items-center tw:gap-2.5">
                                 <x-ui.icon :name="$check['icon']" size="md" class="{{ $checkIconClass }} tw:shrink-0" />
-                                <span class="fw-bold tw:text-on-surface">{{ $check['label'] }}</span>
+                                <span class="tw:font-bold tw:text-on-surface">{{ $check['label'] }}</span>
                             </div>
                         </td>
-                        <td class="text-center">
+                        <td class="tw:text-center">
                             @if($check['count'] > 0)
                                 <span class="ui-status-chip ui-status-chip--{{ $checkTone }} ui-tabular-nums">
                                     {{ trans_choice('purchasing.summary.pending_count', $check['count'], ['count' => $check['count']]) }}
@@ -83,7 +83,7 @@
                         <td class="tw:text-on-surface-variant tw:text-ui-xs">
                             {{ $check['description'] }}
                         </td>
-                        <td class="tw:text-right text-end">
+                        <td class="tw:text-end">
                             <x-ui.row-action
                                 :href="$check['url']"
                                 :tone="$check['count'] > 0 ? 'primary' : 'neutral'"
@@ -182,19 +182,19 @@
         >
             <x-ui.chart id="prChart" :label="__('purchasing.copy.purchase_requisition_volume_by_month')" :fallback="__('purchasing.copy.monthly_requisition_volume_trend_chart')" plot-class="tw:h-[16rem]">
                 <x-slot:table>
-                    <table class="table table-sm align-middle tw:m-0 tw:text-ui-xs">
+                    <table class="ui-table ui-table--sm tw:align-middle tw:m-0 tw:text-ui-xs">
                         <caption class="tw:sr-only">{{ __('purchasing.copy.purchase_requisitions_trend') }}</caption>
                         <thead>
                             <tr>
                                 <th scope="col">{{ __('charts.columns.period') }}</th>
-                                <th scope="col" class="text-end">{{ __('charts.columns.count') }}</th>
+                                <th scope="col" class="tw:text-end">{{ __('charts.columns.count') }}</th>
                             </tr>
                         </thead>
                         <tbody>
                             @foreach($prPerBulan as $month)
                                 <tr>
                                     <th scope="row" class="tw:font-normal">{{ $month['label'] }}</th>
-                                    <td class="text-end ui-tabular-nums">{{ $regionalFormatter->number((string) $month['count'], 'plain') }}</td>
+                                    <td class="tw:text-end ui-tabular-nums">{{ $regionalFormatter->number((string) $month['count'], 'plain') }}</td>
                                 </tr>
                             @endforeach
                         </tbody>
@@ -223,21 +223,21 @@
                     @endphp
                     <x-ui.chart id="poStatusChart" :label="__('purchasing.copy.purchase_order_status_distribution')" :fallback="__('purchasing.copy.po_status_distribution_chart')" plot-class="tw:h-[12rem]">
                         <x-slot:table>
-                            <table class="table table-sm align-middle tw:m-0 tw:text-ui-xs">
+                            <table class="ui-table ui-table--sm tw:align-middle tw:m-0 tw:text-ui-xs">
                                 <caption class="tw:sr-only">{{ __('purchasing.copy.po_workload_distribution') }}</caption>
                                 <thead>
                                     <tr>
                                         <th scope="col">{{ __('charts.columns.status') }}</th>
-                                        <th scope="col" class="text-end">{{ __('charts.columns.count') }}</th>
-                                        <th scope="col" class="text-end">{{ __('charts.columns.share') }}</th>
+                                        <th scope="col" class="tw:text-end">{{ __('charts.columns.count') }}</th>
+                                        <th scope="col" class="tw:text-end">{{ __('charts.columns.share') }}</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     @foreach($poStatusRows as $row)
                                         <tr>
                                             <th scope="row" class="tw:font-normal">{{ $row['label'] }}</th>
-                                            <td class="text-end ui-tabular-nums">{{ $regionalFormatter->number((string) $row['count'], 'plain') }}</td>
-                                            <td class="text-end ui-tabular-nums">{{ (int) round($row['count'] / $poStatusTotal * 100) }}%</td>
+                                            <td class="tw:text-end ui-tabular-nums">{{ $regionalFormatter->number((string) $row['count'], 'plain') }}</td>
+                                            <td class="tw:text-end ui-tabular-nums">{{ (int) round($row['count'] / $poStatusTotal * 100) }}%</td>
                                         </tr>
                                     @endforeach
                                 </tbody>
@@ -257,20 +257,20 @@
                         {{ __('purchasing.copy.update_rate') }}
                     </x-ui.button>
                 </x-slot:actions>
-                <div class="row g-2">
+                <div class="tw:grid tw:grid-cols-2 tw:gap-2">
                     @foreach(\App\Models\ExchangeRate::CURRENCIES as $currency)
                         @php $rate = $latestRates[$currency] ?? null; @endphp
-                        <div class="col-6">
-                            <div class="tw:p-2.5 tw:bg-surface-low border rounded text-center">
-                                <div class="tw:text-on-surface-variant tw:text-ui-xs fw-semibold tw:uppercase">{{ $currency }} → IDR</div>
-                                <div class="fw-bold tw:text-on-surface fs-6 tw:mt-0.5">Rp {{ $rate ? $regionalFormatter->number(number_format($rate->rate_to_idr, 0, ',', '.'), 'indonesian') : '-' }}</div>
+                        <div>
+                            <div class="tw:p-2.5 tw:bg-surface-low tw:border tw:border-outline-variant tw:rounded-ui-sm tw:text-center">
+                                <div class="tw:text-on-surface-variant tw:text-ui-xs tw:font-semibold tw:uppercase">{{ $currency }} → IDR</div>
+                                <div class="tw:font-bold tw:text-on-surface tw:text-ui-base tw:mt-0.5">Rp {{ $rate ? $regionalFormatter->number(number_format($rate->rate_to_idr, 0, ',', '.'), 'indonesian') : '-' }}</div>
                             </div>
                         </div>
                     @endforeach
                 </div>
                 @php $lastRateUpdated = $latestRates->filter()->sortByDesc('valid_from')->first()?->valid_from; @endphp
                 @if($lastRateUpdated)
-                    <div class="tw:text-on-surface-variant text-center mt-2 tw:text-ui-xs">{{ __('purchasing.page.rate_updated', ['date' => $regionalFormatter->date($lastRateUpdated, 'human')]) }}</div>
+                    <div class="tw:text-on-surface-variant tw:text-center tw:mt-2 tw:text-ui-xs">{{ __('purchasing.page.rate_updated', ['date' => $regionalFormatter->date($lastRateUpdated, 'human')]) }}</div>
                 @endif
             </x-ui.card>
         </div>
@@ -285,22 +285,22 @@
                     <x-ui.icon name="arrow-right" size="sm" />
                 </x-ui.button>
             </x-slot:toolbar>
-            <table class="table table-hover align-middle mb-0 tw:text-ui-sm">
-                <thead class="table-light">
+            <table class="ui-table ui-table--hover tw:align-middle tw:mb-0 tw:text-ui-sm">
+                <thead>
                     <tr>
                         <th scope="col">{{ __('purchasing.copy.pr_no') }}</th>
                         <th scope="col">{{ __('purchasing.copy.period') }}</th>
                         <th scope="col">{{ __('purchasing.copy.status') }}</th>
-                        <th scope="col" class="tw:text-right text-end">{{ __('common.table.action') }}</th>
+                        <th scope="col" class="tw:text-end">{{ __('common.table.action') }}</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse($prTerbaru as $pr)
                         <tr>
-                            <td class="fw-bold tw:text-on-surface">{{ $pr->pr_number ?? __('purchasing.copy.draft') }}</td>
+                            <td class="tw:font-bold tw:text-on-surface">{{ $pr->pr_number ?? __('purchasing.copy.draft') }}</td>
                             <td>{{ $pr->period->display_label ?? $pr->period->name }}</td>
                             <td><x-status-badge type="pr" :status="$pr->status" /></td>
-                            <td class="tw:text-right text-end">
+                            <td class="tw:text-end">
                                 <x-ui.row-action
                                     :href="\App\Support\PurchasingNavigation::toRoute('purchasing.requisitions.show', $pr)"
                                     :context="$pr->pr_number ?? __('purchasing.copy.draft')"
@@ -308,7 +308,7 @@
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="4" class="text-center text-muted py-3">{{ __('purchasing.copy.no_requisition_records_available') }}</td></tr>
+                        <tr><td colspan="4" class="tw:text-center tw:text-on-surface-variant tw:py-3">{{ __('purchasing.copy.no_requisition_records_available') }}</td></tr>
                     @endforelse
                 </tbody>
             </table>
@@ -323,24 +323,24 @@
                     <x-ui.icon name="arrow-right" size="sm" />
                 </x-ui.button>
             </x-slot:toolbar>
-            <table class="table table-hover align-middle mb-0 tw:text-ui-sm">
-                <thead class="table-light">
+            <table class="ui-table ui-table--hover tw:align-middle tw:mb-0 tw:text-ui-sm">
+                <thead>
                     <tr>
                         <th scope="col">{{ __('purchasing.copy.po_no') }}</th>
                         <th scope="col">{{ __('purchasing.copy.supplier') }}</th>
                         <th scope="col">{{ __('purchasing.copy.estimated_arrival') }}</th>
                         <th scope="col">{{ __('purchasing.copy.status') }}</th>
-                        <th scope="col" class="tw:text-right text-end">{{ __('common.table.action') }}</th>
+                        <th scope="col" class="tw:text-end">{{ __('common.table.action') }}</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse($poTerdekat as $po)
                         <tr>
-                            <td class="fw-bold tw:text-on-surface">{{ $po->po_number }}</td>
+                            <td class="tw:font-bold tw:text-on-surface">{{ $po->po_number }}</td>
                             <td>{{ $po->supplier->name }}</td>
                             <td>{{ $regionalFormatter->date($po->estimated_arrival, 'human') }}</td>
                             <td><x-status-badge type="po" :status="$po->status" :is-overdue="$po->is_overdue ?? false" /></td>
-                            <td class="tw:text-right text-end">
+                            <td class="tw:text-end">
                                 <x-ui.row-action
                                     :href="\App\Support\PurchasingNavigation::toRoute('purchasing.purchase-orders.show', $po)"
                                     :context="$po->po_number"
@@ -348,7 +348,7 @@
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="5" class="text-center text-muted py-3">{{ __('purchasing.copy.no_active_upcoming_purchase_orders') }}</td></tr>
+                        <tr><td colspan="5" class="tw:text-center tw:text-on-surface-variant tw:py-3">{{ __('purchasing.copy.no_active_upcoming_purchase_orders') }}</td></tr>
                     @endforelse
                 </tbody>
             </table>
@@ -369,25 +369,25 @@
                     />
                 </x-slot:emptyState>
 
-                <table class="table table-hover align-middle mb-0 tw:text-ui-xs w-100">
-                    <thead class="table-light">
+                <table class="ui-table ui-table--hover tw:align-middle tw:mb-0 tw:text-ui-xs tw:w-full">
+                    <thead>
                         <tr>
                             <th scope="col">{{ __('purchasing.copy.po_no') }}</th>
                             <th scope="col">{{ __('purchasing.copy.supplier') }}</th>
                             <th scope="col">{{ __('purchasing.po_ack.title') }}</th>
                             <th scope="col">{{ __('purchasing.po_ack.promised_date') }}</th>
-                            <th scope="col" class="tw:text-right text-end">{{ __('common.table.action') }}</th>
+                            <th scope="col" class="tw:text-end">{{ __('common.table.action') }}</th>
                         </tr>
                     </thead>
                     <tbody>
                         @foreach($pendingPoAcknowledgements ?? [] as $ackPo)
                             @php $ackStatus = $ackPo->acknowledgementStatusEnum(); @endphp
                             <tr>
-                                <td class="ui-tabular-nums fw-semibold">{{ $ackPo->po_number }}</td>
+                                <td class="ui-tabular-nums tw:font-semibold">{{ $ackPo->po_number }}</td>
                                 <td>{{ $ackPo->supplier?->name ?? '—' }}</td>
                                 <td><x-ui.status-chip :tone="$ackStatus->tone()">{{ $ackStatus->label() }}</x-ui.status-chip></td>
                                 <td class="ui-tabular-nums">{{ $ackPo->supplier_promised_date ? $regionalFormatter->date($ackPo->supplier_promised_date) : '—' }}</td>
-                                <td class="tw:text-right text-end">
+                                <td class="tw:text-end">
                                     <x-ui.row-action
                                         :href="route('purchasing.purchase-orders.show', $ackPo)"
                                         :label="__('purchasing.copy.review')"
@@ -410,24 +410,24 @@
             <form action="{{ route('purchasing.kurs.update') }}" method="POST">
                 @csrf
                 <div class="modal-header">
-                    <h6 class="modal-title fw-bold" id="purchasingKursModalTitle">{{ __('purchasing.copy.update_exchange_rate') }}</h6>
+                    <h6 class="modal-title tw:font-bold" id="purchasingKursModalTitle">{{ __('purchasing.copy.update_exchange_rate') }}</h6>
                     <button type="button" class="btn-close" data-ui-modal-close aria-label="{{ __('purchasing.copy.close') }}"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label small fw-bold" for="exchange-rate-currency">{{ __('purchasing.copy.currency') }}</label>
-                        <select name="currency" id="exchange-rate-currency" class="form-select form-select-sm" required>
+                    <div class="tw:mb-3">
+                        <label class="ui-label tw:text-ui-xs tw:font-bold" for="exchange-rate-currency">{{ __('purchasing.copy.currency') }}</label>
+                        <select name="currency" id="exchange-rate-currency" class="ui-select ui-select--sm" required>
                             @foreach(\App\Models\ExchangeRate::currencyOptions() as $code => $label)
                                 <option value="{{ $code }}">{{ $label }}</option>
                             @endforeach
                         </select>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label small fw-bold" for="exchange-rate-value">
+                    <div class="tw:mb-3">
+                        <label class="ui-label tw:text-ui-xs tw:font-bold" for="exchange-rate-value">
                             {{ __('purchasing.copy.rate_to_idr') }}
-                            <x-ui.icon name="info" class="ms-1 text-muted" data-ui-tooltip="{{ __('purchasing.copy.new_exchange_rate_is_saved_as_a_new_historical_record_preserving_past_snapshots') }}" />
+                            <x-ui.icon name="info" class="tw:ms-1 tw:text-on-surface-variant" data-ui-tooltip="{{ __('purchasing.copy.new_exchange_rate_is_saved_as_a_new_historical_record_preserving_past_snapshots') }}" />
                         </label>
-                        <input type="number" step="0.01" name="rate_to_idr" id="exchange-rate-value" class="form-control form-control-sm" required placeholder="16500">
+                        <input type="number" step="0.01" name="rate_to_idr" id="exchange-rate-value" class="ui-input ui-input--sm" required placeholder="16500">
                     </div>
                 </div>
                 <div class="modal-footer">

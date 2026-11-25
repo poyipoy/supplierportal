@@ -14,15 +14,15 @@
         :title="__('purchasing.copy.supplier_conversations')"
         :description="__('purchasing.copy.search_the_current_page_by_document_supplier_message_or_status')"
     >
-        <table class="table table-hover align-middle datatable">
-            <thead class="table-light">
+        <table class="ui-table ui-table--hover tw:align-middle datatable">
+            <thead>
                 <tr>
                     <th scope="col">{{ __('purchasing.copy.document_context') }}</th>
                     <th scope="col">{{ __('purchasing.copy.supplier') }}</th>
                     <th scope="col">{{ __('purchasing.copy.latest_message') }}</th>
                     <th scope="col">{{ __('purchasing.copy.last_activity') }}</th>
                     <th scope="col">{{ __('purchasing.copy.status') }}</th>
-                    <th scope="col" class="text-end">{{ __('purchasing.copy.action') }}</th>
+                    <th scope="col" class="tw:text-end">{{ __('purchasing.copy.action') }}</th>
                 </tr>
             </thead>
             <tbody>
@@ -42,7 +42,7 @@
                             @endif
                             <span class="tw:ms-2 tw:font-semibold">{{ $conv->context_label }}</span>
                         </td>
-                        <td class="fw-medium">{{ $conv->supplierUser->supplier->company_name ?? $conv->supplierUser->name }}</td>
+                        <td class="tw:font-medium">{{ $conv->supplierUser->supplier->company_name ?? $conv->supplierUser->name }}</td>
                         <td>
                             @if($conv->latestMessage)
                                 @if($conv->latestMessage->sender_id === auth()->id())
@@ -66,7 +66,7 @@
                                 <x-ui.status-chip :tone="$slaTone">{{ $sla['label'] }}</x-ui.status-chip>
                             </div>
                         </td>
-                        <td class="text-end">
+                        <td class="tw:text-end">
                             @php $unreadCount = $conv->unreadCountFor(auth()->id()); @endphp
                             <x-ui.button :href="\App\Support\PurchasingNavigation::toRoute('purchasing.conversations.show', $conv)" variant="outline-primary" size="sm" class="tw:relative">
                                 <x-slot:leading><x-ui.icon name="message-square-text" /></x-slot:leading>

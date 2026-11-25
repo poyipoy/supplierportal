@@ -41,6 +41,7 @@
     .po-nav-pills {
         display: flex;
         flex-wrap: nowrap;
+        list-style: none;
         overflow-x: auto;
         -webkit-overflow-scrolling: touch;
         scrollbar-width: none;
@@ -53,11 +54,11 @@
         display: none;
     }
 
-    .po-nav-pills .nav-item {
+    .po-nav-pills .po-nav-item {
         flex-shrink: 0;
     }
 
-    .po-nav-pills .nav-link {
+    .po-nav-pills .po-nav-link {
         display: inline-flex;
         align-items: center;
         min-height: 2.25rem;
@@ -71,23 +72,23 @@
         text-decoration: none;
     }
 
-    .po-nav-pills .nav-link:focus-visible {
+    .po-nav-pills .po-nav-link:focus-visible {
         outline: 2px solid var(--md-primary);
         outline-offset: 2px;
     }
 
-    .po-nav-pills .nav-link:hover:not(.active) {
+    .po-nav-pills .po-nav-link:hover:not(.active) {
         background-color: var(--md-surface-container-high);
         color: var(--md-on-surface);
     }
 
-    .po-nav-pills .nav-link.active {
+    .po-nav-pills .po-nav-link.active {
         background-color: var(--md-primary) !important;
         color: var(--md-on-primary) !important;
         box-shadow: 0 1px 3px rgba(var(--md-primary-rgb), 0.35);
     }
 
-    .po-nav-pills .nav-link.text-danger.active {
+    .po-nav-pills .po-nav-link.po-nav-link--danger.active {
         background-color: var(--md-error) !important;
         color: var(--md-on-error) !important;
         box-shadow: 0 1px 3px rgba(220, 53, 69, 0.35);
@@ -209,18 +210,18 @@
     @endphp
     <div class="po-tracking-strip">
         <div class="po-tracking-step {{ $prDate ? 'is-active' : '' }}">
-            <div class="tw:text-on-surface-variant tw:text-ui-xs fw-semibold tw:uppercase">{{ __('purchasing.copy.1_pr_created') }}</div>
-            <div class="fw-bold tw:text-on-surface tw:text-ui-sm tw:mt-0.5">{{ $prDate ? $regionalFormatter->timestamp($prDate, 'date') : '-' }}</div>
+            <div class="tw:text-on-surface-variant tw:text-ui-xs tw:font-semibold tw:uppercase">{{ __('purchasing.copy.1_pr_created') }}</div>
+            <div class="tw:font-bold tw:text-on-surface tw:text-ui-sm tw:mt-0.5">{{ $prDate ? $regionalFormatter->timestamp($prDate, 'date') : '-' }}</div>
             <div class="tw:text-on-surface-variant tw:text-ui-xs">{{ $primaryPr?->pr_number ?? __('terms.purchase_requisition') }}</div>
         </div>
         <div class="po-tracking-step is-active">
-            <div class="tw:text-on-surface-variant tw:text-ui-xs fw-semibold tw:uppercase">{{ __('purchasing.copy.2_po_created') }}</div>
-            <div class="fw-bold tw:text-on-surface tw:text-ui-sm tw:mt-0.5">{{ $regionalFormatter->timestamp($po->created_at, 'date') }}</div>
+            <div class="tw:text-on-surface-variant tw:text-ui-xs tw:font-semibold tw:uppercase">{{ __('purchasing.copy.2_po_created') }}</div>
+            <div class="tw:font-bold tw:text-on-surface tw:text-ui-sm tw:mt-0.5">{{ $regionalFormatter->timestamp($po->created_at, 'date') }}</div>
             <div class="tw:text-on-surface-variant tw:text-ui-xs">{{ $regionalFormatter->time($po->created_at) }}</div>
         </div>
         <div class="po-tracking-step {{ $po->estimated_arrival ? 'is-active' : '' }}">
-            <div class="tw:text-on-surface-variant tw:text-ui-xs fw-semibold tw:uppercase">{{ __('purchasing.copy.3_po_target_arrival_date') }}</div>
-            <div class="fw-bold {{ $po->is_overdue ? 'text-danger' : 'tw:text-on-surface' }} tw:text-ui-sm tw:mt-0.5">
+            <div class="tw:text-on-surface-variant tw:text-ui-xs tw:font-semibold tw:uppercase">{{ __('purchasing.copy.3_po_target_arrival_date') }}</div>
+            <div class="tw:font-bold {{ $po->is_overdue ? 'tw:text-error' : 'tw:text-on-surface' }} tw:text-ui-sm tw:mt-0.5">
                 {{ $po->estimated_arrival ? $regionalFormatter->date($po->estimated_arrival) : '-' }}
             </div>
             <div class="tw:text-on-surface-variant tw:text-ui-xs">
@@ -228,10 +229,10 @@
             </div>
         </div>
         <div class="po-tracking-step {{ $po->actual_arrival ? 'is-active' : '' }}">
-            <div class="tw:text-on-surface-variant tw:text-ui-xs fw-semibold tw:uppercase">{{ __('purchasing.copy.4_actual_arrival') }}</div>
-            <div class="fw-bold {{ $po->actual_arrival ? 'text-success' : 'tw:text-on-surface-variant' }} tw:text-ui-sm tw:mt-0.5">
+            <div class="tw:text-on-surface-variant tw:text-ui-xs tw:font-semibold tw:uppercase">{{ __('purchasing.copy.4_actual_arrival') }}</div>
+            <div class="tw:font-bold {{ $po->actual_arrival ? 'tw:text-success' : 'tw:text-on-surface-variant' }} tw:text-ui-sm tw:mt-0.5">
                 @if($po->actual_arrival)
-                    <x-ui.icon name="circle-check" size="sm" class="me-1 text-success" />
+                    <x-ui.icon name="circle-check" size="sm" class="tw:me-1 tw:text-success" />
                     {{ $regionalFormatter->date($po->actual_arrival) }}
                 @else
                     {{ __('purchasing.audit_ui.pending_delivery') }}
@@ -284,8 +285,8 @@
             <form method="POST" action="{{ route('purchasing.purchase-orders.respond-promise-change', $po) }}" class="tw:mt-4 tw:border-t tw:border-outline-variant tw:pt-4 tw:grid tw:gap-3 tw:md:grid-cols-12 tw:items-end">
                 @csrf
                 <div class="tw:md:col-span-6">
-                    <label for="purchasing-ack-response-notes" class="form-label tw:text-ui-xs tw:font-semibold">{{ __('purchasing.po_ack.fields.response_notes') }}</label>
-                    <input type="text" name="response_notes" id="purchasing-ack-response-notes" class="form-control form-control-sm" placeholder="{{ __('purchasing.po_ack.placeholders.response_notes') }}">
+                    <label for="purchasing-ack-response-notes" class="ui-label tw:text-ui-xs tw:font-semibold">{{ __('purchasing.po_ack.fields.response_notes') }}</label>
+                    <input type="text" name="response_notes" id="purchasing-ack-response-notes" class="ui-input ui-input--sm" placeholder="{{ __('purchasing.po_ack.placeholders.response_notes') }}">
                 </div>
                 <div class="tw:md:col-span-3">
                     <x-ui.button type="submit" name="decision" value="accept" variant="primary" size="sm" class="tw:w-full tw:justify-center">
@@ -305,20 +306,20 @@
 
     {{-- Sticky In-Page Navigation Bar --}}
     <nav class="po-sticky-nav-bar" aria-label="{{ __('purchasing.copy.purchase_order_sections') }}">
-        <ul class="nav po-nav-pills" id="po-section-nav">
-            <li class="nav-item"><a class="nav-link active" href="#sec-info">{{ __('purchasing.copy.order_info') }}</a></li>
-            <li class="nav-item"><a class="nav-link" href="#sec-material">{{ __('purchasing.copy.materials_commercials') }}</a></li>
+        <ul class="po-nav-pills tw:list-none" id="po-section-nav">
+            <li class="po-nav-item"><a class="po-nav-link active" href="#sec-info">{{ __('purchasing.copy.order_info') }}</a></li>
+            <li class="po-nav-item"><a class="po-nav-link" href="#sec-material">{{ __('purchasing.copy.materials_commercials') }}</a></li>
             @if(isset($itemProjections) && $itemProjections->isNotEmpty())
-                <li class="nav-item"><a class="nav-link" href="#sec-material-progress">{{ __('purchasing.copy.material_progress') }}</a></li>
+                <li class="po-nav-item"><a class="po-nav-link" href="#sec-material-progress">{{ __('purchasing.copy.material_progress') }}</a></li>
             @endif
             @if($po->qcInspections->isNotEmpty())
-                <li class="nav-item"><a class="nav-link" href="#sec-inspection">{{ __('purchasing.copy.qc_inspection') }}</a></li>
+                <li class="po-nav-item"><a class="po-nav-link" href="#sec-inspection">{{ __('purchasing.copy.qc_inspection') }}</a></li>
             @endif
-            <li class="nav-item"><a class="nav-link" href="#sec-document">{{ __('purchasing.copy.import_documents') }}</a></li>
+            <li class="po-nav-item"><a class="po-nav-link" href="#sec-document">{{ __('purchasing.copy.import_documents') }}</a></li>
             @if($po->status === 'claim_needed')
-                <li class="nav-item"><a class="nav-link text-danger" href="#sec-claim">{{ __('purchasing.copy.material_claim') }}</a></li>
+                <li class="po-nav-item"><a class="po-nav-link po-nav-link--danger tw:text-error" href="#sec-claim">{{ __('purchasing.copy.material_claim') }}</a></li>
             @endif
-            <li class="nav-item"><a class="nav-link" href="#sec-timeline">{{ __('purchasing.copy.timeline') }}</a></li>
+            <li class="po-nav-item"><a class="po-nav-link" href="#sec-timeline">{{ __('purchasing.copy.timeline') }}</a></li>
         </ul>
     </nav>
 
@@ -329,19 +330,19 @@
             <x-ui.card :title="__('purchasing.copy.order_information')" id="sec-info" class="tw:scroll-mt-24">
                 <div class="tw:grid tw:gap-px tw:overflow-hidden tw:border tw:border-outline-variant tw:bg-outline-variant tw:sm:grid-cols-2 tw:lg:grid-cols-3">
                     <div class="tw:bg-surface-container tw:p-2.5">
-                        <div class="tw:text-on-surface-variant tw:text-ui-xs fw-semibold tw:uppercase">{{ __('purchasing.copy.supplier') }}</div>
-                        <div class="fw-bold tw:text-on-surface tw:text-ui-sm tw:mt-0.5">{{ $po->supplier->name }}</div>
+                        <div class="tw:text-on-surface-variant tw:text-ui-xs tw:font-semibold tw:uppercase">{{ __('purchasing.copy.supplier') }}</div>
+                        <div class="tw:font-bold tw:text-on-surface tw:text-ui-sm tw:mt-0.5">{{ $po->supplier->name }}</div>
                         @include('quotations._supplier_pic', ['profile' => $po->supplier->supplier])
                     </div>
                     <div class="tw:bg-surface-container tw:p-2.5">
-                        <div class="tw:text-on-surface-variant tw:text-ui-xs fw-semibold tw:uppercase">{{ __('purchasing.copy.reference_no_pr') }}</div>
-                        <div class="fw-bold text-primary tw:text-ui-sm tw:mt-0.5">
+                        <div class="tw:text-on-surface-variant tw:text-ui-xs tw:font-semibold tw:uppercase">{{ __('purchasing.copy.reference_no_pr') }}</div>
+                        <div class="tw:font-bold tw:text-primary tw:text-ui-sm tw:mt-0.5">
                             @php $prs = $po->purchaseRequisitions(); @endphp
                             @if($prs->isEmpty())
                                 -
                             @else
                                 @foreach($prs as $pr)
-                                    <a href="{{ \App\Support\PurchasingNavigation::toRoute('purchasing.requisitions.show', $pr) }}" class="text-primary text-decoration-none tw:me-1.5">
+                                    <a href="{{ \App\Support\PurchasingNavigation::toRoute('purchasing.requisitions.show', $pr) }}" class="tw:text-primary tw:no-underline tw:me-1.5">
                                         {{ $pr->pr_number ?? '-' }}
                                     </a>
                                 @endforeach
@@ -352,20 +353,20 @@
                         </div>
                     </div>
                     <div class="tw:bg-surface-container tw:p-2.5">
-                        <div class="tw:text-on-surface-variant tw:text-ui-xs fw-semibold tw:uppercase">{{ __('purchasing.copy.procurement_period') }}</div>
-                        <div class="fw-semibold tw:text-on-surface tw:text-ui-sm tw:mt-0.5">
+                        <div class="tw:text-on-surface-variant tw:text-ui-xs tw:font-semibold tw:uppercase">{{ __('purchasing.copy.procurement_period') }}</div>
+                        <div class="tw:font-semibold tw:text-on-surface tw:text-ui-sm tw:mt-0.5">
                             @php $periods = $prs->map(fn($pr) => $pr->period?->display_label ?? '-')->unique(); @endphp
                             {{ $periods->implode(', ') }}
                         </div>
                     </div>
                     <div class="tw:bg-surface-container tw:p-2.5">
-                        <div class="tw:text-on-surface-variant tw:text-ui-xs fw-semibold tw:uppercase">{{ __('purchasing.copy.locked_currency') }}</div>
-                        <div class="fw-bold tw:text-on-surface tw:text-ui-sm tw:mt-0.5">
+                        <div class="tw:text-on-surface-variant tw:text-ui-xs tw:font-semibold tw:uppercase">{{ __('purchasing.copy.locked_currency') }}</div>
+                        <div class="tw:font-bold tw:text-on-surface tw:text-ui-sm tw:mt-0.5">
                             <span class="ui-status-chip ui-status-chip--neutral">{{ $po->currency }}</span>
                         </div>
                     </div>
                     <div class="tw:bg-surface-container tw:p-2.5 tw:sm:col-span-2">
-                        <div class="tw:text-on-surface-variant tw:text-ui-xs fw-semibold tw:uppercase">{{ __('purchasing.copy.po_notes_remark') }}</div>
+                        <div class="tw:text-on-surface-variant tw:text-ui-xs tw:font-semibold tw:uppercase">{{ __('purchasing.copy.po_notes_remark') }}</div>
                         <div class="tw:text-on-surface tw:text-ui-sm tw:mt-0.5">{{ $po->notes ?: '-' }}</div>
                     </div>
                 </div>
@@ -380,18 +381,18 @@
                 id="sec-material"
                 class="tw:scroll-mt-24"
             >
-                <table class="table table-hover align-middle mb-0 tw:text-ui-xs w-100">
-                    <thead class="table-light text-center">
+                <table class="ui-table ui-table--hover tw:align-middle tw:mb-0 tw:text-ui-xs tw:w-full">
+                    <thead class="tw:text-center">
                         <tr>
                             <th scope="col" style="width: 35px;">{{ __('purchasing.copy.no') }}</th>
                             <th scope="col" class="ui-sticky-col">{{ __('purchasing.copy.material') }}</th>
                             <th scope="col">{{ __('purchasing.copy.specification') }}</th>
                             <th scope="col">{{ __('purchasing.copy.qty') }}</th>
-                            <th scope="col" class="text-end">{{ __('purchasing.copy.weight_unit') }}</th>
-                            <th scope="col" class="text-end">{{ __('purchasing.copy.total_weight') }}</th>
-                            <th scope="col" class="text-end">{{ __('purchasing.copy.price_kg') }}</th>
-                            <th scope="col" class="text-end">{{ __('purchasing.copy.amount') }}</th>
-                            <th scope="col" class="text-end">{{ __('purchasing.copy.converted_idr') }}</th>
+                            <th scope="col" class="tw:text-end">{{ __('purchasing.copy.weight_unit') }}</th>
+                            <th scope="col" class="tw:text-end">{{ __('purchasing.copy.total_weight') }}</th>
+                            <th scope="col" class="tw:text-end">{{ __('purchasing.copy.price_kg') }}</th>
+                            <th scope="col" class="tw:text-end">{{ __('purchasing.copy.amount') }}</th>
+                            <th scope="col" class="tw:text-end">{{ __('purchasing.copy.converted_idr') }}</th>
                             <th scope="col">{{ __('purchasing.copy.reference_no_pr') }}</th>
                             <th scope="col">{{ __('purchasing.copy.remark') }}</th>
                         </tr>
@@ -409,11 +410,11 @@
                         @php $rate = $quotationRates[$quotation->id] ?? null; @endphp
                         @if($po->quotations->count() > 1)
                             <tbody class="ui-po-group-banner">
-                                <tr class="bg-primary-subtle text-primary border-top border-bottom">
-                                    <td colspan="11" class="fw-bold py-2 ps-3">
-                                        <x-ui.icon name="folder" size="sm" class="me-1" />
+                                <tr class="tw:bg-primary/10 tw:text-primary tw:border-y tw:border-outline-variant">
+                                    <td colspan="11" class="tw:font-bold tw:py-2 tw:ps-3">
+                                        <x-ui.icon name="folder" size="sm" class="tw:me-1" />
                                         {{ $quotation->purchaseRequisition->pr_number ?? 'PR -' }}
-                                        <span class="tw:text-on-surface-variant fw-normal ms-2">
+                                        <span class="tw:text-on-surface-variant tw:font-normal tw:ms-2">
                                             ({{ $quotation->purchaseRequisition->period->display_label ?? $quotation->purchaseRequisition->period->name ?? '-' }})
                                             @if($rate)
                                                 &bull; {{ __('purchasing.copy.locked_exchange_rate') }}: 1 {{ $quotation->currency }} = Rp {{ $regionalFormatter->groupedDecimal($rate->rate_to_idr) }}
@@ -435,34 +436,34 @@
                                     if ($idr === null) { $grandIdrUnavailable = true; } else { $grandTotalIdr += $idr; }
                                 @endphp
                                 <tr>
-                                    <td class="text-center tw:text-on-surface-variant ui-tabular-nums">{{ $globalNo++ }}</td>
-                                    <td class="fw-bold tw:text-on-surface ui-sticky-col ui-col-data-name">{{ $item->prItem->material_name }}</td>
-                                    <td class="text-center ui-col-data-name">
+                                    <td class="tw:text-center tw:text-on-surface-variant ui-tabular-nums">{{ $globalNo++ }}</td>
+                                    <td class="tw:font-bold tw:text-on-surface ui-sticky-col ui-col-data-name">{{ $item->prItem->material_name }}</td>
+                                    <td class="tw:text-center ui-col-data-name">
                                         @if(!$item->is_available)
                                             <span class="ui-status-chip ui-status-chip--error">{{ __('purchasing.copy.not_available') }}</span>
                                         @elseif($item->prItem->shape)
                                             <div class="tw:text-on-surface-variant tw:text-ui-xs">{{ __('common.final_copy.requested') }} {{ $item->prItem->dimension_label }}</div>
-                                            <div class="fw-semibold tw:text-ui-xs tw:mt-0.5">{{ __('common.final_copy.offer') }} {{ $item->available_dimension_label }}</div>
+                                            <div class="tw:font-semibold tw:text-ui-xs tw:mt-0.5">{{ __('common.final_copy.offer') }} {{ $item->available_dimension_label }}</div>
                                         @else
                                             <span class="tw:text-on-surface-variant">-</span>
                                         @endif
                                     </td>
-                                    <td class="text-center ui-tabular-nums">{{ $item->is_available ? ($orderedLine?->qty ?? $item->available_qty ?? $item->prItem->quantity_value) : '—' }}
+                                    <td class="tw:text-center ui-tabular-nums">{{ $item->is_available ? ($orderedLine?->qty ?? $item->available_qty ?? $item->prItem->quantity_value) : '—' }}
                                         @if($item->is_available)@include('procurement._ordered_delta', ['ordered' => $orderedLine?->qty, 'requested' => $item->prItem?->quantity_value])@endif
                                     </td>
-                                    <td class="text-end ui-tabular-nums tw:text-on-surface-variant">
+                                    <td class="tw:text-end ui-tabular-nums tw:text-on-surface-variant">
                                         {{ $item->is_available ? $regionalFormatter->number(\App\Support\NumberFormat::maxDecimals($item->offered_weight_per_unit ?? $item->prItem->weight_needed), 'decimal') : '—' }}
-                                        @if($item->is_available && $item->is_estimated_weight)<span class="ui-status-chip ui-status-chip--warning ms-1">{{ __('purchasing.copy.est_weight') }}</span>@endif
+                                        @if($item->is_available && $item->is_estimated_weight)<span class="ui-status-chip ui-status-chip--warning tw:ms-1">{{ __('purchasing.copy.est_weight') }}</span>@endif
                                     </td>
-                                    <td class="text-end fw-bold text-primary ui-tabular-nums">{{ $item->is_available ? $regionalFormatter->number(\App\Support\NumberFormat::maxDecimals($orderedLine?->kg ?? $item->offered_total_weight ?? $item->prItem->total_weight), 'decimal') : '—' }}</td>
-                                    <td class="text-end ui-tabular-nums tw:text-on-surface-variant">
+                                    <td class="tw:text-end tw:font-bold tw:text-primary ui-tabular-nums">{{ $item->is_available ? $regionalFormatter->number(\App\Support\NumberFormat::maxDecimals($orderedLine?->kg ?? $item->offered_total_weight ?? $item->prItem->total_weight), 'decimal') : '—' }}</td>
+                                    <td class="tw:text-end ui-tabular-nums tw:text-on-surface-variant">
                                         {{ $regionalFormatter->groupedDecimal($item->price_per_kg, 4) }}
                                     </td>
-                                    <td class="text-end fw-semibold ui-tabular-nums">{{ $item->is_available ? $regionalFormatter->groupedDecimal($amount) : '—' }}</td>
-                                    <td class="text-end fw-bold tw:text-on-surface ui-tabular-nums">{{ ! $item->is_available ? '—' : ($idr === null ? '— ('.__('purchasing.copy.exchange_rate_unavailable').')' : 'Rp '.$regionalFormatter->groupedDecimal($idr)) }}</td>
-                                    <td class="text-nowrap">
+                                    <td class="tw:text-end tw:font-semibold ui-tabular-nums">{{ $item->is_available ? $regionalFormatter->groupedDecimal($amount) : '—' }}</td>
+                                    <td class="tw:text-end tw:font-bold tw:text-on-surface ui-tabular-nums">{{ ! $item->is_available ? '—' : ($idr === null ? '— ('.__('purchasing.copy.exchange_rate_unavailable').')' : 'Rp '.$regionalFormatter->groupedDecimal($idr)) }}</td>
+                                    <td class="tw:whitespace-nowrap">
                                         @if($quotation->purchaseRequisition)
-                                            <a href="{{ \App\Support\PurchasingNavigation::toRoute('purchasing.requisitions.show', $quotation->purchaseRequisition) }}" class="text-primary text-decoration-none fw-medium" title="{{ __('purchasing.copy.open_pr_detail') }}">
+                                            <a href="{{ \App\Support\PurchasingNavigation::toRoute('purchasing.requisitions.show', $quotation->purchaseRequisition) }}" class="tw:text-primary tw:no-underline tw:font-medium" title="{{ __('purchasing.copy.open_pr_detail') }}">
                                                 {{ $quotation->purchaseRequisition->pr_number ?? '-' }}
                                             </a>
                                         @else
@@ -471,7 +472,7 @@
                                     </td>
                                     <td class="ui-col-data-name">
                                         @if($poRemark !== '')
-                                            <span class="d-inline-block text-truncate tw:max-w-[220px]" title="{{ $poRemark }}">
+                                            <span class="tw:inline-block tw:truncate tw:max-w-[220px]" title="{{ $poRemark }}">
                                                 {{ \Illuminate\Support\Str::limit($poRemark, 80) }}
                                             </span>
                                         @else
@@ -482,11 +483,11 @@
                             @endforeach
                         </tbody>
                     @endforeach
-                    <tfoot class="table-light fw-bold border-top">
+                    <tfoot class="tw:bg-surface-container-low tw:font-bold tw:border-t tw:border-outline-variant">
                         <tr>
-                            <td colspan="7" class="text-end tw:text-on-surface">{{ __('purchasing.copy.grand_total') }}</td>
-                            <td class="text-end tw:text-on-surface ui-tabular-nums">{{ $regionalFormatter->groupedDecimal($grandTotalAmount) }} {{ $po->currency }}</td>
-                            <td class="text-end text-primary ui-tabular-nums fs-6">{{ $grandIdrUnavailable ? '— ('.__('purchasing.copy.exchange_rate_unavailable').')' : 'Rp '.$regionalFormatter->groupedDecimal($grandTotalIdr) }}</td>
+                            <td colspan="7" class="tw:text-end tw:text-on-surface">{{ __('purchasing.copy.grand_total') }}</td>
+                            <td class="tw:text-end tw:text-on-surface ui-tabular-nums">{{ $regionalFormatter->groupedDecimal($grandTotalAmount) }} {{ $po->currency }}</td>
+                            <td class="tw:text-end tw:text-primary ui-tabular-nums tw:text-ui-base">{{ $grandIdrUnavailable ? '— ('.__('purchasing.copy.exchange_rate_unavailable').')' : 'Rp '.$regionalFormatter->groupedDecimal($grandTotalIdr) }}</td>
                             <td colspan="2"></td>
                         </tr>
                     </tfoot>
@@ -509,11 +510,11 @@
                         @endif
                     </x-slot:actions>
 
-                    <table class="table table-hover align-middle mb-0 tw:text-ui-xs w-100">
-                            <thead class="table-light text-center">
+                    <table class="ui-table ui-table--hover tw:align-middle tw:mb-0 tw:text-ui-xs tw:w-full">
+                            <thead class="tw:text-center">
                                 <tr>
                                     <th scope="col" style="width: 35px;">{{ __('purchasing.copy.no') }}</th>
-                                    <th scope="col" class="text-start">{{ __('purchasing.copy.material') }}</th>
+                                    <th scope="col" class="tw:text-start">{{ __('purchasing.copy.material') }}</th>
                                     <th scope="col">{{ __('purchasing.copy.ordered') }}</th>
                                     <th scope="col">{{ __('purchasing.copy.accepted') }}</th>
                                     <th scope="col">{{ __('purchasing.copy.in_transit') }}</th>
@@ -524,53 +525,53 @@
                                     <th scope="col">{{ __('purchasing.copy.original_ready_date') }}</th>
                                     <th scope="col">{{ __('purchasing.copy.current_estimated_ready') }}</th>
                                     <th scope="col">{{ __('purchasing.copy.last_supplier_update') }}</th>
-                                    <th scope="col" class="text-end ui-sticky-col-right">{{ __('purchasing.copy.history') }}</th>
+                                    <th scope="col" class="tw:text-end ui-sticky-col-right">{{ __('purchasing.copy.history') }}</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 @foreach($itemProjections as $idx => $p)
                                     <tr>
-                                        <td class="text-center tw:text-on-surface-variant ui-tabular-nums">{{ $idx + 1 }}</td>
-                                        <td class="text-start ui-col-data-name">
-                                            <div class="fw-bold tw:text-on-surface">{{ $p['material_name'] }}</div>
+                                        <td class="tw:text-center tw:text-on-surface-variant ui-tabular-nums">{{ $idx + 1 }}</td>
+                                        <td class="tw:text-start ui-col-data-name">
+                                            <div class="tw:font-bold tw:text-on-surface">{{ $p['material_name'] }}</div>
                                             @if($p['hs_code'])
                                                 <div class="tw:text-on-surface-variant tw:text-ui-xs">{{ __('common.fields.hs_code') }}: {{ $p['hs_code'] }}</div>
                                             @endif
                                         </td>
-                                        <td class="text-center ui-tabular-nums fw-semibold">{{ $p['ordered_qty'] }} pcs</td>
-                                        <td class="text-center ui-tabular-nums text-success fw-semibold">{{ $p['accepted_qty'] }} pcs</td>
-                                        <td class="text-center ui-tabular-nums text-primary fw-semibold">{{ $p['in_transit_qty'] }} pcs</td>
-                                        <td class="text-center ui-tabular-nums fw-semibold {{ $p['arrived_pending_qc_qty'] > 0 ? 'text-warning' : 'tw:text-on-surface-variant' }}">
+                                        <td class="tw:text-center ui-tabular-nums tw:font-semibold">{{ $p['ordered_qty'] }} pcs</td>
+                                        <td class="tw:text-center ui-tabular-nums tw:text-success tw:font-semibold">{{ $p['accepted_qty'] }} pcs</td>
+                                        <td class="tw:text-center ui-tabular-nums tw:text-primary tw:font-semibold">{{ $p['in_transit_qty'] }} pcs</td>
+                                        <td class="tw:text-center ui-tabular-nums tw:font-semibold {{ $p['arrived_pending_qc_qty'] > 0 ? 'tw:text-warning' : 'tw:text-on-surface-variant' }}">
                                             {{ $p['arrived_pending_qc_qty'] }} pcs
                                         </td>
-                                        <td class="text-center ui-tabular-nums fw-semibold {{ $p['unresolved_ng_qty'] > 0 ? 'text-danger' : 'tw:text-on-surface-variant' }}">
+                                        <td class="tw:text-center ui-tabular-nums tw:font-semibold {{ $p['unresolved_ng_qty'] > 0 ? 'tw:text-error' : 'tw:text-on-surface-variant' }}">
                                             {{ $p['unresolved_ng_qty'] }} pcs
                                         </td>
-                                        <td class="text-center ui-tabular-nums fw-bold">
-                                            <span class="badge {{ $p['supplier_controlled_qty'] > 0 ? 'bg-primary' : 'bg-secondary' }}">
+                                        <td class="tw:text-center ui-tabular-nums tw:font-bold">
+                                            <span class="ui-status-chip {{ $p['supplier_controlled_qty'] > 0 ? 'ui-status-chip--info' : 'ui-status-chip--neutral' }}">
                                                 {{ $p['supplier_controlled_qty'] }} pcs
                                             </span>
                                         </td>
-                                        <td class="text-center">
+                                        <td class="tw:text-center">
                                             <span class="ui-status-chip ui-status-chip--{{ $p['progress_tone'] }}">
                                                 {{ $p['progress_label'] }}
                                             </span>
                                         </td>
-                                        <td class="text-center ui-tabular-nums tw:text-on-surface-variant" title="{{ __('purchasing.copy.supplier_estimate_delivery') }}">
+                                        <td class="tw:text-center ui-tabular-nums tw:text-on-surface-variant" title="{{ __('purchasing.copy.supplier_estimate_delivery') }}">
                                             {{ $p['original_supplier_ready_date'] ? $regionalFormatter->date(\Carbon\Carbon::parse($p['original_supplier_ready_date'])) : '-' }}
                                         </td>
-                                        <td class="text-center ui-tabular-nums fw-semibold {{ $p['current_estimated_ready_date'] ? 'text-primary' : 'tw:text-on-surface-variant' }}">
+                                        <td class="tw:text-center ui-tabular-nums tw:font-semibold {{ $p['current_estimated_ready_date'] ? 'tw:text-primary' : 'tw:text-on-surface-variant' }}">
                                             {{ $p['current_estimated_ready_date'] ? $regionalFormatter->date($p['current_estimated_ready_date']) : '-' }}
                                         </td>
-                                        <td class="text-center tw:text-on-surface-variant" style="font-size: 0.75rem;">
+                                        <td class="tw:text-center tw:text-on-surface-variant" style="font-size: 0.75rem;">
                                             @if($p['last_progress_update_at'])
                                                 <div>{{ $regionalFormatter->timestamp($p['last_progress_update_at'], 'datetime') }}</div>
                                                 <div class="tw:text-on-surface-variant">{{ $p['last_updated_by'] ?? __('purchasing.copy.supplier') }}</div>
                                             @else
-                                                <span class="text-muted">{{ __('purchasing.copy.no_updates') }}</span>
+                                                <span class="tw:text-on-surface-variant">{{ __('purchasing.copy.no_updates') }}</span>
                                             @endif
                                         </td>
-                                        <td class="text-end ui-sticky-col-right">
+                                        <td class="tw:text-end ui-sticky-col-right">
                                             <x-ui.button type="button"
                                                     variant="outline"
                                                     size="sm"
@@ -608,32 +609,32 @@
                         </span>
                     </x-slot:actions>
 
-                    <div class="row g-3 mb-3">
-                        <div class="col-md-4">
-                            <div class="tw:text-on-surface-variant tw:text-ui-xs fw-semibold tw:uppercase">{{ __('purchasing.copy.inspection_date') }}</div>
-                            <div class="fw-semibold tw:text-on-surface tw:text-ui-sm tw:mt-0.5">{{ $latestInspection->inspected_at ? $regionalFormatter->timestamp($latestInspection->inspected_at, 'datetime_comma') : '-' }}</div>
+                    <div class="tw:grid tw:gap-3 tw:md:grid-cols-3 tw:mb-3">
+                        <div>
+                            <div class="tw:text-on-surface-variant tw:text-ui-xs tw:font-semibold tw:uppercase">{{ __('purchasing.copy.inspection_date') }}</div>
+                            <div class="tw:font-semibold tw:text-on-surface tw:text-ui-sm tw:mt-0.5">{{ $latestInspection->inspected_at ? $regionalFormatter->timestamp($latestInspection->inspected_at, 'datetime_comma') : '-' }}</div>
                         </div>
-                        <div class="col-md-4">
-                            <div class="tw:text-on-surface-variant tw:text-ui-xs fw-semibold tw:uppercase">{{ __('purchasing.copy.inspected_by') }}</div>
-                            <div class="fw-semibold tw:text-on-surface tw:text-ui-sm tw:mt-0.5">{{ $latestInspection->inspector->name ?? '-' }}</div>
+                        <div>
+                            <div class="tw:text-on-surface-variant tw:text-ui-xs tw:font-semibold tw:uppercase">{{ __('purchasing.copy.inspected_by') }}</div>
+                            <div class="tw:font-semibold tw:text-on-surface tw:text-ui-sm tw:mt-0.5">{{ $latestInspection->inspector->name ?? '-' }}</div>
                         </div>
-                        <div class="col-md-4">
-                            <div class="tw:text-on-surface-variant tw:text-ui-xs fw-semibold tw:uppercase">{{ __('purchasing.copy.defective_ng_items') }}</div>
-                            <div class="fw-bold {{ $latestInspection->items->where('status', 'ng')->count() > 0 ? 'text-danger' : 'text-success' }} tw:text-ui-sm tw:mt-0.5">
+                        <div>
+                            <div class="tw:text-on-surface-variant tw:text-ui-xs tw:font-semibold tw:uppercase">{{ __('purchasing.copy.defective_ng_items') }}</div>
+                            <div class="tw:font-bold {{ $latestInspection->items->where('status', 'ng')->count() > 0 ? 'tw:text-error' : 'tw:text-success' }} tw:text-ui-sm tw:mt-0.5">
                                 {{ trans_choice('purchasing.copy.item_count', $latestInspection->items->where('status', 'ng')->count(), ['count' => $latestInspection->items->where('status', 'ng')->count()]) }}
                             </div>
                         </div>
                     </div>
 
                     @if($latestInspection->items->where('status', 'ng')->count() > 0)
-                        <div class="mb-3">
-                            <div class="fw-bold text-danger tw:text-ui-xs tw:uppercase tw:mb-1.5">{{ __('purchasing.copy.problematic_materials_ng') }}</div>
-                            <ul class="list-group list-group-flush border rounded overflow-hidden">
+                        <div class="tw:mb-3">
+                            <div class="tw:font-bold tw:text-error tw:text-ui-xs tw:uppercase tw:mb-1.5">{{ __('purchasing.copy.problematic_materials_ng') }}</div>
+                            <ul class="tw:list-none tw:m-0 tw:p-0 tw:divide-y tw:divide-outline-variant tw:border tw:border-outline-variant tw:rounded-ui-sm tw:overflow-hidden">
                                 @foreach($latestInspection->items->where('status', 'ng') as $item)
-                                    <li class="list-group-item py-2 px-3 tw:text-ui-xs">
-                                        <span class="fw-bold tw:text-on-surface d-block">{{ $item->prItem->material_name }}</span>
+                                    <li class="tw:py-2 tw:px-3 tw:bg-surface tw:text-ui-xs">
+                                        <span class="tw:font-bold tw:text-on-surface tw:block">{{ $item->prItem->material_name }}</span>
                                         @if($item->notes)
-                                            <span class="tw:text-on-surface-variant fst-italic">{{ __('common.final_copy.qc_remarks') }} {{ $item->notes }}</span>
+                                            <span class="tw:text-on-surface-variant tw:italic">{{ __('common.final_copy.qc_remarks') }} {{ $item->notes }}</span>
                                         @endif
                                     </li>
                                 @endforeach
@@ -643,12 +644,12 @@
 
                     @if($latestInspection->attachments->count() > 0)
                         <div>
-                            <div class="fw-bold tw:text-on-surface-variant tw:text-ui-xs tw:uppercase tw:mb-1.5">{{ __('purchasing.copy.qc_photo_evidence') }}</div>
-                            <div class="row g-2">
+                            <div class="tw:font-bold tw:text-on-surface-variant tw:text-ui-xs tw:uppercase tw:mb-1.5">{{ __('purchasing.copy.qc_photo_evidence') }}</div>
+                            <div class="tw:grid tw:grid-cols-3 tw:md:grid-cols-4 tw:gap-2">
                                 @foreach($latestInspection->attachments as $att)
-                                    <div class="col-4 col-md-3">
-                                        <a href="{{ route('attachments.show', $att) }}" target="_blank" class="d-block border rounded overflow-hidden tw:bg-surface-low tw:h-24">
-                                            <img src="{{ route('attachments.show', $att) }}" alt="{{ $att->file_name }}" class="w-100 h-100 tw:object-cover">
+                                    <div>
+                                        <a href="{{ route('attachments.show', $att) }}" target="_blank" class="tw:block tw:border tw:border-outline-variant tw:rounded-ui-sm tw:overflow-hidden tw:bg-surface-low tw:h-24">
+                                            <img src="{{ route('attachments.show', $att) }}" alt="{{ $att->file_name }}" class="tw:w-full tw:h-full tw:object-cover">
                                         </a>
                                     </div>
                                 @endforeach
@@ -676,7 +677,7 @@
                     <div class="tw:flex tw:items-center tw:gap-2">
                         @if($usesShipmentWorkflow && ! $poDocsReadOnly)
                             <x-ui.button type="button" variant="outline" size="sm" id="btnOpenBatchPoDocDialog">
-                                <x-ui.icon name="layers" size="sm" class="me-1" />
+                                <x-ui.icon name="layers" size="sm" class="tw:me-1" />
                                 <span>{{ __('purchasing.copy.batch_update_po_docs') }}</span>
                             </x-ui.button>
                         @endif
@@ -746,8 +747,8 @@
                             };
                             $iconClasses = match($effectiveStatus) {
                                 'pending' => 'tw:bg-surface-container-high tw:text-on-surface-variant',
-                                'verified', 'done' => 'tw:bg-success-container/40 text-success',
-                                default => 'tw:bg-primary/10 text-primary'
+                                'verified', 'done' => 'tw:bg-success-container/40 tw:text-success',
+                                default => 'tw:bg-primary/10 tw:text-primary'
                             };
                             $shipmentDocs = collect($summaryItem['shipment_documents'] ?? []);
                             $uploadedDocs = $shipmentDocs->filter(fn($sd) => !empty($sd['attachment']));
@@ -757,13 +758,13 @@
                             $evidenceGapCount = (int) ($progressItem['evidence_gap_count'] ?? 0);
                             $isWaitingForShipment = $usesShipmentWorkflow && $activeShipmentCount === 0;
                         @endphp
-                        <div class="po-doc-card tw:h-full tw:rounded-xl tw:border tw:border-outline-variant/80 tw:bg-surface tw:p-3.5 tw-shadow-2xs tw:flex tw:flex-col tw:justify-between tw:transition-colors tw:hover:border-primary/40 hover:tw-shadow-xs tw:min-w-0" id="doc-card-{{ $docKey }}">
+                        <div class="po-doc-card tw:h-full tw:rounded-xl tw:border tw:border-outline-variant/80 tw:bg-surface tw:p-3.5 tw-shadow-2xs tw:flex tw:flex-col tw:justify-between tw:transition-colors tw:hover:border-primary/40 tw:hover:shadow-xs tw:min-w-0" id="doc-card-{{ $docKey }}">
                             {{-- Zone 1: Document Header (Centered & Uniform) --}}
                             <div class="tw:flex tw:flex-col tw:items-center tw:text-center">
                                 <div class="tw:w-10 tw:h-10 tw:rounded-full tw:flex tw:items-center tw:justify-center tw:mb-2 {{ $iconClasses }}">
                                     <x-ui.icon :name="$config['icon']" size="md" />
                                 </div>
-                                <h6 class="fw-bold tw:text-on-surface tw:text-ui-sm mb-1.5">{{ $config['label'] }}</h6>
+                                <h6 class="tw:font-bold tw:text-on-surface tw:text-ui-sm tw:mb-1.5">{{ $config['label'] }}</h6>
                                 <span class="ui-status-chip {{ $chipClasses }} tw:mb-1 doc-status-badge" id="doc-badge-{{ $docKey }}" data-status="{{ $effectiveStatus }}">
                                     {{ $statusLabel }}
                                 </span>
@@ -778,7 +779,7 @@
                                             </span>
                                         </div>
                                         @if($evidenceGapCount > 0)
-                                            <p class="tw:m-0 tw:mt-1 tw:text-ui-xs text-warning" data-doc-evidence-gap="{{ $doc->doc_type }}">
+                                            <p class="tw:m-0 tw:mt-1 tw:text-ui-xs tw:text-warning" data-doc-evidence-gap="{{ $doc->doc_type }}">
                                                 {{ __('documents.sync.evidence_gap_warning', ['count' => $evidenceGapCount]) }}
                                             </p>
                                         @endif
@@ -804,13 +805,13 @@
                             {{-- Zone 2: Shipment Files (Equal height container with clean stacked action) --}}
                             <div class="tw:my-2.5 tw:pt-2.5 tw:border-t tw:border-outline-variant/60 tw:flex-1 tw:flex tw:flex-col tw:justify-center" style="min-height: 72px;">
                                 @if($uploadedDocs->isNotEmpty())
-                                    <div class="tw:space-y-2 w-100">
+                                    <div class="tw:space-y-2 tw:w-full">
                                         @foreach($uploadedDocs as $sDoc)
                                             <div class="tw:rounded-lg tw:bg-surface-container-low tw:border tw:border-outline-variant/70 tw:p-2 tw:transition-colors">
                                                 <div class="tw:flex tw:items-center tw:justify-center tw:gap-1.5 tw:mb-1.5 tw:min-w-0">
-                                                    <x-ui.icon name="truck" size="sm" class="text-primary flex-shrink-0" />
-                                                    <a href="{{ route('purchasing.shipments.show', $sDoc['shipment']) }}" 
-                                                       class="tw:text-ui-xs tw:font-semibold text-primary text-decoration-none tw:hover:underline tw:truncate"
+                                                    <x-ui.icon name="truck" size="sm" class="tw:text-primary tw:shrink-0" />
+                                                    <a href="{{ route('purchasing.shipments.show', $sDoc['shipment']) }}"
+                                                       class="tw:text-ui-xs tw:font-semibold tw:text-primary tw:no-underline tw:hover:underline tw:truncate"
                                                        title="{{ __('common.final_review.open_shipment', ['number' => $sDoc['shipment_number']]) }}">
                                                         {{ $sDoc['shipment_number'] }}
                                                     </a>
@@ -843,19 +844,19 @@
                                     @endphp
                                     @if($firstLinkedShipment)
                                         <x-ui.button :href="route('purchasing.shipments.show', $firstLinkedShipment)" variant="outline" size="sm" class="tw:w-full">
-                                            <x-ui.icon name="external-link" size="sm" class="me-1 flex-shrink-0" />
+                                            <x-ui.icon name="external-link" size="sm" class="tw:me-1 tw:shrink-0" />
                                             <span class="tw:truncate">{{ __('documents.sync.open_shipment_to_update') }}</span>
                                         </x-ui.button>
                                     @else
                                         <x-ui.button :href="route('purchasing.shipments.index')" variant="outline" size="sm" class="tw:w-full">
-                                            <x-ui.icon name="truck" size="sm" class="me-1 flex-shrink-0" />
+                                            <x-ui.icon name="truck" size="sm" class="tw:me-1 tw:shrink-0" />
                                             <span class="tw:truncate">{{ __('documents.sync.open_shipment_to_update') }}</span>
                                         </x-ui.button>
                                     @endif
                                 @elseif($usesShipmentWorkflow)
                                     @if($isWaitingForShipment)
                                         <x-ui.button type="button" variant="outline" size="sm" class="tw:w-full" disabled aria-disabled="true" data-doc-type="{{ $doc->doc_type }}" title="{{ __('documents.sync.waiting_for_shipment') }}">
-                                            <x-ui.icon name="square-pen" size="sm" class="me-1 flex-shrink-0" />
+                                            <x-ui.icon name="square-pen" size="sm" class="tw:me-1 tw:shrink-0" />
                                             <span class="tw:truncate">{{ __('purchasing.copy.update_status') }}</span>
                                         </x-ui.button>
                                     @else
@@ -866,7 +867,7 @@
                                                 data-update-url="{{ route('purchasing.purchase-orders.documents.shipments.update', ['id' => $po, 'doc_type' => $doc->doc_type]) }}"
                                                 :data-doc-statuses="json_encode($config['statuses'])"
                                                 title="{{ __('purchasing.copy.update_status') }}">
-                                            <x-ui.icon name="square-pen" size="sm" class="me-1 flex-shrink-0" />
+                                            <x-ui.icon name="square-pen" size="sm" class="tw:me-1 tw:shrink-0" />
                                             <span class="tw:truncate">{{ __('purchasing.copy.update_status') }}</span>
                                         </x-ui.button>
                                     @endif
@@ -880,7 +881,7 @@
                                             data-doc-status-label="{{ $statusLabel }}"
                                             :data-doc-statuses="json_encode($config['statuses'])"
                                             title="{{ __('purchasing.copy.update_status') }}">
-                                        <x-ui.icon name="square-pen" size="sm" class="me-1 flex-shrink-0" />
+                                        <x-ui.icon name="square-pen" size="sm" class="tw:me-1 tw:shrink-0" />
                                         <span class="tw:truncate">{{ __('purchasing.copy.update_status') }}</span>
                                     </x-ui.button>
                                 @endif
@@ -901,9 +902,9 @@
                     @csrf
                     <input type="hidden" name="return_url" value="{{ \App\Support\PurchasingNavigation::currentUrlForReturn() }}">
                     <x-ui.button type="submit" variant="outline" size="sm" class="tw:w-full tw:justify-between">
-                        <span class="d-inline-flex align-items-center gap-2">
+                        <span class="tw:inline-flex tw:items-center tw:gap-2">
                             <x-ui.icon name="message-square" size="sm" />
-                            <span class="fw-semibold">{{ __('purchasing.copy.chat_with_supplier') }}</span>
+                            <span class="tw:font-semibold">{{ __('purchasing.copy.chat_with_supplier') }}</span>
                         </span>
                         <x-ui.icon name="chevron-right" size="sm" />
                     </x-ui.button>
@@ -914,25 +915,25 @@
 
             {{-- Material Claim Alert (if status claim_needed) --}}
             @if($po->status === 'claim_needed')
-                <x-ui.card :title="__('purchasing.copy.defect_claim_follow_up')" id="sec-claim" class="tw:scroll-mt-24 border-danger">
+                <x-ui.card :title="__('purchasing.copy.defect_claim_follow_up')" id="sec-claim" class="tw:scroll-mt-24 tw:border-error/40">
                     <x-slot:actions><span class="ui-status-chip ui-status-chip--error">NG</span></x-slot:actions>
-                    <p class="text-danger tw:text-ui-xs fw-medium mb-3">
+                    <p class="tw:text-error tw:text-ui-xs tw:font-medium tw:mb-3">
                         {{ __('purchasing.copy.quality_inspection_failed_status_ng_immediate_claim_action_is_required') }}
                     </p>
 
                     @if($activeClaim)
                         <x-ui.button :href="\App\Support\PurchasingNavigation::toRoute('purchasing.claims.show', $activeClaim)" variant="danger" size="sm" class="tw:w-full tw:justify-between">
-                            <span><x-ui.icon name="octagon-alert" size="sm" class="me-1" /> {{ __('purchasing.copy.view_active_claim') }}</span>
+                            <span><x-ui.icon name="octagon-alert" size="sm" class="tw:me-1" /> {{ __('purchasing.copy.view_active_claim') }}</span>
                             <x-ui.icon name="chevron-right" size="sm" />
                         </x-ui.button>
                     @elseif($latestNgInspection)
                         <x-ui.button :href="\App\Support\PurchasingNavigation::toRoute('purchasing.claims.create', $latestNgInspection)" variant="danger" size="sm" class="tw:w-full tw:justify-between">
-                            <span><x-ui.icon name="plus-circle" size="sm" class="me-1" /> {{ __('purchasing.copy.submit_material_claim') }}</span>
+                            <span><x-ui.icon name="plus-circle" size="sm" class="tw:me-1" /> {{ __('purchasing.copy.submit_material_claim') }}</span>
                             <x-ui.icon name="chevron-right" size="sm" />
                         </x-ui.button>
                     @else
                         <x-ui.button :href="\App\Support\PurchasingNavigation::toRoute('purchasing.claims.index')" variant="outline" size="sm" class="tw:w-full tw:justify-between">
-                            <span><x-ui.icon name="folder-open" size="sm" class="me-1" /> {{ __('purchasing.copy.open_claim_list') }}</span>
+                            <span><x-ui.icon name="folder-open" size="sm" class="tw:me-1" /> {{ __('purchasing.copy.open_claim_list') }}</span>
                             <x-ui.icon name="chevron-right" size="sm" />
                         </x-ui.button>
                     @endif
@@ -957,7 +958,7 @@
                 <ol class="pr-timeline">
                     <li class="pr-timeline-item is-complete">
                         <span class="pr-timeline-marker" aria-hidden="true"></span>
-                        <div class="tw:text-ui-sm fw-bold text-primary">{{ __('purchasing.copy.po_created') }}</div>
+                        <div class="tw:text-ui-sm tw:font-bold tw:text-primary">{{ __('purchasing.copy.po_created') }}</div>
                         <time class="ui-tabular-nums tw:text-on-surface-variant tw:text-ui-xs" datetime="{{ $po->created_at->toIso8601String() }}">{{ $regionalFormatter->timestamp($po->created_at, 'datetime_comma') }}</time>
                     </li>
 
@@ -973,7 +974,7 @@
                             @endphp
                             <li class="pr-timeline-item is-complete">
                                 <span class="pr-timeline-marker" aria-hidden="true"></span>
-                                <div class="tw:text-ui-sm fw-bold tw:text-on-surface">{{ $docLabels[$doc->doc_type] ?? __('purchasing.copy.document') }}: {{ \App\Support\StatusHelper::shipmentDocLabel($doc->status) }}</div>
+                                <div class="tw:text-ui-sm tw:font-bold tw:text-on-surface">{{ $docLabels[$doc->doc_type] ?? __('purchasing.copy.document') }}: {{ \App\Support\StatusHelper::shipmentDocLabel($doc->status) }}</div>
                                 <time class="ui-tabular-nums tw:text-on-surface-variant tw:text-ui-xs" datetime="{{ $doc->updated_at->toIso8601String() }}">{{ $regionalFormatter->timestamp($doc->updated_at, 'datetime_comma') }}</time>
                             </li>
                         @endif
@@ -981,13 +982,13 @@
 
                     <li class="pr-timeline-item {{ $po->is_overdue ? 'is-current' : '' }}">
                         <span class="pr-timeline-marker" aria-hidden="true"></span>
-                        <div class="tw:text-ui-sm fw-bold {{ $po->is_overdue ? 'text-warning' : 'tw:text-on-surface-variant' }}">{{ __('purchasing.copy.estimated_arrival') }}</div>
+                        <div class="tw:text-ui-sm tw:font-bold {{ $po->is_overdue ? 'tw:text-warning' : 'tw:text-on-surface-variant' }}">{{ __('purchasing.copy.estimated_arrival') }}</div>
                         <time class="ui-tabular-nums tw:text-on-surface-variant tw:text-ui-xs">{{ $po->estimated_arrival ? $regionalFormatter->date($po->estimated_arrival) : '-' }}</time>
                     </li>
 
                     <li class="pr-timeline-item {{ $po->actual_arrival ? 'is-complete' : '' }}">
                         <span class="pr-timeline-marker" aria-hidden="true"></span>
-                        <div class="tw:text-ui-sm fw-bold {{ $po->actual_arrival ? 'text-success' : 'tw:text-on-surface-variant' }}">{{ __('purchasing.copy.material_arrival') }}</div>
+                        <div class="tw:text-ui-sm tw:font-bold {{ $po->actual_arrival ? 'tw:text-success' : 'tw:text-on-surface-variant' }}">{{ __('purchasing.copy.material_arrival') }}</div>
                         @if($po->actual_arrival)
                             <time class="ui-tabular-nums tw:text-on-surface-variant tw:text-ui-xs">{{ $regionalFormatter->date($po->actual_arrival) }}</time>
                         @endif
@@ -1003,20 +1004,20 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
-                <h6 class="modal-title fw-bold" id="modalDocTitle">{{ __('purchasing.copy.update_document_status') }}</h6>
+                <h6 class="modal-title tw:font-bold" id="modalDocTitle">{{ __('purchasing.copy.update_document_status') }}</h6>
                 <button type="button" class="btn-close" data-ui-modal-close aria-label="{{ __('purchasing.copy.close') }}"></button>
             </div>
             <div class="modal-body tw:p-3.5">
                 <input type="hidden" id="modalDocId">
                 <div>
-                    <label class="form-label small fw-semibold tw:text-on-surface" for="modalDocStatus">{{ __('purchasing.copy.select_new_status') }}</label>
-                    <select class="form-select form-select-sm" id="modalDocStatus"></select>
+                    <label class="ui-label tw:text-ui-xs tw:font-semibold tw:text-on-surface" for="modalDocStatus">{{ __('purchasing.copy.select_new_status') }}</label>
+                    <select class="ui-select ui-select--sm" id="modalDocStatus"></select>
                 </div>
             </div>
-            <div class="modal-footer tw:bg-surface-low border-top">
+            <div class="modal-footer tw:bg-surface-low tw:border-t tw:border-outline-variant">
                 <x-ui.button type="button" variant="ghost" size="sm" data-ui-modal-close>{{ __('purchasing.copy.cancel') }}</x-ui.button>
                 <x-ui.button type="button" size="sm" id="btnSaveDocStatus">
-                    <span class="ui-spinner d-none me-1" id="docSpinner" aria-hidden="true"></span>
+                    <span class="ui-spinner tw:hidden tw:me-1" id="docSpinner" aria-hidden="true"></span>
                     {{ __('purchasing.copy.save_changes') }}
                 </x-ui.button>
             </div>
@@ -1029,7 +1030,7 @@
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title tw:text-ui-base fw-bold" id="progressHistoryModalLabel">
+                <h5 class="modal-title tw:text-ui-base tw:font-bold" id="progressHistoryModalLabel">
                     {{ __('purchasing.copy.material_progress_history') }}
                 </h5>
                 <button type="button" class="btn-close" data-ui-modal-close aria-label="{{ __('purchasing.copy.close') }}"></button>
@@ -1052,7 +1053,7 @@
     :description="__('documents.sync.dialog_subtitle', ['document' => ''])"
 >
     <div id="shipmentDocDialogRoot" class="tw:space-y-4">
-        <div id="shipmentDocDialogFeedback" class="d-none" role="status" aria-live="polite"></div>
+        <div id="shipmentDocDialogFeedback" class="tw:hidden" role="status" aria-live="polite"></div>
 
         <div class="tw:flex tw:items-center tw:justify-between tw:gap-2 tw:rounded-lg tw:border tw:border-outline-variant/80 tw:bg-surface-container-low tw:px-3 tw:py-2">
             <span class="tw:text-ui-xs tw:font-semibold tw:text-on-surface ui-tabular-nums" id="shipmentDocSelectionSummary">
@@ -1065,26 +1066,26 @@
 
         <div class="tw:grid tw:gap-3 tw:pt-2 tw:border-t tw:border-outline-variant/80">
             <div>
-                <label class="form-label small fw-semibold tw:text-on-surface" for="shipmentDocTargetStatus">
+                <label class="ui-label tw:text-ui-xs tw:font-semibold tw:text-on-surface" for="shipmentDocTargetStatus">
                     {{ __('purchasing.copy.select_new_status') }}
                 </label>
-                <select class="form-select form-select-sm" id="shipmentDocTargetStatus">
+                <select class="ui-select ui-select--sm" id="shipmentDocTargetStatus">
                     <option value="" selected disabled>{{ __('documents.sync.select_target_placeholder') }}</option>
                 </select>
             </div>
 
             <div>
-                <label class="form-label small fw-semibold tw:text-on-surface" for="shipmentDocReason">
+                <label class="ui-label tw:text-ui-xs tw:font-semibold tw:text-on-surface" for="shipmentDocReason">
                     {{ __('documents.sync.reason_label') }}
                 </label>
                 <textarea
-                    class="form-control form-control-sm"
+                    class="ui-textarea tw:text-ui-xs tw:px-2 tw:py-1"
                     id="shipmentDocReason"
                     rows="2"
                     maxlength="1000"
                     placeholder="{{ __('documents.sync.reason_placeholder') }}"
                 ></textarea>
-                <p id="shipmentDocReasonHint" class="tw:m-0 tw:mt-1 tw:text-ui-xs tw:text-on-surface-variant d-none">
+                <p id="shipmentDocReasonHint" class="tw:m-0 tw:mt-1 tw:text-ui-xs tw:text-on-surface-variant tw:hidden">
                     {{ __('documents.sync.reason_required_hint') }}
                 </p>
             </div>
@@ -1096,7 +1097,7 @@
             {{ __('purchasing.copy.cancel') }}
         </x-ui.button>
         <x-ui.button type="button" size="sm" id="btnSubmitShipmentDocStatus" disabled>
-            <span class="ui-spinner d-none me-1" id="shipmentDocSpinner" aria-hidden="true"></span>
+            <span class="ui-spinner tw:hidden tw:me-1" id="shipmentDocSpinner" aria-hidden="true"></span>
             <span>{{ __('documents.sync.submit_button') }}</span>
         </x-ui.button>
     </x-slot:actions>
@@ -1111,7 +1112,7 @@
 >
     <div id="batchPoDocDialogRoot" class="tw:space-y-4">
         {{-- Batch Feedback Alert --}}
-        <div id="batchPoDocDialogFeedback" class="d-none" role="status" aria-live="polite"></div>
+        <div id="batchPoDocDialogFeedback" class="tw:hidden" role="status" aria-live="polite"></div>
 
         {{-- Global Apply / Quick Batch Controls --}}
         <div class="tw:rounded-lg tw:border tw:border-outline-variant/80 tw:bg-surface-container-low tw:p-3 tw:space-y-2.5">
@@ -1123,24 +1124,24 @@
             </div>
             <div class="tw:grid tw:grid-cols-1 tw:sm:grid-cols-12 tw:gap-2 tw:items-end">
                 <div class="tw:sm:col-span-4">
-                    <label class="form-label small fw-semibold tw:text-on-surface mb-1" for="batchPoGlobalTargetStatus">
+                    <label class="ui-label tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:mb-1" for="batchPoGlobalTargetStatus">
                         {{ __('purchasing.copy.select_new_status') }}
                     </label>
-                    <select class="form-select form-select-sm" id="batchPoGlobalTargetStatus">
+                    <select class="ui-select ui-select--sm" id="batchPoGlobalTargetStatus">
                         <option value="" selected disabled>{{ __('documents.sync.select_target_placeholder') }}</option>
                         <option value="received">{{ \App\Support\StatusHelper::shipmentDocLabel('received') }}</option>
                         <option value="verified">{{ \App\Support\StatusHelper::shipmentDocLabel('verified') }}</option>
                     </select>
                 </div>
                 <div class="tw:sm:col-span-5">
-                    <label class="form-label small fw-semibold tw:text-on-surface mb-1" for="batchPoGlobalReason">
+                    <label class="ui-label tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:mb-1" for="batchPoGlobalReason">
                         {{ __('documents.sync.reason_label') }}
                     </label>
-                    <input type="text" class="form-control form-control-sm" id="batchPoGlobalReason" maxlength="1000" placeholder="{{ __('documents.sync.reason_placeholder') }}">
+                    <input type="text" class="ui-input ui-input--sm" id="batchPoGlobalReason" maxlength="1000" placeholder="{{ __('documents.sync.reason_placeholder') }}">
                 </div>
                 <div class="tw:sm:col-span-3">
-                    <x-ui.button type="button" variant="outline" size="sm" class="w-100" id="btnApplyGlobalToAllTabs">
-                        <x-ui.icon name="check-check" size="sm" class="me-1" />
+                    <x-ui.button type="button" variant="outline" size="sm" class="tw:w-full" id="btnApplyGlobalToAllTabs">
+                        <x-ui.icon name="check-check" size="sm" class="tw:me-1" />
                         <span>{{ __('purchasing.copy.apply_to_all_tabs') }}</span>
                     </x-ui.button>
                 </div>
@@ -1149,7 +1150,7 @@
 
         {{-- Tabs Navigation --}}
         <div class="tw:border-b tw:border-outline-variant/80">
-            <ul class="nav nav-tabs border-0 gap-1" id="batchPoDocNavTabs" role="tablist">
+            <ul class="tw:flex tw:flex-wrap tw:list-none tw:m-0 tw:p-0 tw:gap-1" id="batchPoDocNavTabs" role="tablist">
                 @php
                     $batchTabDefinitions = [
                         'invoice' => ['label' => __('purchasing.copy.invoice_document'), 'icon' => 'receipt'],
@@ -1159,8 +1160,8 @@
                     ];
                 @endphp
                 @foreach($batchTabDefinitions as $docType => $def)
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link {{ $loop->first ? 'active' : '' }} rounded-top-1 tw:text-ui-xs tw:font-semibold"
+                    <li class="tw:shrink-0" role="presentation">
+                        <button class="tw:inline-flex tw:items-center tw:gap-1 tw:px-3 tw:py-1.5 tw:rounded-t-ui-sm tw:border tw:border-b-0 tw:border-outline-variant/80 tw:bg-surface-container-low tw:text-on-surface-variant tw:text-ui-xs tw:font-semibold tw:cursor-pointer tw:transition-colors tw:hover:bg-surface tw:aria-selected:bg-surface tw:aria-selected:text-primary ui-focus-ring {{ $loop->first ? 'active' : '' }}"
                                 id="batch-tab-{{ $docType }}"
                                 data-ui-tab
                                 data-ui-tab-target="#batch-pane-{{ $docType }}"
@@ -1169,9 +1170,9 @@
                                 aria-controls="batch-pane-{{ $docType }}"
                                 @unless($loop->first) tabindex="-1" @endunless
                                 aria-selected="{{ $loop->first ? 'true' : 'false' }}">
-                            <x-ui.icon name="{{ $def['icon'] }}" size="sm" class="me-1" />
+                            <x-ui.icon name="{{ $def['icon'] }}" size="sm" class="tw:me-1" />
                             <span>{{ $def['label'] }}</span>
-                            <span class="badge rounded-pill tw:bg-surface-container-high tw:text-on-surface-variant ms-1" id="batchPoTabBadge_{{ $docType }}">0</span>
+                            <span class="ui-status-chip tw:bg-surface-container-high tw:text-on-surface-variant tw:ms-1" id="batchPoTabBadge_{{ $docType }}">0</span>
                         </button>
                     </li>
                 @endforeach
@@ -1179,9 +1180,9 @@
         </div>
 
         {{-- Tab Panes Content --}}
-        <div class="tab-content" id="batchPoDocTabContent">
+        <div id="batchPoDocTabContent">
             @foreach($batchTabDefinitions as $docType => $def)
-                <div class="tab-pane fade {{ $loop->first ? 'show active' : '' }}"
+                <div class="{{ $loop->first ? 'active' : '' }}"
                      id="batch-pane-{{ $docType }}"
                      role="tabpanel"
                      aria-labelledby="batch-tab-{{ $docType }}"
@@ -1206,21 +1207,21 @@
 
                         <div class="tw:grid tw:grid-cols-1 tw:sm:grid-cols-12 tw:gap-2 tw:pt-2 tw:border-t tw:border-outline-variant/80 tw:items-start">
                             <div class="tw:sm:col-span-4">
-                                <label class="form-label small fw-semibold tw:text-on-surface mb-1" for="batchPoTabTarget_{{ $docType }}">
+                                <label class="ui-label tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:mb-1" for="batchPoTabTarget_{{ $docType }}">
                                     {{ __('purchasing.copy.select_new_status') }}
                                 </label>
-                                <select class="form-select form-select-sm batch-po-tab-target" id="batchPoTabTarget_{{ $docType }}" data-doc-type="{{ $docType }}">
+                                <select class="ui-select ui-select--sm batch-po-tab-target" id="batchPoTabTarget_{{ $docType }}" data-doc-type="{{ $docType }}">
                                     <option value="" selected disabled>{{ __('documents.sync.select_target_placeholder') }}</option>
                                     <option value="received">{{ \App\Support\StatusHelper::shipmentDocLabel('received') }}</option>
                                     <option value="verified">{{ \App\Support\StatusHelper::shipmentDocLabel('verified') }}</option>
                                 </select>
                             </div>
                             <div class="tw:sm:col-span-8">
-                                <label class="form-label small fw-semibold tw:text-on-surface mb-1" for="batchPoTabReason_{{ $docType }}">
+                                <label class="ui-label tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:mb-1" for="batchPoTabReason_{{ $docType }}">
                                     {{ __('documents.sync.reason_label') }}
                                 </label>
-                                <input type="text" class="form-control form-control-sm batch-po-tab-reason" id="batchPoTabReason_{{ $docType }}" data-doc-type="{{ $docType }}" maxlength="1000" placeholder="{{ __('documents.sync.reason_placeholder') }}">
-                                <p id="batchPoTabReasonHint_{{ $docType }}" class="tw:m-0 tw:mt-1 tw:text-ui-xs tw:text-on-surface-variant d-none">
+                                <input type="text" class="ui-input ui-input--sm batch-po-tab-reason" id="batchPoTabReason_{{ $docType }}" data-doc-type="{{ $docType }}" maxlength="1000" placeholder="{{ __('documents.sync.reason_placeholder') }}">
+                                <p id="batchPoTabReasonHint_{{ $docType }}" class="tw:m-0 tw:mt-1 tw:text-ui-xs tw:text-on-surface-variant tw:hidden">
                                     {{ __('documents.sync.reason_required_hint') }}
                                 </p>
                             </div>
@@ -1236,7 +1237,7 @@
             {{ __('purchasing.copy.cancel') }}
         </x-ui.button>
         <x-ui.button type="button" size="sm" id="btnSubmitBatchPoDocStatus" disabled>
-            <span class="ui-spinner d-none me-1" id="batchPoDocSpinner" aria-hidden="true"></span>
+            <span class="ui-spinner tw:hidden tw:me-1" id="batchPoDocSpinner" aria-hidden="true"></span>
             <span>{{ __('purchasing.copy.save_all_po_doc_statuses') }}</span>
         </x-ui.button>
     </x-slot:actions>
@@ -1285,13 +1286,13 @@
 
         history.forEach(item => {
             const row = textElement('div', 'tw:p-3 tw:rounded-sm tw:border tw:border-outline-variant tw:bg-surface-container tw:text-ui-xs', '');
-            const header = textElement('div', 'd-flex justify-content-between align-items-center mb-1', '');
+            const header = textElement('div', 'tw:flex tw:justify-between tw:items-center tw:mb-1', '');
             const tone = allowedTones.includes(item.status_tone) ? item.status_tone : 'neutral';
-            const status = textElement('span', `ui-status-chip ui-status-chip--${tone} fw-bold`, item.status_label);
-            const timestamp = textElement('span', 'text-muted', item.created_at_display || '-');
+            const status = textElement('span', `ui-status-chip ui-status-chip--${tone} tw:font-bold`, item.status_label);
+            const timestamp = textElement('span', 'tw:text-on-surface-variant', item.created_at_display || '-');
             header.append(status, timestamp);
 
-            const details = textElement('div', 'tw:text-on-surface-variant mb-1', '');
+            const details = textElement('div', 'tw:text-on-surface-variant tw:mb-1', '');
             details.appendChild(textElement('strong', '', @json(__('purchasing.copy.supplier_controlled_qty_snapshot'))));
             appendText(details, ` ${item.supplier_controlled_qty_snapshot} pcs`);
             if (item.estimated_ready_date_display) {
@@ -1305,7 +1306,7 @@
 
             row.append(header, details);
             if (item.note) {
-                const note = textElement('div', 'tw:p-2 tw:rounded-sm tw:bg-surface tw:border tw:border-outline-variant text-dark mt-1', '');
+                const note = textElement('div', 'tw:p-2 tw:rounded-sm tw:bg-surface tw:border tw:border-outline-variant tw:text-on-surface tw:mt-1', '');
                 note.appendChild(textElement('em', '', `"${item.note}"`));
                 row.appendChild(note);
             }
@@ -1317,7 +1318,7 @@
 
         function bootPoShow() {
             // Sticky Section Navigation
-            const navLinks = Array.from(document.querySelectorAll('#po-section-nav .nav-link'));
+            const navLinks = Array.from(document.querySelectorAll('#po-section-nav .po-nav-link'));
             let isProgrammaticScroll = false;
             let manualClickLockId = null;
             let unlockTimer = null;
@@ -1444,7 +1445,7 @@
                         manualClickLockId = null;
                     }, 1500);
 
-                    const isDanger = targetId === '#sec-claim' || link.classList.contains('text-danger');
+                    const isDanger = targetId === '#sec-claim' || link.classList.contains('po-nav-link--danger');
                     highlightTargetSection(target, isDanger);
 
                     const targetPosition = Math.max(0, getOffsetTop(target) - getStickyOffset());
@@ -1554,14 +1555,14 @@
                 const reasonHint = document.getElementById('shipmentDocReasonHint');
                 if (needsReason) {
                     if (reasonHint) {
-                        reasonHint.classList.remove('d-none');
-                        reasonHint.classList.add('text-warning', 'fw-semibold');
+                        reasonHint.classList.remove('tw:hidden');
+                        reasonHint.classList.add('tw:text-warning', 'tw:font-semibold');
                     }
                     reasonEl?.setAttribute('required', 'required');
                 } else {
                     if (reasonHint) {
-                        reasonHint.classList.add('d-none');
-                        reasonHint.classList.remove('text-warning', 'fw-semibold');
+                        reasonHint.classList.add('tw:hidden');
+                        reasonHint.classList.remove('tw:text-warning', 'tw:font-semibold');
                     }
                     reasonEl?.removeAttribute('required');
                 }
@@ -1596,7 +1597,7 @@
                     const checkbox = document.createElement('input');
                     checkbox.type = 'checkbox';
                     checkbox.id = checkboxId;
-                    checkbox.className = 'form-check-input mt-1 shipment-doc-row-checkbox';
+                    checkbox.className = 'ui-check tw:mt-1 shipment-doc-row-checkbox';
                     checkbox.style.minWidth = '1.25rem';
                     checkbox.style.minHeight = '1.25rem';
                     checkbox.value = row.shipment;
@@ -1628,12 +1629,12 @@
 
                     const labelEl = document.createElement('label');
                     labelEl.htmlFor = checkboxId;
-                    labelEl.className = 'tw:text-ui-sm tw:font-semibold tw:text-on-surface tw:cursor-pointer mb-0';
+                    labelEl.className = 'tw:text-ui-sm tw:font-semibold tw:text-on-surface tw:cursor-pointer tw:mb-0';
                     labelEl.textContent = row.shipment_number;
 
                     const shipmentLink = document.createElement('a');
                     shipmentLink.href = row.shipment_url;
-                    shipmentLink.className = 'tw:text-ui-xs text-primary text-decoration-none tw:hover:underline';
+                    shipmentLink.className = 'tw:text-ui-xs tw:text-primary tw:no-underline tw:hover:underline';
                     shipmentLink.textContent = `(${shpStatusLabel})`;
 
                     const shpBadge = document.createElement('span');
@@ -1654,7 +1655,7 @@
                         viewLink.href = row.attachment_url;
                         viewLink.target = '_blank';
                         viewLink.rel = 'noopener';
-                        viewLink.className = 'fw-semibold text-primary text-decoration-none tw:hover:underline';
+                        viewLink.className = 'tw:font-semibold tw:text-primary tw:no-underline tw:hover:underline';
                         viewLink.textContent = shipmentDocCopy.view_file;
 
                         fileRow.append(fileNameSpan, viewLink);
@@ -1682,7 +1683,7 @@
 
                     if (row.is_multi_po && Array.isArray(row.shared_po_numbers) && row.shared_po_numbers.length > 0) {
                         const multiPoNote = document.createElement('p');
-                        multiPoNote.className = 'tw:m-0 tw:mt-1 tw:text-ui-xs text-warning fw-medium';
+                        multiPoNote.className = 'tw:m-0 tw:mt-1 tw:text-ui-xs tw:text-warning tw:font-medium';
                         multiPoNote.textContent = shipmentDocCopy.multi_po.replace(':pos', row.shared_po_numbers.join(', '));
                         labelWrap.appendChild(multiPoNote);
                     }
@@ -1690,7 +1691,7 @@
                     leftGroup.append(checkbox, labelWrap);
 
                     const rightGroup = document.createElement('div');
-                    rightGroup.className = 'tw:flex tw:flex-col tw:items-end tw:gap-1 flex-shrink-0';
+                    rightGroup.className = 'tw:flex tw:flex-col tw:items-end tw:gap-1 tw:shrink-0';
 
                     const docChip = document.createElement('span');
                     docChip.className = `ui-status-chip ${shipmentDocStatusChipClass(row.status)}`;
@@ -1713,7 +1714,7 @@
 
                     if (outcome && outcome.message) {
                         const outcomeMsg = document.createElement('p');
-                        outcomeMsg.className = 'tw:m-0 tw:pt-1 tw:border-t tw:border-outline-variant/60 tw:text-ui-xs text-danger';
+                        outcomeMsg.className = 'tw:m-0 tw:pt-1 tw:border-t tw:border-outline-variant/60 tw:text-ui-xs tw:text-error';
                         outcomeMsg.textContent = outcome.message;
                         card.appendChild(outcomeMsg);
                     }
@@ -1751,7 +1752,7 @@
 
                 const feedback = document.getElementById('shipmentDocDialogFeedback');
                 if (feedback) {
-                    feedback.className = 'tw:rounded-lg tw:border tw:border-error/40 tw:bg-error-container/20 tw:p-3 tw:text-ui-xs text-danger';
+                    feedback.className = 'tw:rounded-lg tw:border tw:border-error/40 tw:bg-error-container/20 tw:p-3 tw:text-ui-xs tw:text-error';
                     feedback.textContent = message;
                 }
 
@@ -1804,7 +1805,7 @@
                     const checkbox = document.createElement('input');
                     checkbox.type = 'checkbox';
                     checkbox.id = checkboxId;
-                    checkbox.className = 'form-check-input mt-1';
+                    checkbox.className = 'ui-check tw:mt-1';
                     checkbox.style.minWidth = '1.25rem';
                     checkbox.style.minHeight = '1.25rem';
                     checkbox.value = row.shipment;
@@ -1838,7 +1839,7 @@
 
                     const labelEl = document.createElement('label');
                     labelEl.htmlFor = checkboxId;
-                    labelEl.className = 'tw:text-ui-sm tw:font-semibold tw:text-on-surface tw:cursor-pointer mb-0';
+                    labelEl.className = 'tw:text-ui-sm tw:font-semibold tw:text-on-surface tw:cursor-pointer tw:mb-0';
                     labelEl.textContent = row.shipment_number;
 
                     const shpBadge = document.createElement('span');
@@ -1847,7 +1848,7 @@
 
                     const shipmentLink = document.createElement('a');
                     shipmentLink.href = row.shipment_url;
-                    shipmentLink.className = 'tw:text-ui-xs text-primary text-decoration-none tw:hover:underline';
+                    shipmentLink.className = 'tw:text-ui-xs tw:text-primary tw:no-underline tw:hover:underline';
                     shipmentLink.textContent = `(${shpStatusLabel})`;
 
                     titleRow.append(labelEl, shpBadge, shipmentLink);
@@ -1864,7 +1865,7 @@
                         viewLink.href = row.attachment_url;
                         viewLink.target = '_blank';
                         viewLink.rel = 'noopener';
-                        viewLink.className = 'fw-semibold text-primary text-decoration-none tw:hover:underline';
+                        viewLink.className = 'tw:font-semibold tw:text-primary tw:no-underline tw:hover:underline';
                         viewLink.textContent = shipmentDocCopy.view_file;
 
                         fileRow.append(fileNameSpan, viewLink);
@@ -1892,7 +1893,7 @@
 
                     if (row.is_multi_po && Array.isArray(row.shared_po_numbers) && row.shared_po_numbers.length > 0) {
                         const multiPoNote = document.createElement('p');
-                        multiPoNote.className = 'tw:m-0 tw:mt-1 tw:text-ui-xs text-warning fw-medium';
+                        multiPoNote.className = 'tw:m-0 tw:mt-1 tw:text-ui-xs tw:text-warning tw:font-medium';
                         multiPoNote.textContent = shipmentDocCopy.multi_po.replace(':pos', row.shared_po_numbers.join(', '));
                         labelWrap.appendChild(multiPoNote);
                     }
@@ -1900,7 +1901,7 @@
                     leftGroup.append(checkbox, labelWrap);
 
                     const rightGroup = document.createElement('div');
-                    rightGroup.className = 'tw:flex tw:flex-col tw:items-end tw:gap-1 flex-shrink-0';
+                    rightGroup.className = 'tw:flex tw:flex-col tw:items-end tw:gap-1 tw:shrink-0';
 
                     const docChip = document.createElement('span');
                     docChip.className = `ui-status-chip ${shipmentDocStatusChipClass(row.status)}`;
@@ -1923,7 +1924,7 @@
 
                     if (outcome && outcome.message) {
                         const outcomeMsg = document.createElement('p');
-                        outcomeMsg.className = 'tw:m-0 tw:pt-1 tw:border-t tw:border-outline-variant/60 tw:text-ui-xs text-danger';
+                        outcomeMsg.className = 'tw:m-0 tw:pt-1 tw:border-t tw:border-outline-variant/60 tw:text-ui-xs tw:text-error';
                         outcomeMsg.textContent = outcome.message;
                         card.appendChild(outcomeMsg);
                     }
@@ -1973,11 +1974,11 @@
                     const reasonHint = document.getElementById(`batchPoTabReasonHint_${docType}`);
                     if (reasonHint) {
                         if (needsReason) {
-                            reasonHint.classList.remove('d-none');
-                            reasonHint.classList.add('text-warning', 'fw-semibold');
+                            reasonHint.classList.remove('tw:hidden');
+                            reasonHint.classList.add('tw:text-warning', 'tw:font-semibold');
                         } else {
-                            reasonHint.classList.add('d-none');
-                            reasonHint.classList.remove('text-warning', 'fw-semibold');
+                            reasonHint.classList.add('tw:hidden');
+                            reasonHint.classList.remove('tw:text-warning', 'tw:font-semibold');
                         }
                     }
 
@@ -2004,7 +2005,7 @@
             function initBatchPoDocDialog() {
                 const feedback = document.getElementById('batchPoDocDialogFeedback');
                 if (feedback) {
-                    feedback.classList.add('d-none');
+                    feedback.classList.add('tw:hidden');
                     feedback.replaceChildren();
                 }
                 const globalTarget = document.getElementById('batchPoGlobalTargetStatus');
@@ -2025,7 +2026,7 @@
                     if (targetInput) targetInput.value = '';
                     const reasonInput = document.getElementById(`batchPoTabReason_${docType}`);
                     if (reasonInput) reasonInput.value = '';
-                    document.getElementById(`batchPoTabReasonHint_${docType}`)?.classList.add('d-none');
+                    document.getElementById(`batchPoTabReasonHint_${docType}`)?.classList.add('tw:hidden');
 
                     renderBatchPoTabRows(docType);
                 });
@@ -2070,7 +2071,7 @@
 
                 const feedback = document.getElementById('batchPoDocDialogFeedback');
                 if (feedback) {
-                    feedback.className = 'tw:rounded-lg tw:border tw:border-error/40 tw:bg-error-container/20 tw:p-3 tw:text-ui-xs text-danger';
+                    feedback.className = 'tw:rounded-lg tw:border tw:border-error/40 tw:bg-error-container/20 tw:p-3 tw:text-ui-xs tw:text-error';
                     feedback.textContent = message;
                 }
 
@@ -2151,7 +2152,7 @@
 
                     const feedback = document.getElementById('shipmentDocDialogFeedback');
                     if (feedback) {
-                        feedback.classList.add('d-none');
+                        feedback.classList.add('tw:hidden');
                         feedback.replaceChildren();
                     }
 
@@ -2213,7 +2214,7 @@
                         .then((data) => {
                             if (!data.history || data.history.length === 0) {
                                 const emptyEl = document.createElement('div');
-                                emptyEl.className = 'text-center py-4 text-muted';
+                                emptyEl.className = 'tw:text-center tw:py-4 tw:text-on-surface-variant';
                                 emptyEl.textContent = window.AdasiI18n.t('purchasing.js.no_progress');
                                 bodyEl.replaceChildren(emptyEl);
                                 return;
@@ -2222,7 +2223,7 @@
                         })
                         .catch(() => {
                             const errEl = document.createElement('div');
-                            errEl.className = 'alert alert-danger py-2 px-3';
+                            errEl.className = 'tw:rounded-ui-sm tw:border tw:border-error/40 tw:bg-error-container tw:text-error-container-foreground tw:py-2 tw:px-3';
                             errEl.textContent = window.AdasiI18n.t('purchasing.js.history_failed');
                             bodyEl.replaceChildren(errEl);
                         });
@@ -2299,7 +2300,7 @@
                 const newStatus = document.getElementById('modalDocStatus')?.value || '';
                 const spinner = document.getElementById('docSpinner');
 
-                spinner?.classList.remove('d-none');
+                spinner?.classList.remove('tw:hidden');
                 saveBtn.disabled = true;
 
                 try {
@@ -2409,7 +2410,7 @@
                         autoClose: 4000
                     });
                 } finally {
-                    spinner?.classList.add('d-none');
+                    spinner?.classList.add('tw:hidden');
                     saveBtn.disabled = false;
                 }
             });
@@ -2435,7 +2436,7 @@
                 }
 
                 const spinner = document.getElementById('shipmentDocSpinner');
-                spinner?.classList.remove('d-none');
+                spinner?.classList.remove('tw:hidden');
                 submitBtn.disabled = true;
 
                 try {
@@ -2477,7 +2478,7 @@
                 } catch {
                     handleShipmentDocError({});
                 } finally {
-                    spinner?.classList.add('d-none');
+                    spinner?.classList.add('tw:hidden');
                     syncShipmentDocDialogControls();
                 }
             });
@@ -2564,7 +2565,7 @@
                 }
 
                 const spinner = document.getElementById('batchPoDocSpinner');
-                spinner?.classList.remove('d-none');
+                spinner?.classList.remove('tw:hidden');
                 submitBtn.disabled = true;
 
                 try {
@@ -2604,7 +2605,7 @@
                 } catch {
                     handleBatchPoError({});
                 } finally {
-                    spinner?.classList.add('d-none');
+                    spinner?.classList.add('tw:hidden');
                     syncBatchPoDialogControls();
                 }
             });

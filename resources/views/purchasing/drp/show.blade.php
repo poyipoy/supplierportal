@@ -85,7 +85,7 @@
                         @endif
                     </div>
 
-                    <div class="tw:flex tw:flex-wrap tw:items-center tw:gap-4 text-end">
+                    <div class="tw:flex tw:flex-wrap tw:items-center tw:gap-4 tw:text-end">
                         <div>
                             <span class="tw:text-[11px] tw:text-on-surface-variant tw:block">{{ __('finance.drp_surface.net_transfer') }}</span>
                             <span class="ui-tabular-nums tw:font-bold tw:text-ui-base tw:text-primary">
@@ -112,17 +112,17 @@
                 @endif
 
                 {{-- Group Items Table --}}
-                <div class="table-responsive">
-                    <table class="table table-sm table-hover align-middle tw:m-0 tw:text-ui-xs w-100">
-                        <thead class="table-light">
+                <div class="ui-table-responsive">
+                    <table class="ui-table ui-table--sm ui-table--hover tw:align-middle tw:m-0 tw:text-ui-xs tw:w-full">
+                        <thead>
                             <tr>
                                 <th scope="col">{{ __('finance.drp_surface.document_reference') }}</th>
                                 <th scope="col">{{ __('local_procurement.labels.po_description') }}</th>
-                                <th scope="col" class="text-end">{{ __('finance.drp_ui.dpp_amount') }}</th>
-                                <th scope="col" class="text-end">{{ __('finance.drp_ui.ppn_amount') }}</th>
-                                <th scope="col" class="text-end">{{ __('local_invoice.labels.total_amount') }}</th>
+                                <th scope="col" class="tw:text-end">{{ __('finance.drp_ui.dpp_amount') }}</th>
+                                <th scope="col" class="tw:text-end">{{ __('finance.drp_ui.ppn_amount') }}</th>
+                                <th scope="col" class="tw:text-end">{{ __('local_invoice.labels.total_amount') }}</th>
                                 <th scope="col">{{ __('finance.drp.item_status') }}</th>
-                                <th scope="col" class="text-end">{{ __('local_invoice.labels.actions') }}</th>
+                                <th scope="col" class="tw:text-end">{{ __('local_invoice.labels.actions') }}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -140,9 +140,9 @@
                                             {{ $item->item_reference }}
                                         @endif
                                     </td>
-                                    <td class="text-end ui-tabular-nums">Rp {{ $regionalFormatter->money($item->subtotal_amount, 0) }}</td>
-                                    <td class="text-end ui-tabular-nums">Rp {{ $regionalFormatter->money($item->tax_amount, 0) }}</td>
-                                    <td class="text-end ui-tabular-nums tw:font-bold tw:text-on-surface">
+                                    <td class="tw:text-end ui-tabular-nums">Rp {{ $regionalFormatter->money($item->subtotal_amount, 0) }}</td>
+                                    <td class="tw:text-end ui-tabular-nums">Rp {{ $regionalFormatter->money($item->tax_amount, 0) }}</td>
+                                    <td class="tw:text-end ui-tabular-nums tw:font-bold tw:text-on-surface">
                                         Rp {{ $regionalFormatter->money($item->total_amount, 0) }}
                                     </td>
                                     <td>
@@ -195,7 +195,7 @@
                                             </x-ui.status-chip>
                                         @endif
                                     </td>
-                                    <td class="text-end">
+                                    <td class="tw:text-end">
                                         @if($item->localInvoiceVoucher)
                                             <x-ui.button :href="route('purchasing.vouchers.print', $item->localInvoiceVoucher)" variant="outline" size="sm" target="_blank" :title="__('finance.voucher.print')">
                                                 <x-ui.icon name="printer" size="sm" />

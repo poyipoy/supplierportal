@@ -149,13 +149,13 @@ class PurchaseOrderController extends Controller
                     );
                     $date = $po->estimated_arrival ? $regionalFormatter->date($po->estimated_arrival, 'human') : '-';
 
-                    return '<div class="d-flex flex-column align-items-start gap-1">'
+                    return '<div class="tw:flex tw:flex-col tw:items-start tw:gap-1">'
                         .'<span>'.e($date).'</span>'
                         .StatusHelper::badgeWithTooltip($meta['class'], $meta['label'], $meta['description'])
                         .'</div>';
                 })
                 ->addColumn('action', function ($po) {
-                    $html = '<div class="d-inline-flex gap-1 justify-content-end flex-wrap">';
+                    $html = '<div class="tw:inline-flex tw:gap-1 tw:justify-end tw:flex-wrap">';
                     if ($po->status === 'claim_needed') {
                         if ($po->active_claim_id) {
                             $html .= RowAction::link(

@@ -63,7 +63,7 @@
                 id="consolidateSearchInput"
                 type="search"
                 name="search"
-                class="form-control form-control-sm ui-filter-bar__search-input"
+                class="ui-input ui-input--sm ui-filter-bar__search-input"
                 value="{{ request('search') }}"
                 placeholder="{{ __('purchasing.copy.search_pr_or_material') }}"
                 aria-label="{{ __('purchasing.copy.search_pr_or_material') }}"
@@ -72,7 +72,7 @@
 
         <x-slot:filters>
             <label for="consolidateSupplierFilter" class="tw:sr-only">{{ __('purchasing.copy.supplier') }}</label>
-            <select id="consolidateSupplierFilter" name="supplier_id" class="form-select form-select-sm tw:w-full tw:min-w-0 tw:sm:w-56" aria-label="{{ __('purchasing.copy.supplier') }}">
+            <select id="consolidateSupplierFilter" name="supplier_id" class="ui-select ui-select--sm tw:w-full tw:min-w-0 tw:sm:w-56" aria-label="{{ __('purchasing.copy.supplier') }}">
                 <option value="">{{ __('purchasing.copy.all_suppliers') }}</option>
                 @foreach($suppliers as $supplier)
                     <option value="{{ $supplier->hash }}" @selected(request('supplier_id') === $supplier->hash)>{{ $supplier->name }}</option>
@@ -80,7 +80,7 @@
             </select>
 
             <label for="consolidateCurrencyFilter" class="tw:sr-only">{{ __('purchasing.copy.currency') }}</label>
-            <select id="consolidateCurrencyFilter" name="currency" class="form-select form-select-sm tw:w-full tw:min-w-0 tw:sm:w-36" aria-label="{{ __('purchasing.copy.currency') }}">
+            <select id="consolidateCurrencyFilter" name="currency" class="ui-select ui-select--sm tw:w-full tw:min-w-0 tw:sm:w-36" aria-label="{{ __('purchasing.copy.currency') }}">
                 <option value="">{{ __('purchasing.copy.all_currencies') }}</option>
                 @foreach(\App\Models\ExchangeRate::CURRENCIES as $currency)
                     <option value="{{ $currency }}" @selected(request('currency') === $currency)>{{ \App\Models\ExchangeRate::currencyLabel($currency) }}</option>
@@ -97,15 +97,15 @@
         @unless($poGenerationEnabled)
             <x-ui.alert tone="warning" class="tw:mb-3">{{ __('procurement.po_generation.disabled_notice') }}</x-ui.alert>
         @endunless
-        @error('award_ids')<div class="alert alert-danger">{{ $message }}</div>@enderror
+        @error('award_ids')<x-ui.alert tone="error" class="tw:mb-3">{{ $message }}</x-ui.alert>@enderror
         @php
             $orderQtyEnabled = \App\Support\Procurement\ProcurementFeatures::orderedQuantityWriteEnabled();
         @endphp
         {{-- Q1 pre-warning only; the server guard is authoritative. --}}
-        <x-ui.alert id="mixedLogisticsWarning" tone="warning" class="tw:mb-3 d-none" role="status">{{ __('procurement.logistics.mixed_selection_warning') }}</x-ui.alert>
-        <div class="table-responsive">
-            <table class="table table-hover align-middle">
-                <thead><tr><th scope="col">{{ __('purchasing.copy.select') }}</th><th scope="col">{{ __('purchasing.copy.pr_no') }}</th><th scope="col">{{ __('purchasing.copy.material') }}</th><th scope="col">{{ __('purchasing.copy.supplier') }}</th><th scope="col">{{ __('purchasing.copy.quotation') }}</th><th scope="col">{{ __('purchasing.copy.currency') }}</th><th scope="col" class="text-end">{{ __('purchasing.copy.weight') }}</th><th scope="col" class="text-end">{{ __('purchasing.copy.amount') }}</th><th scope="col">{{ __('procurement.logistics.port_of_discharge') }}</th><th scope="col">{{ __('procurement.logistics.incoterm') }}</th>@if($orderQtyEnabled)<th scope="col" style="min-width: 11rem;">{{ __('procurement.ordered_quantity.order_qty') }}</th>@endif</tr></thead>
+        <x-ui.alert id="mixedLogisticsWarning" tone="warning" class="tw:mb-3 tw:hidden" role="status">{{ __('procurement.logistics.mixed_selection_warning') }}</x-ui.alert>
+        <div class="ui-table-responsive">
+            <table class="ui-table ui-table--hover tw:align-middle">
+                <thead><tr><th scope="col">{{ __('purchasing.copy.select') }}</th><th scope="col">{{ __('purchasing.copy.pr_no') }}</th><th scope="col">{{ __('purchasing.copy.material') }}</th><th scope="col">{{ __('purchasing.copy.supplier') }}</th><th scope="col">{{ __('purchasing.copy.quotation') }}</th><th scope="col">{{ __('purchasing.copy.currency') }}</th><th scope="col" class="tw:text-end">{{ __('purchasing.copy.weight') }}</th><th scope="col" class="tw:text-end">{{ __('purchasing.copy.amount') }}</th><th scope="col">{{ __('procurement.logistics.port_of_discharge') }}</th><th scope="col">{{ __('procurement.logistics.incoterm') }}</th>@if($orderQtyEnabled)<th scope="col" style="min-width: 11rem;">{{ __('procurement.ordered_quantity.order_qty') }}</th>@endif</tr></thead>
                 <tbody>
                     @forelse($awards as $award)
                         <tr>
@@ -115,8 +115,8 @@
                             <td>{{ $award->supplier->name }}</td>
                             <td><a href="{{ route('purchasing.quotations.show', $award->quotation) }}">{{ __('purchasing.copy.view_quotation') }}</a></td>
                             <td>{{ $award->quotation->currency }}</td>
-                            <td class="text-end">{{ \App\Support\NumberFormat::maxDecimals($award->quotationItem->offered_total_weight) }}</td>
-                            <td class="text-end">{{ $regionalFormatter->groupedDecimal($award->quotationItem->resolved_amount) }}</td>
+                            <td class="tw:text-end">{{ \App\Support\NumberFormat::maxDecimals($award->quotationItem->offered_total_weight) }}</td>
+                            <td class="tw:text-end">{{ $regionalFormatter->groupedDecimal($award->quotationItem->resolved_amount) }}</td>
                             <td>{{ \App\Support\Procurement\LogisticsTerms::portLabel($award->purchaseRequisition->port_of_discharge) }}</td>
                             <td>{{ \App\Support\Procurement\LogisticsTerms::incotermLabel($award->purchaseRequisition->incoterm) }}</td>
                             @if($orderQtyEnabled)
@@ -138,13 +138,13 @@
                             @endif
                         </tr>
                     @empty
-                        <tr><td colspan="{{ $orderQtyEnabled ? 11 : 10 }}" class="text-center">{{ __('purchasing.copy.no_eligible_selected_offers_match_these_filters') }}</td></tr>
+                        <tr><td colspan="{{ $orderQtyEnabled ? 11 : 10 }}" class="tw:text-center">{{ __('purchasing.copy.no_eligible_selected_offers_match_these_filters') }}</td></tr>
                     @endforelse
                 </tbody>
             </table>
         </div>
-        <p class="text-muted">{{ __('purchasing.copy.only_checked_items_on_this_page_will_be_included') }}</p>
-        <div class="mb-3" style="max-width: 320px">
+        <p class="tw:text-on-surface-variant">{{ __('purchasing.copy.only_checked_items_on_this_page_will_be_included') }}</p>
+        <div class="tw:mb-3" style="max-width: 320px">
             <x-ui.date-picker
                 id="consolidationArrival"
                 name="estimated_arrival"
@@ -153,42 +153,42 @@
                 required
             />
         </div>
-        <div class="mb-3">
-            <label for="consolidationNotes" class="form-label">{{ __('purchasing.copy.notes') }}</label>
-            <textarea id="consolidationNotes" name="notes" class="form-control" maxlength="5000">{{ old('notes') }}</textarea>
+        <div class="tw:mb-3">
+            <label for="consolidationNotes" class="ui-label">{{ __('purchasing.copy.notes') }}</label>
+            <textarea id="consolidationNotes" name="notes" class="ui-textarea" maxlength="5000">{{ old('notes') }}</textarea>
         </div>
         @php
             $firstAwardPort = $awards->first()?->purchaseRequisition?->port_of_discharge;
             $defaultConsolidationPort = old('port_of_discharge', $firstAwardPort ?: (\App\Support\Procurement\LogisticsTerms::ports()[0] ?? 'TANJUNG_PRIOK'));
         @endphp
-        <div class="mb-3 p-3 border rounded tw:bg-surface-container-low">
-            <div class="mb-2" style="max-width: 360px">
-                <label for="consolidationPortOfDischarge" class="form-label fw-semibold">
-                    {{ __('purchasing.copy.confirm_port_of_discharge_label') }} <span class="text-danger">*</span>
+        <div class="tw:mb-3 tw:p-3 tw:border tw:border-outline-variant tw:rounded-ui-sm tw:bg-surface-container-low">
+            <div class="tw:mb-2" style="max-width: 360px">
+                <label for="consolidationPortOfDischarge" class="ui-label tw:font-semibold">
+                    {{ __('purchasing.copy.confirm_port_of_discharge_label') }} <span class="tw:text-error">*</span>
                 </label>
-                <select name="port_of_discharge" id="consolidationPortOfDischarge" class="form-select form-select-sm @error('port_of_discharge') is-invalid @enderror" required>
+                <select name="port_of_discharge" id="consolidationPortOfDischarge" class="ui-select ui-select--sm @error('port_of_discharge') is-invalid @enderror" required>
                     @foreach(\App\Support\Procurement\LogisticsTerms::ports() as $portCode)
                         <option value="{{ $portCode }}" {{ $defaultConsolidationPort === $portCode ? 'selected' : '' }}>
                             {{ \App\Support\Procurement\LogisticsTerms::portLabel($portCode) }}
                         </option>
                     @endforeach
                 </select>
-                @error('port_of_discharge')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                @error('port_of_discharge')<div class="ui-field-error">{{ $message }}</div>@enderror
             </div>
-            <div class="form-check">
+            <div class="ui-check-group">
                 <input
                     type="checkbox"
                     name="confirm_port_of_discharge"
                     id="consolidationConfirmPort"
                     value="1"
-                    class="form-check-input @error('confirm_port_of_discharge') is-invalid @enderror"
+                    class="ui-check @error('confirm_port_of_discharge') is-invalid @enderror"
                     {{ old('confirm_port_of_discharge') ? 'checked' : '' }}
                     required
                 >
-                <label for="consolidationConfirmPort" class="form-check-label tw:text-ui-xs fw-semibold">
+                <label for="consolidationConfirmPort" class="tw:text-ui-xs tw:font-semibold tw:cursor-pointer">
                     {{ __('purchasing.copy.confirm_port_of_discharge_checkbox') }}
                 </label>
-                @error('confirm_port_of_discharge')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
+                @error('confirm_port_of_discharge')<div class="ui-field-error tw:block">{{ $message }}</div>@enderror
             </div>
         </div>
         <x-ui.button id="createConsolidatedPo" type="submit" data-no-auto-spinner :disabled="! $poGenerationEnabled"><span id="consolidationSpinner" class="ui-spinner" hidden aria-hidden="true"></span>{{ __('purchasing.copy.create_consolidated_po') }}</x-ui.button>
@@ -206,7 +206,7 @@
     if (!form || !warning) return;
     const refresh = () => {
         const values = new Set([...form.querySelectorAll('input[name="award_ids[]"]:checked')].map((box) => box.dataset.logistics));
-        warning.classList.toggle('d-none', values.size <= 1);
+        warning.classList.toggle('tw:hidden', values.size <= 1);
     };
     form.addEventListener('change', (event) => { if (event.target.matches('input[name="award_ids[]"]')) refresh(); });
     refresh();

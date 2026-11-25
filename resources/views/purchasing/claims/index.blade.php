@@ -24,21 +24,21 @@
     />
 
     {{-- 3. Queue Panes --}}
-    <div class="tab-content" id="claimTabsContent">
+    <div id="claimTabsContent">
         {{-- Tab 1: Action Required --}}
-        <div class="tab-pane fade show active" id="action" role="tabpanel" aria-labelledby="action-tab" tabindex="0">
+        <div class="active" id="action" role="tabpanel" aria-labelledby="action-tab" tabindex="0">
             <div class="tw:grid tw:gap-3">
                 <x-ui.alert tone="warning" :title="__('claims.copy.claim_initiation_required')">{{ __('claims.copy.the_purchase_orders_below_failed_qc_inspection_with_an_ng_result_submit_a_formal_claim_to_initiate_r') }}</x-ui.alert>
 
                 <x-ui.data-table>
-                    <table class="table table-hover align-middle mb-0 tw:text-ui-sm w-100" id="actionTable">
-                        <thead class="table-light">
+                    <table class="ui-table ui-table--hover tw:align-middle tw:mb-0 tw:text-ui-sm tw:w-full" id="actionTable">
+                        <thead>
                             <tr>
                                 <th scope="col">{{ __('claims.copy.po_number') }}</th>
                                 <th scope="col">{{ __('claims.copy.supplier') }}</th>
                                 <th scope="col">{{ __('claims.copy.inspection_date') }}</th>
-                                <th scope="col" class="text-center">{{ __('claims.copy.po_status') }}</th>
-                                <th scope="col" class="tw:text-right text-end" style="width: 130px;">{{ __('common.table.action') }}</th>
+                                <th scope="col" class="tw:text-center">{{ __('claims.copy.po_status') }}</th>
+                                <th scope="col" class="tw:text-end" style="width: 130px;">{{ __('common.table.action') }}</th>
                             </tr>
                         </thead>
                         <tbody></tbody>
@@ -48,10 +48,10 @@
         </div>
 
         {{-- Tab 2: Claim History --}}
-        <div class="tab-pane fade" id="history" role="tabpanel" aria-labelledby="history-tab" tabindex="0" hidden>
+        <div id="history" role="tabpanel" aria-labelledby="history-tab" tabindex="0" hidden>
             <x-ui.data-table>
-                <table class="table table-hover align-middle mb-0 tw:text-ui-sm w-100" id="historyTable">
-                    <thead class="table-light">
+                <table class="ui-table ui-table--hover tw:align-middle tw:mb-0 tw:text-ui-sm tw:w-full" id="historyTable">
+                    <thead>
                         <tr>
                             <th scope="col">{{ __('claims.copy.claim_id') }}</th>
                             <th scope="col">{{ __('claims.copy.po_number') }}</th>
@@ -59,10 +59,10 @@
                             <th scope="col">{{ __('claims.copy.date_submitted') }}</th>
                             <th scope="col">
                                 {{ __('claims.copy.response_deadline') }}
-                                <x-ui.icon name="info" class="ms-1 text-muted" data-ui-tooltip="{{ __('claims.copy.deadline_for_supplier_to_formally_respond_to_material_claims') }}" />
+                                <x-ui.icon name="info" class="tw:ms-1 tw:text-on-surface-variant" data-ui-tooltip="{{ __('claims.copy.deadline_for_supplier_to_formally_respond_to_material_claims') }}" />
                             </th>
-                            <th scope="col" class="text-center">{{ __('claims.copy.claim_status') }}</th>
-                            <th scope="col" class="tw:text-right text-end" style="width: 96px;">{{ __('common.table.action') }}</th>
+                            <th scope="col" class="tw:text-center">{{ __('claims.copy.claim_status') }}</th>
+                            <th scope="col" class="tw:text-end" style="width: 96px;">{{ __('common.table.action') }}</th>
                         </tr>
                     </thead>
                     <tbody></tbody>
@@ -88,11 +88,11 @@
             serverSide: true,
             ajax: '{{ route("purchasing.claims.data-action") }}',
             columns: [
-                { data: 'po_number_display', name: 'po_number', className: 'fw-bold tw:text-on-surface' },
+                { data: 'po_number_display', name: 'po_number', className: 'tw:font-bold tw:text-on-surface' },
                 { data: 'supplier_name', name: 'supplier_name', orderable: false },
                 { data: 'inspection_date', name: 'inspection_date', orderable: false, searchable: false, className: 'tw:text-on-surface-variant' },
-                { data: 'status_badge', name: 'status', className: 'text-center', searchable: false },
-                { data: 'action', name: 'action', orderable: false, searchable: false, className: 'text-end' }
+                { data: 'status_badge', name: 'status', className: 'tw:text-center', searchable: false },
+                { data: 'action', name: 'action', orderable: false, searchable: false, className: 'tw:text-end' }
             ],
             language: dtLang
         }));
@@ -108,13 +108,13 @@
                     serverSide: true,
                     ajax: '{{ route("purchasing.claims.data-history") }}',
                     columns: [
-                        { data: 'claim_id', name: 'id', className: 'fw-bold tw:text-on-surface' },
+                        { data: 'claim_id', name: 'id', className: 'tw:font-bold tw:text-on-surface' },
                         { data: 'po_number', name: 'po_number', orderable: false },
                         { data: 'supplier_name', name: 'supplier_name', orderable: false },
                         { data: 'created_date', name: 'created_at', className: 'tw:text-on-surface-variant' },
                         { data: 'deadline_display', name: 'deadline', className: 'tw:text-on-surface-variant' },
-                        { data: 'status_badge', name: 'status', className: 'text-center', searchable: false },
-                        { data: 'action', name: 'action', orderable: false, searchable: false, className: 'text-end' }
+                        { data: 'status_badge', name: 'status', className: 'tw:text-center', searchable: false },
+                        { data: 'action', name: 'action', orderable: false, searchable: false, className: 'tw:text-end' }
                     ],
                     language: dtLang,
                     drawCallback: function() {

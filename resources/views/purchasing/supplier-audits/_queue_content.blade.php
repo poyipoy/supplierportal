@@ -38,7 +38,7 @@
 
             <x-slot:filters>
                 <label for="supplierAuditPeriodFilter" class="tw:sr-only">{{ __('supplier_audit.fields.period') }}</label>
-                <select name="period" id="supplierAuditPeriodFilter" class="form-select form-select-sm tw:w-full tw:min-w-0 tw:sm:w-44">
+                <select name="period" id="supplierAuditPeriodFilter" class="ui-select ui-select--sm tw:w-full tw:min-w-0 tw:sm:w-44">
                     <option value="">{{ __('supplier_audit.filters.period_all') }}</option>
                     @foreach($periodOptions as $periodValue => $periodLabel)
                         <option value="{{ $periodValue }}" @selected((string) ($filters['period'] ?? '') === (string) $periodValue)>{{ $periodLabel }}</option>
@@ -46,7 +46,7 @@
                 </select>
 
                 <label for="supplierAuditSupplierFilter" class="tw:sr-only">{{ __('supplier_audit.fields.supplier') }}</label>
-                <select name="supplier" id="supplierAuditSupplierFilter" class="form-select form-select-sm tw:w-full tw:min-w-0 tw:sm:w-56">
+                <select name="supplier" id="supplierAuditSupplierFilter" class="ui-select ui-select--sm tw:w-full tw:min-w-0 tw:sm:w-56">
                     <option value="">{{ __('supplier_audit.filters.supplier_all') }}</option>
                     @foreach($supplierOptions as $supplierValue => $supplierLabel)
                         <option value="{{ $supplierValue }}" @selected((string) ($filters['supplier'] ?? '') === (string) $supplierValue)>{{ $supplierLabel }}</option>
@@ -69,8 +69,8 @@
         @endif
     </x-slot:emptyState>
 
-    <table class="table table-hover align-middle tw:m-0 tw:text-ui-sm w-100">
-        <thead class="table-light">
+    <table class="ui-table ui-table--hover tw:align-middle tw:m-0 tw:text-ui-sm tw:w-full">
+        <thead>
             <tr>
                 <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('supplier_audit.fields.supplier') }}</th>
                 <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('supplier_audit.fields.period') }}</th>
@@ -78,7 +78,7 @@
                 <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('supplier_audit.fields.due_date') }}</th>
                 <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('supplier_audit.fields.status') }}</th>
                 <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('supplier_audit.fields.submitted_at') }}</th>
-                <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-right text-end">{{ __('common.table.action') }}</th>
+                <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-end">{{ __('common.table.action') }}</th>
             </tr>
         </thead>
         <tbody>
@@ -118,7 +118,7 @@
                     </td>
                     <td><x-ui.status-chip :tone="\App\Support\StatusHelper::supplierAuditTone($audit->status)" size="sm">{{ \App\Support\StatusHelper::supplierAuditLabel($audit->status) }}</x-ui.status-chip></td>
                     <td class="tw:whitespace-nowrap tw:text-ui-xs" style="font-variant-numeric: tabular-nums;">{{ $audit->submitted_at ? $regionalFormatter->timestamp($audit->submitted_at) : '—' }}</td>
-                    <td class="tw:text-right text-end">
+                    <td class="tw:text-end">
                         @if($audit->status === \App\Models\SupplierAudit::STATUS_SUBMITTED)
                             <x-ui.row-action
                                 :href="route('purchasing.supplier-audits.show', $audit)"

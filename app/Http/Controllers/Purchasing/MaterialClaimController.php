@@ -98,7 +98,7 @@ class MaterialClaimController extends Controller
                 $meta = StatusHelper::claimDeadlineMeta($c->deadline, $c->status);
                 $date = $c->deadline ? $regionalFormatter->date($c->deadline, 'human') : '-';
 
-                return '<div class="d-flex flex-column align-items-start gap-1">'
+                return '<div class="tw:flex tw:flex-col tw:items-start tw:gap-1">'
                     .'<span>'.e($date).'</span>'
                     .StatusHelper::badgeWithTooltip($meta['class'], $meta['label'], $meta['description'])
                     .'</div>';
