@@ -354,11 +354,6 @@
     {{-- Bootstrap 5 CSS --}}
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous" rel="stylesheet">
 
-    @hasSection('uses-datatables')
-        {{-- DataTables CSS (only on pages that initialize a DataTable) --}}
-        <link rel="stylesheet" href="https://cdn.datatables.net/3.1.5/css/dataTables.bootstrap5.min.css" integrity="sha384-OZKa6QSlaaq/LGR1sBFkYhC0c/nacIFh1chsblhDUxggC9Zb0XLEEMs95i1Kydnt" crossorigin="anonymous">
-    @endif
-
     {{-- SweetAlert2 CSS --}}
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.min.css" integrity="sha384-e9JoBUb50niLuTodlxX3NLZZfrt9fQkX5bihGXOGWD/7QFJoXEH37S2df8UA2ehO" crossorigin="anonymous">
 
@@ -482,7 +477,6 @@
     @hasSection('uses-datatables')
         {{-- DataTables JS (only on pages that initialize a DataTable) --}}
         <script src="https://cdn.datatables.net/3.1.5/js/dataTables.min.js" integrity="sha384-RhzIACKRVYIyijzmm7bA1mSofISYiTQ/KsnClfUSGSHu6ZeRsTQVWL4LqPHTrJcT" crossorigin="anonymous"></script>
-        <script src="https://cdn.datatables.net/3.1.5/js/dataTables.bootstrap5.min.js" integrity="sha384-2JCJ65zPWIsFF9Flk2ZSwukEbtRkZygX6+sTerFFqbL7dwPDVsMf2FR3r3XDAub0" crossorigin="anonymous"></script>
     @endif
     <script>
         window.AdasiDataTable = Object.freeze({

@@ -1,5 +1,6 @@
 import './debug-logger.js';
 import { onDataTableEvent, offDataTableEvent } from './datatables-events.js';
+import { applyAdasiDataTablesSkin } from './datatables-skin.js';
 import { AdasiModal, bootAdasiModals } from './adasi-modal.js';
 import { AdasiDropdown, bootAdasiDropdowns } from './adasi-dropdown.js';
 import { AdasiTooltip, bootAdasiTooltips } from './adasi-tooltip.js';
@@ -31,6 +32,7 @@ import { bindSidebarSplitter } from './splitter';
 import { registerToastCenter } from './toast-center';
 
 window.Alpine = Alpine;
+applyAdasiDataTablesSkin(window.DataTable);
 window.AdasiDataTableEvents = Object.freeze({ on: onDataTableEvent, off: offDataTableEvent });
 window.AdasiModal = AdasiModal;
 window.AdasiDropdown = AdasiDropdown;
