@@ -208,11 +208,19 @@
     @include('purchasing.pr._material_shape_script')
 
     function addRow() {
-        const template = document.getElementById('rowTemplate').innerHTML;
-        const html = template.replace(/{INDEX}/g, itemIndex);
-        $('#itemsBody').append(html);
-        applyMaterialShapeRules($('#itemsBody tr.item-row').last(), true);
-        resetMaterialPreview($('#itemsBody tr.item-row').last());
+        const templateEl = document.getElementById('rowTemplate');
+        const itemsBody = document.getElementById('itemsBody');
+        if (!templateEl || !itemsBody) return;
+
+        const html = templateEl.innerHTML.replace(/{INDEX}/g, String(itemIndex));
+        const tempTemplate = document.createElement('template');
+        tempTemplate.innerHTML = html.trim();
+        const newRow = tempTemplate.content.firstElementChild;
+        if (!newRow) return;
+
+        itemsBody.appendChild(newRow);
+        applyMaterialShapeRules(newRow, true);
+        resetMaterialPreview(newRow);
         itemIndex++;
         renumberPrRows();
         checkRowCount();
@@ -225,7 +233,7 @@
             cancelText: @json(__('purchasing.copy.cancel'))
         }).then((result) => {
             if (result.isConfirmed) {
-                $(btn).closest('tr').remove();
+                btn?.closest('tr')?.remove();
                 renumberPrRows();
                 checkRowCount();
             }
@@ -233,30 +241,37 @@
     }
 
     function checkRowCount() {
-        if ($('#itemsBody tr').length === 0) {
-            $('#noItemAlert').removeClass('d-none');
-        } else {
-            $('#noItemAlert').addClass('d-none');
+        const noItemAlert = document.getElementById('noItemAlert');
+        const hasRows = document.querySelector('#itemsBody tr') !== null;
+        if (noItemAlert) {
+            noItemAlert.classList.toggle('d-none', hasRows);
         }
     }
 
+    function pruneBlankPrRows() {
+        const itemsBody = document.getElementById('itemsBody');
+        if (!itemsBody) return;
+
+        Array.from(itemsBody.querySelectorAll('tr.item-row')).forEach((row) => {
+            const matName = String(row.querySelector('.material-master-search')?.value || '').trim();
+            const matId = String(row.querySelector('.material-master-id')?.value || '').trim();
+            if (!matName && !matId && itemsBody.querySelectorAll('tr.item-row').length > 1) {
+                row.remove();
+            }
+        });
+        renumberPrRows();
+    }
+
     function submitForm(action) {
-        if ($('#itemsBody tr').length === 0) {
-            $('#noItemAlert').removeClass('d-none');
+        if (!document.querySelector('#itemsBody tr')) {
+            document.getElementById('noItemAlert')?.classList.remove('d-none');
             const targetBtn = window.innerWidth < 768 ? document.getElementById('btnOpenMobileMaterialModal') : document.getElementById('btnAddRow');
             targetBtn?.focus();
             return;
         }
 
         // Clean up completely blank unconfigured rows before submission if multiple rows exist
-        $('#itemsBody tr.item-row').each(function() {
-            const matName = String($(this).find('.material-master-search').val() || '').trim();
-            const matId = String($(this).find('.material-master-id').val() || '').trim();
-            if (!matName && !matId && $('#itemsBody tr.item-row').length > 1) {
-                $(this).remove();
-            }
-        });
-        renumberPrRows();
+        pruneBlankPrRows();
 
         const form = document.getElementById('prForm');
         if (form && !form.checkValidity()) {
@@ -269,31 +284,25 @@
             form._lastClickedButton = activeBtn;
         }
         window.AdasiUnsaved?.markClean?.();
-        $('#formAction').val(action);
+        const formAction = document.getElementById('formAction');
+        if (formAction) formAction.value = action;
         if (form && typeof form.requestSubmit === 'function') {
             form.requestSubmit();
         } else {
-            $('#prForm').submit();
+            form?.submit();
         }
     }
 
     function confirmSubmit() {
-        if ($('#itemsBody tr').length === 0) {
-            $('#noItemAlert').removeClass('d-none');
+        if (!document.querySelector('#itemsBody tr')) {
+            document.getElementById('noItemAlert')?.classList.remove('d-none');
             const targetBtn = window.innerWidth < 768 ? document.getElementById('btnOpenMobileMaterialModal') : document.getElementById('btnAddRow');
             targetBtn?.focus();
             return;
         }
 
         // Clean up completely blank unconfigured rows before submission if multiple rows exist
-        $('#itemsBody tr.item-row').each(function() {
-            const matName = String($(this).find('.material-master-search').val() || '').trim();
-            const matId = String($(this).find('.material-master-id').val() || '').trim();
-            if (!matName && !matId && $('#itemsBody tr.item-row').length > 1) {
-                $(this).remove();
-            }
-        });
-        renumberPrRows();
+        pruneBlankPrRows();
 
         const form = document.getElementById('prForm');
         if (form && !form.checkValidity()) {
@@ -313,61 +322,70 @@
                     form._lastClickedButton = submitBtn;
                 }
                 window.AdasiUnsaved?.markClean?.();
-                $('#formAction').val('submitted');
+                const formAction = document.getElementById('formAction');
+                if (formAction) formAction.value = 'submitted';
                 if (form && typeof form.requestSubmit === 'function') {
                     form.requestSubmit();
                 } else {
-                    $('#prForm').submit();
+                    form?.submit();
                 }
             }
         });
     }
 
-    $(document).ready(function() {
-        $('#btnAddRow').on('click', addRow);
-        initializeMaterialShapeRows();
-        renderMobileMaterialCards();
+    (function() {
+        function bootPrEdit() {
+            document.getElementById('btnAddRow')?.addEventListener('click', addRow);
+            initializeMaterialShapeRows();
+            renderMobileMaterialCards();
 
-        $('#prForm').on('keydown', 'input, select', function(event) {
-            if (event.key === 'Enter') {
-                event.preventDefault();
+            document.getElementById('prForm')?.addEventListener('keydown', (event) => {
+                if (event.key === 'Enter' && event.target instanceof Element && event.target.matches('input, select')) {
+                    event.preventDefault();
+                }
+            });
+
+            // Horizontal drag-to-scroll for items table
+            const prScroll = document.querySelector('.pr-form-table-scroll');
+            if (prScroll) {
+                let isDown = false;
+                let startX = 0;
+                let startScrollLeft = 0;
+
+                prScroll.addEventListener('mousedown', function(e) {
+                    if (e.button !== 0) return;
+                    if (e.target.closest('input, select, textarea, button, a, label, [role="button"], .dropdown-menu, .modal, .material-search-results')) {
+                        return;
+                    }
+                    isDown = true;
+                    startX = e.pageX;
+                    startScrollLeft = prScroll.scrollLeft;
+                    prScroll.style.cursor = 'grabbing';
+                    prScroll.style.userSelect = 'none';
+                });
+
+                window.addEventListener('mousemove', function(e) {
+                    if (!isDown) return;
+                    e.preventDefault();
+                    const walk = e.pageX - startX;
+                    prScroll.scrollLeft = startScrollLeft - walk;
+                });
+
+                window.addEventListener('mouseup', function() {
+                    if (isDown) {
+                        isDown = false;
+                        prScroll.style.cursor = '';
+                        prScroll.style.removeProperty('user-select');
+                    }
+                });
             }
-        });
-
-        // Horizontal drag-to-scroll for items table
-        const prScroll = document.querySelector('.pr-form-table-scroll');
-        if (prScroll) {
-            let isDown = false;
-            let startX = 0;
-            let startScrollLeft = 0;
-
-            prScroll.addEventListener('mousedown', function(e) {
-                if (e.button !== 0) return;
-                if (e.target.closest('input, select, textarea, button, a, label, [role="button"], .dropdown-menu, .modal, .material-search-results')) {
-                    return;
-                }
-                isDown = true;
-                startX = e.pageX;
-                startScrollLeft = prScroll.scrollLeft;
-                prScroll.style.cursor = 'grabbing';
-                prScroll.style.userSelect = 'none';
-            });
-
-            window.addEventListener('mousemove', function(e) {
-                if (!isDown) return;
-                e.preventDefault();
-                const walk = e.pageX - startX;
-                prScroll.scrollLeft = startScrollLeft - walk;
-            });
-
-            window.addEventListener('mouseup', function() {
-                if (isDown) {
-                    isDown = false;
-                    prScroll.style.cursor = '';
-                    prScroll.style.removeProperty('user-select');
-                }
-            });
         }
-    });
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', bootPrEdit);
+        } else {
+            bootPrEdit();
+        }
+    })();
 </script>
 @endpush

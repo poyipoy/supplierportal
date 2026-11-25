@@ -719,9 +719,12 @@
 
 @push('scripts')
 <script>
-    $('.btn-submit').on('click', function() {
-        const $btn = $(this);
-        const form = $btn.closest('form');
+    document.addEventListener('click', function(event) {
+        const btn = event.target instanceof Element ? event.target.closest('.btn-submit') : null;
+        if (!btn) return;
+        const form = btn.closest('form');
+        if (!form) return;
+
         AdasiAlert.confirm({
             title: @json(__('purchasing.copy.submit_requisition')),
             text: @json(__('purchasing.copy.status_will_change_to_submitted_and_cannot_be_edited_anymore')),
@@ -729,7 +732,7 @@
             cancelText: @json(__('purchasing.copy.cancel'))
         }).then((result) => {
             if (result.isConfirmed) {
-                window.AdasiButton?.startLoading($btn[0]);
+                window.AdasiButton?.startLoading(btn);
                 form.submit();
             }
         });

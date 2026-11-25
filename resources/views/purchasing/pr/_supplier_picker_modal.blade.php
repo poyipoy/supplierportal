@@ -113,80 +113,112 @@
 @once
     @push('scripts')
         <script>
-            function getSupplierPicker($el) {
-                const $direct = $el.closest('[data-supplier-picker]');
-                if ($direct.length) {
-                    return $direct;
+            (function() {
+                function getSupplierPicker(el) {
+                    if (!(el instanceof Element)) return null;
+                    const direct = el.closest('[data-supplier-picker]');
+                    if (direct) return direct;
+
+                    const modalEl = el.closest('[data-supplier-picker-modal]');
+                    const modalId = modalEl?.dataset.supplierPickerModal;
+                    return modalId ? document.querySelector(`[data-supplier-picker="${CSS.escape(modalId)}"]`) : null;
                 }
 
-                const modalId = $el.closest('[data-supplier-picker-modal]').data('supplier-picker-modal');
-                return modalId ? $('[data-supplier-picker="' + modalId + '"]') : $();
-            }
-
-            function getSupplierModal($picker) {
-                const modalId = $picker.data('supplier-picker');
-                return modalId ? $('[data-supplier-picker-modal="' + modalId + '"]') : $picker;
-            }
-
-            function updateSupplierPickerState($picker) {
-                const $modal = getSupplierModal($picker);
-                const checked = $modal.find('.supplier-checkbox:checked');
-                const count = checked.length;
-                const emptyText = $picker.find('.supplier-selected-summary').data('empty-text') || @json(__('purchasing.copy.all_registered_suppliers'));
-
-                $picker.find('.supplier-selected-count').text(count > 0 ? count : @json(__('purchasing.copy.all')));
-
-                if (count === 0) {
-                    $picker.find('.supplier-selected-summary').text(emptyText);
-                    return;
+                function getSupplierModal(pickerEl) {
+                    if (!(pickerEl instanceof Element)) return null;
+                    const modalId = pickerEl.dataset.supplierPicker;
+                    return modalId ? document.querySelector(`[data-supplier-picker-modal="${CSS.escape(modalId)}"]`) : pickerEl;
                 }
 
-                const names = checked.map(function() {
-                    return $(this).data('supplier-name');
-                }).get();
-                const visibleNames = names.slice(0, 2).join(', ');
-                const suffix = count > 2 ? window.AdasiI18n.choice('purchasing.js.other_suppliers', count - 2) : '';
+                function updateSupplierPickerState(pickerEl) {
+                    if (!pickerEl) return;
+                    const modalEl = getSupplierModal(pickerEl);
+                    const checked = modalEl ? Array.from(modalEl.querySelectorAll('.supplier-checkbox:checked')) : [];
+                    const count = checked.length;
+                    const summaryEl = pickerEl.querySelector('.supplier-selected-summary');
+                    const countEl = pickerEl.querySelector('.supplier-selected-count');
+                    const emptyText = summaryEl?.dataset.emptyText || @json(__('purchasing.copy.all_registered_suppliers'));
 
-                $picker.find('.supplier-selected-summary').text(visibleNames + suffix);
-            }
+                    if (countEl) {
+                        countEl.textContent = count > 0 ? String(count) : @json(__('purchasing.copy.all'));
+                    }
 
-            $(document).on('change', '.supplier-checkbox', function() {
-                updateSupplierPickerState(getSupplierPicker($(this)));
-            });
+                    if (!summaryEl) return;
 
-            $(document).on('input', '.supplier-search-input', function() {
-                const keyword = $(this).val().toLowerCase().trim();
-                const $modal = $(this).closest('[data-supplier-picker-modal]');
+                    if (count === 0) {
+                        summaryEl.textContent = emptyText;
+                        return;
+                    }
 
-                $modal.find('.supplier-option').each(function() {
-                    const key = ($(this).data('supplier-key') || '').toString();
-                    $(this).toggleClass('d-none', keyword !== '' && !key.includes(keyword));
+                    const names = checked.map((cb) => cb.dataset.supplierName || '');
+                    const visibleNames = names.slice(0, 2).join(', ');
+                    const suffix = count > 2 ? window.AdasiI18n.choice('purchasing.js.other_suppliers', count - 2) : '';
+
+                    summaryEl.textContent = visibleNames + suffix;
+                }
+
+                document.addEventListener('change', (event) => {
+                    const checkbox = event.target instanceof Element ? event.target.closest('.supplier-checkbox') : null;
+                    if (!checkbox) return;
+                    updateSupplierPickerState(getSupplierPicker(checkbox));
                 });
-            });
 
-            $(document).on('click', '.supplier-select-all', function() {
-                const $modal = $(this).closest('[data-supplier-picker-modal]');
-                $modal.find('.supplier-option:not(.d-none) .supplier-checkbox').prop('checked', true);
-                updateSupplierPickerState(getSupplierPicker($(this)));
-            });
+                document.addEventListener('input', (event) => {
+                    const searchInput = event.target instanceof Element ? event.target.closest('.supplier-search-input') : null;
+                    if (!searchInput) return;
 
-            $(document).on('click', '.supplier-clear-all', function() {
-                const $modal = $(this).closest('[data-supplier-picker-modal]');
-                $modal.find('.supplier-checkbox').prop('checked', false);
-                updateSupplierPickerState(getSupplierPicker($(this)));
-            });
+                    const keyword = searchInput.value.toLowerCase().trim();
+                    const modalEl = searchInput.closest('[data-supplier-picker-modal]');
+                    if (!modalEl) return;
 
-            $(function() {
-                $('[data-supplier-picker-modal]').each(function() {
-                    if (this.parentElement !== document.body) {
-                        document.body.appendChild(this);
+                    modalEl.querySelectorAll('.supplier-option').forEach((optionEl) => {
+                        const key = (optionEl.dataset.supplierKey || '').toString();
+                        optionEl.classList.toggle('d-none', keyword !== '' && !key.includes(keyword));
+                    });
+                });
+
+                document.addEventListener('click', (event) => {
+                    const target = event.target instanceof Element ? event.target : null;
+                    if (!target) return;
+
+                    const selectAllBtn = target.closest('.supplier-select-all');
+                    if (selectAllBtn) {
+                        const modalEl = selectAllBtn.closest('[data-supplier-picker-modal]');
+                        modalEl?.querySelectorAll('.supplier-option:not(.d-none) .supplier-checkbox').forEach((cb) => {
+                            cb.checked = true;
+                        });
+                        updateSupplierPickerState(getSupplierPicker(selectAllBtn));
+                        return;
+                    }
+
+                    const clearAllBtn = target.closest('.supplier-clear-all');
+                    if (clearAllBtn) {
+                        const modalEl = clearAllBtn.closest('[data-supplier-picker-modal]');
+                        modalEl?.querySelectorAll('.supplier-checkbox').forEach((cb) => {
+                            cb.checked = false;
+                        });
+                        updateSupplierPickerState(getSupplierPicker(clearAllBtn));
                     }
                 });
 
-                $('[data-supplier-picker]').each(function() {
-                    updateSupplierPickerState($(this));
-                });
-            });
+                function bootSupplierPickers() {
+                    document.querySelectorAll('[data-supplier-picker-modal]').forEach((modalEl) => {
+                        if (modalEl.parentElement !== document.body) {
+                            document.body.appendChild(modalEl);
+                        }
+                    });
+
+                    document.querySelectorAll('[data-supplier-picker]').forEach((pickerEl) => {
+                        updateSupplierPickerState(pickerEl);
+                    });
+                }
+
+                if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', bootSupplierPickers);
+                } else {
+                    bootSupplierPickers();
+                }
+            })();
         </script>
     @endpush
 @endonce

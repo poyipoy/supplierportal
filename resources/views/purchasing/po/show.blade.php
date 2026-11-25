@@ -1243,666 +1243,29 @@
 
 @push('scripts')
 <script>
-    $(document).ready(function() {
-        const navLinks = $('#po-section-nav .nav-link');
-        let isProgrammaticScroll = false;
-        let manualClickLockId = null;
-        let unlockTimer = null;
+    (function() {
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '{{ csrf_token() }}';
 
-        function getStickyOffset() {
-            const navHeight = $('.po-sticky-nav-bar').outerHeight() || 46;
-            return 56 + navHeight + 16;
+        function isVisibleElement(el) {
+            return Boolean(el && (el.offsetWidth || el.offsetHeight || el.getClientRects().length));
         }
 
-        function setActiveTab(targetId) {
-            navLinks.removeClass('active');
-            const $activeLink = $(`#po-section-nav .nav-link[href="${targetId}"]`);
-            if ($activeLink.length) {
-                $activeLink.addClass('active');
-            }
+        function getOffsetTop(el) {
+            return el.getBoundingClientRect().top + (window.scrollY || window.pageYOffset || 0);
         }
 
-        function updateActiveSection() {
-            if (isProgrammaticScroll) return;
-            if (manualClickLockId) {
-                setActiveTab(manualClickLockId);
-                return;
-            }
-
-            const stickyOffset = getStickyOffset();
-            const scrollPos = $(window).scrollTop();
-            const viewportFocusLine = scrollPos + stickyOffset + 40;
-
-            let bestMatchId = null;
-            let bestDistance = Infinity;
-
-            navLinks.each(function() {
-                const href = $(this).attr('href');
-                if (!href || !href.startsWith('#')) return;
-                const $target = $(href);
-                if (!$target.length || !$target.is(':visible')) return;
-
-                const top = $target.offset().top;
-                const height = $target.outerHeight();
-                const bottom = top + height;
-
-                if (top <= viewportFocusLine && bottom > viewportFocusLine - 60) {
-                    const distance = Math.abs(viewportFocusLine - top);
-                    if (distance < bestDistance) {
-                        bestDistance = distance;
-                        bestMatchId = href;
-                    }
-                }
-            });
-
-            if (!bestMatchId) {
-                if (scrollPos < 150) {
-                    bestMatchId = navLinks.first().attr('href');
-                } else {
-                    let minDiff = Infinity;
-                    navLinks.each(function() {
-                        const href = $(this).attr('href');
-                        if (!href || !href.startsWith('#')) return;
-                        const $target = $(href);
-                        if (!$target.length || !$target.is(':visible')) return;
-                        const diff = Math.abs($target.offset().top - (scrollPos + stickyOffset));
-                        if (diff < minDiff) {
-                            minDiff = diff;
-                            bestMatchId = href;
-                        }
-                    });
-                }
-            }
-
-            if (bestMatchId) {
-                setActiveTab(bestMatchId);
+        function parseJsonAttr(el, attrName, fallback = {}) {
+            const raw = el?.getAttribute(attrName);
+            if (!raw) return fallback;
+            try {
+                const parsed = JSON.parse(raw);
+                return parsed !== null && typeof parsed === 'object' ? parsed : fallback;
+            } catch {
+                return fallback;
             }
         }
 
-        let highlightTimer = null;
-
-        function highlightTargetSection($target, isDanger) {
-            $('.section-target-highlight, .section-target-highlight--danger').removeClass('section-target-highlight section-target-highlight--danger');
-            if (highlightTimer) {
-                clearTimeout(highlightTimer);
-            }
-
-            const highlightClass = isDanger ? 'section-target-highlight--danger' : 'section-target-highlight';
-
-            // Force DOM reflow to re-trigger CSS animation smoothly on repeated clicks
-            $target.removeClass(highlightClass);
-            if ($target.length && $target[0]) {
-                void $target[0].offsetWidth;
-            }
-            $target.addClass(highlightClass);
-
-            highlightTimer = setTimeout(() => {
-                $target.removeClass(highlightClass);
-            }, 1850);
-        }
-
-        // Release lock when user manually scrolls with wheel, touch, or keys
-        $(window).on('wheel touchmove keydown', function() {
-            manualClickLockId = null;
-            if (unlockTimer) {
-                clearTimeout(unlockTimer);
-                unlockTimer = null;
-            }
-        });
-
-        $(window).on('scroll', updateActiveSection);
-
-        navLinks.on('click', function(e) {
-            e.preventDefault();
-            const targetId = $(this).attr('href');
-            const $target = $(targetId);
-            if (!$target.length) return;
-
-            // Lock this tab as the explicit active selection
-            manualClickLockId = targetId;
-            setActiveTab(targetId);
-
-            if (unlockTimer) {
-                clearTimeout(unlockTimer);
-            }
-            unlockTimer = setTimeout(() => {
-                manualClickLockId = null;
-            }, 1500);
-
-            const isDanger = targetId === '#sec-claim' || $(this).hasClass('text-danger');
-            highlightTargetSection($target, isDanger);
-
-            const targetPosition = Math.max(0, $target.offset().top - getStickyOffset());
-
-            isProgrammaticScroll = true;
-            $('html, body').stop().animate({
-                scrollTop: targetPosition
-            }, 300, function() {
-                setTimeout(() => {
-                    isProgrammaticScroll = false;
-                }, 50);
-            });
-        });
-
-        // Initialize active state on load
-        updateActiveSection();
-    });
-
-    $('.btn-update-doc').on('click', function() {
-        const docId = $(this).data('doc-id');
-        const docLabel = $(this).data('doc-label');
-        const currentStatus = $(this).data('doc-status');
-        const statuses = $(this).data('doc-statuses');
-
-        $('#modalDocId').val(docId);
-        $('#modalDocTitle').text(@js(__('common.final_review.update_document')).replace(':document', docLabel));
-
-        const select = $('#modalDocStatus');
-        select.empty();
-        if (!Object.prototype.hasOwnProperty.call(statuses, currentStatus)) {
-            // Historical status outside the current list: show it, never preselect another one.
-            select.append($('<option>', { value: '', disabled: true, selected: true, text: $(this).data('doc-status-label') }));
-        }
-        for (const [key, label] of Object.entries(statuses)) {
-            select.append(`<option value="${key}" ${key === currentStatus ? 'selected' : ''}>${label}</option>`);
-        }
-
-        const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('updateDocModal'));
-        modal.show();
-    });
-
-    $('#btnSaveDocStatus').on('click', function() {
-        const docId = $('#modalDocId').val();
-        const newStatus = $('#modalDocStatus').val();
-
-        $('#docSpinner').removeClass('d-none');
-        $(this).prop('disabled', true);
-
-        $.ajax({
-            url: @js(route('purchasing.po-documents.update', '__DOCUMENT_ID__')).replace('__DOCUMENT_ID__', encodeURIComponent(docId)),
-            method: 'PUT',
-            data: {
-                _token: '{{ csrf_token() }}',
-                status: newStatus
-            },
-            success: function(res) {
-                if (res.success) {
-                    const statusLabels = {
-                        'pending': @json(__('purchasing.copy.not_available')), 'received': @json(\App\Support\StatusHelper::shipmentDocLabel('received')), 'verified': @json(\App\Support\StatusHelper::shipmentDocLabel('verified')),
-                        'issued': @json(\App\Support\StatusHelper::shipmentDocLabel('issued')), 'processing': @json(\App\Support\StatusHelper::shipmentDocLabel('processing')), 'done': @json(\App\Support\StatusHelper::shipmentDocLabel('done'))
-                    };
-                    const statusClasses = {
-                        'pending': 'ui-status-chip--neutral', 'received': 'ui-status-chip--info', 'verified': 'ui-status-chip--success',
-                        'issued': 'ui-status-chip--info', 'processing': 'ui-status-chip--info', 'done': 'ui-status-chip--success'
-                    };
-
-                    const badge = $('#doc-badge-' + docId);
-                    badge.text(statusLabels[res.doc.status] || res.doc.status);
-                    badge.attr('class', 'ui-status-chip tw:mb-1.5 doc-status-badge ' + (statusClasses[res.doc.status] || 'ui-status-chip--neutral'));
-                    badge.attr('data-status', res.doc.status);
-                    $('#doc-date-' + docId).text(res.doc.updated_at);
-
-                    $(`.btn-update-doc[data-doc-id="${docId}"]`).data('doc-status', res.doc.status);
-
-                    const completedStatuses = ['received', 'verified', 'done'];
-                    let completed = 0;
-                    const total = {{ $totalDocs }};
-                    completed = $('.doc-status-badge').filter(function() {
-                        return completedStatuses.includes($(this).attr('data-status'));
-                    }).length;
-
-                    const pct = total > 0 ? (completed / total * 100) : 0;
-                    const roundedPct = Math.round(pct);
-                    $('#docProgressBar')
-                        .prop('value', roundedPct)
-                        .attr('value', roundedPct);
-                    const docsComplete = completed >= total;
-                    $('#docProgressBadge')
-                        .text(completed + '/' + total + ' complete')
-                        .attr('class', 'ui-status-chip ' + (docsComplete ? 'ui-status-chip--success' : 'ui-status-chip--warning'))
-                        .attr('data-bs-title', docsComplete
-                            ? @json(__('purchasing.copy.all_import_documents_are_complete'))
-                            : @json(__('purchasing.copy.some_import_documents_still_need_to_be_completed_or_verified')));
-                    window.initAdasiTooltips?.(document);
-
-                    if (docsComplete) {
-                        if ($('#allDocsAlert').length === 0) {
-                            const alertTemplate = document.getElementById('allDocsAlertTemplate');
-                            if (alertTemplate?.content) {
-                                $('#docProgressBar').after(alertTemplate.content.cloneNode(true));
-                            }
-                        }
-                    } else {
-                        $('#allDocsAlert').remove();
-                    }
-
-                    bootstrap.Modal.getInstance(document.getElementById('updateDocModal')).hide();
-
-                    AdasiToast.show({
-                        type: 'success',
-                        title: @json(__('common.feedback.success')),
-                        message: res.message,
-                        autoClose: 1500
-                    });
-                }
-            },
-            error: function(xhr) {
-                AdasiToast.show({
-                    type: 'error',
-                    title: @json(__('purchasing.copy.update_failed')),
-                    message: @json(__('purchasing.copy.the_document_status_could_not_be_updated')),
-                    autoClose: 4000
-                });
-            },
-            complete: function() {
-                $('#docSpinner').addClass('d-none');
-                $('#btnSaveDocStatus').prop('disabled', false);
-            }
-        });
-    });
-
-    // Gate 2 (Decision B): Shipment-scoped document selection dialog
-    const customsProgressData = @js($customsProgress ?? ['documents' => []]);
-    const statusRanks = @js(\App\Models\PoDocument::STATUS_RANKS);
-    const shipmentDocStatusLabels = {
-        pending: @json(__('purchasing.copy.not_available')),
-        received: @json(\App\Support\StatusHelper::shipmentDocLabel('received')),
-        verified: @json(\App\Support\StatusHelper::shipmentDocLabel('verified')),
-        issued: @json(\App\Support\StatusHelper::shipmentDocLabel('issued')),
-        processing: @json(\App\Support\StatusHelper::shipmentDocLabel('processing')),
-        done: @json(\App\Support\StatusHelper::shipmentDocLabel('done'))
-    };
-    const shipmentStatusLabels = {
-        draft: @json(\App\Support\StatusHelper::shipmentLabel('draft')),
-        submitted: @json(\App\Support\StatusHelper::shipmentLabel('submitted')),
-        arrived: @json(\App\Support\StatusHelper::shipmentLabel('arrived')),
-        cancelled: @json(\App\Support\StatusHelper::shipmentLabel('cancelled'))
-    };
-    const shipmentDocCopy = @js([
-        'dialog_title' => __('documents.sync.dialog_title_for_doc'),
-        'dialog_subtitle' => __('documents.sync.dialog_subtitle'),
-        'select_target' => __('documents.sync.select_target_placeholder'),
-        'selection_summary' => __('documents.sync.selection_summary'),
-        'no_file' => __('documents.sync.no_file_uploaded'),
-        'view_file' => __('documents.sync.view_file'),
-        'legacy_file' => __('documents.sync.legacy_file_badge'),
-        'multi_po' => __('documents.sync.multi_po_warning'),
-        'ineligible' => __('documents.sync.ineligible_shipment_status'),
-        'checkbox_label' => __('documents.sync.checkbox_label'),
-        'result_updated' => __('documents.sync.result_updated'),
-        'result_skipped' => __('documents.sync.result_skipped'),
-        'result_stale' => __('documents.sync.result_stale'),
-        'result_rejected' => __('documents.sync.result_rejected'),
-        'result_not_applied' => __('documents.sync.result_not_applied'),
-        'update_failed' => __('documents.sync.update_failed'),
-    ]);
-
-    const shipmentDocDialogState = {
-        docType: null,
-        docLabel: '',
-        updateUrl: '',
-        statuses: {},
-        rows: [],
-        selectedShipments: new Set(),
-        rowOutcomes: {}
-    };
-
-    function shipmentDocStatusChipClass(status) {
-        if (status === 'verified' || status === 'done') return 'ui-status-chip--success';
-        if (status === 'received' || status === 'issued' || status === 'processing') return 'ui-status-chip--info';
-        return 'ui-status-chip--neutral';
-    }
-
-    function shipmentRowStatusChipClass(status) {
-        if (status === 'arrived') return 'ui-status-chip--success';
-        if (status === 'submitted') return 'ui-status-chip--info';
-        if (status === 'cancelled') return 'ui-status-chip--error';
-        return 'ui-status-chip--neutral';
-    }
-
-    function isReasonRequiredForSelection() {
-        const target = $('#shipmentDocTargetStatus').val();
-        if (!target) return false;
-        const targetRank = statusRanks[target] ?? 0;
-        for (const row of shipmentDocDialogState.rows) {
-            if (!row.eligible || !shipmentDocDialogState.selectedShipments.has(row.shipment)) continue;
-            const currentRank = statusRanks[row.status] ?? 0;
-            if (targetRank <= currentRank && row.status !== target) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    function syncShipmentDocDialogControls() {
-        const selectedCount = shipmentDocDialogState.selectedShipments.size;
-        const target = $('#shipmentDocTargetStatus').val();
-        const reason = ($('#shipmentDocReason').val() || '').trim();
-        const needsReason = isReasonRequiredForSelection();
-
-        $('#shipmentDocSelectionSummary').text(
-            shipmentDocCopy.selection_summary.replace(':count', String(selectedCount))
-        );
-
-        const $reasonHint = $('#shipmentDocReasonHint');
-        if (needsReason) {
-            $reasonHint.removeClass('d-none').addClass('text-warning fw-semibold');
-            $('#shipmentDocReason').attr('required', 'required');
-        } else {
-            $reasonHint.addClass('d-none').removeClass('text-warning fw-semibold');
-            $('#shipmentDocReason').removeAttr('required');
-        }
-
-        const canSubmit = selectedCount > 0 && Boolean(target) && (!needsReason || reason.length > 0);
-        $('#btnSubmitShipmentDocStatus').prop('disabled', !canSubmit);
-    }
-
-    function renderShipmentDocDialogRows() {
-        const container = document.getElementById('shipmentDocRowsContainer');
-        if (!container) return;
-        container.replaceChildren();
-
-        shipmentDocDialogState.rows.forEach((row, index) => {
-            const checkboxId = `shipment-doc-row-${index}`;
-            const isChecked = row.eligible && shipmentDocDialogState.selectedShipments.has(row.shipment);
-            const outcome = shipmentDocDialogState.rowOutcomes[row.shipment] || null;
-
-            const card = document.createElement('div');
-            card.className = 'tw:rounded-lg tw:border tw:border-outline-variant/80 tw:bg-surface tw:p-3 tw:space-y-2';
-            card.setAttribute('data-shipment-doc-row', row.shipment);
-
-            const topBar = document.createElement('div');
-            topBar.className = 'tw:flex tw:items-start tw:justify-between tw:gap-3';
-
-            const leftGroup = document.createElement('div');
-            leftGroup.className = 'tw:flex tw:items-start tw:gap-2.5 tw:min-w-0';
-
-            const checkbox = document.createElement('input');
-            checkbox.type = 'checkbox';
-            checkbox.id = checkboxId;
-            checkbox.className = 'form-check-input mt-1 shipment-doc-row-checkbox';
-            checkbox.style.minWidth = '1.25rem';
-            checkbox.style.minHeight = '1.25rem';
-            checkbox.value = row.shipment;
-            checkbox.disabled = !row.eligible;
-            checkbox.checked = isChecked;
-            const docStatusLabel = shipmentDocDialogState.statuses[row.status] || shipmentDocStatusLabels[row.status] || row.status;
-            const shpStatusLabel = shipmentStatusLabels[row.shipment_status] || row.shipment_status;
-            checkbox.setAttribute(
-                'aria-label',
-                shipmentDocCopy.checkbox_label
-                    .replace(':shipment_status', shpStatusLabel)
-                    .replace(':doc_status', docStatusLabel)
-                    .replace(':shipment', row.shipment_number)
-            );
-            checkbox.addEventListener('change', function() {
-                if (this.checked) {
-                    shipmentDocDialogState.selectedShipments.add(row.shipment);
-                } else {
-                    shipmentDocDialogState.selectedShipments.delete(row.shipment);
-                }
-                syncShipmentDocDialogControls();
-            });
-
-            const labelWrap = document.createElement('div');
-            labelWrap.className = 'tw:min-w-0';
-
-            const titleRow = document.createElement('div');
-            titleRow.className = 'tw:flex tw:flex-wrap tw:items-center tw:gap-2';
-
-            const labelEl = document.createElement('label');
-            labelEl.htmlFor = checkboxId;
-            labelEl.className = 'tw:text-ui-sm tw:font-semibold tw:text-on-surface tw:cursor-pointer mb-0';
-            labelEl.textContent = row.shipment_number;
-
-            const shipmentLink = document.createElement('a');
-            shipmentLink.href = row.shipment_url;
-            shipmentLink.className = 'tw:text-ui-xs text-primary text-decoration-none tw:hover:underline';
-            shipmentLink.textContent = `(${shpStatusLabel})`;
-
-            const shpBadge = document.createElement('span');
-            shpBadge.className = `ui-status-chip ${shipmentRowStatusChipClass(row.shipment_status)}`;
-            shpBadge.textContent = shpStatusLabel;
-
-            titleRow.append(labelEl, shpBadge, shipmentLink);
-            labelWrap.appendChild(titleRow);
-
-            const fileRow = document.createElement('div');
-            fileRow.className = 'tw:flex tw:flex-wrap tw:items-center tw:gap-2 tw:mt-1 tw:text-ui-xs';
-            if (row.has_file && row.attachment_url) {
-                const fileNameSpan = document.createElement('span');
-                fileNameSpan.className = 'tw:text-on-surface-variant tw:truncate';
-                fileNameSpan.textContent = row.attachment_name || '';
-
-                const viewLink = document.createElement('a');
-                viewLink.href = row.attachment_url;
-                viewLink.target = '_blank';
-                viewLink.rel = 'noopener';
-                viewLink.className = 'fw-semibold text-primary text-decoration-none tw:hover:underline';
-                viewLink.textContent = shipmentDocCopy.view_file;
-
-                fileRow.append(fileNameSpan, viewLink);
-
-                if (row.is_legacy_evidence) {
-                    const legacyChip = document.createElement('span');
-                    legacyChip.className = 'ui-status-chip ui-status-chip--warning';
-                    legacyChip.textContent = shipmentDocCopy.legacy_file;
-                    fileRow.appendChild(legacyChip);
-                }
-            } else {
-                const noFileSpan = document.createElement('span');
-                noFileSpan.className = 'tw:text-on-surface-variant';
-                noFileSpan.textContent = shipmentDocCopy.no_file;
-                fileRow.appendChild(noFileSpan);
-            }
-            labelWrap.appendChild(fileRow);
-
-            if (!row.eligible) {
-                const ineligibleNote = document.createElement('p');
-                ineligibleNote.className = 'tw:m-0 tw:mt-1 tw:text-ui-xs tw:text-on-surface-variant';
-                ineligibleNote.textContent = shipmentDocCopy.ineligible;
-                labelWrap.appendChild(ineligibleNote);
-            }
-
-            if (row.is_multi_po && Array.isArray(row.shared_po_numbers) && row.shared_po_numbers.length > 0) {
-                const multiPoNote = document.createElement('p');
-                multiPoNote.className = 'tw:m-0 tw:mt-1 tw:text-ui-xs text-warning fw-medium';
-                multiPoNote.textContent = shipmentDocCopy.multi_po.replace(':pos', row.shared_po_numbers.join(', '));
-                labelWrap.appendChild(multiPoNote);
-            }
-
-            leftGroup.append(checkbox, labelWrap);
-
-            const rightGroup = document.createElement('div');
-            rightGroup.className = 'tw:flex tw:flex-col tw:items-end tw:gap-1 flex-shrink-0';
-
-            const docChip = document.createElement('span');
-            docChip.className = `ui-status-chip ${shipmentDocStatusChipClass(row.status)}`;
-            docChip.textContent = docStatusLabel;
-            rightGroup.appendChild(docChip);
-
-            if (outcome) {
-                const outcomeChip = document.createElement('span');
-                const outcomeTone = outcome.result === 'updated'
-                    ? 'ui-status-chip--success'
-                    : (outcome.result === 'skipped' ? 'ui-status-chip--neutral' : 'ui-status-chip--error');
-                const outcomeKey = `result_${outcome.result}`;
-                outcomeChip.className = `ui-status-chip ${outcomeTone}`;
-                outcomeChip.textContent = shipmentDocCopy[outcomeKey] || outcome.result;
-                rightGroup.appendChild(outcomeChip);
-            }
-
-            topBar.append(leftGroup, rightGroup);
-            card.appendChild(topBar);
-
-            if (outcome && outcome.message) {
-                const outcomeMsg = document.createElement('p');
-                outcomeMsg.className = 'tw:m-0 tw:pt-1 tw:border-t tw:border-outline-variant/60 tw:text-ui-xs text-danger';
-                outcomeMsg.textContent = outcome.message;
-                card.appendChild(outcomeMsg);
-            }
-
-            container.appendChild(card);
-        });
-    }
-
-    $('.btn-open-shipment-doc-dialog').on('click', function() {
-        const docType = $(this).data('doc-type');
-        const docLabel = $(this).data('doc-label');
-        const updateUrl = $(this).data('update-url');
-        const statuses = $(this).data('doc-statuses') || {};
-        const docProgress = (customsProgressData.documents && customsProgressData.documents[docType]) || { rows: [] };
-
-        shipmentDocDialogState.docType = docType;
-        shipmentDocDialogState.docLabel = docLabel;
-        shipmentDocDialogState.updateUrl = updateUrl;
-        shipmentDocDialogState.statuses = statuses;
-        shipmentDocDialogState.rows = Array.isArray(docProgress.rows) ? docProgress.rows.map(r => ({ ...r })) : [];
-        shipmentDocDialogState.selectedShipments = new Set();
-        shipmentDocDialogState.rowOutcomes = {};
-
-        $('#update-shipment-docs-title').text(
-            shipmentDocCopy.dialog_title.replace(':document', docLabel)
-        );
-        $('#update-shipment-docs-description').text(
-            shipmentDocCopy.dialog_subtitle.replace(':document', docLabel)
-        );
-
-        const $feedback = $('#shipmentDocDialogFeedback');
-        $feedback.addClass('d-none').empty();
-
-        const $select = $('#shipmentDocTargetStatus');
-        $select.empty();
-        const placeholderOption = document.createElement('option');
-        placeholderOption.value = '';
-        placeholderOption.disabled = true;
-        placeholderOption.selected = true;
-        placeholderOption.textContent = shipmentDocCopy.select_target;
-        $select.append(placeholderOption);
-
-        for (const [key, label] of Object.entries(statuses)) {
-            const opt = document.createElement('option');
-            opt.value = key;
-            opt.textContent = label;
-            $select.append(opt);
-        }
-
-        $('#shipmentDocReason').val('');
-        renderShipmentDocDialogRows();
-        syncShipmentDocDialogControls();
-
-        window.dispatchEvent(new CustomEvent('open-ui-dialog', { detail: 'update-shipment-docs' }));
-    });
-
-    $('#shipmentDocTargetStatus, #shipmentDocReason').on('input change', function() {
-        syncShipmentDocDialogControls();
-    });
-
-    $('#btnSubmitShipmentDocStatus').on('click', function() {
-        const targetStatus = $('#shipmentDocTargetStatus').val();
-        const reason = ($('#shipmentDocReason').val() || '').trim();
-        const selectedRowsPayload = [];
-
-        shipmentDocDialogState.rows.forEach(row => {
-            if (row.eligible && shipmentDocDialogState.selectedShipments.has(row.shipment)) {
-                selectedRowsPayload.push({
-                    shipment: row.shipment,
-                    expected_status: row.status,
-                    expected_attachment: row.attachment_hash || null
-                });
-            }
-        });
-
-        if (!targetStatus || selectedRowsPayload.length === 0) {
-            return;
-        }
-
-        $('#shipmentDocSpinner').removeClass('d-none');
-        $('#btnSubmitShipmentDocStatus').prop('disabled', true);
-
-        $.ajax({
-            url: shipmentDocDialogState.updateUrl,
-            method: 'PUT',
-            contentType: 'application/json',
-            headers: {
-                'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                'Accept': 'application/json'
-            },
-            data: JSON.stringify({
-                target_status: targetStatus,
-                reason: reason !== '' ? reason : null,
-                rows: selectedRowsPayload
-            }),
-            success: function(res) {
-                if (res && res.success) {
-                    AdasiToast.show({
-                        type: 'success',
-                        title: @json(__('common.feedback.success')),
-                        message: res.message,
-                        autoClose: 1500
-                    });
-                    window.location.reload();
-                }
-            },
-            error: function(xhr) {
-                const payload = xhr.responseJSON || {};
-                const message = payload.message || shipmentDocCopy.update_failed;
-
-                shipmentDocDialogState.rowOutcomes = {};
-                if (Array.isArray(payload.rows)) {
-                    payload.rows.forEach(r => {
-                        if (r && r.shipment) {
-                            shipmentDocDialogState.rowOutcomes[r.shipment] = r;
-                        }
-                    });
-                }
-
-                if (Array.isArray(payload.rows_state)) {
-                    shipmentDocDialogState.rows = payload.rows_state.map(r => ({ ...r }));
-                    if (customsProgressData.documents && shipmentDocDialogState.docType && customsProgressData.documents[shipmentDocDialogState.docType]) {
-                        customsProgressData.documents[shipmentDocDialogState.docType].rows = payload.rows_state.map(r => ({ ...r }));
-                    }
-                    const eligibleSet = new Set(
-                        shipmentDocDialogState.rows.filter(r => r.eligible).map(r => r.shipment)
-                    );
-                    for (const selected of Array.from(shipmentDocDialogState.selectedShipments)) {
-                        if (!eligibleSet.has(selected)) {
-                            shipmentDocDialogState.selectedShipments.delete(selected);
-                        }
-                    }
-                }
-
-                const $feedback = $('#shipmentDocDialogFeedback');
-                $feedback
-                    .removeClass('d-none')
-                    .attr('class', 'tw:rounded-lg tw:border tw:border-error/40 tw:bg-error-container/20 tw:p-3 tw:text-ui-xs text-danger')
-                    .text(message);
-
-                renderShipmentDocDialogRows();
-                syncShipmentDocDialogControls();
-            },
-            complete: function() {
-                $('#shipmentDocSpinner').addClass('d-none');
-                syncShipmentDocDialogControls();
-            }
-        });
-    });
-
-    $('#btnConfirmArrival').on('click', function() {
-        AdasiAlert.confirm({
-            title: @json(__('purchasing.copy.confirm_material_arrival')),
-            text: @json(__('purchasing.copy.the_arrival_date_will_be_set_to_today_and_qc_will_be_notified')),
-            confirmTone: 'success',
-            confirmText: @json(__('purchasing.audit_ui.confirm_arrival')),
-            cancelText: @json(__('purchasing.copy.cancel'))
-        }).then((result) => {
-            if (result.isConfirmed) {
-                $('#arrivalForm').submit();
-            }
-        });
-    });
-
-    function renderProgressHistoryRows(history) {
+        function renderProgressHistoryRows(history) {
         const allowedTones = ['success', 'info', 'warning', 'neutral'];
         const wrapper = document.createElement('div');
         wrapper.className = 'tw:space-y-3';
@@ -1950,441 +1313,738 @@
         return wrapper;
     }
 
-    $(document).on('click', '.btn-view-purchasing-history', function() {
-        const materialName = $(this).data('materialName');
-        const historyUrl = $(this).data('historyUrl');
-        const modalEl = document.getElementById('progressHistoryModal');
-        const titleEl = document.getElementById('progressHistoryModalLabel');
-        const bodyEl = document.getElementById('progressHistoryModalBody');
+        function bootPoShow() {
+            // Sticky Section Navigation
+            const navLinks = Array.from(document.querySelectorAll('#po-section-nav .nav-link'));
+            let isProgrammaticScroll = false;
+            let manualClickLockId = null;
+            let unlockTimer = null;
+            let scrollResetTimer = null;
+            let highlightTimer = null;
 
-        titleEl.textContent = window.AdasiI18n.t('purchasing.js.progress_history', { material: materialName });
-        const loadingLabel = window.AdasiI18n.t('purchasing.js.loading_history');
-        const inlineLoader = window.AdasiLoader?.createInlineLoader?.(loadingLabel);
-        if (inlineLoader) {
-            bodyEl.replaceChildren(inlineLoader);
-        } else {
-            bodyEl.innerHTML = '<div class="ui-inline-loading" role="status" aria-live="polite"><div class="ui-inline-loading__pill"><span class="ui-spinner" aria-hidden="true"></span><span class="ui-inline-loading__text"></span></div></div>';
-            bodyEl.querySelector('.ui-inline-loading__text').textContent = loadingLabel;
-        }
-
-        const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
-        modal.show();
-
-        fetch(historyUrl, {
-            headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
-        })
-        .then(res => res.json())
-        .then(data => {
-            if (!data.history || data.history.length === 0) {
-                bodyEl.innerHTML = '<div class="text-center py-4 text-muted">' + window.AdasiI18n.t('purchasing.js.no_progress') + '</div>';
-                return;
+            function getStickyOffset() {
+                const navBar = document.querySelector('.po-sticky-nav-bar');
+                const navHeight = navBar ? navBar.getBoundingClientRect().height : 46;
+                return 56 + (navHeight || 46) + 16;
             }
 
-            bodyEl.replaceChildren(renderProgressHistoryRows(data.history));
-        })
-        .catch(() => {
-            bodyEl.innerHTML = '<div class="alert alert-danger py-2 px-3">' + window.AdasiI18n.t('purchasing.js.history_failed') + '</div>';
-        });
-    });
-
-    // ==========================================
-    // Batch PO Multi-Doc Tracking Dialog Controller
-    // ==========================================
-    const batchPoDialogState = {
-        docTypes: ['invoice', 'packing_list', 'bl', 'form_e'],
-        updateUrl: @json(route('purchasing.purchase-orders.documents.shipments.batch-update', $po)),
-        dataByDocType: {
-            invoice: { rows: [], selected: new Set(), targetStatus: '', reason: '', rowOutcomes: {} },
-            packing_list: { rows: [], selected: new Set(), targetStatus: '', reason: '', rowOutcomes: {} },
-            bl: { rows: [], selected: new Set(), targetStatus: '', reason: '', rowOutcomes: {} },
-            form_e: { rows: [], selected: new Set(), targetStatus: '', reason: '', rowOutcomes: {} }
-        }
-    };
-
-    function initBatchPoDocDialog() {
-        $('#batchPoDocDialogFeedback').addClass('d-none').empty();
-        $('#batchPoGlobalTargetStatus').val('');
-        $('#batchPoGlobalReason').val('');
-
-        batchPoDialogState.docTypes.forEach(docType => {
-            const docProgress = (customsProgressData.documents && customsProgressData.documents[docType]) || { rows: [] };
-            const tabData = batchPoDialogState.dataByDocType[docType];
-            tabData.rows = Array.isArray(docProgress.rows) ? docProgress.rows.map(r => ({ ...r })) : [];
-            tabData.selected = new Set();
-            tabData.targetStatus = '';
-            tabData.reason = '';
-            tabData.rowOutcomes = {};
-
-            $(`#batchPoTabTarget_${docType}`).val('');
-            $(`#batchPoTabReason_${docType}`).val('');
-            $(`#batchPoTabReasonHint_${docType}`).addClass('d-none');
-
-            renderBatchPoTabRows(docType);
-        });
-
-        syncBatchPoDialogControls();
-
-        const firstTabBtn = document.querySelector('#batchPoDocNavTabs button:first-child');
-        if (firstTabBtn && window.bootstrap && window.bootstrap.Tab) {
-            new window.bootstrap.Tab(firstTabBtn).show();
-        }
-    }
-
-    function renderBatchPoTabRows(docType) {
-        const container = document.getElementById(`batchPoDocRowsContainer_${docType}`);
-        if (!container) return;
-        container.replaceChildren();
-
-        const tabData = batchPoDialogState.dataByDocType[docType];
-
-        if (!tabData.rows || tabData.rows.length === 0) {
-            const emptyEl = document.createElement('div');
-            emptyEl.className = 'tw:text-center tw:py-6 tw:text-on-surface-variant tw:text-ui-xs';
-            emptyEl.textContent = @json(__('purchasing.copy.not_available'));
-            container.appendChild(emptyEl);
-            return;
-        }
-
-        tabData.rows.forEach((row, index) => {
-            const checkboxId = `batch-po-row-${docType}-${index}`;
-            const isChecked = row.eligible && tabData.selected.has(row.shipment);
-            const outcome = tabData.rowOutcomes[row.shipment] || null;
-
-            const card = document.createElement('div');
-            card.className = 'tw:rounded-lg tw:border tw:border-outline-variant/80 tw:bg-surface tw:p-3 tw:space-y-2';
-            card.setAttribute('data-shipment-row', row.shipment);
-
-            const topBar = document.createElement('div');
-            topBar.className = 'tw:flex tw:items-start tw:justify-between tw:gap-3';
-
-            const leftGroup = document.createElement('div');
-            leftGroup.className = 'tw:flex tw:items-start tw:gap-2.5 tw:min-w-0';
-
-            const checkbox = document.createElement('input');
-            checkbox.type = 'checkbox';
-            checkbox.id = checkboxId;
-            checkbox.className = 'form-check-input mt-1';
-            checkbox.style.minWidth = '1.25rem';
-            checkbox.style.minHeight = '1.25rem';
-            checkbox.value = row.shipment;
-            checkbox.disabled = !row.eligible;
-            checkbox.checked = isChecked;
-
-            const docStatusLabel = shipmentDocStatusLabels[row.status] || row.status;
-            const shpStatusLabel = shipmentStatusLabels[row.shipment_status] || row.shipment_status;
-            checkbox.setAttribute(
-                'aria-label',
-                shipmentDocCopy.checkbox_label
-                    .replace(':shipment_status', shpStatusLabel)
-                    .replace(':doc_status', docStatusLabel)
-                    .replace(':shipment', row.shipment_number)
-            );
-
-            checkbox.addEventListener('change', function() {
-                if (this.checked) {
-                    tabData.selected.add(row.shipment);
-                } else {
-                    tabData.selected.delete(row.shipment);
-                }
-                syncBatchPoDialogControls();
-            });
-
-            const labelWrap = document.createElement('div');
-            labelWrap.className = 'tw:min-w-0';
-
-            const titleRow = document.createElement('div');
-            titleRow.className = 'tw:flex tw:flex-wrap tw:items-center tw:gap-2';
-
-            const labelEl = document.createElement('label');
-            labelEl.htmlFor = checkboxId;
-            labelEl.className = 'tw:text-ui-sm tw:font-semibold tw:text-on-surface tw:cursor-pointer mb-0';
-            labelEl.textContent = row.shipment_number;
-
-            const shpBadge = document.createElement('span');
-            shpBadge.className = `ui-status-chip ${shipmentRowStatusChipClass(row.shipment_status)}`;
-            shpBadge.textContent = shpStatusLabel;
-
-            const shipmentLink = document.createElement('a');
-            shipmentLink.href = row.shipment_url;
-            shipmentLink.className = 'tw:text-ui-xs text-primary text-decoration-none tw:hover:underline';
-            shipmentLink.textContent = `(${shpStatusLabel})`;
-
-            titleRow.append(labelEl, shpBadge, shipmentLink);
-            labelWrap.appendChild(titleRow);
-
-            const fileRow = document.createElement('div');
-            fileRow.className = 'tw:flex tw:flex-wrap tw:items-center tw:gap-2 tw:mt-1 tw:text-ui-xs';
-            if (row.has_file && row.attachment_url) {
-                const fileNameSpan = document.createElement('span');
-                fileNameSpan.className = 'tw:text-on-surface-variant tw:truncate';
-                fileNameSpan.textContent = row.attachment_name || '';
-
-                const viewLink = document.createElement('a');
-                viewLink.href = row.attachment_url;
-                viewLink.target = '_blank';
-                viewLink.rel = 'noopener';
-                viewLink.className = 'fw-semibold text-primary text-decoration-none tw:hover:underline';
-                viewLink.textContent = shipmentDocCopy.view_file;
-
-                fileRow.append(fileNameSpan, viewLink);
-
-                if (row.is_legacy_evidence) {
-                    const legacyChip = document.createElement('span');
-                    legacyChip.className = 'ui-status-chip ui-status-chip--warning';
-                    legacyChip.textContent = shipmentDocCopy.legacy_file;
-                    fileRow.appendChild(legacyChip);
-                }
-            } else {
-                const noFileSpan = document.createElement('span');
-                noFileSpan.className = 'tw:text-on-surface-variant';
-                noFileSpan.textContent = shipmentDocCopy.no_file;
-                fileRow.appendChild(noFileSpan);
-            }
-            labelWrap.appendChild(fileRow);
-
-            if (!row.eligible) {
-                const ineligibleNote = document.createElement('p');
-                ineligibleNote.className = 'tw:m-0 tw:mt-1 tw:text-ui-xs tw:text-on-surface-variant';
-                ineligibleNote.textContent = shipmentDocCopy.ineligible;
-                labelWrap.appendChild(ineligibleNote);
-            }
-
-            if (row.is_multi_po && Array.isArray(row.shared_po_numbers) && row.shared_po_numbers.length > 0) {
-                const multiPoNote = document.createElement('p');
-                multiPoNote.className = 'tw:m-0 tw:mt-1 tw:text-ui-xs text-warning fw-medium';
-                multiPoNote.textContent = shipmentDocCopy.multi_po.replace(':pos', row.shared_po_numbers.join(', '));
-                labelWrap.appendChild(multiPoNote);
-            }
-
-            leftGroup.append(checkbox, labelWrap);
-
-            const rightGroup = document.createElement('div');
-            rightGroup.className = 'tw:flex tw:flex-col tw:items-end tw:gap-1 flex-shrink-0';
-
-            const docChip = document.createElement('span');
-            docChip.className = `ui-status-chip ${shipmentDocStatusChipClass(row.status)}`;
-            docChip.textContent = docStatusLabel;
-            rightGroup.appendChild(docChip);
-
-            if (outcome) {
-                const outcomeChip = document.createElement('span');
-                const outcomeTone = outcome.result === 'updated'
-                    ? 'ui-status-chip--success'
-                    : (outcome.result === 'skipped' ? 'ui-status-chip--neutral' : 'ui-status-chip--error');
-                const outcomeKey = `result_${outcome.result}`;
-                outcomeChip.className = `ui-status-chip ${outcomeTone}`;
-                outcomeChip.textContent = shipmentDocCopy[outcomeKey] || outcome.result;
-                rightGroup.appendChild(outcomeChip);
-            }
-
-            topBar.append(leftGroup, rightGroup);
-            card.appendChild(topBar);
-
-            if (outcome && outcome.message) {
-                const outcomeMsg = document.createElement('p');
-                outcomeMsg.className = 'tw:m-0 tw:pt-1 tw:border-t tw:border-outline-variant/60 tw:text-ui-xs text-danger';
-                outcomeMsg.textContent = outcome.message;
-                card.appendChild(outcomeMsg);
-            }
-
-            container.appendChild(card);
-        });
-    }
-
-    function isReasonRequiredForTab(docType) {
-        const tabData = batchPoDialogState.dataByDocType[docType];
-        const target = tabData.targetStatus;
-        if (!target) return false;
-        const targetRank = statusRanks[target] ?? 0;
-        for (const row of tabData.rows) {
-            if (!row.eligible || !tabData.selected.has(row.shipment)) continue;
-            const currentRank = statusRanks[row.status] ?? 0;
-            if (targetRank <= currentRank && row.status !== target) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    function syncBatchPoDialogControls() {
-        let totalSelectedAll = 0;
-        let anyTabConfigured = false;
-        let allConfiguredTabsValid = true;
-
-        batchPoDialogState.docTypes.forEach(docType => {
-            const tabData = batchPoDialogState.dataByDocType[docType];
-            const selectedCount = tabData.selected.size;
-            totalSelectedAll += selectedCount;
-
-            $(`#batchPoDocSelectionSummary_${docType}`).text(
-                shipmentDocCopy.selection_summary.replace(':count', String(selectedCount))
-            );
-            $(`#batchPoTabBadge_${docType}`).text(String(selectedCount));
-
-            const target = tabData.targetStatus;
-            const reason = (tabData.reason || '').trim();
-            const needsReason = isReasonRequiredForTab(docType);
-
-            const $reasonHint = $(`#batchPoTabReasonHint_${docType}`);
-            if (needsReason) {
-                $reasonHint.removeClass('d-none').addClass('text-warning fw-semibold');
-            } else {
-                $reasonHint.addClass('d-none').removeClass('text-warning fw-semibold');
-            }
-
-            if (selectedCount > 0) {
-                anyTabConfigured = true;
-                if (!target || (needsReason && reason.length === 0)) {
-                    allConfiguredTabsValid = false;
+            function setActiveTab(targetId) {
+                navLinks.forEach((link) => link.classList.remove('active'));
+                const activeLink = navLinks.find((link) => link.getAttribute('href') === targetId);
+                if (activeLink) {
+                    activeLink.classList.add('active');
                 }
             }
-        });
 
-        $('#batchPoGlobalCounterSummary').text(
-            shipmentDocCopy.selection_summary.replace(':count', String(totalSelectedAll))
-        );
+            function updateActiveSection() {
+                if (isProgrammaticScroll) return;
+                if (manualClickLockId) {
+                    setActiveTab(manualClickLockId);
+                    return;
+                }
 
-        const canSubmit = anyTabConfigured && allConfiguredTabsValid;
-        $('#btnSubmitBatchPoDocStatus').prop('disabled', !canSubmit);
-    }
+                const stickyOffset = getStickyOffset();
+                const scrollPos = window.scrollY || window.pageYOffset || document.documentElement.scrollTop || 0;
+                const viewportFocusLine = scrollPos + stickyOffset + 40;
 
-    $('#btnOpenBatchPoDocDialog').on('click', function() {
-        initBatchPoDocDialog();
-        window.dispatchEvent(new CustomEvent('open-ui-dialog', { detail: 'batch-update-po-docs' }));
-    });
+                let bestMatchId = null;
+                let bestDistance = Infinity;
 
-    $(document).on('click', '.btn-select-all-tab', function() {
-        const docType = $(this).data('doc-type');
-        const tabData = batchPoDialogState.dataByDocType[docType];
-        if (!tabData) return;
-        tabData.rows.forEach(r => {
-            if (r.eligible) {
-                tabData.selected.add(r.shipment);
-            }
-        });
-        renderBatchPoTabRows(docType);
-        syncBatchPoDialogControls();
-    });
+                navLinks.forEach((link) => {
+                    const href = link.getAttribute('href');
+                    if (!href || !href.startsWith('#')) return;
+                    const target = document.querySelector(href);
+                    if (!isVisibleElement(target)) return;
 
-    $(document).on('click', '.btn-clear-tab', function() {
-        const docType = $(this).data('doc-type');
-        const tabData = batchPoDialogState.dataByDocType[docType];
-        if (!tabData) return;
-        tabData.selected.clear();
-        renderBatchPoTabRows(docType);
-        syncBatchPoDialogControls();
-    });
+                    const top = getOffsetTop(target);
+                    const height = target.getBoundingClientRect().height;
+                    const bottom = top + height;
 
-    $(document).on('change', '.batch-po-tab-target', function() {
-        const docType = $(this).data('doc-type');
-        const tabData = batchPoDialogState.dataByDocType[docType];
-        if (!tabData) return;
-        tabData.targetStatus = $(this).val();
-        syncBatchPoDialogControls();
-    });
-
-    $(document).on('input', '.batch-po-tab-reason', function() {
-        const docType = $(this).data('doc-type');
-        const tabData = batchPoDialogState.dataByDocType[docType];
-        if (!tabData) return;
-        tabData.reason = $(this).val();
-        syncBatchPoDialogControls();
-    });
-
-    $('#btnApplyGlobalToAllTabs').on('click', function() {
-        const globalTarget = $('#batchPoGlobalTargetStatus').val();
-        const globalReason = ($('#batchPoGlobalReason').val() || '').trim();
-
-        if (!globalTarget) {
-            return;
-        }
-
-        batchPoDialogState.docTypes.forEach(docType => {
-            const tabData = batchPoDialogState.dataByDocType[docType];
-            tabData.targetStatus = globalTarget;
-            tabData.reason = globalReason;
-            $(`#batchPoTabTarget_${docType}`).val(globalTarget);
-            $(`#batchPoTabReason_${docType}`).val(globalReason);
-
-            if (tabData.selected.size === 0) {
-                tabData.rows.forEach(r => {
-                    if (r.eligible) {
-                        tabData.selected.add(r.shipment);
+                    if (top <= viewportFocusLine && bottom > viewportFocusLine - 60) {
+                        const distance = Math.abs(viewportFocusLine - top);
+                        if (distance < bestDistance) {
+                            bestDistance = distance;
+                            bestMatchId = href;
+                        }
                     }
                 });
-                renderBatchPoTabRows(docType);
-            }
-        });
 
-        syncBatchPoDialogControls();
-    });
-
-    $('#btnSubmitBatchPoDocStatus').on('click', function() {
-        const documentsPayload = {};
-
-        batchPoDialogState.docTypes.forEach(docType => {
-            const tabData = batchPoDialogState.dataByDocType[docType];
-            if (tabData.selected.size > 0 && tabData.targetStatus) {
-                const rowsPayload = [];
-                tabData.rows.forEach(row => {
-                    if (row.eligible && tabData.selected.has(row.shipment)) {
-                        rowsPayload.push({
-                            shipment: row.shipment,
-                            expected_status: row.status,
-                            expected_attachment: row.attachment_hash || null
+                if (!bestMatchId) {
+                    if (scrollPos < 150) {
+                        bestMatchId = navLinks[0]?.getAttribute('href') || null;
+                    } else {
+                        let minDiff = Infinity;
+                        navLinks.forEach((link) => {
+                            const href = link.getAttribute('href');
+                            if (!href || !href.startsWith('#')) return;
+                            const target = document.querySelector(href);
+                            if (!isVisibleElement(target)) return;
+                            const diff = Math.abs(getOffsetTop(target) - (scrollPos + stickyOffset));
+                            if (diff < minDiff) {
+                                minDiff = diff;
+                                bestMatchId = href;
+                            }
                         });
                     }
-                });
+                }
 
-                if (rowsPayload.length > 0) {
-                    documentsPayload[docType] = {
-                        target_status: tabData.targetStatus,
-                        reason: (tabData.reason || '').trim() || null,
-                        rows: rowsPayload
-                    };
+                if (bestMatchId) {
+                    setActiveTab(bestMatchId);
                 }
             }
-        });
 
-        if (Object.keys(documentsPayload).length === 0) {
-            return;
-        }
-
-        $('#batchPoDocSpinner').removeClass('d-none');
-        $('#btnSubmitBatchPoDocStatus').prop('disabled', true);
-
-        $.ajax({
-            url: batchPoDialogState.updateUrl,
-            method: 'PUT',
-            contentType: 'application/json',
-            headers: {
-                'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                'Accept': 'application/json'
-            },
-            data: JSON.stringify({
-                documents: documentsPayload
-            }),
-            success: function(res) {
-                if (res && res.success) {
-                    AdasiToast.show({
-                        type: 'success',
-                        title: @json(__('common.feedback.success')),
-                        message: res.message,
-                        autoClose: 1500
-                    });
-                    window.location.reload();
+            function highlightTargetSection(target, isDanger) {
+                document.querySelectorAll('.section-target-highlight, .section-target-highlight--danger').forEach((el) => {
+                    el.classList.remove('section-target-highlight', 'section-target-highlight--danger');
+                });
+                if (highlightTimer) {
+                    clearTimeout(highlightTimer);
                 }
-            },
-            error: function(xhr) {
-                const payload = xhr.responseJSON || {};
+
+                const highlightClass = isDanger ? 'section-target-highlight--danger' : 'section-target-highlight';
+                target.classList.remove(highlightClass);
+                void target.offsetWidth;
+                target.classList.add(highlightClass);
+
+                highlightTimer = setTimeout(() => {
+                    target.classList.remove(highlightClass);
+                }, 1850);
+            }
+
+            function clearManualLock() {
+                manualClickLockId = null;
+                if (unlockTimer) {
+                    clearTimeout(unlockTimer);
+                    unlockTimer = null;
+                }
+            }
+
+            window.addEventListener('wheel', clearManualLock, { passive: true });
+            window.addEventListener('touchmove', clearManualLock, { passive: true });
+            window.addEventListener('keydown', clearManualLock);
+            window.addEventListener('scroll', updateActiveSection, { passive: true });
+
+            navLinks.forEach((link) => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const targetId = link.getAttribute('href');
+                    if (!targetId || !targetId.startsWith('#')) return;
+                    const target = document.querySelector(targetId);
+                    if (!target) return;
+
+                    manualClickLockId = targetId;
+                    setActiveTab(targetId);
+
+                    if (unlockTimer) {
+                        clearTimeout(unlockTimer);
+                    }
+                    unlockTimer = setTimeout(() => {
+                        manualClickLockId = null;
+                    }, 1500);
+
+                    const isDanger = targetId === '#sec-claim' || link.classList.contains('text-danger');
+                    highlightTargetSection(target, isDanger);
+
+                    const targetPosition = Math.max(0, getOffsetTop(target) - getStickyOffset());
+                    const prefersReducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches ?? false;
+
+                    isProgrammaticScroll = true;
+                    if (scrollResetTimer) {
+                        clearTimeout(scrollResetTimer);
+                    }
+                    window.scrollTo({
+                        top: targetPosition,
+                        behavior: prefersReducedMotion ? 'auto' : 'smooth'
+                    });
+                    scrollResetTimer = setTimeout(() => {
+                        isProgrammaticScroll = false;
+                    }, prefersReducedMotion ? 50 : 360);
+                });
+            });
+
+            updateActiveSection();
+
+            // Gate 2 (Decision B): Shipment-scoped document selection dialog
+            const customsProgressData = @js($customsProgress ?? ['documents' => []]);
+            const statusRanks = @js(\App\Models\PoDocument::STATUS_RANKS);
+            const shipmentDocStatusLabels = {
+                pending: @json(__('purchasing.copy.not_available')),
+                received: @json(\App\Support\StatusHelper::shipmentDocLabel('received')),
+                verified: @json(\App\Support\StatusHelper::shipmentDocLabel('verified')),
+                issued: @json(\App\Support\StatusHelper::shipmentDocLabel('issued')),
+                processing: @json(\App\Support\StatusHelper::shipmentDocLabel('processing')),
+                done: @json(\App\Support\StatusHelper::shipmentDocLabel('done'))
+            };
+            const shipmentStatusLabels = {
+                draft: @json(\App\Support\StatusHelper::shipmentLabel('draft')),
+                submitted: @json(\App\Support\StatusHelper::shipmentLabel('submitted')),
+                arrived: @json(\App\Support\StatusHelper::shipmentLabel('arrived')),
+                cancelled: @json(\App\Support\StatusHelper::shipmentLabel('cancelled'))
+            };
+            const shipmentDocCopy = @js([
+                'dialog_title' => __('documents.sync.dialog_title_for_doc'),
+                'dialog_subtitle' => __('documents.sync.dialog_subtitle'),
+                'select_target' => __('documents.sync.select_target_placeholder'),
+                'selection_summary' => __('documents.sync.selection_summary'),
+                'no_file' => __('documents.sync.no_file_uploaded'),
+                'view_file' => __('documents.sync.view_file'),
+                'legacy_file' => __('documents.sync.legacy_file_badge'),
+                'multi_po' => __('documents.sync.multi_po_warning'),
+                'ineligible' => __('documents.sync.ineligible_shipment_status'),
+                'checkbox_label' => __('documents.sync.checkbox_label'),
+                'result_updated' => __('documents.sync.result_updated'),
+                'result_skipped' => __('documents.sync.result_skipped'),
+                'result_stale' => __('documents.sync.result_stale'),
+                'result_rejected' => __('documents.sync.result_rejected'),
+                'result_not_applied' => __('documents.sync.result_not_applied'),
+                'update_failed' => __('documents.sync.update_failed'),
+            ]);
+
+            const shipmentDocDialogState = {
+                docType: null,
+                docLabel: '',
+                updateUrl: '',
+                statuses: {},
+                rows: [],
+                selectedShipments: new Set(),
+                rowOutcomes: {}
+            };
+
+            function shipmentDocStatusChipClass(status) {
+                if (status === 'verified' || status === 'done') return 'ui-status-chip--success';
+                if (status === 'received' || status === 'issued' || status === 'processing') return 'ui-status-chip--info';
+                return 'ui-status-chip--neutral';
+            }
+
+            function shipmentRowStatusChipClass(status) {
+                if (status === 'arrived') return 'ui-status-chip--success';
+                if (status === 'submitted') return 'ui-status-chip--info';
+                if (status === 'cancelled') return 'ui-status-chip--error';
+                return 'ui-status-chip--neutral';
+            }
+
+            function isReasonRequiredForSelection() {
+                const target = document.getElementById('shipmentDocTargetStatus')?.value;
+                if (!target) return false;
+                const targetRank = statusRanks[target] ?? 0;
+                for (const row of shipmentDocDialogState.rows) {
+                    if (!row.eligible || !shipmentDocDialogState.selectedShipments.has(row.shipment)) continue;
+                    const currentRank = statusRanks[row.status] ?? 0;
+                    if (targetRank <= currentRank && row.status !== target) {
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            function syncShipmentDocDialogControls() {
+                const selectedCount = shipmentDocDialogState.selectedShipments.size;
+                const target = document.getElementById('shipmentDocTargetStatus')?.value;
+                const reasonEl = document.getElementById('shipmentDocReason');
+                const reason = (reasonEl?.value || '').trim();
+                const needsReason = isReasonRequiredForSelection();
+
+                const summaryEl = document.getElementById('shipmentDocSelectionSummary');
+                if (summaryEl) {
+                    summaryEl.textContent = shipmentDocCopy.selection_summary.replace(':count', String(selectedCount));
+                }
+
+                const reasonHint = document.getElementById('shipmentDocReasonHint');
+                if (needsReason) {
+                    if (reasonHint) {
+                        reasonHint.classList.remove('d-none');
+                        reasonHint.classList.add('text-warning', 'fw-semibold');
+                    }
+                    reasonEl?.setAttribute('required', 'required');
+                } else {
+                    if (reasonHint) {
+                        reasonHint.classList.add('d-none');
+                        reasonHint.classList.remove('text-warning', 'fw-semibold');
+                    }
+                    reasonEl?.removeAttribute('required');
+                }
+
+                const canSubmit = selectedCount > 0 && Boolean(target) && (!needsReason || reason.length > 0);
+                const submitBtn = document.getElementById('btnSubmitShipmentDocStatus');
+                if (submitBtn) {
+                    submitBtn.disabled = !canSubmit;
+                }
+            }
+
+            function renderShipmentDocDialogRows() {
+                const container = document.getElementById('shipmentDocRowsContainer');
+                if (!container) return;
+                container.replaceChildren();
+
+                shipmentDocDialogState.rows.forEach((row, index) => {
+                    const checkboxId = `shipment-doc-row-${index}`;
+                    const isChecked = row.eligible && shipmentDocDialogState.selectedShipments.has(row.shipment);
+                    const outcome = shipmentDocDialogState.rowOutcomes[row.shipment] || null;
+
+                    const card = document.createElement('div');
+                    card.className = 'tw:rounded-lg tw:border tw:border-outline-variant/80 tw:bg-surface tw:p-3 tw:space-y-2';
+                    card.setAttribute('data-shipment-doc-row', row.shipment);
+
+                    const topBar = document.createElement('div');
+                    topBar.className = 'tw:flex tw:items-start tw:justify-between tw:gap-3';
+
+                    const leftGroup = document.createElement('div');
+                    leftGroup.className = 'tw:flex tw:items-start tw:gap-2.5 tw:min-w-0';
+
+                    const checkbox = document.createElement('input');
+                    checkbox.type = 'checkbox';
+                    checkbox.id = checkboxId;
+                    checkbox.className = 'form-check-input mt-1 shipment-doc-row-checkbox';
+                    checkbox.style.minWidth = '1.25rem';
+                    checkbox.style.minHeight = '1.25rem';
+                    checkbox.value = row.shipment;
+                    checkbox.disabled = !row.eligible;
+                    checkbox.checked = isChecked;
+                    const docStatusLabel = shipmentDocDialogState.statuses[row.status] || shipmentDocStatusLabels[row.status] || row.status;
+                    const shpStatusLabel = shipmentStatusLabels[row.shipment_status] || row.shipment_status;
+                    checkbox.setAttribute(
+                        'aria-label',
+                        shipmentDocCopy.checkbox_label
+                            .replace(':shipment_status', shpStatusLabel)
+                            .replace(':doc_status', docStatusLabel)
+                            .replace(':shipment', row.shipment_number)
+                    );
+                    checkbox.addEventListener('change', function() {
+                        if (this.checked) {
+                            shipmentDocDialogState.selectedShipments.add(row.shipment);
+                        } else {
+                            shipmentDocDialogState.selectedShipments.delete(row.shipment);
+                        }
+                        syncShipmentDocDialogControls();
+                    });
+
+                    const labelWrap = document.createElement('div');
+                    labelWrap.className = 'tw:min-w-0';
+
+                    const titleRow = document.createElement('div');
+                    titleRow.className = 'tw:flex tw:flex-wrap tw:items-center tw:gap-2';
+
+                    const labelEl = document.createElement('label');
+                    labelEl.htmlFor = checkboxId;
+                    labelEl.className = 'tw:text-ui-sm tw:font-semibold tw:text-on-surface tw:cursor-pointer mb-0';
+                    labelEl.textContent = row.shipment_number;
+
+                    const shipmentLink = document.createElement('a');
+                    shipmentLink.href = row.shipment_url;
+                    shipmentLink.className = 'tw:text-ui-xs text-primary text-decoration-none tw:hover:underline';
+                    shipmentLink.textContent = `(${shpStatusLabel})`;
+
+                    const shpBadge = document.createElement('span');
+                    shpBadge.className = `ui-status-chip ${shipmentRowStatusChipClass(row.shipment_status)}`;
+                    shpBadge.textContent = shpStatusLabel;
+
+                    titleRow.append(labelEl, shpBadge, shipmentLink);
+                    labelWrap.appendChild(titleRow);
+
+                    const fileRow = document.createElement('div');
+                    fileRow.className = 'tw:flex tw:flex-wrap tw:items-center tw:gap-2 tw:mt-1 tw:text-ui-xs';
+                    if (row.has_file && row.attachment_url) {
+                        const fileNameSpan = document.createElement('span');
+                        fileNameSpan.className = 'tw:text-on-surface-variant tw:truncate';
+                        fileNameSpan.textContent = row.attachment_name || '';
+
+                        const viewLink = document.createElement('a');
+                        viewLink.href = row.attachment_url;
+                        viewLink.target = '_blank';
+                        viewLink.rel = 'noopener';
+                        viewLink.className = 'fw-semibold text-primary text-decoration-none tw:hover:underline';
+                        viewLink.textContent = shipmentDocCopy.view_file;
+
+                        fileRow.append(fileNameSpan, viewLink);
+
+                        if (row.is_legacy_evidence) {
+                            const legacyChip = document.createElement('span');
+                            legacyChip.className = 'ui-status-chip ui-status-chip--warning';
+                            legacyChip.textContent = shipmentDocCopy.legacy_file;
+                            fileRow.appendChild(legacyChip);
+                        }
+                    } else {
+                        const noFileSpan = document.createElement('span');
+                        noFileSpan.className = 'tw:text-on-surface-variant';
+                        noFileSpan.textContent = shipmentDocCopy.no_file;
+                        fileRow.appendChild(noFileSpan);
+                    }
+                    labelWrap.appendChild(fileRow);
+
+                    if (!row.eligible) {
+                        const ineligibleNote = document.createElement('p');
+                        ineligibleNote.className = 'tw:m-0 tw:mt-1 tw:text-ui-xs tw:text-on-surface-variant';
+                        ineligibleNote.textContent = shipmentDocCopy.ineligible;
+                        labelWrap.appendChild(ineligibleNote);
+                    }
+
+                    if (row.is_multi_po && Array.isArray(row.shared_po_numbers) && row.shared_po_numbers.length > 0) {
+                        const multiPoNote = document.createElement('p');
+                        multiPoNote.className = 'tw:m-0 tw:mt-1 tw:text-ui-xs text-warning fw-medium';
+                        multiPoNote.textContent = shipmentDocCopy.multi_po.replace(':pos', row.shared_po_numbers.join(', '));
+                        labelWrap.appendChild(multiPoNote);
+                    }
+
+                    leftGroup.append(checkbox, labelWrap);
+
+                    const rightGroup = document.createElement('div');
+                    rightGroup.className = 'tw:flex tw:flex-col tw:items-end tw:gap-1 flex-shrink-0';
+
+                    const docChip = document.createElement('span');
+                    docChip.className = `ui-status-chip ${shipmentDocStatusChipClass(row.status)}`;
+                    docChip.textContent = docStatusLabel;
+                    rightGroup.appendChild(docChip);
+
+                    if (outcome) {
+                        const outcomeChip = document.createElement('span');
+                        const outcomeTone = outcome.result === 'updated'
+                            ? 'ui-status-chip--success'
+                            : (outcome.result === 'skipped' ? 'ui-status-chip--neutral' : 'ui-status-chip--error');
+                        const outcomeKey = `result_${outcome.result}`;
+                        outcomeChip.className = `ui-status-chip ${outcomeTone}`;
+                        outcomeChip.textContent = shipmentDocCopy[outcomeKey] || outcome.result;
+                        rightGroup.appendChild(outcomeChip);
+                    }
+
+                    topBar.append(leftGroup, rightGroup);
+                    card.appendChild(topBar);
+
+                    if (outcome && outcome.message) {
+                        const outcomeMsg = document.createElement('p');
+                        outcomeMsg.className = 'tw:m-0 tw:pt-1 tw:border-t tw:border-outline-variant/60 tw:text-ui-xs text-danger';
+                        outcomeMsg.textContent = outcome.message;
+                        card.appendChild(outcomeMsg);
+                    }
+
+                    container.appendChild(card);
+                });
+            }
+
+            function handleShipmentDocError(payload = {}) {
                 const message = payload.message || shipmentDocCopy.update_failed;
 
-                batchPoDialogState.docTypes.forEach(docType => {
+                shipmentDocDialogState.rowOutcomes = {};
+                if (Array.isArray(payload.rows)) {
+                    payload.rows.forEach((r) => {
+                        if (r && r.shipment) {
+                            shipmentDocDialogState.rowOutcomes[r.shipment] = r;
+                        }
+                    });
+                }
+
+                if (Array.isArray(payload.rows_state)) {
+                    shipmentDocDialogState.rows = payload.rows_state.map((r) => ({ ...r }));
+                    if (customsProgressData.documents && shipmentDocDialogState.docType && customsProgressData.documents[shipmentDocDialogState.docType]) {
+                        customsProgressData.documents[shipmentDocDialogState.docType].rows = payload.rows_state.map((r) => ({ ...r }));
+                    }
+                    const eligibleSet = new Set(
+                        shipmentDocDialogState.rows.filter((r) => r.eligible).map((r) => r.shipment)
+                    );
+                    for (const selected of Array.from(shipmentDocDialogState.selectedShipments)) {
+                        if (!eligibleSet.has(selected)) {
+                            shipmentDocDialogState.selectedShipments.delete(selected);
+                        }
+                    }
+                }
+
+                const feedback = document.getElementById('shipmentDocDialogFeedback');
+                if (feedback) {
+                    feedback.className = 'tw:rounded-lg tw:border tw:border-error/40 tw:bg-error-container/20 tw:p-3 tw:text-ui-xs text-danger';
+                    feedback.textContent = message;
+                }
+
+                renderShipmentDocDialogRows();
+                syncShipmentDocDialogControls();
+            }
+
+            // Batch PO Multi-Doc Tracking Dialog Controller
+            const batchPoDialogState = {
+                docTypes: ['invoice', 'packing_list', 'bl', 'form_e'],
+                updateUrl: @json(route('purchasing.purchase-orders.documents.shipments.batch-update', $po)),
+                dataByDocType: {
+                    invoice: { rows: [], selected: new Set(), targetStatus: '', reason: '', rowOutcomes: {} },
+                    packing_list: { rows: [], selected: new Set(), targetStatus: '', reason: '', rowOutcomes: {} },
+                    bl: { rows: [], selected: new Set(), targetStatus: '', reason: '', rowOutcomes: {} },
+                    form_e: { rows: [], selected: new Set(), targetStatus: '', reason: '', rowOutcomes: {} }
+                }
+            };
+
+            function renderBatchPoTabRows(docType) {
+                const container = document.getElementById(`batchPoDocRowsContainer_${docType}`);
+                if (!container) return;
+                container.replaceChildren();
+
+                const tabData = batchPoDialogState.dataByDocType[docType];
+
+                if (!tabData.rows || tabData.rows.length === 0) {
+                    const emptyEl = document.createElement('div');
+                    emptyEl.className = 'tw:text-center tw:py-6 tw:text-on-surface-variant tw:text-ui-xs';
+                    emptyEl.textContent = @json(__('purchasing.copy.not_available'));
+                    container.appendChild(emptyEl);
+                    return;
+                }
+
+                tabData.rows.forEach((row, index) => {
+                    const checkboxId = `batch-po-row-${docType}-${index}`;
+                    const isChecked = row.eligible && tabData.selected.has(row.shipment);
+                    const outcome = tabData.rowOutcomes[row.shipment] || null;
+
+                    const card = document.createElement('div');
+                    card.className = 'tw:rounded-lg tw:border tw:border-outline-variant/80 tw:bg-surface tw:p-3 tw:space-y-2';
+                    card.setAttribute('data-shipment-row', row.shipment);
+
+                    const topBar = document.createElement('div');
+                    topBar.className = 'tw:flex tw:items-start tw:justify-between tw:gap-3';
+
+                    const leftGroup = document.createElement('div');
+                    leftGroup.className = 'tw:flex tw:items-start tw:gap-2.5 tw:min-w-0';
+
+                    const checkbox = document.createElement('input');
+                    checkbox.type = 'checkbox';
+                    checkbox.id = checkboxId;
+                    checkbox.className = 'form-check-input mt-1';
+                    checkbox.style.minWidth = '1.25rem';
+                    checkbox.style.minHeight = '1.25rem';
+                    checkbox.value = row.shipment;
+                    checkbox.disabled = !row.eligible;
+                    checkbox.checked = isChecked;
+
+                    const docStatusLabel = shipmentDocStatusLabels[row.status] || row.status;
+                    const shpStatusLabel = shipmentStatusLabels[row.shipment_status] || row.shipment_status;
+                    checkbox.setAttribute(
+                        'aria-label',
+                        shipmentDocCopy.checkbox_label
+                            .replace(':shipment_status', shpStatusLabel)
+                            .replace(':doc_status', docStatusLabel)
+                            .replace(':shipment', row.shipment_number)
+                    );
+
+                    checkbox.addEventListener('change', function() {
+                        if (this.checked) {
+                            tabData.selected.add(row.shipment);
+                        } else {
+                            tabData.selected.delete(row.shipment);
+                        }
+                        syncBatchPoDialogControls();
+                    });
+
+                    const labelWrap = document.createElement('div');
+                    labelWrap.className = 'tw:min-w-0';
+
+                    const titleRow = document.createElement('div');
+                    titleRow.className = 'tw:flex tw:flex-wrap tw:items-center tw:gap-2';
+
+                    const labelEl = document.createElement('label');
+                    labelEl.htmlFor = checkboxId;
+                    labelEl.className = 'tw:text-ui-sm tw:font-semibold tw:text-on-surface tw:cursor-pointer mb-0';
+                    labelEl.textContent = row.shipment_number;
+
+                    const shpBadge = document.createElement('span');
+                    shpBadge.className = `ui-status-chip ${shipmentRowStatusChipClass(row.shipment_status)}`;
+                    shpBadge.textContent = shpStatusLabel;
+
+                    const shipmentLink = document.createElement('a');
+                    shipmentLink.href = row.shipment_url;
+                    shipmentLink.className = 'tw:text-ui-xs text-primary text-decoration-none tw:hover:underline';
+                    shipmentLink.textContent = `(${shpStatusLabel})`;
+
+                    titleRow.append(labelEl, shpBadge, shipmentLink);
+                    labelWrap.appendChild(titleRow);
+
+                    const fileRow = document.createElement('div');
+                    fileRow.className = 'tw:flex tw:flex-wrap tw:items-center tw:gap-2 tw:mt-1 tw:text-ui-xs';
+                    if (row.has_file && row.attachment_url) {
+                        const fileNameSpan = document.createElement('span');
+                        fileNameSpan.className = 'tw:text-on-surface-variant tw:truncate';
+                        fileNameSpan.textContent = row.attachment_name || '';
+
+                        const viewLink = document.createElement('a');
+                        viewLink.href = row.attachment_url;
+                        viewLink.target = '_blank';
+                        viewLink.rel = 'noopener';
+                        viewLink.className = 'fw-semibold text-primary text-decoration-none tw:hover:underline';
+                        viewLink.textContent = shipmentDocCopy.view_file;
+
+                        fileRow.append(fileNameSpan, viewLink);
+
+                        if (row.is_legacy_evidence) {
+                            const legacyChip = document.createElement('span');
+                            legacyChip.className = 'ui-status-chip ui-status-chip--warning';
+                            legacyChip.textContent = shipmentDocCopy.legacy_file;
+                            fileRow.appendChild(legacyChip);
+                        }
+                    } else {
+                        const noFileSpan = document.createElement('span');
+                        noFileSpan.className = 'tw:text-on-surface-variant';
+                        noFileSpan.textContent = shipmentDocCopy.no_file;
+                        fileRow.appendChild(noFileSpan);
+                    }
+                    labelWrap.appendChild(fileRow);
+
+                    if (!row.eligible) {
+                        const ineligibleNote = document.createElement('p');
+                        ineligibleNote.className = 'tw:m-0 tw:mt-1 tw:text-ui-xs tw:text-on-surface-variant';
+                        ineligibleNote.textContent = shipmentDocCopy.ineligible;
+                        labelWrap.appendChild(ineligibleNote);
+                    }
+
+                    if (row.is_multi_po && Array.isArray(row.shared_po_numbers) && row.shared_po_numbers.length > 0) {
+                        const multiPoNote = document.createElement('p');
+                        multiPoNote.className = 'tw:m-0 tw:mt-1 tw:text-ui-xs text-warning fw-medium';
+                        multiPoNote.textContent = shipmentDocCopy.multi_po.replace(':pos', row.shared_po_numbers.join(', '));
+                        labelWrap.appendChild(multiPoNote);
+                    }
+
+                    leftGroup.append(checkbox, labelWrap);
+
+                    const rightGroup = document.createElement('div');
+                    rightGroup.className = 'tw:flex tw:flex-col tw:items-end tw:gap-1 flex-shrink-0';
+
+                    const docChip = document.createElement('span');
+                    docChip.className = `ui-status-chip ${shipmentDocStatusChipClass(row.status)}`;
+                    docChip.textContent = docStatusLabel;
+                    rightGroup.appendChild(docChip);
+
+                    if (outcome) {
+                        const outcomeChip = document.createElement('span');
+                        const outcomeTone = outcome.result === 'updated'
+                            ? 'ui-status-chip--success'
+                            : (outcome.result === 'skipped' ? 'ui-status-chip--neutral' : 'ui-status-chip--error');
+                        const outcomeKey = `result_${outcome.result}`;
+                        outcomeChip.className = `ui-status-chip ${outcomeTone}`;
+                        outcomeChip.textContent = shipmentDocCopy[outcomeKey] || outcome.result;
+                        rightGroup.appendChild(outcomeChip);
+                    }
+
+                    topBar.append(leftGroup, rightGroup);
+                    card.appendChild(topBar);
+
+                    if (outcome && outcome.message) {
+                        const outcomeMsg = document.createElement('p');
+                        outcomeMsg.className = 'tw:m-0 tw:pt-1 tw:border-t tw:border-outline-variant/60 tw:text-ui-xs text-danger';
+                        outcomeMsg.textContent = outcome.message;
+                        card.appendChild(outcomeMsg);
+                    }
+
+                    container.appendChild(card);
+                });
+            }
+
+            function isReasonRequiredForTab(docType) {
+                const tabData = batchPoDialogState.dataByDocType[docType];
+                const target = tabData.targetStatus;
+                if (!target) return false;
+                const targetRank = statusRanks[target] ?? 0;
+                for (const row of tabData.rows) {
+                    if (!row.eligible || !tabData.selected.has(row.shipment)) continue;
+                    const currentRank = statusRanks[row.status] ?? 0;
+                    if (targetRank <= currentRank && row.status !== target) {
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            function syncBatchPoDialogControls() {
+                let totalSelectedAll = 0;
+                let anyTabConfigured = false;
+                let allConfiguredTabsValid = true;
+
+                batchPoDialogState.docTypes.forEach((docType) => {
+                    const tabData = batchPoDialogState.dataByDocType[docType];
+                    const selectedCount = tabData.selected.size;
+                    totalSelectedAll += selectedCount;
+
+                    const summaryEl = document.getElementById(`batchPoDocSelectionSummary_${docType}`);
+                    if (summaryEl) {
+                        summaryEl.textContent = shipmentDocCopy.selection_summary.replace(':count', String(selectedCount));
+                    }
+                    const badgeEl = document.getElementById(`batchPoTabBadge_${docType}`);
+                    if (badgeEl) {
+                        badgeEl.textContent = String(selectedCount);
+                    }
+
+                    const target = tabData.targetStatus;
+                    const reason = (tabData.reason || '').trim();
+                    const needsReason = isReasonRequiredForTab(docType);
+
+                    const reasonHint = document.getElementById(`batchPoTabReasonHint_${docType}`);
+                    if (reasonHint) {
+                        if (needsReason) {
+                            reasonHint.classList.remove('d-none');
+                            reasonHint.classList.add('text-warning', 'fw-semibold');
+                        } else {
+                            reasonHint.classList.add('d-none');
+                            reasonHint.classList.remove('text-warning', 'fw-semibold');
+                        }
+                    }
+
+                    if (selectedCount > 0) {
+                        anyTabConfigured = true;
+                        if (!target || (needsReason && reason.length === 0)) {
+                            allConfiguredTabsValid = false;
+                        }
+                    }
+                });
+
+                const globalCounter = document.getElementById('batchPoGlobalCounterSummary');
+                if (globalCounter) {
+                    globalCounter.textContent = shipmentDocCopy.selection_summary.replace(':count', String(totalSelectedAll));
+                }
+
+                const canSubmit = anyTabConfigured && allConfiguredTabsValid;
+                const submitBtn = document.getElementById('btnSubmitBatchPoDocStatus');
+                if (submitBtn) {
+                    submitBtn.disabled = !canSubmit;
+                }
+            }
+
+            function initBatchPoDocDialog() {
+                const feedback = document.getElementById('batchPoDocDialogFeedback');
+                if (feedback) {
+                    feedback.classList.add('d-none');
+                    feedback.replaceChildren();
+                }
+                const globalTarget = document.getElementById('batchPoGlobalTargetStatus');
+                if (globalTarget) globalTarget.value = '';
+                const globalReason = document.getElementById('batchPoGlobalReason');
+                if (globalReason) globalReason.value = '';
+
+                batchPoDialogState.docTypes.forEach((docType) => {
+                    const docProgress = (customsProgressData.documents && customsProgressData.documents[docType]) || { rows: [] };
+                    const tabData = batchPoDialogState.dataByDocType[docType];
+                    tabData.rows = Array.isArray(docProgress.rows) ? docProgress.rows.map((r) => ({ ...r })) : [];
+                    tabData.selected = new Set();
+                    tabData.targetStatus = '';
+                    tabData.reason = '';
+                    tabData.rowOutcomes = {};
+
+                    const targetInput = document.getElementById(`batchPoTabTarget_${docType}`);
+                    if (targetInput) targetInput.value = '';
+                    const reasonInput = document.getElementById(`batchPoTabReason_${docType}`);
+                    if (reasonInput) reasonInput.value = '';
+                    document.getElementById(`batchPoTabReasonHint_${docType}`)?.classList.add('d-none');
+
+                    renderBatchPoTabRows(docType);
+                });
+
+                syncBatchPoDialogControls();
+
+                const firstTabBtn = document.querySelector('#batchPoDocNavTabs button:first-child');
+                if (firstTabBtn && window.bootstrap && window.bootstrap.Tab) {
+                    new window.bootstrap.Tab(firstTabBtn).show();
+                }
+            }
+
+            function handleBatchPoError(payload = {}) {
+                const message = payload.message || shipmentDocCopy.update_failed;
+
+                batchPoDialogState.docTypes.forEach((docType) => {
                     batchPoDialogState.dataByDocType[docType].rowOutcomes = {};
                 });
 
                 if (Array.isArray(payload.rows)) {
-                    payload.rows.forEach(r => {
+                    payload.rows.forEach((r) => {
                         if (r && r.doc_type && r.shipment && batchPoDialogState.dataByDocType[r.doc_type]) {
                             batchPoDialogState.dataByDocType[r.doc_type].rowOutcomes[r.shipment] = r;
                         }
@@ -2393,11 +2053,11 @@
 
                 if (payload.projection && payload.projection.documents) {
                     Object.assign(customsProgressData.documents, payload.projection.documents);
-                    batchPoDialogState.docTypes.forEach(docType => {
+                    batchPoDialogState.docTypes.forEach((docType) => {
                         const docProgress = customsProgressData.documents[docType] || { rows: [] };
                         const tabData = batchPoDialogState.dataByDocType[docType];
-                        tabData.rows = Array.isArray(docProgress.rows) ? docProgress.rows.map(r => ({ ...r })) : [];
-                        const eligibleSet = new Set(tabData.rows.filter(r => r.eligible).map(r => r.shipment));
+                        tabData.rows = Array.isArray(docProgress.rows) ? docProgress.rows.map((r) => ({ ...r })) : [];
+                        const eligibleSet = new Set(tabData.rows.filter((r) => r.eligible).map((r) => r.shipment));
                         for (const s of Array.from(tabData.selected)) {
                             if (!eligibleSet.has(s)) {
                                 tabData.selected.delete(s);
@@ -2406,22 +2066,555 @@
                     });
                 }
 
-                const $feedback = $('#batchPoDocDialogFeedback');
-                $feedback
-                    .removeClass('d-none')
-                    .attr('class', 'tw:rounded-lg tw:border tw:border-error/40 tw:bg-error-container/20 tw:p-3 tw:text-ui-xs text-danger')
-                    .text(message);
+                const feedback = document.getElementById('batchPoDocDialogFeedback');
+                if (feedback) {
+                    feedback.className = 'tw:rounded-lg tw:border tw:border-error/40 tw:bg-error-container/20 tw:p-3 tw:text-ui-xs text-danger';
+                    feedback.textContent = message;
+                }
 
-                batchPoDialogState.docTypes.forEach(docType => {
+                batchPoDialogState.docTypes.forEach((docType) => {
                     renderBatchPoTabRows(docType);
                 });
                 syncBatchPoDialogControls();
-            },
-            complete: function() {
-                $('#batchPoDocSpinner').addClass('d-none');
-                syncBatchPoDialogControls();
             }
-        });
-    });
+
+            // Delegated click handlers across PO page and dialogs
+            document.addEventListener('click', async (event) => {
+                const target = event.target instanceof Element ? event.target : null;
+                if (!target) return;
+
+                const updateDocBtn = target.closest('.btn-update-doc');
+                if (updateDocBtn) {
+                    const docId = updateDocBtn.dataset.docId;
+                    const docLabel = updateDocBtn.dataset.docLabel || '';
+                    const currentStatus = updateDocBtn.dataset.docStatus || '';
+                    const currentStatusLabel = updateDocBtn.dataset.docStatusLabel || '';
+                    const statuses = parseJsonAttr(updateDocBtn, 'data-doc-statuses', {});
+
+                    const modalDocId = document.getElementById('modalDocId');
+                    if (modalDocId) modalDocId.value = docId || '';
+                    const modalDocTitle = document.getElementById('modalDocTitle');
+                    if (modalDocTitle) {
+                        modalDocTitle.textContent = @js(__('common.final_review.update_document')).replace(':document', docLabel);
+                    }
+
+                    const select = document.getElementById('modalDocStatus');
+                    if (select) {
+                        select.replaceChildren();
+                        if (!Object.prototype.hasOwnProperty.call(statuses, currentStatus)) {
+                            // Historical status outside the current list: show it, never preselect another one.
+                            const historicalOpt = document.createElement('option');
+                            historicalOpt.value = '';
+                            historicalOpt.disabled = true;
+                            historicalOpt.selected = true;
+                            historicalOpt.textContent = currentStatusLabel;
+                            select.appendChild(historicalOpt);
+                        }
+                        for (const [key, label] of Object.entries(statuses)) {
+                            const opt = document.createElement('option');
+                            opt.value = key;
+                            opt.selected = key === currentStatus;
+                            opt.textContent = label;
+                            select.appendChild(opt);
+                        }
+                    }
+
+                    const updateModalEl = document.getElementById('updateDocModal');
+                    if (updateModalEl) {
+                        const modal = bootstrap.Modal.getOrCreateInstance(updateModalEl);
+                        modal.show();
+                    }
+                    return;
+                }
+
+                const openShipmentDocBtn = target.closest('.btn-open-shipment-doc-dialog');
+                if (openShipmentDocBtn) {
+                    const docType = openShipmentDocBtn.dataset.docType;
+                    const docLabel = openShipmentDocBtn.dataset.docLabel || '';
+                    const updateUrl = openShipmentDocBtn.dataset.updateUrl || '';
+                    const statuses = parseJsonAttr(openShipmentDocBtn, 'data-doc-statuses', {});
+                    const docProgress = (customsProgressData.documents && customsProgressData.documents[docType]) || { rows: [] };
+
+                    shipmentDocDialogState.docType = docType;
+                    shipmentDocDialogState.docLabel = docLabel;
+                    shipmentDocDialogState.updateUrl = updateUrl;
+                    shipmentDocDialogState.statuses = statuses;
+                    shipmentDocDialogState.rows = Array.isArray(docProgress.rows) ? docProgress.rows.map((r) => ({ ...r })) : [];
+                    shipmentDocDialogState.selectedShipments = new Set();
+                    shipmentDocDialogState.rowOutcomes = {};
+
+                    const titleEl = document.getElementById('update-shipment-docs-title');
+                    if (titleEl) titleEl.textContent = shipmentDocCopy.dialog_title.replace(':document', docLabel);
+                    const descEl = document.getElementById('update-shipment-docs-description');
+                    if (descEl) descEl.textContent = shipmentDocCopy.dialog_subtitle.replace(':document', docLabel);
+
+                    const feedback = document.getElementById('shipmentDocDialogFeedback');
+                    if (feedback) {
+                        feedback.classList.add('d-none');
+                        feedback.replaceChildren();
+                    }
+
+                    const select = document.getElementById('shipmentDocTargetStatus');
+                    if (select) {
+                        select.replaceChildren();
+                        const placeholderOption = document.createElement('option');
+                        placeholderOption.value = '';
+                        placeholderOption.disabled = true;
+                        placeholderOption.selected = true;
+                        placeholderOption.textContent = shipmentDocCopy.select_target;
+                        select.appendChild(placeholderOption);
+
+                        for (const [key, label] of Object.entries(statuses)) {
+                            const opt = document.createElement('option');
+                            opt.value = key;
+                            opt.textContent = label;
+                            select.appendChild(opt);
+                        }
+                    }
+
+                    const reasonEl = document.getElementById('shipmentDocReason');
+                    if (reasonEl) reasonEl.value = '';
+                    renderShipmentDocDialogRows();
+                    syncShipmentDocDialogControls();
+
+                    window.dispatchEvent(new CustomEvent('open-ui-dialog', { detail: 'update-shipment-docs' }));
+                    return;
+                }
+
+                const historyBtn = target.closest('.btn-view-purchasing-history');
+                if (historyBtn) {
+                    const materialName = historyBtn.dataset.materialName || '';
+                    const historyUrl = historyBtn.dataset.historyUrl;
+                    const modalEl = document.getElementById('progressHistoryModal');
+                    const titleEl = document.getElementById('progressHistoryModalLabel');
+                    const bodyEl = document.getElementById('progressHistoryModalBody');
+                    if (!modalEl || !titleEl || !bodyEl || !historyUrl) return;
+
+                    titleEl.textContent = window.AdasiI18n.t('purchasing.js.progress_history', { material: materialName });
+                    const loadingLabel = window.AdasiI18n.t('purchasing.js.loading_history');
+                    const inlineLoader = window.AdasiLoader?.createInlineLoader?.(loadingLabel);
+                    if (inlineLoader) {
+                        bodyEl.replaceChildren(inlineLoader);
+                    } else {
+                        bodyEl.innerHTML = '<div class="ui-inline-loading" role="status" aria-live="polite"><div class="ui-inline-loading__pill"><span class="ui-spinner" aria-hidden="true"></span><span class="ui-inline-loading__text"></span></div></div>';
+                        bodyEl.querySelector('.ui-inline-loading__text').textContent = loadingLabel;
+                    }
+
+                    const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+                    modal.show();
+
+                    fetch(historyUrl, {
+                        headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+                    })
+                        .then((res) => {
+                            if (!res.ok) throw new Error('Failed to load history');
+                            return res.json();
+                        })
+                        .then((data) => {
+                            if (!data.history || data.history.length === 0) {
+                                const emptyEl = document.createElement('div');
+                                emptyEl.className = 'text-center py-4 text-muted';
+                                emptyEl.textContent = window.AdasiI18n.t('purchasing.js.no_progress');
+                                bodyEl.replaceChildren(emptyEl);
+                                return;
+                            }
+                            bodyEl.replaceChildren(renderProgressHistoryRows(data.history));
+                        })
+                        .catch(() => {
+                            const errEl = document.createElement('div');
+                            errEl.className = 'alert alert-danger py-2 px-3';
+                            errEl.textContent = window.AdasiI18n.t('purchasing.js.history_failed');
+                            bodyEl.replaceChildren(errEl);
+                        });
+                    return;
+                }
+
+                const selectAllBtn = target.closest('.btn-select-all-tab');
+                if (selectAllBtn) {
+                    const docType = selectAllBtn.dataset.docType;
+                    const tabData = batchPoDialogState.dataByDocType[docType];
+                    if (!tabData) return;
+                    tabData.rows.forEach((r) => {
+                        if (r.eligible) {
+                            tabData.selected.add(r.shipment);
+                        }
+                    });
+                    renderBatchPoTabRows(docType);
+                    syncBatchPoDialogControls();
+                    return;
+                }
+
+                const clearTabBtn = target.closest('.btn-clear-tab');
+                if (clearTabBtn) {
+                    const docType = clearTabBtn.dataset.docType;
+                    const tabData = batchPoDialogState.dataByDocType[docType];
+                    if (!tabData) return;
+                    tabData.selected.clear();
+                    renderBatchPoTabRows(docType);
+                    syncBatchPoDialogControls();
+                }
+            });
+
+            document.addEventListener('change', (event) => {
+                const target = event.target instanceof Element ? event.target : null;
+                if (!target) return;
+
+                if (target.id === 'shipmentDocTargetStatus') {
+                    syncShipmentDocDialogControls();
+                    return;
+                }
+
+                const tabTargetEl = target.closest('.batch-po-tab-target');
+                if (tabTargetEl) {
+                    const docType = tabTargetEl.dataset.docType;
+                    const tabData = batchPoDialogState.dataByDocType[docType];
+                    if (!tabData) return;
+                    tabData.targetStatus = tabTargetEl.value;
+                    syncBatchPoDialogControls();
+                }
+            });
+
+            document.addEventListener('input', (event) => {
+                const target = event.target instanceof Element ? event.target : null;
+                if (!target) return;
+
+                if (target.id === 'shipmentDocTargetStatus' || target.id === 'shipmentDocReason') {
+                    syncShipmentDocDialogControls();
+                    return;
+                }
+
+                const tabReasonEl = target.closest('.batch-po-tab-reason');
+                if (tabReasonEl) {
+                    const docType = tabReasonEl.dataset.docType;
+                    const tabData = batchPoDialogState.dataByDocType[docType];
+                    if (!tabData) return;
+                    tabData.reason = tabReasonEl.value;
+                    syncBatchPoDialogControls();
+                }
+            });
+
+            document.getElementById('btnSaveDocStatus')?.addEventListener('click', async function() {
+                const saveBtn = this;
+                const docId = document.getElementById('modalDocId')?.value || '';
+                const newStatus = document.getElementById('modalDocStatus')?.value || '';
+                const spinner = document.getElementById('docSpinner');
+
+                spinner?.classList.remove('d-none');
+                saveBtn.disabled = true;
+
+                try {
+                    const url = @js(route('purchasing.po-documents.update', '__DOCUMENT_ID__')).replace('__DOCUMENT_ID__', encodeURIComponent(docId));
+                    const response = await fetch(url, {
+                        method: 'PUT',
+                        credentials: 'same-origin',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                            'X-CSRF-TOKEN': csrfToken,
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Accept': 'application/json'
+                        },
+                        body: new URLSearchParams({
+                            _token: '{{ csrf_token() }}',
+                            status: newStatus
+                        })
+                    });
+
+                    let res = {};
+                    try {
+                        res = await response.json();
+                    } catch {
+                        res = {};
+                    }
+
+                    if (!response.ok || !res.success) {
+                        throw new Error(res.message || 'Update failed');
+                    }
+
+                    const statusLabels = {
+                        'pending': @json(__('purchasing.copy.not_available')), 'received': @json(\App\Support\StatusHelper::shipmentDocLabel('received')), 'verified': @json(\App\Support\StatusHelper::shipmentDocLabel('verified')),
+                        'issued': @json(\App\Support\StatusHelper::shipmentDocLabel('issued')), 'processing': @json(\App\Support\StatusHelper::shipmentDocLabel('processing')), 'done': @json(\App\Support\StatusHelper::shipmentDocLabel('done'))
+                    };
+                    const statusClasses = {
+                        'pending': 'ui-status-chip--neutral', 'received': 'ui-status-chip--info', 'verified': 'ui-status-chip--success',
+                        'issued': 'ui-status-chip--info', 'processing': 'ui-status-chip--info', 'done': 'ui-status-chip--success'
+                    };
+
+                    const badge = document.getElementById('doc-badge-' + docId);
+                    if (badge) {
+                        badge.textContent = statusLabels[res.doc.status] || res.doc.status;
+                        badge.className = 'ui-status-chip tw:mb-1.5 doc-status-badge ' + (statusClasses[res.doc.status] || 'ui-status-chip--neutral');
+                        badge.setAttribute('data-status', res.doc.status);
+                    }
+                    const dateEl = document.getElementById('doc-date-' + docId);
+                    if (dateEl) {
+                        dateEl.textContent = res.doc.updated_at;
+                    }
+
+                    document.querySelectorAll(`.btn-update-doc[data-doc-id="${CSS.escape(String(docId))}"]`).forEach((btnEl) => {
+                        btnEl.dataset.docStatus = res.doc.status;
+                        btnEl.dataset.docStatusLabel = statusLabels[res.doc.status] || res.doc.status;
+                    });
+
+                    const completedStatuses = ['received', 'verified', 'done'];
+                    const total = {{ $totalDocs }};
+                    const completed = Array.from(document.querySelectorAll('.doc-status-badge'))
+                        .filter((el) => completedStatuses.includes(el.getAttribute('data-status')))
+                        .length;
+
+                    const pct = total > 0 ? (completed / total * 100) : 0;
+                    const roundedPct = Math.round(pct);
+                    const progressBar = document.getElementById('docProgressBar');
+                    if (progressBar) {
+                        progressBar.value = roundedPct;
+                        progressBar.setAttribute('value', String(roundedPct));
+                    }
+                    const docsComplete = completed >= total;
+                    const docProgressBadge = document.getElementById('docProgressBadge');
+                    if (docProgressBadge) {
+                        docProgressBadge.textContent = completed + '/' + total + ' complete';
+                        docProgressBadge.className = 'ui-status-chip ' + (docsComplete ? 'ui-status-chip--success' : 'ui-status-chip--warning');
+                        docProgressBadge.setAttribute('data-bs-title', docsComplete
+                            ? @json(__('purchasing.copy.all_import_documents_are_complete'))
+                            : @json(__('purchasing.copy.some_import_documents_still_need_to_be_completed_or_verified')));
+                    }
+                    window.initAdasiTooltips?.(document);
+
+                    if (docsComplete) {
+                        if (!document.getElementById('allDocsAlert') && progressBar) {
+                            const alertTemplate = document.getElementById('allDocsAlertTemplate');
+                            if (alertTemplate?.content) {
+                                progressBar.after(alertTemplate.content.cloneNode(true));
+                            }
+                        }
+                    } else {
+                        document.getElementById('allDocsAlert')?.remove();
+                    }
+
+                    const updateModalEl = document.getElementById('updateDocModal');
+                    if (updateModalEl) {
+                        bootstrap.Modal.getInstance(updateModalEl)?.hide();
+                    }
+
+                    AdasiToast.show({
+                        type: 'success',
+                        title: @json(__('common.feedback.success')),
+                        message: res.message,
+                        autoClose: 1500
+                    });
+                } catch {
+                    AdasiToast.show({
+                        type: 'error',
+                        title: @json(__('purchasing.copy.update_failed')),
+                        message: @json(__('purchasing.copy.the_document_status_could_not_be_updated')),
+                        autoClose: 4000
+                    });
+                } finally {
+                    spinner?.classList.add('d-none');
+                    saveBtn.disabled = false;
+                }
+            });
+
+            document.getElementById('btnSubmitShipmentDocStatus')?.addEventListener('click', async function() {
+                const submitBtn = this;
+                const targetStatus = document.getElementById('shipmentDocTargetStatus')?.value || '';
+                const reason = (document.getElementById('shipmentDocReason')?.value || '').trim();
+                const selectedRowsPayload = [];
+
+                shipmentDocDialogState.rows.forEach((row) => {
+                    if (row.eligible && shipmentDocDialogState.selectedShipments.has(row.shipment)) {
+                        selectedRowsPayload.push({
+                            shipment: row.shipment,
+                            expected_status: row.status,
+                            expected_attachment: row.attachment_hash || null
+                        });
+                    }
+                });
+
+                if (!targetStatus || selectedRowsPayload.length === 0) {
+                    return;
+                }
+
+                const spinner = document.getElementById('shipmentDocSpinner');
+                spinner?.classList.remove('d-none');
+                submitBtn.disabled = true;
+
+                try {
+                    const response = await fetch(shipmentDocDialogState.updateUrl, {
+                        method: 'PUT',
+                        credentials: 'same-origin',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': csrfToken,
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Accept': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            target_status: targetStatus,
+                            reason: reason !== '' ? reason : null,
+                            rows: selectedRowsPayload
+                        })
+                    });
+
+                    let payload = {};
+                    try {
+                        payload = await response.json();
+                    } catch {
+                        payload = {};
+                    }
+
+                    if (response.ok && payload && payload.success) {
+                        AdasiToast.show({
+                            type: 'success',
+                            title: @json(__('common.feedback.success')),
+                            message: payload.message,
+                            autoClose: 1500
+                        });
+                        window.location.reload();
+                        return;
+                    }
+
+                    handleShipmentDocError(payload);
+                } catch {
+                    handleShipmentDocError({});
+                } finally {
+                    spinner?.classList.add('d-none');
+                    syncShipmentDocDialogControls();
+                }
+            });
+
+            document.getElementById('btnConfirmArrival')?.addEventListener('click', () => {
+                AdasiAlert.confirm({
+                    title: @json(__('purchasing.copy.confirm_material_arrival')),
+                    text: @json(__('purchasing.copy.the_arrival_date_will_be_set_to_today_and_qc_will_be_notified')),
+                    confirmTone: 'success',
+                    confirmText: @json(__('purchasing.audit_ui.confirm_arrival')),
+                    cancelText: @json(__('purchasing.copy.cancel'))
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        document.getElementById('arrivalForm')?.submit();
+                    }
+                });
+            });
+
+            document.getElementById('btnOpenBatchPoDocDialog')?.addEventListener('click', () => {
+                initBatchPoDocDialog();
+                window.dispatchEvent(new CustomEvent('open-ui-dialog', { detail: 'batch-update-po-docs' }));
+            });
+
+            document.getElementById('btnApplyGlobalToAllTabs')?.addEventListener('click', () => {
+                const globalTarget = document.getElementById('batchPoGlobalTargetStatus')?.value || '';
+                const globalReason = (document.getElementById('batchPoGlobalReason')?.value || '').trim();
+
+                if (!globalTarget) {
+                    return;
+                }
+
+                batchPoDialogState.docTypes.forEach((docType) => {
+                    const tabData = batchPoDialogState.dataByDocType[docType];
+                    tabData.targetStatus = globalTarget;
+                    tabData.reason = globalReason;
+                    const targetInput = document.getElementById(`batchPoTabTarget_${docType}`);
+                    if (targetInput) targetInput.value = globalTarget;
+                    const reasonInput = document.getElementById(`batchPoTabReason_${docType}`);
+                    if (reasonInput) reasonInput.value = globalReason;
+
+                    if (tabData.selected.size === 0) {
+                        tabData.rows.forEach((r) => {
+                            if (r.eligible) {
+                                tabData.selected.add(r.shipment);
+                            }
+                        });
+                        renderBatchPoTabRows(docType);
+                    }
+                });
+
+                syncBatchPoDialogControls();
+            });
+
+            document.getElementById('btnSubmitBatchPoDocStatus')?.addEventListener('click', async function() {
+                const submitBtn = this;
+                const documentsPayload = {};
+
+                batchPoDialogState.docTypes.forEach((docType) => {
+                    const tabData = batchPoDialogState.dataByDocType[docType];
+                    if (tabData.selected.size > 0 && tabData.targetStatus) {
+                        const rowsPayload = [];
+                        tabData.rows.forEach((row) => {
+                            if (row.eligible && tabData.selected.has(row.shipment)) {
+                                rowsPayload.push({
+                                    shipment: row.shipment,
+                                    expected_status: row.status,
+                                    expected_attachment: row.attachment_hash || null
+                                });
+                            }
+                        });
+
+                        if (rowsPayload.length > 0) {
+                            documentsPayload[docType] = {
+                                target_status: tabData.targetStatus,
+                                reason: (tabData.reason || '').trim() || null,
+                                rows: rowsPayload
+                            };
+                        }
+                    }
+                });
+
+                if (Object.keys(documentsPayload).length === 0) {
+                    return;
+                }
+
+                const spinner = document.getElementById('batchPoDocSpinner');
+                spinner?.classList.remove('d-none');
+                submitBtn.disabled = true;
+
+                try {
+                    const response = await fetch(batchPoDialogState.updateUrl, {
+                        method: 'PUT',
+                        credentials: 'same-origin',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': csrfToken,
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Accept': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            documents: documentsPayload
+                        })
+                    });
+
+                    let payload = {};
+                    try {
+                        payload = await response.json();
+                    } catch {
+                        payload = {};
+                    }
+
+                    if (response.ok && payload && payload.success) {
+                        AdasiToast.show({
+                            type: 'success',
+                            title: @json(__('common.feedback.success')),
+                            message: payload.message,
+                            autoClose: 1500
+                        });
+                        window.location.reload();
+                        return;
+                    }
+
+                    handleBatchPoError(payload);
+                } catch {
+                    handleBatchPoError({});
+                } finally {
+                    spinner?.classList.add('d-none');
+                    syncBatchPoDialogControls();
+                }
+            });
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', bootPoShow);
+        } else {
+            bootPoShow();
+        }
+    })();
 </script>
 @endpush

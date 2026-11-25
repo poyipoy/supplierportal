@@ -162,27 +162,40 @@
 
 @push('scripts')
 <script>
-    $('#btnSubmitRespond').on('click', function() {
-        const form = $('#respondForm')[0];
-        if (!form.checkValidity()) {
-            form.reportValidity();
-            return;
+    (function() {
+        function bootSupplierClaimShow() {
+            const btn = document.getElementById('btnSubmitRespond');
+            if (!btn) return;
+
+            btn.addEventListener('click', () => {
+                const form = document.getElementById('respondForm');
+                if (!form) return;
+                if (!form.checkValidity()) {
+                    form.reportValidity();
+                    return;
+                }
+
+                AdasiAlert.confirm({
+                    title: @json(__('claims.copy.send_official_response')),
+                    text: @json(__('claims.copy.ensure_your_response_and_proposed_resolution_are_accurate_responses_cannot_be_modified_once_sent')),
+                    type: 'warning',
+                    confirmText: @json(__('claims.copy.yes_submit_response')),
+                    cancelText: @json(__('claims.copy.cancel'))
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        window.AdasiButton?.startLoading(btn);
+                        if (window.AdasiAsyncForm?.submit) window.AdasiAsyncForm.submit(form, btn);
+                        else form.requestSubmit();
+                    }
+                });
+            });
         }
 
-        AdasiAlert.confirm({
-            title: @json(__('claims.copy.send_official_response')),
-            text: @json(__('claims.copy.ensure_your_response_and_proposed_resolution_are_accurate_responses_cannot_be_modified_once_sent')),
-            type: 'warning',
-            confirmText: @json(__('claims.copy.yes_submit_response')),
-            cancelText: @json(__('claims.copy.cancel'))
-        }).then((result) => {
-            if (result.isConfirmed) {
-                const btn = document.getElementById('btnSubmitRespond');
-                window.AdasiButton?.startLoading(btn);
-                if (window.AdasiAsyncForm?.submit) window.AdasiAsyncForm.submit(form, btn);
-                else form.requestSubmit();
-            }
-        });
-    });
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', bootSupplierClaimShow);
+        } else {
+            bootSupplierClaimShow();
+        }
+    })();
 </script>
 @endpush

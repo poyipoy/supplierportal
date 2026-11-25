@@ -316,153 +316,189 @@
 
 @push('scripts')
 <script>
-    $(document).ready(function() {
+    (function() {
         function evaluateItem(index) {
-            const row = $(`.input-row[data-index="${index}"]`);
-            const selectedStatus = $(`#input-status-${index}`).val();
+            const row = document.querySelector(`.input-row[data-index="${index}"]`);
+            const statusInput = document.getElementById(`input-status-${index}`);
+            const selectedStatus = statusInput ? statusInput.value : 'ok';
+            const card = row?.closest('.item-card');
 
-            row.find('.actual-input').each(function() {
-                const specType = $(this).data('spec-type');
-                const actualVal = parseFloat($(this).val());
-                const specEl = row.closest('.item-card').find(`.spec-val[data-spec-type="${specType}"]`);
-                const specValStr = specEl.data('val');
+            if (row) {
+                row.querySelectorAll('.actual-input').forEach((inputEl) => {
+                    const specType = inputEl.dataset.specType;
+                    const actualVal = parseFloat(inputEl.value);
+                    const specEl = specType ? card?.querySelector(`.spec-val[data-spec-type="${specType}"]`) : null;
+                    const specValStr = specEl?.dataset.val ?? '';
 
-                $(this).removeClass('is-invalid');
+                    inputEl.classList.remove('is-invalid');
 
-                if (!isNaN(actualVal) && specValStr !== '' && specValStr !== undefined) {
-                    const specVal = parseFloat(specValStr);
-                    if (!isNaN(specVal) && specVal > 0) {
-                        const diff = Math.abs(actualVal - specVal);
-                        const ratio = diff / specVal;
-
-                        if (ratio > 0.05) { // More than 5% tolerance variance
-                            $(this).addClass('is-invalid');
+                    if (!Number.isNaN(actualVal) && specValStr !== '') {
+                        const specVal = parseFloat(specValStr);
+                        if (!Number.isNaN(specVal) && specVal > 0) {
+                            const ratio = Math.abs(actualVal - specVal) / specVal;
+                            if (ratio > 0.05) { // More than 5% tolerance variance
+                                inputEl.classList.add('is-invalid');
+                            }
                         }
                     }
-                }
-            });
+                });
+            }
 
             const isNg = selectedStatus === 'ng';
-            const badge = $(`#badge-status-${index}`);
-            const statusLabel = $(`#status-label-${index}`);
-            const photoSection = $(`#photo-section-${index}`);
-            const photoInput = photoSection.find('.photo-input');
+            const badge = document.getElementById(`badge-status-${index}`);
+            const statusLabel = document.getElementById(`status-label-${index}`);
+            const photoSection = document.getElementById(`photo-section-${index}`);
+            const photoInput = photoSection?.querySelector('.photo-input');
 
             if (isNg) {
-                badge.removeClass('tw:bg-success-container tw:text-success-container-foreground').addClass('tw:bg-error-container tw:text-error-container-foreground').text('NG');
-                statusLabel.removeClass('tw:text-success').addClass('tw:text-error').text('NG');
-                photoSection.removeClass('d-none');
-                photoInput.prop('disabled', false);
-                photoInput.prop('required', true);
+                if (badge) {
+                    badge.classList.remove('tw:bg-success-container', 'tw:text-success-container-foreground');
+                    badge.classList.add('tw:bg-error-container', 'tw:text-error-container-foreground');
+                    badge.textContent = 'NG';
+                }
+                if (statusLabel) {
+                    statusLabel.classList.remove('tw:text-success');
+                    statusLabel.classList.add('tw:text-error');
+                    statusLabel.textContent = 'NG';
+                }
+                photoSection?.classList.remove('d-none');
+                if (photoInput) {
+                    photoInput.disabled = false;
+                    photoInput.required = true;
+                }
             } else {
-                badge.removeClass('tw:bg-error-container tw:text-error-container-foreground').addClass('tw:bg-success-container tw:text-success-container-foreground').text('OK');
-                statusLabel.removeClass('tw:text-error').addClass('tw:text-success').text('OK');
-                photoSection.addClass('d-none');
-                photoInput.prop('required', false);
-                photoInput.prop('disabled', true);
-                photoInput.val('');
+                if (badge) {
+                    badge.classList.remove('tw:bg-error-container', 'tw:text-error-container-foreground');
+                    badge.classList.add('tw:bg-success-container', 'tw:text-success-container-foreground');
+                    badge.textContent = 'OK';
+                }
+                if (statusLabel) {
+                    statusLabel.classList.remove('tw:text-error');
+                    statusLabel.classList.add('tw:text-success');
+                    statusLabel.textContent = 'OK';
+                }
+                photoSection?.classList.add('d-none');
+                if (photoInput) {
+                    photoInput.required = false;
+                    photoInput.disabled = true;
+                    photoInput.value = '';
+                }
             }
 
             evaluateOverall();
         }
 
         function evaluateOverall() {
-            let hasInspectionInput = false;
-            let overallNg = false;
+            const actualInputs = Array.from(document.querySelectorAll('.actual-input'));
+            const statusValues = Array.from(document.querySelectorAll('.item-status-value'));
 
-            $('.actual-input').each(function() {
-                if ($(this).val() !== '') {
-                    hasInspectionInput = true;
-                    return false;
-                }
-            });
-
+            let hasInspectionInput = actualInputs.some((el) => el.value !== '');
             if (!hasInspectionInput) {
-                $('.item-status-value').each(function() {
-                    if ($(this).val() === 'ng') {
-                        hasInspectionInput = true;
-                        return false;
-                    }
-                });
+                hasInspectionInput = statusValues.some((el) => el.value === 'ng');
             }
 
+            const bannerNg = document.getElementById('bannerNg');
+            const bannerOk = document.getElementById('bannerOk');
+
             if (!hasInspectionInput) {
-                $('#bannerNg').addClass('d-none');
-                $('#bannerOk').addClass('d-none');
+                bannerNg?.classList.add('d-none');
+                bannerOk?.classList.add('d-none');
                 return;
             }
 
-            $('.item-status-value').each(function() {
-                if ($(this).val() === 'ng') {
-                    overallNg = true;
-                }
-            });
-
+            const overallNg = statusValues.some((el) => el.value === 'ng');
             if (overallNg) {
-                $('#bannerOk').addClass('d-none');
-                $('#bannerNg').removeClass('d-none');
+                bannerOk?.classList.add('d-none');
+                bannerNg?.classList.remove('d-none');
             } else {
-                $('#bannerNg').addClass('d-none');
-                $('#bannerOk').removeClass('d-none');
+                bannerNg?.classList.add('d-none');
+                bannerOk?.classList.remove('d-none');
             }
         }
 
-        // QC-01: Copy from PO fills only the ordered dimensions of this item. It never touches the
-        // OK/NG switch and never submits; the inspector still measures and decides.
-        $(document).on('click', '.qc-copy-spec', function() {
-            const index = this.dataset.index;
-            let spec = {};
-            try { spec = JSON.parse(this.dataset.spec || '{}'); } catch (e) { spec = {}; }
-            Object.entries(spec).forEach(([dimension, value]) => {
-                const input = document.getElementById(`actual-${index}-${dimension}`);
-                if (!input || value === null || value === '') return;
-                input.value = value;
-                input.dispatchEvent(new Event('input', { bubbles: true }));
-            });
-            const status = document.getElementById(`qc-copy-status-${index}`);
-            if (status) status.textContent = @js(__('qc.copy.copy_from_po_done'));
-        });
+        function bootQcInspectionCreate() {
+            // QC-01: Copy from PO fills only the ordered dimensions of this item. It never touches the
+            // OK/NG switch and never submits; the inspector still measures and decides.
+            document.addEventListener('click', (event) => {
+                const copyBtn = event.target instanceof Element ? event.target.closest('.qc-copy-spec') : null;
+                if (!copyBtn) return;
 
-        $('.actual-input').on('input', function() {
-            const index = $(this).closest('.input-row').data('index');
-            evaluateItem(index);
-        });
-
-        $('.item-status-switch').on('change', function() {
-            const index = $(this).data('index');
-            const status = $(this).is(':checked') ? 'ng' : 'ok';
-            $(`#input-status-${index}`).val(status);
-            evaluateItem(index);
-        });
-
-        $('.input-row').each(function() {
-            evaluateItem($(this).data('index'));
-        });
-        evaluateOverall();
-
-        $('#btnSubmit').on('click', function() {
-            $('.input-row').each(function() {
-                evaluateItem($(this).data('index'));
+                const index = copyBtn.dataset.index;
+                let spec = {};
+                try {
+                    spec = JSON.parse(copyBtn.dataset.spec || '{}');
+                } catch {
+                    spec = {};
+                }
+                Object.entries(spec).forEach(([dimension, value]) => {
+                    const input = document.getElementById(`actual-${index}-${dimension}`);
+                    if (!input || value === null || value === '') return;
+                    input.value = value;
+                    input.dispatchEvent(new Event('input', { bubbles: true }));
+                });
+                const status = document.getElementById(`qc-copy-status-${index}`);
+                if (status) status.textContent = @js(__('qc.copy.copy_from_po_done'));
             });
 
-            if (!$('#inspectionForm')[0].checkValidity()) {
-                $('#inspectionForm')[0].reportValidity();
-                return;
-            }
-
-            AdasiAlert.confirm({
-                title: @json(__('qc.copy.save_inspection_results')),
-                text: @js(__('qc.confirmations.save_body')),
-                type: 'warning',
-                confirmText: @json(__('qc.copy.yes_save_results')),
-                cancelText: @json(__('qc.copy.cancel'))
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    window.AdasiButton?.startLoading('#btnSubmit');
-                    $('#inspectionForm').submit();
+            document.addEventListener('input', (event) => {
+                const inputEl = event.target instanceof Element ? event.target.closest('.actual-input') : null;
+                if (!inputEl) return;
+                const index = inputEl.closest('.input-row')?.dataset.index;
+                if (index !== undefined) {
+                    evaluateItem(index);
                 }
             });
-        });
-    });
+
+            document.addEventListener('change', (event) => {
+                const switchEl = event.target instanceof Element ? event.target.closest('.item-status-switch') : null;
+                if (!switchEl) return;
+                const index = switchEl.dataset.index;
+                if (index === undefined) return;
+                const status = switchEl.checked ? 'ng' : 'ok';
+                const statusInput = document.getElementById(`input-status-${index}`);
+                if (statusInput) {
+                    statusInput.value = status;
+                }
+                evaluateItem(index);
+            });
+
+            document.querySelectorAll('.input-row').forEach((row) => {
+                evaluateItem(row.dataset.index);
+            });
+            evaluateOverall();
+
+            document.getElementById('btnSubmit')?.addEventListener('click', () => {
+                document.querySelectorAll('.input-row').forEach((row) => {
+                    evaluateItem(row.dataset.index);
+                });
+
+                const form = document.getElementById('inspectionForm');
+                if (!form) return;
+                if (!form.checkValidity()) {
+                    form.reportValidity();
+                    return;
+                }
+
+                AdasiAlert.confirm({
+                    title: @json(__('qc.copy.save_inspection_results')),
+                    text: @json(__('qc.confirmations.save_body')),
+                    type: 'warning',
+                    confirmText: @json(__('qc.copy.yes_save_results')),
+                    cancelText: @json(__('qc.copy.cancel'))
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        window.AdasiButton?.startLoading('#btnSubmit');
+                        form.submit();
+                    }
+                });
+            });
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', bootQcInspectionCreate);
+        } else {
+            bootQcInspectionCreate();
+        }
+    })();
 </script>
 @endpush

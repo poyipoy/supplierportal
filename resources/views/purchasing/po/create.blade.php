@@ -235,98 +235,147 @@
 
 @push('scripts')
 <script>
-    const primaryItems = @json($primaryItemsData);
-    const currency = @json($quotation->currency);
+    (function() {
+        const primaryItems = @json($primaryItemsData);
+        const currency = @json($quotation->currency);
 
-    function formatNumber(num, decimals) {
-        if (num === null || num === undefined || num === '') {
-            return '-';
+        function formatNumber(num, decimals) {
+            if (num === null || num === undefined || num === '') {
+                return '-';
+            }
+
+            return Number(num).toLocaleString('id-ID', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
         }
 
-        return Number(num).toLocaleString('id-ID', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
-    }
+        function createCell(className, text) {
+            const td = document.createElement('td');
+            if (className) td.className = className;
+            td.textContent = text;
+            return td;
+        }
 
-    function rebuildTable() {
-        let allItems = [];
+        function rebuildTable() {
+            const allItems = primaryItems.slice();
+            const checkedBoxes = Array.from(document.querySelectorAll('.consolidate-check:checked'));
 
-        // Primary quotation items
-        primaryItems.forEach(item => allItems.push(item));
+            checkedBoxes.forEach((checkbox) => {
+                let items = [];
+                try {
+                    const parsed = JSON.parse(checkbox.dataset.items || '[]');
+                    if (Array.isArray(parsed)) items = parsed;
+                } catch {
+                    items = [];
+                }
+                const fallbackPrLabel = checkbox.dataset.prNumber
+                    || checkbox.closest('.consolidate-item')?.querySelector('.pr-label')?.textContent?.trim()
+                    || '-';
 
-        // Additional checked quotation items
-        $('.consolidate-check:checked').each(function() {
-            const items = $(this).data('items');
-            const fallbackPrLabel = $(this).data('pr-number') || $(this).closest('.consolidate-item').find('.pr-label').text().trim();
-            items.forEach(item => {
-                allItems.push({
-                    pr_number: item.pr_number || fallbackPrLabel,
-                    material: item.material,
-                    quantity: item.quantity,
-                    weight_unit: item.weight_unit,
-                    weight: item.weight,
-                    price: item.price,
-                    amount: item.amount,
-                    rate: item.rate,
+                items.forEach((item) => {
+                    allItems.push({
+                        pr_number: item.pr_number || fallbackPrLabel,
+                        material: item.material,
+                        quantity: item.quantity,
+                        weight_unit: item.weight_unit,
+                        weight: item.weight,
+                        price: item.price,
+                        amount: item.amount,
+                        rate: item.rate,
+                    });
                 });
             });
-        });
 
-        // Rebuild table body
-        let html = '';
-        let totalAmount = 0;
-        let totalIdr = 0;
-        allItems.forEach((item, i) => {
-            const idr = item.amount * (item.rate || 1);
-            totalAmount += item.amount;
-            totalIdr += idr;
-            html += `<tr>
-                <td class="text-center tw:text-on-surface-variant ui-tabular-nums">${i + 1}</td>
-                <td class="fw-bold text-primary">${item.pr_number}</td>
-                <td class="fw-semibold tw:text-on-surface">${item.material}</td>
-                <td class="text-center ui-tabular-nums">${formatNumber(item.quantity, 0)}</td>
-                <td class="text-end ui-tabular-nums tw:text-on-surface-variant">${formatNumber(item.weight_unit, 2)}</td>
-                <td class="text-end fw-bold text-primary ui-tabular-nums">${formatNumber(item.weight, 2)}</td>
-                <td class="text-end ui-tabular-nums tw:text-on-surface-variant">${formatNumber(item.price, 4)}</td>
-                <td class="text-end fw-semibold ui-tabular-nums">${formatNumber(item.amount, 2)}</td>
-                <td class="text-end fw-bold tw:text-on-surface ui-tabular-nums">Rp ${formatNumber(idr, 0)}</td>
-            </tr>`;
-        });
+            const fragment = document.createDocumentFragment();
+            let totalAmount = 0;
+            let totalIdr = 0;
 
-        $('#materialTableBody').html(html);
-        $('#grandTotalAmount').text(formatNumber(totalAmount, 2) + ' ' + currency);
-        $('#grandTotalIdr').text('Rp ' + formatNumber(totalIdr, 0));
-        $('#totalItemCount').text(window.AdasiI18n.choice('purchasing.js.item_count', allItems.length, { count: allItems.length }));
+            allItems.forEach((item, i) => {
+                const amountNum = Number(item.amount || 0);
+                const idr = amountNum * (item.rate || 1);
+                totalAmount += amountNum;
+                totalIdr += idr;
 
-        // Update hidden inputs for additional quotation_ids
-        $('#additionalQuotationInputs').empty();
-        $('.consolidate-check:checked').each(function() {
-            $('#additionalQuotationInputs').append(
-                `<input type="hidden" name="quotation_ids[]" value="${$(this).val()}">`
-            );
-        });
-    }
+                const tr = document.createElement('tr');
+                tr.append(
+                    createCell('text-center tw:text-on-surface-variant ui-tabular-nums', String(i + 1)),
+                    createCell('fw-bold text-primary', item.pr_number ?? '-'),
+                    createCell('fw-semibold tw:text-on-surface', item.material ?? ''),
+                    createCell('text-center ui-tabular-nums', formatNumber(item.quantity, 0)),
+                    createCell('text-end ui-tabular-nums tw:text-on-surface-variant', formatNumber(item.weight_unit, 2)),
+                    createCell('text-end fw-bold text-primary ui-tabular-nums', formatNumber(item.weight, 2)),
+                    createCell('text-end ui-tabular-nums tw:text-on-surface-variant', formatNumber(item.price, 4)),
+                    createCell('text-end fw-semibold ui-tabular-nums', formatNumber(item.amount, 2)),
+                    createCell('text-end fw-bold tw:text-on-surface ui-tabular-nums', `Rp ${formatNumber(idr, 0)}`)
+                );
+                fragment.appendChild(tr);
+            });
 
-    $(document).on('change', '.consolidate-check', function() {
-        rebuildTable();
-    });
-
-    $('#btnCreatePo').on('click', function() {
-        const checkedCount = $('.consolidate-check:checked').length;
-        const totalPr = 1 + checkedCount;
-        const confirmationText = totalPr > 1
-            ? @js(__('common.final_review.po_consolidated_warning')).replace(':count', String(totalPr))
-            : @js(__('common.final_review.po_warning'));
-
-        AdasiAlert.confirm({
-            title: @json(__('purchasing.copy.create_purchase_order')),
-            text: confirmationText,
-            confirmText: @json(__('purchasing.copy.yes_create_po')),
-            cancelText: @json(__('purchasing.copy.cancel'))
-        }).then((result) => {
-            if (result.isConfirmed) {
-                window.AdasiButton?.startLoading('#btnCreatePo');
-                $('#poForm').submit();
+            const tbody = document.getElementById('materialTableBody');
+            if (tbody) {
+                tbody.replaceChildren(fragment);
             }
-        });
-    });
+
+            const grandTotalAmountEl = document.getElementById('grandTotalAmount');
+            if (grandTotalAmountEl) {
+                grandTotalAmountEl.textContent = `${formatNumber(totalAmount, 2)} ${currency}`;
+            }
+
+            const grandTotalIdrEl = document.getElementById('grandTotalIdr');
+            if (grandTotalIdrEl) {
+                grandTotalIdrEl.textContent = `Rp ${formatNumber(totalIdr, 0)}`;
+            }
+
+            const totalItemCountEl = document.getElementById('totalItemCount');
+            if (totalItemCountEl) {
+                totalItemCountEl.textContent = window.AdasiI18n.choice('purchasing.js.item_count', allItems.length, { count: allItems.length });
+            }
+
+            // Update hidden inputs for additional quotation_ids safely via DOM API
+            const additionalInputs = document.getElementById('additionalQuotationInputs');
+            if (additionalInputs) {
+                additionalInputs.replaceChildren();
+                checkedBoxes.forEach((checkbox) => {
+                    const input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = 'quotation_ids[]';
+                    input.value = checkbox.value;
+                    additionalInputs.appendChild(input);
+                });
+            }
+        }
+
+        function bootPoCreate() {
+            document.addEventListener('change', (event) => {
+                if (event.target instanceof Element && event.target.closest('.consolidate-check')) {
+                    rebuildTable();
+                }
+            });
+
+            document.getElementById('btnCreatePo')?.addEventListener('click', () => {
+                const checkedCount = document.querySelectorAll('.consolidate-check:checked').length;
+                const totalPr = 1 + checkedCount;
+                const confirmationText = totalPr > 1
+                    ? @js(__('common.final_review.po_consolidated_warning')).replace(':count', String(totalPr))
+                    : @js(__('common.final_review.po_warning'));
+
+                AdasiAlert.confirm({
+                    title: @json(__('purchasing.copy.create_purchase_order')),
+                    text: confirmationText,
+                    confirmText: @json(__('purchasing.copy.yes_create_po')),
+                    cancelText: @json(__('purchasing.copy.cancel'))
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        window.AdasiButton?.startLoading('#btnCreatePo');
+                        document.getElementById('poForm')?.submit();
+                    }
+                });
+            });
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', bootPoCreate);
+        } else {
+            bootPoCreate();
+        }
+    })();
 </script>
 @endpush
