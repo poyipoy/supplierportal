@@ -82,10 +82,27 @@ test('applyAdasiDataTablesSkin configures pure-token ADASI classes and paginatio
     assert.equal(activeBtn.clicker.tagName, 'BUTTON');
     assert.deepEqual(activeBtn.clicker.classList, ['page-link']);
     assert.equal(activeBtn.clicker.attributes.type, 'button');
+    assert.equal(activeBtn.clicker.attributes.role, undefined);
+    assert.equal(activeBtn.clicker.attributes['aria-current'], 'page');
     assert.equal(activeBtn.clicker.innerHTML, '1');
 
-    const container = DataTable.ext.renderer.pagingContainer.adasi({}, [activeBtn.display]);
+    const prevDisabled = DataTable.ext.renderer.pagingButton.adasi({}, 'previous', 'Previous', false, true);
+    assert.deepEqual(prevDisabled.display.classList, ['dt-paging-button', 'page-item', 'previous', 'disabled']);
+    assert.deepEqual(prevDisabled.clicker.classList, ['page-link', 'previous']);
+    assert.equal(prevDisabled.clicker.attributes.disabled, 'disabled');
+    assert.equal(prevDisabled.clicker.attributes['aria-disabled'], 'true');
+
+    const nextEnabled = DataTable.ext.renderer.pagingButton.adasi({}, 'next', 'Next', false, false);
+    assert.deepEqual(nextEnabled.display.classList, ['dt-paging-button', 'page-item', 'next']);
+    assert.deepEqual(nextEnabled.clicker.classList, ['page-link', 'next']);
+
+    const ellipsis = DataTable.ext.renderer.pagingButton.adasi({}, 'ellipsis', '…', false, true);
+    assert.equal(ellipsis.display.attributes['aria-hidden'], 'true');
+    assert.equal(ellipsis.clicker.tagName, 'SPAN');
+    assert.deepEqual(ellipsis.clicker.classList, ['page-link', 'ellipsis']);
+
+    const container = DataTable.ext.renderer.pagingContainer.adasi({}, [prevDisabled.display, activeBtn.display, ellipsis.display, nextEnabled.display]);
     assert.equal(container.tagName, 'UL');
     assert.deepEqual(container.classList, ['pagination']);
-    assert.equal(container.children.length, 1);
+    assert.equal(container.children.length, 4);
 });

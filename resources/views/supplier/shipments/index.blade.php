@@ -155,7 +155,7 @@
                                         </button>
                                     </form>
                                     <div class="dropdown">
-                                        <button type="button" class="ui-data-action ui-focus-ring dropdown-toggle" data-ui-dropdown-trigger popovertarget="dd-shp-static-{{ e($shp->hash) }}" aria-controls="dd-shp-static-{{ e($shp->hash) }}" aria-expanded="false" aria-label="{{ __('shipments.a11y.more_actions', ['shipment' => $shp->shipment_number]) }}">
+                                        <button type="button" class="ui-data-action ui-focus-ring dropdown-toggle" data-ui-dropdown-trigger popovertarget="dd-shp-static-{{ e($shp->hash) }}" aria-controls="dd-shp-static-{{ e($shp->hash) }}" aria-haspopup="menu" aria-expanded="false" aria-label="{{ __('shipments.a11y.more_actions', ['shipment' => $shp->shipment_number]) }}">
                                             {{ __('shipments.copy.more') }}
                                         </button>
                                         <ul id="dd-shp-static-{{ e($shp->hash) }}" popover="auto" data-ui-dropdown-menu class="dropdown-menu dropdown-menu-end">

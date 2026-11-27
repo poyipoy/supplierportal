@@ -48,7 +48,7 @@
         <x-ui.card :title="__('supplier.copy.analytics_and_material_selection')">
         <x-slot:actions>
             @if($selectedMaterialName && $selectedCurrency)
-                <form action="{{ route('supplier.price-history.export') }}" method="POST" data-format-export-form data-advanced-export-form data-managed-submit data-no-loader data-export-failed="{{ __('exports.advanced.failed') }}" class="tw:flex tw:flex-wrap tw:items-end tw:gap-2">
+                <form action="{{ route('supplier.price-history.export') }}" method="POST" data-format-export-form data-advanced-export-form data-managed-submit data-no-loader data-track-unsaved="false" data-export-failed="{{ __('exports.advanced.failed') }}" class="tw:flex tw:flex-wrap tw:items-end tw:gap-2">
                     @csrf
                     @foreach(array_merge(request()->only(['thickness', 'd_inner', 'd_outer', 'width', 'length']), ['material_name' => $selectedMaterialName, 'period_view' => $periodView, 'range' => $range, 'currency' => $selectedCurrency]) as $name => $value)
                         <input type="hidden" name="{{ $name }}" value="{{ $value }}">
@@ -65,7 +65,7 @@
         </x-slot:actions>
 
         <form method="GET" action="{{ route('supplier.price-history.historical') }}" class="tw:grid tw:grid-cols-12 tw:gap-3 tw:items-end" id="historicalFilterForm">
-            <div class="tw:col-span-12 tw:md:col-span-6 tw:lg:col-span-4">
+            <div class="tw:min-w-0 tw:col-span-12 tw:md:col-span-6 tw:lg:col-span-4">
                 <label class="ui-label tw:mb-1 tw:text-ui-xs tw:font-semibold tw:text-on-surface" for="historicalMaterialSelect">{{ __('supplier.copy.select_material_specification') }}</label>
                 <select name="material_name" class="ui-select ui-select--sm tw:min-h-[var(--ui-control-height-sm)] ui-focus-ring" id="historicalMaterialSelect" required>
                     <option value="">{{ __('supplier.copy.choose_material') }}</option>
@@ -74,7 +74,7 @@
                     @endforeach
                 </select>
             </div>
-            <div class="tw:col-span-12 tw:md:col-span-3 tw:lg:col-span-3">
+            <div class="tw:min-w-0 tw:col-span-12 tw:md:col-span-3 tw:lg:col-span-3">
                 <label class="ui-label tw:mb-1 tw:text-ui-xs tw:font-semibold tw:text-on-surface" for="historicalRangeSelect">{{ __('supplier.copy.time_horizon') }}</label>
                 <select name="range" class="ui-select ui-select--sm tw:min-h-[var(--ui-control-height-sm)] ui-focus-ring" id="historicalRangeSelect">
                     @foreach($rangeOptions as $value => $label)
@@ -82,7 +82,7 @@
                     @endforeach
                 </select>
             </div>
-            <div class="tw:col-span-12 tw:md:col-span-3 tw:lg:col-span-2">
+            <div class="tw:min-w-0 tw:col-span-12 tw:md:col-span-3 tw:lg:col-span-2">
                 <label class="ui-label tw:mb-1 tw:text-ui-xs tw:font-semibold tw:text-on-surface" for="historicalCurrencySelect">{{ __('supplier.copy.currency') }}</label>
                 <select name="currency" class="ui-select ui-select--sm tw:min-h-[var(--ui-control-height-sm)] ui-focus-ring" id="historicalCurrencySelect" {{ $currencyOptions->isEmpty() ? 'disabled' : 'required' }}>
                     @if($currencyOptions->isEmpty())
@@ -99,17 +99,17 @@
                 <div class="tw:flex tw:w-full tw:rounded-ui-sm tw:border tw:border-outline tw:bg-surface-low tw:p-0.5 tw:gap-0.5" role="group" aria-label="{{ __('supplier.copy.aggregation_interval') }}">
                     <span class="tw:flex tw:flex-1">
                         <input type="radio" class="tw:sr-only tw:peer" name="period_view" id="periodViewMonthly" value="monthly" {{ $periodView === 'monthly' ? 'checked' : '' }}>
-                        <label class="tw:inline-flex tw:w-full tw:cursor-pointer tw:items-center tw:justify-center tw:rounded-ui-sm tw:px-3 tw:py-1 tw:text-ui-xs tw:font-medium tw:text-on-surface-variant tw:transition-colors tw:hover:text-on-surface tw:peer-checked:bg-primary tw:peer-checked:text-on-primary tw:peer-checked:shadow-xs tw:peer-focus-visible:outline-2 tw:peer-focus-visible:outline-primary" for="periodViewMonthly">{{ __('supplier.copy.monthly') }}</label>
+                        <label class="tw:inline-flex tw:w-full tw:cursor-pointer tw:items-center tw:justify-center tw:rounded-ui-sm tw:px-3 tw:py-1 tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant tw:transition-colors tw:hover:text-on-surface tw:peer-checked:bg-primary tw:peer-checked:text-on-primary tw:peer-checked:shadow-xs tw:peer-focus-visible:outline-2 tw:peer-focus-visible:outline-primary" for="periodViewMonthly">{{ __('supplier.copy.monthly') }}</label>
                     </span>
 
                     <span class="tw:flex tw:flex-1">
                         <input type="radio" class="tw:sr-only tw:peer" name="period_view" id="periodViewYearly" value="yearly" {{ $periodView === 'yearly' ? 'checked' : '' }}>
-                        <label class="tw:inline-flex tw:w-full tw:cursor-pointer tw:items-center tw:justify-center tw:rounded-ui-sm tw:px-3 tw:py-1 tw:text-ui-xs tw:font-medium tw:text-on-surface-variant tw:transition-colors tw:hover:text-on-surface tw:peer-checked:bg-primary tw:peer-checked:text-on-primary tw:peer-checked:shadow-xs tw:peer-focus-visible:outline-2 tw:peer-focus-visible:outline-primary" for="periodViewYearly">{{ __('supplier.copy.yearly') }}</label>
+                        <label class="tw:inline-flex tw:w-full tw:cursor-pointer tw:items-center tw:justify-center tw:rounded-ui-sm tw:px-3 tw:py-1 tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant tw:transition-colors tw:hover:text-on-surface tw:peer-checked:bg-primary tw:peer-checked:text-on-primary tw:peer-checked:shadow-xs tw:peer-focus-visible:outline-2 tw:peer-focus-visible:outline-primary" for="periodViewYearly">{{ __('supplier.copy.yearly') }}</label>
                     </span>
                 </div>
             </fieldset>
 
-            <div class="tw:col-span-12 tw:mt-2 tw:mb-0" x-data="{ dimOpen: @js(request()->hasAny(['thickness', 'd_inner', 'd_outer', 'width', 'length'])) }">
+            <div class="tw:min-w-0 tw:col-span-12 tw:mt-2 tw:mb-0" x-data="{ dimOpen: @js(request()->hasAny(['thickness', 'd_inner', 'd_outer', 'width', 'length'])) }">
                 <button type="button" x-on:click="dimOpen = !dimOpen" x-bind:aria-expanded="dimOpen.toString()" aria-expanded="{{ request()->hasAny(['thickness', 'd_inner', 'd_outer', 'width', 'length']) ? 'true' : 'false' }}" aria-controls="dimensionFilters" class="ui-focus-ring tw:rounded-ui-xs tw:border-0 tw:bg-transparent tw:p-0 tw:no-underline tw:text-ui-xs tw:font-semibold tw:inline-flex tw:items-center tw:gap-1 tw:text-on-surface-variant tw:hover:text-primary">
                             <x-ui.icon name="sliders-horizontal" size="sm" />
                     <span>{{ __('supplier.copy.filter_by_target_dimensions_optional') }}</span>
@@ -117,27 +117,27 @@
                 </button>
                 <div class="tw:mt-2" id="dimensionFilters" x-show="dimOpen" @unless(request()->hasAny(['thickness', 'd_inner', 'd_outer', 'width', 'length'])) x-cloak @endunless>
                 <div class="tw:grid tw:grid-cols-12 tw:gap-2 tw:mt-1 tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface-container-low tw:p-3">
-                    <div class="tw:col-span-6 tw:md:col-span-2 dimension-field" data-dim="thickness">
+                    <div class="tw:min-w-0 tw:col-span-6 tw:md:col-span-2 dimension-field" data-dim="thickness">
                         <label class="ui-label tw:mb-1 tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant" for="supplier-history-thickness">{{ __('supplier.copy.thickness_mm') }}</label>
                         <input type="number" step="0.01" name="thickness" id="supplier-history-thickness" class="ui-input ui-input--sm tw:min-h-[var(--ui-control-height-sm)] ui-focus-ring historical-filter-input" value="{{ request('thickness') }}">
                     </div>
-                    <div class="tw:col-span-6 tw:md:col-span-2 dimension-field" data-dim="d_inner">
+                    <div class="tw:min-w-0 tw:col-span-6 tw:md:col-span-2 dimension-field" data-dim="d_inner">
                         <label class="ui-label tw:mb-1 tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant" for="supplier-history-d-inner">{{ __('supplier.copy.d_inner_mm') }}</label>
                         <input type="number" step="0.01" name="d_inner" id="supplier-history-d-inner" class="ui-input ui-input--sm tw:min-h-[var(--ui-control-height-sm)] ui-focus-ring historical-filter-input" value="{{ request('d_inner') }}">
                     </div>
-                    <div class="tw:col-span-6 tw:md:col-span-2 dimension-field" data-dim="d_outer">
+                    <div class="tw:min-w-0 tw:col-span-6 tw:md:col-span-2 dimension-field" data-dim="d_outer">
                         <label class="ui-label tw:mb-1 tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant" for="supplier-history-d-outer">{{ __('supplier.copy.d_outer_mm') }}</label>
                         <input type="number" step="0.01" name="d_outer" id="supplier-history-d-outer" class="ui-input ui-input--sm tw:min-h-[var(--ui-control-height-sm)] ui-focus-ring historical-filter-input" value="{{ request('d_outer') }}">
                     </div>
-                    <div class="tw:col-span-6 tw:md:col-span-2 dimension-field" data-dim="width">
+                    <div class="tw:min-w-0 tw:col-span-6 tw:md:col-span-2 dimension-field" data-dim="width">
                         <label class="ui-label tw:mb-1 tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant" for="supplier-history-width">{{ __('supplier.copy.width_mm') }}</label>
                         <input type="number" step="0.01" name="width" id="supplier-history-width" class="ui-input ui-input--sm tw:min-h-[var(--ui-control-height-sm)] ui-focus-ring historical-filter-input" value="{{ request('width') }}">
                     </div>
-                    <div class="tw:col-span-6 tw:md:col-span-2 dimension-field" data-dim="length">
+                    <div class="tw:min-w-0 tw:col-span-6 tw:md:col-span-2 dimension-field" data-dim="length">
                         <label class="ui-label tw:mb-1 tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant" for="supplier-history-length">{{ __('supplier.copy.length_mm') }}</label>
                         <input type="number" step="0.01" name="length" id="supplier-history-length" class="ui-input ui-input--sm tw:min-h-[var(--ui-control-height-sm)] ui-focus-ring historical-filter-input" value="{{ request('length') }}">
                     </div>
-                    <div class="tw:col-span-12 tw:md:col-span-2 tw:flex tw:items-end">
+                    <div class="tw:min-w-0 tw:col-span-12 tw:md:col-span-2 tw:flex tw:items-end">
                         <x-ui.button type="submit" size="sm" class="tw:w-full">
                             <x-ui.icon name="search" size="sm" />
                             <span>{{ __('supplier.copy.apply_filters') }}</span>
@@ -433,26 +433,30 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (chartCanvas && historicalChartData) {
         const theme = window.AdasiChart;
+        if (typeof window.Chart !== 'function' || !theme) {
+            showHistoricalChartFallback();
+            return;
+        }
+
         const chartCurrency = historicalChartData.currency || '';
         const formatChartPrice = (value) => {
             const text = Number(value).toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
             return window.AdasiPreferences?.displayNumber ? window.AdasiPreferences.displayNumber(text, 'indonesian') : text;
         };
+        const hasMin = historicalChartData.type === 'yearly' && Array.isArray(historicalChartData.minPrices);
+        const hasMax = historicalChartData.type === 'yearly' && Array.isArray(historicalChartData.maxPrices);
+        const multi = hasMin || hasMax;
         // Average, lowest and highest differ by line dash and point shape, not by color alone.
         const line = (label, data, slot, pointStyle, borderDash) => ({
             label,
             data,
-            borderColor: theme ? theme.color(slot) : undefined,
-            backgroundColor: theme ? theme.color(slot) : undefined,
-            pointBorderColor: theme ? theme.color('surface') : undefined,
-            pointStyle,
-            borderDash,
-            borderWidth: 2,
-            fill: false,
-            tension: 0,
-            pointRadius: 4,
-            pointHoverRadius: 6,
-            pointBorderWidth: 2,
+            ...theme.lineDataset({
+                color: theme.color(slot),
+                pointStyle,
+                borderDash,
+                multi,
+                area: !multi,
+            }),
         });
         const datasets = [line(
             historicalChartData.type === 'yearly' ? window.AdasiI18n.t('supplier.js.average_price', { currency: chartCurrency }) : window.AdasiI18n.t('supplier.js.price_kg', { currency: chartCurrency }),
@@ -460,17 +464,12 @@ document.addEventListener('DOMContentLoaded', () => {
             'series-1', 'circle', [],
         )];
 
-        if (historicalChartData.type === 'yearly' && Array.isArray(historicalChartData.minPrices)) {
+        if (hasMin) {
             datasets.push(line(@json(__('charts.series.lowest_price')), historicalChartData.minPrices, 'series-3', 'triangle', [6, 4]));
         }
 
-        if (historicalChartData.type === 'yearly' && Array.isArray(historicalChartData.maxPrices)) {
+        if (hasMax) {
             datasets.push(line(@json(__('charts.series.highest_price')), historicalChartData.maxPrices, 'series-2', 'rectRot', [2, 3]));
-        }
-
-        if (typeof window.Chart !== 'function' || !theme) {
-            showHistoricalChartFallback();
-            return;
         }
 
         try {
@@ -497,7 +496,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         yMaxTicks: 5,
                         yBeginAtZero: true,
                         yTitle: `${chartCurrency} / Kg`,
-                        yFormat: (val) => formatChartPrice(val),
+                        yFormat: theme.compactTicks(),
                     }),
                 }
             });

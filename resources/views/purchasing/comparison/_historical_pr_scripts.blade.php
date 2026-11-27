@@ -59,9 +59,9 @@
     const axisTitle = (currency) => (currency || 'IDR') + '/kg';
 
     // Shared ADASI scales/tooltip (AdasiChart) under the builder's own axis title and callbacks.
-    function themed(options, theme, beginAtZero) {
+    function themed(options, theme, beginAtZero, extra = {}) {
         if (!theme || !theme.scales) return options;
-        const base = theme.scales({ yBeginAtZero: beginAtZero });
+        const base = theme.scales({ yBeginAtZero: beginAtZero, ...extra });
 
         return {
             ...options,
@@ -85,6 +85,18 @@
         const current = chart.series.current.map(toNumber);
         const indicative = (chart.tooltips.previous || []).map((meta) => Boolean(meta && meta.indicative));
         const plotted = [...previous, ...current].filter((value) => value !== null).length;
+        const barStyle = (color) => (theme && theme.barDataset
+            ? theme.barDataset({ color, fill: color, maxBarThickness: 36 })
+            : {
+                backgroundColor: color,
+                borderColor: color,
+                borderWidth: 0,
+                borderRadius: 6,
+                borderSkipped: 'start',
+                maxBarThickness: 36,
+                categoryPercentage: 0.72,
+                barPercentage: 0.84,
+            });
 
         return {
             empty: plotted === 0,
@@ -98,21 +110,13 @@
                         {
                             label: i18n.previous,
                             data: previous,
-                            backgroundColor: colors.secondary,
-                            borderColor: colors.secondary,
-                            borderWidth: 0,
-                            borderRadius: 3,
-                            maxBarThickness: 56,
+                            ...barStyle(colors.secondary),
                             tooltipMeta: chart.tooltips.previous,
                         },
                         {
                             label: i18n.current,
                             data: current,
-                            backgroundColor: colors.primary,
-                            borderColor: colors.primary,
-                            borderWidth: 0,
-                            borderRadius: 3,
-                            maxBarThickness: 56,
+                            ...barStyle(colors.primary),
                             tooltipMeta: chart.tooltips.current,
                         },
                     ],
@@ -122,6 +126,7 @@
                     maintainAspectRatio: false,
                     skipNull: true,
                     animation: false,
+                    interaction: { mode: 'index', intersect: false },
                     scales: {
                         x: { grid: { display: false } },
                         y: { beginAtZero: true, title: { display: true, text: axisTitle(chart.basis), font: axisTitleFont }, ticks: { callback: (value) => format(value, chart.basis) } },
@@ -138,7 +143,7 @@
                             },
                         },
                     },
-                }, theme, true),
+                }, theme, true, { xMaxRotation: 45 }),
             },
         };
     }
@@ -156,10 +161,13 @@
                 pointStyle: POINT_STYLES[index % POINT_STYLES.length],
                 borderDash: LINE_DASHES[(index + cycle) % LINE_DASHES.length],
                 borderWidth: 2,
+                borderCapStyle: 'round',
+                borderJoinStyle: 'round',
                 pointBackgroundColor: series.points.map((point) => (point.tooltip && point.tooltip.indicative ? 'transparent' : color)),
                 pointBorderColor: color,
-                pointRadius: 4,
-                pointHoverRadius: 6,
+                pointRadius: 3,
+                pointHoverRadius: 5,
+                pointHitRadius: 12,
                 fill: false,
                 spanGaps: false,
                 tension: 0,
@@ -179,6 +187,7 @@
                     maintainAspectRatio: false,
                     animation: false,
                     parsing: false,
+                    interaction: { mode: 'nearest', axis: 'x', intersect: false },
                     scales: {
                         x: { type: 'linear', ticks: { callback: (value) => formatDate(value), maxTicksLimit: 6 } },
                         y: { title: { display: true, text: axisTitle(chart.basis), font: axisTitleFont }, ticks: { callback: (value) => format(value, chart.basis) } },
@@ -216,23 +225,35 @@
                     datasets: [{
                         label: i18n.weightedAverage,
                         data: values,
-                        borderColor: colors.primary,
-                        backgroundColor: colors.primary,
-                        pointRadius: 4,
-                        fill: false,
-                        spanGaps: false,
-                        tension: 0,
+                        ...(theme && theme.lineDataset
+                            ? theme.lineDataset({ color: colors.primary, pointStyle: 'circle', multi: false, area: true })
+                            : {
+                                borderColor: colors.primary,
+                                backgroundColor: colors.primary,
+                                pointRadius: 4,
+                                fill: false,
+                                spanGaps: false,
+                                tension: 0,
+                            }),
                     }],
                 },
                 options: themed({
                     responsive: true,
                     maintainAspectRatio: false,
                     animation: false,
+                    interaction: { mode: 'index', intersect: false },
                     scales: {
                         x: { grid: { display: false } },
                         y: { title: { display: true, text: axisTitle(po ? po.currency : null), font: axisTitleFont }, ticks: { callback: (value) => format(value, po ? po.currency : null) } },
                     },
-                    plugins: { legend: legend() },
+                    plugins: {
+                        legend: legend(),
+                        tooltip: {
+                            callbacks: {
+                                label: (context) => context.dataset.label + ': ' + format(context.parsed.y, po ? po.currency : null) + '/kg',
+                            },
+                        },
+                    },
                 }, theme, false),
             },
         };
@@ -305,7 +326,14 @@
             if (!state.charts) return;
 
             const colors = window.AdasiChart ? window.AdasiChart.getColors() : fallbackColors();
-            const theme = window.AdasiChart ? { scales: window.AdasiChart.getScales, tooltip: window.AdasiChart.getTooltip } : null;
+            const theme = window.AdasiChart
+                ? {
+                    scales: window.AdasiChart.getScales,
+                    tooltip: window.AdasiChart.getTooltip,
+                    barDataset: window.AdasiChart.barDataset,
+                    lineDataset: window.AdasiChart.lineDataset,
+                }
+                : null;
             let built;
             let excluded = [];
             let basis = '';

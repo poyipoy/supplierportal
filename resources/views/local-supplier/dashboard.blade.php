@@ -3,7 +3,7 @@
 @section('page-title', __('local_invoice.dashboard.page_heading'))
 
 @section('content')
-<div class="tw:grid tw:gap-6 tw:pb-16">
+<div class="tw:grid tw:gap-6">
     <x-ui.page-header
         :title="__('local_invoice.dashboard.heading')"
         :description="__('local_invoice.dashboard.description')"
@@ -82,7 +82,7 @@
                     <x-ui.icon name="building-2" size="md" />
                 </div>
                 <div>
-                    <h3 class="tw:m-0 tw:text-ui-sm tw:font-semibold tw:text-on-surface">
+                    <h3 class="tw:m-0 tw:text-ui-base tw:font-semibold tw:text-on-surface">
                         {{ auth()->user()->supplier?->company_name ?: auth()->user()->name }}
                     </h3>
                     @if(auth()->user()->supplier?->npwp)

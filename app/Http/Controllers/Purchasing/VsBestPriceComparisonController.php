@@ -4,10 +4,12 @@ namespace App\Http\Controllers\Purchasing;
 
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\Purchasing\Concerns\PriceComparisonSharedTrait;
+use App\Models\PrItem;
 use App\Services\Pricing\VsBestPriceQueryService;
 use App\Services\RegionalDisplayFormatter;
 use App\Support\HashidCodec;
 use App\Support\Pricing\EvaluationContext;
+use App\Support\ServerTabsResponse;
 use App\Support\Ui\RowAction;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -58,12 +60,12 @@ class VsBestPriceComparisonController extends Controller
             'vsBestMaterialIgnored',
         );
 
-        if ($request->ajax()) {
-            return response()->json([
-                'html' => view('purchasing.comparison._vs_best_content', $viewData)->render(),
-                'tab' => 'vs-best',
-                'url' => route('purchasing.comparison.vs-best', $request->query()),
-            ]);
+        if (ServerTabsResponse::wants($request) || $request->ajax()) {
+            return ServerTabsResponse::make(
+                view('purchasing.comparison._vs_best_content', $viewData)->render(),
+                'vs-best',
+                $request,
+            );
         }
 
         return view('purchasing.comparison.vs-best', $viewData);
@@ -99,7 +101,7 @@ class VsBestPriceComparisonController extends Controller
                 }
             );
         } else {
-            $summaryKey = 'purchasing:vs_best_summary_filtered:v1:'.sha1(json_encode([
+            $summaryKey = 'purchasing:vs_best_summary_filtered:v2:'.sha1(json_encode([
                 'date' => $context->dateString(),
                 'currency' => $currency,
                 'threshold' => $competitiveThreshold,
@@ -147,6 +149,16 @@ class VsBestPriceComparisonController extends Controller
                     .'<a href="'.e($prUrl).'" class="tw:text-ui-xs tw:text-primary tw:no-underline">'
                     .e($row->current_pr_number ?: '-')
                     .'</a>';
+            })
+            ->addColumn('dimensions_display', function ($row): string {
+                return $this->formatVsBestDimensions($row);
+            })
+            ->orderColumn('dimensions_display', function ($query, string $order): void {
+                $direction = strtolower($order) === 'desc' ? 'DESC' : 'ASC';
+                $query->orderByRaw("COALESCE(current_pr_items.shape, '') {$direction}")
+                    ->orderByRaw("COALESCE(current_pr_items.thickness, current_pr_items.d_outer, 0) {$direction}")
+                    ->orderByRaw("COALESCE(current_pr_items.width, current_pr_items.d_inner, 0) {$direction}")
+                    ->orderByRaw("COALESCE(current_pr_items.length, 0) {$direction}");
             })
             ->addColumn('current_price_display', function ($row) use ($currency) {
                 return '<div class="tw:font-bold tw:text-primary">'.$this->formatAnalyticAmount($row->current_price_idr, $currency).'</div>'
@@ -224,15 +236,7 @@ class VsBestPriceComparisonController extends Controller
             })
             ->rawColumns([
                 'material_display',
-                'current_price_display',
-                'best_price_display',
-                'diff_display',
-                'potential_difference_display',
-                'status_badge',
-                'action',
-            ])
-            ->only([
-                'material_display',
+                'dimensions_display',
                 'current_price_display',
                 'best_price_display',
                 'diff_display',
@@ -243,5 +247,63 @@ class VsBestPriceComparisonController extends Controller
             ->with('summary', $summary)
             ->with('currency', $currency)
             ->make(true);
+    }
+
+    private function formatVsBestDimensions(object $row): string
+    {
+        $shape = PrItem::canonicalShape($row->shape ?? null) ?? ($row->shape ?? null);
+        $fields = match ($shape) {
+            PrItem::SHAPE_FLAT => ['thickness', 'width', 'length'],
+            PrItem::SHAPE_ROUND => ['d_outer', 'length'],
+            PrItem::SHAPE_HOLLOW => ['d_outer', 'd_inner', 'length'],
+            default => [],
+        };
+
+        if ($fields === []) {
+            return '<span class="tw:text-on-surface-variant">-</span>';
+        }
+
+        $labels = ['thickness' => '', 'width' => '', 'd_outer' => 'Ø', 'd_inner' => 'Ø', 'length' => ''];
+        $format = fn ($value) => $value === null || $value === ''
+            ? '-'
+            : $this->regionalFormatter->number(PrItem::formatDimensionValue($value), 'decimal');
+
+        $requestedParts = [];
+        $offeredParts = [];
+        $hasOffered = false;
+
+        foreach ($fields as $field) {
+            $requestedParts[] = $labels[$field].$format($row->{$field} ?? null);
+
+            $offeredField = 'available_'.$field;
+            if ($field === 'length' && ($row->available_length_min ?? null) !== null && ($row->available_length_max ?? null) !== null) {
+                $hasOffered = true;
+                $offeredParts[] = $format($row->available_length_min).'-'.$format($row->available_length_max);
+            } else {
+                $offeredVal = $row->{$offeredField} ?? null;
+                if ($offeredVal !== null && $offeredVal !== '') {
+                    $hasOffered = true;
+                }
+                $offeredParts[] = $labels[$field].$format($offeredVal);
+            }
+        }
+
+        $requestedText = implode(' × ', $requestedParts).' mm';
+        $shapeLabel = PrItem::shapeLabel($shape);
+        $html = '<div class="tw:font-semibold tw:text-on-surface ui-tabular-nums">'.e($requestedText).'</div>';
+        if ($shapeLabel !== '') {
+            $html .= '<div class="tw:text-on-surface-variant tw:text-ui-xs">'.e($shapeLabel).'</div>';
+        }
+
+        if ($hasOffered) {
+            $offeredText = implode(' × ', $offeredParts).' mm';
+            if ($offeredText !== $requestedText) {
+                $html .= '<div class="tw:text-on-surface-variant tw:text-ui-xs ui-tabular-nums">'
+                    .e(__('purchasing.copy.offered')).' '.e($offeredText)
+                    .'</div>';
+            }
+        }
+
+        return $html;
     }
 }

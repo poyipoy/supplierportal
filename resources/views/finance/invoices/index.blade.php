@@ -3,7 +3,7 @@
 @section('page-title', $title ?? __('local_invoice.list.title'))
 
 @section('content')
-<div class="tw:grid tw:gap-6">
+<div class="tw:grid tw:gap-4">
     <x-ui.page-header
         :title="$title ?? __('local_invoice.list.title')"
         :description="__('finance.labels.invoice_list_help')"
@@ -24,7 +24,6 @@
     @include('local-invoices.filters')
 
     <x-ui.data-table
-        :title="$title ?? __('local_invoice.list.title')"
         :description="trans_choice('local_invoice.list.summary', $invoices->total())"
     >
         @include('local-invoices.table', ['invoices' => $invoices, 'portal' => 'finance', 'payments' => true])

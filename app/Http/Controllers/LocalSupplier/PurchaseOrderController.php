@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\LocalGoodsReceipt;
 use App\Models\LocalInvoice;
 use App\Models\LocalPurchaseOrder;
+use App\Services\RegionalDisplayFormatter;
+use App\Support\ServerTabsResponse;
 use Illuminate\Http\Request;
 
 class PurchaseOrderController extends Controller
@@ -57,5 +59,64 @@ class PurchaseOrderController extends Controller
         return view('local-supplier.purchase-orders.show', [
             'purchaseOrder' => $purchaseOrder,
         ]);
+    }
+
+    public function satellite(Request $request, LocalPurchaseOrder $purchaseOrder, RegionalDisplayFormatter $regionalFormatter)
+    {
+        abort_unless((int) $purchaseOrder->supplier_id === (int) $request->user()->id, 403);
+        $this->authorize('view', $purchaseOrder);
+
+        if (! ServerTabsResponse::wants($request)) {
+            return redirect()->route('local-supplier.purchase-orders.show', $purchaseOrder);
+        }
+
+        $purchaseOrder->load([
+            'goodsReceipts' => fn ($query) => $query
+                ->where('status', '!=', LocalGoodsReceipt::STATUS_CANCELLED)
+                ->with(['currentInvoice', 'latestGrAttachment'])
+                ->orderByDesc('gr_date')
+                ->orderByDesc('id'),
+            'invoices' => fn ($query) => $query
+                ->where('supplier_id', $request->user()->id)
+                ->latest('invoice_date')
+                ->latest('id'),
+            'attachments' => fn ($query) => $query->latest('id'),
+        ]);
+
+        $allowedTabs = ['goods-receipts', 'invoices', 'documents'];
+        $activeTab = (string) $request->query('tab', 'goods-receipts');
+        if (! in_array($activeTab, $allowedTabs, true)) {
+            $activeTab = 'goods-receipts';
+        }
+
+        $goodsReceipts = $purchaseOrder->goodsReceipts;
+        $invoices = $purchaseOrder->invoices;
+        $documents = $purchaseOrder->attachments;
+
+        $counts = [
+            'goods-receipts' => $goodsReceipts->count(),
+            'invoices' => $invoices->count(),
+            'documents' => $documents->count(),
+        ];
+
+        $viewData = [
+            'purchaseOrder' => $purchaseOrder,
+            'routePrefix' => 'local-supplier.purchase-orders',
+            'activeTab' => $activeTab,
+            'counts' => $counts,
+            'goodsReceipts' => $goodsReceipts,
+            'invoices' => $invoices,
+            'documents' => $documents,
+            'regionalFormatter' => $regionalFormatter,
+        ];
+
+        return ServerTabsResponse::make(
+            html: view('finance.local-procurement._mmt_satellite_content', $viewData)->render(),
+            tab: $activeTab,
+            request: $request,
+            extra: [
+                'nav' => view('finance.local-procurement._mmt_satellite_nav', $viewData)->render(),
+            ],
+        );
     }
 }

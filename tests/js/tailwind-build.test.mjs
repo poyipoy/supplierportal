@@ -43,7 +43,7 @@ test('every compilable application utility is present in the real build, includi
 });
 
 test('the real Vite pipeline emits responsive, state, arbitrary and negative utilities', () => {
-    for (const name of ['tw:hidden', 'tw:lg:col-span-8', 'tw:aria-[current=page]:bg-primary', 'tw:disabled:opacity-50', 'tw:-translate-x-full', 'tw:text-[10px]']) {
+    for (const name of ['tw:hidden', 'tw:lg:col-span-8', 'tw:aria-[current=page]:bg-primary', 'tw:disabled:opacity-50', 'tw:-translate-x-full', 'tw:min-h-[40px]']) {
         assert.ok(rules.some(rule => rule.selector.includes(escapeClass(name))), 'Missing compiled selector: ' + name);
     }
     const responsive = rules.find(rule => rule.selector.includes(escapeClass('tw:lg:col-span-8')));
@@ -79,7 +79,17 @@ test('Preflight and global forms resets stay absent from the compiled applicatio
     }
     assert.equal(allRules.some(rule => rule.selector.includes('*') && rule.nodes.some(node => node.prop === 'padding' && node.value === '0')), false);
     assert.equal(allRules.some(rule => /^(input|textarea|select)(?:,|$)/.test(rule.selector) && rule.nodes.some(node => node.prop === 'appearance' && node.value === 'none')), false);
-    assert.equal(allRules.some(rule => rule.nodes.some(node => node.prop?.startsWith('border') && node.prop.endsWith('-style') && node.value === 'var(--tw-border-style)')), false, 'Width-only utilities must preserve the existing foundation/UA border style');
+    assert.equal(allRules.some(rule => rule.nodes.some(node => node.prop?.startsWith('border') && node.prop.endsWith('-style') && node.value === 'var(--tw-border-style)')), false, 'Fallbackless var(--tw-border-style) must not be emitted without Preflight');
+    const divideRule = rules.find(rule => rule.selector.includes(escapeClass('tw:divide-y')));
+    assert.ok(divideRule?.nodes.some(node => node.prop === 'border-bottom-style' || node.prop === 'border-top-style' || node.prop === 'border-style'), 'tw:divide-y must carry a border-style fallback');
+    assert.ok(divideRule.nodes.some(node => node.prop.endsWith('-style') && node.value === 'var(--tw-border-style, solid)'), 'Non-zero divider must use var(--tw-border-style, solid)');
+    const appSource = readFileSync(new URL('../../resources/css/app.css', import.meta.url), 'utf8').trimEnd();
+    const authSource = readFileSync(new URL('../../resources/css/auth.css', import.meta.url), 'utf8');
+    assert.ok(appSource.endsWith('@import "tailwindcss/utilities.css" prefix(tw) source(none);'), 'app.css must import tailwindcss/utilities.css last so utilities win over component/shell rules');
+    assert.match(appSource, /@custom-variant\s+dark\s+\(&:where\(\[data-theme="dark"\],\s*\[data-theme="dark"\]\s*\*\)\);/, 'app.css must map dark variant to [data-theme="dark"]');
+    assert.match(authSource, /@custom-variant\s+dark\s+\(&:where\(\[data-theme="dark"\],\s*\[data-theme="dark"\]\s*\*\)\);/, 'auth.css must map dark variant to [data-theme="dark"]');
+    const darkRules = rules.filter(rule => rule.selector.includes('tw\\:dark\\:'));
+    assert.ok(darkRules.every(rule => rule.selector.includes('[data-theme="dark"]') && rule.parent?.name !== 'media'), 'tw:dark:* utilities must compile to [data-theme="dark"] rather than OS prefers-color-scheme media queries');
 });
 
 test('DOM selectors target prefixed classes without treating the colon as a pseudo-class', () => {
@@ -102,4 +112,20 @@ test('app and auth bundles enforce [hidden] display:none !important so author di
         });
         assert.equal(hasHiddenOverride, true, `${cssAsset.fileName} must enforce [hidden] { display: none !important } without Bootstrap Reboot`);
     }
+});
+
+test('table base cell selectors stay at single-class specificity so tw:text-center, tw:text-end, and tw:py-* win on empty states and aligned cells', () => {
+    const uiTableCellIdx = rules.findIndex(rule => rule.selector === '.ui-table > :where(:not(caption)) > * > *');
+    const dataTableCellIdx = rules.findIndex(rule => rule.selector === '.ui-data-table :where(table > :not(caption)) > * > *');
+    const textCenterIdx = rules.findIndex(rule => rule.selector === escapeClass('tw:text-center'));
+    const textEndIdx = rules.findIndex(rule => rule.selector === escapeClass('tw:text-end'));
+    const py8Idx = rules.findIndex(rule => rule.selector === escapeClass('tw:py-8'));
+
+    assert.ok(uiTableCellIdx >= 0, 'Compiled CSS must keep .ui-table > :where(:not(caption)) > * > *');
+    assert.ok(dataTableCellIdx >= 0, 'Compiled CSS must keep .ui-data-table :where(table > :not(caption)) > * > *');
+    assert.equal(rules.some(rule => /(?:^|,)\s*\.ui-table(?:--[a-z]+)?\s*>\s*:not\(caption\)/.test(rule.selector)), false, 'Raw :not(caption) on .ui-table outranks tw:* utilities');
+    assert.equal(rules.some(rule => /(?:^|,)\s*\.ui-data-table\s+table\s*>\s*:not\(caption\)/.test(rule.selector)), false, 'Raw table > :not(caption) on .ui-data-table outranks tw:* utilities');
+    assert.ok(textCenterIdx > uiTableCellIdx && textCenterIdx > dataTableCellIdx, 'tw:text-center must follow table base cell rules');
+    assert.ok(textEndIdx > uiTableCellIdx && textEndIdx > dataTableCellIdx, 'tw:text-end must follow table base cell rules');
+    assert.ok(py8Idx > uiTableCellIdx && py8Idx > dataTableCellIdx, 'tw:py-8 must follow table base cell rules');
 });

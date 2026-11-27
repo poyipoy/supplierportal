@@ -144,7 +144,6 @@
     :reset-url="$resetUrl"
     :reset-label="__('local_invoice.filters.reset')"
     :submit-label="__('local_invoice.actions.apply_filters')"
-    class="tw:mb-4"
 >
     @if($serverTabs)
         <x-slot:hidden>
@@ -242,7 +241,7 @@
             <div class="tw:flex tw:flex-wrap tw:items-center tw:gap-2">
                 <label
                     for="overdue"
-                    class="ui-motion tw:inline-flex tw:items-center tw:gap-2 tw:rounded-ui-sm tw:border tw:px-3 tw:py-1.5 tw:text-ui-xs tw:font-medium tw:cursor-pointer select-none {{ request('overdue') ? 'tw:border-error tw:bg-error-container tw:text-on-error-container' : 'tw:border-outline-variant tw:bg-surface tw:text-on-surface tw:hover:border-outline tw:hover:bg-surface-container' }}"
+                    class="ui-motion tw:inline-flex tw:items-center tw:gap-2 tw:rounded-ui-sm tw:border tw:px-3 tw:py-1.5 tw:text-ui-xs tw:font-semibold tw:cursor-pointer select-none {{ request('overdue') ? 'tw:border-error tw:bg-error-container tw:text-on-error-container' : 'tw:border-outline-variant tw:bg-surface tw:text-on-surface tw:hover:border-outline tw:hover:bg-surface-container' }}"
                 >
                     <input
                         class="ui-check tw:m-0 tw:cursor-pointer"
@@ -259,7 +258,7 @@
                 @if($payments ?? false)
                     <label
                         for="history"
-                        class="ui-motion tw:inline-flex tw:items-center tw:gap-2 tw:rounded-ui-sm tw:border tw:px-3 tw:py-1.5 tw:text-ui-xs tw:font-medium tw:cursor-pointer select-none {{ request('history') ? 'tw:border-primary tw:bg-primary-container tw:text-on-primary-container' : 'tw:border-outline-variant tw:bg-surface tw:text-on-surface tw:hover:border-outline tw:hover:bg-surface-container' }}"
+                        class="ui-motion tw:inline-flex tw:items-center tw:gap-2 tw:rounded-ui-sm tw:border tw:px-3 tw:py-1.5 tw:text-ui-xs tw:font-semibold tw:cursor-pointer select-none {{ request('history') ? 'tw:border-primary tw:bg-primary-container tw:text-on-primary-container' : 'tw:border-outline-variant tw:bg-surface tw:text-on-surface tw:hover:border-outline tw:hover:bg-surface-container' }}"
                     >
                         <input
                             class="ui-check tw:m-0 tw:cursor-pointer"

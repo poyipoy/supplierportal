@@ -151,7 +151,7 @@ test('current vs previous: an all-empty series has no legend entry and bars stay
 
     assert.equal(filter({ datasetIndex: 0 }, config.data), false, 'Previous has nothing plotted');
     assert.equal(filter({ datasetIndex: 1 }, config.data), true);
-    config.data.datasets.forEach((dataset) => assert.equal(dataset.maxBarThickness, 56));
+    config.data.datasets.forEach((dataset) => assert.equal(dataset.maxBarThickness, 36));
 });
 
 test('the AdasiChart theme is layered under the declared basis, never replacing it', () => {
@@ -190,4 +190,38 @@ test('quotation trend suppliers differ by point shape and line dash, not by colo
     assert.deepEqual(datasets.map((dataset) => dataset.borderColor), ['A', 'B', 'C'], 'shared AdasiChart series tokens when present');
     assert.equal(new Set(datasets.map((dataset) => dataset.pointStyle)).size, 3);
     assert.equal(new Set(datasets.map((dataset) => JSON.stringify(dataset.borderDash))).size, 3);
+});
+
+test('all historical PR chart builders enable column/point hover without exact intersection and format purchaseHistory tooltips', () => {
+    const { currentPrevious, trend, purchaseHistory } = builders();
+
+    const barBuilt = currentPrevious({
+        basis: 'IDR',
+        axis_label: 'IDR/kg',
+        labels: ['S-A'],
+        series: { current: ['50000'], previous: ['45000'] },
+        tooltips: { current: [{}], previous: [{}] },
+    }, i18n, colors, format);
+    assert.deepEqual(JSON.parse(JSON.stringify(barBuilt.config.options.interaction)), { mode: 'index', intersect: false });
+
+    const trendBuilt = trend({
+        basis: 'USD',
+        axis_label: 'USD/kg',
+        series: [{ supplier: 'S-A', points: [{ x: Date.UTC(2026, 5, 3), y: '3.55', tooltip: {} }] }],
+        excluded: [],
+    }, i18n, colors, format, formatDate);
+    assert.deepEqual(JSON.parse(JSON.stringify(trendBuilt.config.options.interaction)), { mode: 'nearest', axis: 'x', intersect: false });
+
+    const poBuilt = purchaseHistory({
+        currency: 'IDR',
+        chartData: { labels: ['Aug 2026'], pricesIdr: [50000] },
+    }, i18n, colors, format);
+    assert.deepEqual(JSON.parse(JSON.stringify(poBuilt.config.options.interaction)), { mode: 'index', intersect: false });
+    assert.equal(
+        poBuilt.config.options.plugins.tooltip.callbacks.label({
+            dataset: poBuilt.config.data.datasets[0],
+            parsed: { y: 50000 },
+        }),
+        'Weighted avg: 50000/kg',
+    );
 });

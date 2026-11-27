@@ -10,7 +10,7 @@
 
         <form method="POST" action="{{ route('profile.two-factor.recovery-codes') }}" class="tw:mb-5">
             @csrf
-            <button type="submit" class="ui-focus-ring ui-motion tw:inline-flex tw:h-9 tw:items-center tw:gap-2 tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-transparent tw:px-3 tw:text-ui-sm tw:font-medium tw:text-on-surface tw:hover:bg-surface-container">
+            <button type="submit" class="ui-focus-ring ui-motion tw:inline-flex tw:h-9 tw:items-center tw:gap-2 tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-transparent tw:px-3 tw:text-ui-sm tw:font-semibold tw:text-on-surface tw:hover:bg-surface-container">
                 <x-ui.icon name="refresh-cw" />{{ __('security.regenerate_codes') }}
             </button>
         </form>
@@ -22,15 +22,15 @@
                 @method('DELETE')
 
                 <div class="tw:grid tw:gap-1.5 tw:mb-4">
-                    <label for="disable_two_factor_code" class="tw:text-ui-sm tw:font-medium tw:text-on-surface">{{ __('security.code') }}</label>
+                    <label for="disable_two_factor_code" class="tw:text-ui-sm tw:font-semibold tw:text-on-surface">{{ __('security.code') }}</label>
                     <input id="disable_two_factor_code" name="code" type="text"
                         class="tw:h-10 tw:w-full tw:rounded-ui-sm tw:border tw:bg-surface tw:px-3 tw:font-mono tw:text-ui-sm tw:text-on-surface tw:focus:border-primary tw:focus:ring-2 tw:focus:ring-primary {{ $errors->has('code') ? 'tw:border-error' : 'tw:border-outline-strong' }}"
                         autocomplete="one-time-code" maxlength="32"
                         aria-describedby="disable_two_factor_help{{ $errors->has('code') ? ' disable_two_factor_code_error' : '' }}"
                         aria-invalid="{{ $errors->has('code') ? 'true' : 'false' }}" required>
-                    @error('code')<p id="disable_two_factor_code_error" class="tw:m-0 tw:text-ui-xs tw:font-medium tw:text-error" role="alert">{{ $message }}</p>@enderror
+                    @error('code')<p id="disable_two_factor_code_error" class="tw:m-0 tw:text-ui-xs tw:font-semibold tw:text-error" role="alert">{{ $message }}</p>@enderror
                 </div>
-                <button type="submit" class="ui-focus-ring ui-motion tw:inline-flex tw:h-9 tw:items-center tw:gap-2 tw:rounded-ui-sm tw:border tw:border-error/60 tw:bg-transparent tw:px-3 tw:text-ui-sm tw:font-medium tw:text-error tw:hover:bg-error/5">
+                <button type="submit" class="ui-focus-ring ui-motion tw:inline-flex tw:h-9 tw:items-center tw:gap-2 tw:rounded-ui-sm tw:border tw:border-error/60 tw:bg-transparent tw:px-3 tw:text-ui-sm tw:font-semibold tw:text-error tw:hover:bg-error/5">
                     <x-ui.icon name="shield-x" />{{ __('security.disable') }}
                 </button>
             </form>

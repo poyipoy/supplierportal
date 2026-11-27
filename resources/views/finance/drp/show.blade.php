@@ -3,7 +3,7 @@
 @section('page-title', __('finance.drp.payment_plan_detail'))
 
 @section('content')
-<div class="drp-batch-detail tw:grid tw:grid-cols-1 tw:min-w-0 tw:max-w-full tw:gap-6 tw:pb-16">
+<div class="drp-batch-detail tw:grid tw:grid-cols-1 tw:min-w-0 tw:max-w-full tw:gap-6">
     <x-ui.page-header
         :title="__('finance.drp_ui.batch_title', ['number' => $batch->batch_number])"
         :description="__('finance.closure.batch_description', ['type' => __('finance.closure.batch_type_'.strtolower($batch->batch_type)), 'date' => $regionalFormatter->timestamp($batch->created_at, 'datetime'), 'name' => $batch->creator?->name ?? __('common.final_copy.system')])"
@@ -167,7 +167,7 @@
                             {{ __('finance.drp_ui.bank_details', ['bank' => $group->bank_name, 'account' => $group->account_number, 'holder' => $group->account_holder_name]) }}
                         </span>
                         @if($group->voucher_number)
-                            <span class="tw:text-[11px] tw:text-primary tw:block tw:mt-0.5">
+                            <span class="tw:text-ui-xs tw:text-primary tw:block tw:mt-0.5">
                                 {{ __('finance.drp_ui.voucher_details', ['number' => $group->voucher_number, 'date' => $regionalFormatter->date($group->voucher_date, 'human')]) }}
                             </span>
                         @endif
@@ -175,11 +175,11 @@
 
                     <div class="tw:flex tw:flex-wrap tw:items-center tw:gap-4 tw:text-end">
                         <div>
-                            <span class="tw:text-[11px] tw:text-on-surface-variant tw:block">{{ __('finance.drp_surface.net_transfer') }}</span>
+                            <span class="tw:text-ui-xs tw:text-on-surface-variant tw:block">{{ __('finance.drp_surface.net_transfer') }}</span>
                             <span class="ui-tabular-nums tw:font-bold tw:text-ui-base tw:text-primary">
                                 Rp {{ $regionalFormatter->money($group->net_payment_amount, 0) }}
                             </span>
-                            <span class="tw:text-[10px] tw:text-on-surface-variant tw:block">{{ __('finance.drp_ui.fee_amount', ['amount' => $regionalFormatter->money($group->bank_fee, 0)]) }}</span>
+                            <span class="tw:text-ui-xs tw:text-on-surface-variant tw:block">{{ __('finance.drp_ui.fee_amount', ['amount' => $regionalFormatter->money($group->bank_fee, 0)]) }}</span>
                         </div>
 
                         {{-- Action Buttons per Group --}}
@@ -271,20 +271,20 @@
                                             @if($item->localInvoicePayment)
                                                 @if($item->localInvoicePayment->status === \App\Models\LocalInvoicePayment::STATUS_FINALIZED)
                                                     <div class="tw:flex tw:flex-col tw:gap-1">
-                                                        <span class="tw:inline-flex tw:px-1.5 tw:py-0.5 tw:rounded-sm tw:text-[10px] tw:font-semibold tw:bg-success/10 tw:text-success tw:w-fit">
+                                                        <span class="tw:inline-flex tw:px-1.5 tw:py-0.5 tw:rounded-sm tw:text-ui-xs tw:font-semibold tw:bg-success/10 tw:text-success tw:w-fit">
                                                             {{ __('finance.drp_ui.settled_amount', ['amount' => $regionalFormatter->money($item->localInvoicePayment->actual_paid_total, 0)]) }}
                                                         </span>
                                                         @if($item->localInvoicePayment->overpayment)
                                                             @if($item->localInvoicePayment->overpayment->status === \App\Models\SupplierOverpaymentRefund::STATUS_OPEN)
                                                                 <a href="{{ route('finance.overpayments.index', ['q' => $item->payable?->invoice_number ?? $item->item_reference]) }}"
-                                                                   class="tw:inline-flex tw:items-center tw:gap-1 tw:px-1.5 tw:py-0.5 tw:rounded-sm tw:text-[10px] tw:font-semibold tw:bg-amber-100 tw:text-amber-800 tw:dark:bg-amber-950 tw:dark:text-amber-300 tw:w-fit tw:no-underline tw:hover:underline"
+                                                                   class="tw:inline-flex tw:items-center tw:gap-1 tw:px-1.5 tw:py-0.5 tw:rounded-sm tw:text-ui-xs tw:font-semibold tw:bg-warning-container tw:text-warning-container-foreground tw:w-fit tw:no-underline tw:hover:underline"
                                                                    title="{{ __('finance.drp_surface.not_refunded') }}">
                                                                     <x-ui.icon name="alert-circle" size="xs" />
                                                                     <span>{{ __('finance.paid_ui.overpayment', ['amount' => $regionalFormatter->money($item->localInvoicePayment->overpayment->overpayment_amount, 0)]) }}</span>
                                                                 </a>
                                                             @elseif($item->localInvoicePayment->overpayment->status === \App\Models\SupplierOverpaymentRefund::STATUS_SETTLED)
                                                                 <a href="{{ route('finance.overpayments.index', ['q' => $item->payable?->invoice_number ?? $item->item_reference]) }}"
-                                                                   class="tw:inline-flex tw:items-center tw:gap-1 tw:px-1.5 tw:py-0.5 tw:rounded-sm tw:text-[10px] tw:font-semibold tw:bg-emerald-100 tw:text-emerald-800 tw:dark:bg-emerald-950 tw:dark:text-emerald-300 tw:w-fit tw:no-underline tw:hover:underline"
+                                                                   class="tw:inline-flex tw:items-center tw:gap-1 tw:px-1.5 tw:py-0.5 tw:rounded-sm tw:text-ui-xs tw:font-semibold tw:bg-success-container tw:text-success-container-foreground tw:w-fit tw:no-underline tw:hover:underline"
                                                                    title="{{ __('finance.drp_surface.refund_completed') }}">
                                                                     <x-ui.icon name="check-circle" size="xs" />
                                                                     <span>{{ __('finance.paid_ui.overpayment_settled', ['amount' => $regionalFormatter->money($item->localInvoicePayment->overpayment->overpayment_amount, 0)]) }}</span>
@@ -294,13 +294,13 @@
                                                     </div>
                                                 @elseif($item->localInvoicePayment->status === \App\Models\LocalInvoicePayment::STATUS_CORRECTION_REQUIRED)
                                                     <div class="tw:flex tw:flex-col tw:gap-0.5">
-                                                        <span class="tw:inline-flex tw:px-1.5 tw:py-0.5 tw:rounded-sm tw:text-[10px] tw:font-semibold tw:bg-warning/10 tw:text-warning-container-foreground tw:w-fit">
+                                                        <span class="tw:inline-flex tw:px-1.5 tw:py-0.5 tw:rounded-sm tw:text-ui-xs tw:font-semibold tw:bg-warning/10 tw:text-warning-container-foreground tw:w-fit">
                                                             {{ __('finance.drp_ui.underpaid') }}
                                                         </span>
-                                                        <span class="tw:text-[10px] ui-tabular-nums tw:text-on-surface-variant">
+                                                        <span class="tw:text-ui-xs ui-tabular-nums tw:text-on-surface-variant">
                                                             {{ __('finance.paid_ui.paid_amount', ['amount' => $regionalFormatter->money($item->localInvoicePayment->actual_paid_total, 0)]) }}
                                                         </span>
-                                                        <span class="tw:text-[10px] ui-tabular-nums tw:text-warning-container-foreground tw:font-semibold">
+                                                        <span class="tw:text-ui-xs ui-tabular-nums tw:text-warning-container-foreground tw:font-semibold">
                                                             {{ __('finance.paid_ui.remaining', ['amount' => $regionalFormatter->money(max(0, (float)$item->localInvoicePayment->expected_amount - (float)$item->localInvoicePayment->actual_paid_total), 0)]) }}
                                                         </span>
                                                     </div>
@@ -326,7 +326,7 @@
                                                 <div class="tw:inline-flex tw:items-center tw:gap-1.5">
                                                     @if($item->localInvoicePayment?->overpayment)
                                                         <x-ui.button :href="route('finance.overpayments.index', ['q' => $item->payable?->invoice_number ?? $item->item_reference])" variant="outline" size="sm" :title="__('finance.refund.open_refund')">
-                                                            <x-ui.icon name="corner-up-left" size="sm" class="tw:text-amber-600" />
+                                                            <x-ui.icon name="corner-up-left" size="sm" class="tw:text-warning" />
                                                             <span>{{ __('terms.refund') }}</span>
                                                         </x-ui.button>
                                                     @endif
@@ -369,7 +369,7 @@
                                     @csrf
                                     <div class="modal-content">
                                         <div class="modal-header">
-                                            <h5 class="modal-title tw:text-ui-sm tw:font-bold" id="removeItemModalTitle-{{ $item->id }}">{{ __('finance.drp_ui.remove_title') }}</h5>
+                                            <h5 class="modal-title tw:text-ui-lg tw:font-bold" id="removeItemModalTitle-{{ $item->id }}">{{ __('finance.drp_ui.remove_title') }}</h5>
                                             <button type="button" class="btn-close" data-ui-modal-close aria-label="{{ __('local_invoice.actions.close') }}"></button>
                                         </div>
                                         <div class="modal-body">
@@ -401,7 +401,7 @@
                             @csrf
                             <div class="modal-content">
                                 <div class="modal-header">
-                                    <h5 class="modal-title tw:text-ui-sm tw:font-bold" id="voucherModalTitle-{{ $group->id }}">{{ __('finance.drp_ui.voucher_issue') }}</h5>
+                                    <h5 class="modal-title tw:text-ui-lg tw:font-bold" id="voucherModalTitle-{{ $group->id }}">{{ __('finance.drp_ui.voucher_issue') }}</h5>
                                     <button type="button" class="btn-close" data-ui-modal-close aria-label="{{ __('local_invoice.actions.close') }}"></button>
                                 </div>
                                 <div class="modal-body">
@@ -439,7 +439,7 @@
                                 @csrf
                                 <div class="modal-content">
                                     <div class="modal-header">
-                                        <h5 class="modal-title tw:text-ui-sm tw:font-bold" id="feeModalTitle-{{ $group->id }}">{{ __('finance.drp_ui.fee_adjustment') }}</h5>
+                                        <h5 class="modal-title tw:text-ui-lg tw:font-bold" id="feeModalTitle-{{ $group->id }}">{{ __('finance.drp_ui.fee_adjustment') }}</h5>
                                         <button type="button" class="btn-close" data-ui-modal-close aria-label="{{ __('local_invoice.actions.close') }}"></button>
                                     </div>
                                     <div class="modal-body">
@@ -473,7 +473,7 @@
                     @csrf
                     <div class="modal-content">
                         <div class="modal-header">
-                            <h5 class="modal-title tw:text-ui-sm tw:font-bold tw:text-error" id="cancelBatchModalTitle">{{ __('finance.drp.cancel_full') }}</h5>
+                            <h5 class="modal-title tw:text-ui-lg tw:font-bold tw:text-error" id="cancelBatchModalTitle">{{ __('finance.drp.cancel_full') }}</h5>
                             <button type="button" class="btn-close" data-ui-modal-close aria-label="{{ __('local_invoice.actions.close') }}"></button>
                         </div>
                         <div class="modal-body">

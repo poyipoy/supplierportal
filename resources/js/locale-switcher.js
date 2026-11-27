@@ -39,10 +39,42 @@ const TRANSLATED_ATTRIBUTES = [
     'data-sidebar-tooltip',
     'data-loading-text',
     'alt',
+    'data-results-template',
+    'data-empty-text',
+    'data-value-template',
+    'data-announcement-template',
+    'data-reset-text',
+    'data-collapsed-text',
+    'data-default-title',
+    'data-default-subtitle',
+    'data-label-current',
+    'data-label-read-only',
+    'data-label-open-detail',
+    'data-label-empty-chain',
+    'data-label-empty-sla',
+    'data-expand-label',
+    'data-collapse-label',
 ];
 
 export function normalizeTargetLocale(value) {
     return String(value || '').trim().toLowerCase() === 'id' ? 'id' : 'en';
+}
+
+function setDocumentPaginationLabel(documentRef, label) {
+    const docEl = documentRef?.documentElement;
+    if (!docEl || !label) return;
+
+    if (typeof docEl.setAttribute === 'function') {
+        docEl.setAttribute('data-pagination-label', label);
+        if (docEl.dataset && typeof docEl.dataset === 'object' && docEl.dataset.paginationLabel !== label) {
+            docEl.dataset.paginationLabel = label;
+        }
+        return;
+    }
+
+    if (docEl.dataset && typeof docEl.dataset === 'object') {
+        docEl.dataset.paginationLabel = label;
+    }
 }
 
 export function applySegmentedButtonState(root, activeLocale, busy = false) {
@@ -77,17 +109,17 @@ export function applySegmentedButtonState(root, activeLocale, busy = false) {
             btn.classList.add(...ACTIVE_PILL_CLASSES);
             btn.classList.remove(...INACTIVE_PILL_CLASSES);
             btn.setAttribute('aria-pressed', 'true');
+            btn.setAttribute('aria-disabled', 'true');
         } else {
             btn.classList.remove(...ACTIVE_PILL_CLASSES);
             btn.classList.add(...INACTIVE_PILL_CLASSES);
             btn.setAttribute('aria-pressed', 'false');
+            btn.setAttribute('aria-disabled', 'false');
         }
 
-        if (busy || isActive) {
-            btn.setAttribute('disabled', 'disabled');
-            btn.disabled = true;
-        } else {
-            btn.removeAttribute('disabled');
+        // Keep controls focusable (WCAG 2.2 AA) and allow rapid toggle cancellation
+        if (btn.hasAttribute?.('disabled') || btn.disabled) {
+            btn.removeAttribute?.('disabled');
             btn.disabled = false;
         }
     });
@@ -208,10 +240,13 @@ export function morphDomTree(liveRoot, serverRoot) {
         }
     }
 
-    if (liveRoot.hasAttribute?.('data-ui-tooltip-stashed')) {
+    if (liveRoot.hasAttribute?.('data-ui-stashed-title') || liveRoot.hasAttribute?.('data-ui-tooltip-stashed')) {
         const nextTooltip = serverRoot.getAttribute?.('data-ui-tooltip') ?? serverRoot.getAttribute?.('title');
         if (nextTooltip) {
             liveRoot.setAttribute?.('data-ui-tooltip', nextTooltip);
+            if (liveRoot.hasAttribute?.('data-ui-stashed-title')) {
+                liveRoot.setAttribute?.('data-ui-stashed-title', nextTooltip);
+            }
         }
     }
 
@@ -415,37 +450,109 @@ export function bootLocaleSwitcher(windowRef = globalThis.window, documentRef = 
     if (!windowRef || !documentRef) return null;
 
     let activeController = null;
+    let activeTargetLocale = null;
     let requestSequence = 0;
+    let announceTimer = null;
 
-    async function performLocaleSync({
-        locale,
+    function announceLocaleSwitch(resolvedLocale) {
+        const languageName = resolvedLocale === 'id' ? 'Bahasa Indonesia' : 'English';
+        const translatedMsg = t('js.locale.switched', { language: languageName });
+        const message = translatedMsg && translatedMsg !== 'js.locale.switched'
+            ? translatedMsg
+            : `Language switched to ${languageName}.`;
+
+        if (typeof documentRef.ariaNotify === 'function') {
+            try {
+                documentRef.ariaNotify(message, { priority: 'normal' });
+                return;
+            } catch {
+                // Fall back to polite live region below.
+            }
+        }
+
+        if (typeof documentRef.createElement !== 'function' || !documentRef.body?.appendChild) {
+            return;
+        }
+
+        let announcer = documentRef.getElementById?.('adasi-locale-announcer');
+        if (!announcer) {
+            announcer = documentRef.createElement('div');
+            announcer.id = 'adasi-locale-announcer';
+            announcer.className = 'tw:sr-only';
+            announcer.setAttribute('role', 'status');
+            announcer.setAttribute('aria-live', 'polite');
+            announcer.setAttribute('aria-atomic', 'true');
+            documentRef.body.appendChild(announcer);
+        }
+
+        if (announceTimer) {
+            clearTimeout(announceTimer);
+            announceTimer = null;
+        }
+        announcer.textContent = '';
+        announceTimer = setTimeout(() => {
+            announceTimer = null;
+            announcer.textContent = message;
+        }, 40);
+    }
+
+    function syncLocaleDictionaries({
         i18n = null,
         datatables = null,
         session_copy = null,
-        signal = null,
-        seq = requestSequence,
-        restoreFocusTrigger = null,
-        wasDirtyBeforeSwitch = Boolean(windowRef.AdasiUnsaved?.isDirty?.()),
-    }) {
-        const resolvedLocale = normalizeTargetLocale(locale);
-
-        // Hot-swap client runtime dictionaries from payload
+        pagination_label = null,
+    } = {}) {
         if (i18n) {
             windowRef.AdasiI18n?.setPayload?.(i18n);
         }
         if (session_copy && windowRef.AdasiSession?.copy) {
             Object.assign(windowRef.AdasiSession.copy, session_copy);
         }
+        if (pagination_label) {
+            setDocumentPaginationLabel(documentRef, pagination_label);
+        }
+        if (datatables && windowRef.DataTable?.defaults) {
+            if (typeof windowRef.DataTable.util?.object?.assignDeepObjects === 'function') {
+                windowRef.DataTable.util.object.assignDeepObjects(windowRef.DataTable.defaults, { language: datatables }, true);
+            } else {
+                windowRef.DataTable.defaults.language = {
+                    ...(windowRef.DataTable.defaults.language || {}),
+                    ...datatables,
+                };
+            }
+        }
+        windowRef.AdasiServerTabs?.invalidateCache?.();
+    }
+
+    async function performLocaleSync({
+        locale,
+        i18n = null,
+        datatables = null,
+        session_copy = null,
+        pagination_label = null,
+        shell_html = null,
+        workspace_config = null,
+        signal = null,
+        seq = requestSequence,
+        restoreFocusTrigger = null,
+        wasDirtyBeforeSwitch = Boolean(windowRef.AdasiUnsaved?.isDirty?.()),
+        announce = false,
+    }) {
+        const resolvedLocale = normalizeTargetLocale(locale);
+
+        // Hot-swap client runtime dictionaries from payload
+        syncLocaleDictionaries({ i18n, datatables, session_copy, pagination_label });
         if (documentRef.documentElement) {
             documentRef.documentElement.lang = resolvedLocale;
         }
-        windowRef.AdasiServerTabs?.invalidateCache?.();
 
-        // Fetch server-rendered HTML of current page & non-destructively morph DOM
+        // Resolve server-rendered HTML: use inline shell_html (single-RTT) when present, otherwise fetch current page
         const currentUrl = windowRef.location?.href;
         let parsedDoc = null;
 
-        if (
+        if (shell_html && typeof windowRef.DOMParser === 'function') {
+            parsedDoc = new windowRef.DOMParser().parseFromString(shell_html, 'text/html');
+        } else if (
             currentUrl
             && isSameOriginUrl(currentUrl, windowRef.location?.origin)
             && typeof windowRef.DOMParser === 'function'
@@ -470,46 +577,49 @@ export function bootLocaleSwitcher(windowRef = globalThis.window, documentRef = 
                     return { ok: false, locale: resolvedLocale, title: documentRef.title || '', document: null };
                 }
                 parsedDoc = new windowRef.DOMParser().parseFromString(htmlText, 'text/html');
+            }
+        }
 
-                if (parsedDoc?.title) {
-                    documentRef.title = parsedDoc.title;
+        if (parsedDoc) {
+            if (parsedDoc.title) {
+                documentRef.title = parsedDoc.title;
+            }
+            const nextPaginationLabel = pagination_label
+                || parsedDoc.documentElement?.dataset?.paginationLabel
+                || parsedDoc.documentElement?.getAttribute?.('data-pagination-label');
+            if (nextPaginationLabel) {
+                setDocumentPaginationLabel(documentRef, nextPaginationLabel);
+            }
+
+            const regions = [
+                '.ui-skip-link',
+                'nav.top-navbar',
+                '#sidebar',
+                '#chatDrawer',
+                '.workspace-sessionbar',
+                '#main-content',
+                '.auth-shell',
+                '#adasi-smart-panel',
+                '#adasiImageLightbox',
+            ];
+
+            regions.forEach((selector) => {
+                const liveRegion = documentRef.querySelector?.(selector);
+                const serverRegion = parsedDoc.querySelector?.(selector);
+                if (liveRegion && serverRegion) {
+                    morphDomTree(liveRegion, serverRegion);
                 }
-                const nextPaginationLabel = parsedDoc?.documentElement?.dataset?.paginationLabel;
-                if (nextPaginationLabel && documentRef.documentElement) {
-                    documentRef.documentElement.dataset = documentRef.documentElement.dataset || {};
-                    documentRef.documentElement.dataset.paginationLabel = nextPaginationLabel;
-                }
+            });
 
-                const regions = [
-                    '.ui-skip-link',
-                    'nav.top-navbar',
-                    '#sidebar',
-                    '#chatDrawer',
-                    '.workspace-sessionbar',
-                    '#main-content',
-                    '.auth-shell',
-                    '#adasi-smart-panel',
-                    '#adasiImageLightbox',
-                ];
+            windowRef?.AdasiTooltip?.refresh?.(documentRef);
 
-                regions.forEach((selector) => {
-                    const liveRegion = documentRef.querySelector?.(selector);
-                    const serverRegion = parsedDoc.querySelector?.(selector);
-                    if (liveRegion && serverRegion) {
-                        morphDomTree(liveRegion, serverRegion);
-                    }
-                });
-
-                windowRef?.AdasiTooltip?.refresh?.(documentRef);
-
-                // Reset notification dropdown summary container if idle/loaded so next open fetches in new locale
-                const notifContainer = documentRef.querySelector?.('[data-notification-summary-container]');
-                const serverNotifContainer = parsedDoc.querySelector?.('[data-notification-summary-container]');
-                if (notifContainer && notifContainer.dataset?.notificationSummaryState === 'loaded') {
-                    notifContainer.dataset.notificationSummaryState = 'idle';
-                    if (serverNotifContainer) {
-                        notifContainer.textContent = serverNotifContainer.textContent.trim();
-                    }
+            // Reset notification dropdown summary container if idle/loaded so next open fetches in new locale
+            const notifContainer = documentRef.querySelector?.('[data-notification-summary-container]');
+            const serverNotifContainer = parsedDoc.querySelector?.('[data-notification-summary-container]');
+            if (notifContainer && notifContainer.dataset?.notificationSummaryState === 'loaded') {
+                notifContainer.dataset.notificationSummaryState = 'idle';
+                if (serverNotifContainer) {
+                    notifContainer.textContent = serverNotifContainer.textContent.trim();
                 }
             }
         }
@@ -524,14 +634,18 @@ export function bootLocaleSwitcher(windowRef = globalThis.window, documentRef = 
             windowRef.AdasiUnsaved?.resetSnapshot?.();
         }
 
-        // Settle segmented button state & optionally restore focus to active language option
+        // Settle segmented button state & optionally restore focus to active language option in same track
         applySegmentedButtonState(documentRef, resolvedLocale, false);
 
         if (restoreFocusTrigger) {
-            const activeBtn = documentRef.querySelector?.(
-                `.lang-pill-btn[data-locale-option="${resolvedLocale}"], .lang-pill-btn[value="${resolvedLocale}"]`,
-            );
+            const track = restoreFocusTrigger.closest?.('.lang-toggle-track');
+            const selector = `.lang-pill-btn[data-locale-option="${resolvedLocale}"], .lang-pill-btn[value="${resolvedLocale}"]`;
+            const activeBtn = track?.querySelector?.(selector) || documentRef.querySelector?.(selector);
             activeBtn?.focus?.({ preventScroll: true });
+        }
+
+        if (announce) {
+            announceLocaleSwitch(resolvedLocale);
         }
 
         // Notify Alpine & shell components (workspace shell, embeds, wizards, forms)
@@ -544,6 +658,8 @@ export function bootLocaleSwitcher(windowRef = globalThis.window, documentRef = 
                         i18n: i18n || null,
                         datatables: datatables || null,
                         session_copy: session_copy || null,
+                        pagination_label: pagination_label || null,
+                        workspace_config: workspace_config || null,
                         document: parsedDoc,
                     },
                 }),
@@ -563,6 +679,7 @@ export function bootLocaleSwitcher(windowRef = globalThis.window, documentRef = 
         i18n = null,
         datatables = null,
         session_copy = null,
+        pagination_label = null,
     } = {}) {
         const resolvedLocale = normalizeTargetLocale(
             locale || documentRef.documentElement?.lang || windowRef.AdasiI18n?.locale || 'en',
@@ -573,6 +690,7 @@ export function bootLocaleSwitcher(windowRef = globalThis.window, documentRef = 
         }
         const controller = new AbortController();
         activeController = controller;
+        activeTargetLocale = resolvedLocale;
         const seq = ++requestSequence;
 
         try {
@@ -581,6 +699,7 @@ export function bootLocaleSwitcher(windowRef = globalThis.window, documentRef = 
                 i18n,
                 datatables,
                 session_copy,
+                pagination_label,
                 signal: controller.signal,
                 seq,
             });
@@ -592,6 +711,7 @@ export function bootLocaleSwitcher(windowRef = globalThis.window, documentRef = 
         } finally {
             if (activeController === controller) {
                 activeController = null;
+                activeTargetLocale = null;
             }
         }
     }
@@ -601,6 +721,10 @@ export function bootLocaleSwitcher(windowRef = globalThis.window, documentRef = 
         const currentLocale = normalizeTargetLocale(
             documentRef.documentElement?.lang || windowRef.AdasiI18n?.locale || 'en',
         );
+
+        if (activeController && activeTargetLocale === nextLocale) {
+            return true;
+        }
 
         if (nextLocale === currentLocale && !activeController) {
             applySegmentedButtonState(documentRef, nextLocale, false);
@@ -612,6 +736,7 @@ export function bootLocaleSwitcher(windowRef = globalThis.window, documentRef = 
         }
         const controller = new AbortController();
         activeController = controller;
+        activeTargetLocale = nextLocale;
         const seq = ++requestSequence;
 
         // 1. Optimistic UI state
@@ -625,10 +750,13 @@ export function bootLocaleSwitcher(windowRef = globalThis.window, documentRef = 
             || documentRef.querySelector?.('meta[name="csrf-token"]')?.content
             || '';
 
+        const isWorkspaceShell = documentRef.documentElement?.dataset?.workspaceShell === 'true'
+            || documentRef.documentElement?.getAttribute?.('data-workspace-shell') === 'true';
+
         const wasDirtyBeforeSwitch = Boolean(windowRef.AdasiUnsaved?.isDirty?.());
 
         try {
-            // 2. Server-side locale mutation & dictionary generation
+            // 2. Server-side locale mutation & dictionary generation (+ single-RTT shell chrome when applicable)
             const postResponse = await windowRef.fetch(endpoint, {
                 method: 'POST',
                 credentials: 'same-origin',
@@ -642,11 +770,14 @@ export function bootLocaleSwitcher(windowRef = globalThis.window, documentRef = 
                 body: JSON.stringify({
                     locale: nextLocale,
                     return_to: `${windowRef.location?.pathname || '/'}${windowRef.location?.search || ''}`,
+                    ...(isWorkspaceShell ? { include_shell: true } : {}),
                 }),
             });
 
             if (!postResponse || !postResponse.ok) {
-                throw new Error(`Locale switch failed with HTTP ${postResponse?.status || 'unknown'}`);
+                const err = new Error(`Locale switch failed with HTTP ${postResponse?.status || 'unknown'}`);
+                err.status = postResponse?.status || 0;
+                throw err;
             }
 
             const payload = await postResponse.json();
@@ -657,10 +788,14 @@ export function bootLocaleSwitcher(windowRef = globalThis.window, documentRef = 
                 i18n: payload?.i18n || null,
                 datatables: payload?.datatables || null,
                 session_copy: payload?.session_copy || null,
+                pagination_label: payload?.pagination_label || null,
+                shell_html: payload?.shell_html || null,
+                workspace_config: payload?.workspace_config || null,
                 signal: controller.signal,
                 seq,
                 restoreFocusTrigger: triggerElement,
                 wasDirtyBeforeSwitch,
+                announce: true,
             });
 
             return Boolean(result?.ok);
@@ -670,12 +805,20 @@ export function bootLocaleSwitcher(windowRef = globalThis.window, documentRef = 
             }
             if (seq === requestSequence) {
                 applySegmentedButtonState(documentRef, currentLocale, false);
-                windowRef.AdasiToast?.error?.(t('js.async_form.failed'));
+                const isAuthFailure = error?.status === 401 || error?.status === 419;
+                if (!isAuthFailure || !windowRef.AdasiSessionSync) {
+                    const dedicatedMsg = t('js.locale.switch_failed');
+                    const toastMsg = dedicatedMsg && dedicatedMsg !== 'js.locale.switch_failed'
+                        ? dedicatedMsg
+                        : t('js.async_form.failed');
+                    windowRef.AdasiToast?.error?.(toastMsg);
+                }
             }
             return false;
         } finally {
             if (activeController === controller) {
                 activeController = null;
+                activeTargetLocale = null;
             }
         }
     }
@@ -688,7 +831,8 @@ export function bootLocaleSwitcher(windowRef = globalThis.window, documentRef = 
         if (typeof windowRef.fetch !== 'function') return;
 
         event.preventDefault();
-        const submitter = event.submitter || form.querySelector?.('button[name="locale"]:not([disabled])');
+        const submitter = event.submitter
+            || form.querySelector?.('button[name="locale"][aria-pressed="false"], button[name="locale"]:not([aria-disabled="true"]):not([disabled])');
         const targetLocale = submitter?.value || submitter?.dataset?.localeOption;
         if (!targetLocale) return;
 
@@ -701,6 +845,7 @@ export function bootLocaleSwitcher(windowRef = globalThis.window, documentRef = 
     const api = Object.freeze({
         switchLocale,
         syncLocaleInPlace,
+        syncLocaleDictionaries,
         applySegmentedButtonState,
         morphDomTree,
     });

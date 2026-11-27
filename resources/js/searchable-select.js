@@ -12,6 +12,8 @@ export function searchableSelect(config = {}) {
         options: Array.isArray(config.options) ? config.options : [],
         highlightedIndex: -1,
         allowCustom: Boolean(config.allowCustom),
+        clearable: config.clearable !== false,
+        placeholderText: String(config.placeholder ?? ''),
         suggestionsUrl: config.suggestionsUrl || null,
         remoteSearch: Boolean(config.remoteSearch),
         preloadOnOpen: Boolean(config.preloadOnOpen),
@@ -77,6 +79,102 @@ export function searchableSelect(config = {}) {
             }
             this.selectedValue = nextVal;
             this.syncNativeSelect(nextVal, !silent);
+        },
+
+        normalizeOption(item) {
+            const val = String(item?.value ?? '');
+            const label = item?.label !== undefined ? String(item.label) : val;
+            const sublabel = item?.sublabel ? String(item.sublabel) : null;
+            const badge = item?.badge ? String(item.badge) : null;
+            const badgeTone = item?.badgeTone ? String(item.badgeTone) : 'neutral';
+            const keywords = item?.searchKeywords
+                ? String(item.searchKeywords)
+                : [label, sublabel, badge, val].filter(Boolean).join(' ');
+            const dataset = item?.dataset && typeof item.dataset === 'object' ? { ...item.dataset } : {};
+
+            return {
+                value: val,
+                label,
+                sublabel,
+                badge,
+                badgeTone,
+                searchKeywords: keywords.toLowerCase(),
+                dataset,
+            };
+        },
+
+        setExternalOptions(newOptions, config = {}) {
+            const normalized = Array.isArray(newOptions)
+                ? newOptions.map((item) => this.normalizeOption(item))
+                : [];
+            this.options = normalized;
+
+            if (config.placeholder !== undefined) {
+                this.placeholderText = String(config.placeholder ?? '');
+            }
+            if (config.disabled !== undefined) {
+                this.isDisabled = Boolean(config.disabled);
+                if (this.isDisabled) {
+                    this.close(false);
+                }
+            }
+
+            let nextVal = config.value !== undefined ? String(config.value ?? '') : this.selectedValue;
+            if (nextVal !== '' && !this.options.some((opt) => String(opt.value) === nextVal)) {
+                if (this.allowCustom && config.value !== undefined) {
+                    this.ensureCustomOptionPresent(nextVal);
+                } else {
+                    nextVal = '';
+                }
+            }
+
+            const selectEl = this.$refs?.nativeSelect;
+            const createOption = (value, label) => {
+                if (typeof globalThis.document?.createElement === 'function') {
+                    const optEl = globalThis.document.createElement('option');
+                    optEl.value = value;
+                    optEl.textContent = label;
+                    return optEl;
+                }
+                const optEl = new Option(label, value);
+                optEl.value = value;
+                optEl.textContent = label;
+                if (!optEl.dataset) optEl.dataset = {};
+                return optEl;
+            };
+            const appendOption = (optEl) => {
+                if (typeof selectEl.appendChild === 'function') {
+                    selectEl.appendChild(optEl);
+                } else if (typeof selectEl.add === 'function') {
+                    selectEl.add(optEl);
+                }
+            };
+            if (selectEl && (typeof selectEl.appendChild === 'function' || typeof selectEl.add === 'function')) {
+                selectEl.innerHTML = '';
+                if (Array.isArray(selectEl.options)) selectEl.options.length = 0;
+                const hasEmpty = this.options.some((opt) => String(opt.value) === '');
+                if (!hasEmpty && this.clearable) {
+                    appendOption(createOption('', this.placeholderText));
+                }
+                this.options.forEach((opt) => {
+                    const optEl = createOption(String(opt.value), String(opt.label));
+                    if (opt.dataset && optEl.dataset) {
+                        Object.entries(opt.dataset).forEach(([k, v]) => {
+                            if (v !== undefined && v !== null) {
+                                optEl.dataset[k] = String(v);
+                            }
+                        });
+                    }
+                    if (String(opt.value) === nextVal) {
+                        optEl.selected = true;
+                        optEl.setAttribute?.('selected', 'selected');
+                    }
+                    appendOption(optEl);
+                });
+            }
+
+            this.selectedValue = nextVal;
+            this.syncNativeSelect(nextVal, config.silent === false);
         },
 
         buildSuggestionsUrl(query) {

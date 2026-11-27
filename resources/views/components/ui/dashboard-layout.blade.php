@@ -42,10 +42,10 @@
 
 <div {{ $attributes->class(['ui-dashboard-layout tw:grid tw:grid-cols-1 tw:lg:grid-cols-12']) }} data-dashboard-audience="{{ $audience }}">
     @if($ownsAudience)
-        <div class="tw:col-span-1 tw:lg:col-span-12 tw:flex tw:justify-end tw:-mb-1" data-editor-toolbar>
+        <div class="tw:min-w-0 tw:col-span-1 tw:lg:col-span-12 tw:flex tw:justify-end tw:-mb-1" data-editor-toolbar>
             {{-- The button only works with JavaScript, so it stays hidden until the editor boots; without JavaScript the link below opens the Customization page. --}}
             <button type="button"
-                    class="tw:inline-flex tw:items-center tw:gap-1.5 tw:border-0 tw:bg-transparent tw:text-ui-xs tw:text-on-surface-variant tw:hover:text-primary tw:font-medium ui-focus-ring tw:rounded-ui-xs tw:px-2 tw:py-1 tw:transition-colors"
+                    class="tw:inline-flex tw:items-center tw:gap-1.5 tw:border-0 tw:bg-transparent tw:text-ui-xs tw:text-on-surface-variant tw:hover:text-primary tw:font-semibold ui-focus-ring tw:rounded-ui-xs tw:px-2 tw:py-1 tw:transition-colors"
                     data-dashboard-customize-link data-editor-enter hidden>
                 <x-ui.icon name="sliders-horizontal" size="xs" />
                 <span>{{ __('customization.dashboard_customize') }}</span>
@@ -53,7 +53,7 @@
             @if(\Illuminate\Support\Facades\Route::has('profile.customization'))
                 <noscript>
                     <a href="{{ route('profile.customization') }}#dashboard-layout-title"
-                       class="tw:inline-flex tw:items-center tw:gap-1.5 tw:text-ui-xs tw:text-on-surface-variant tw:hover:text-primary tw:font-medium ui-focus-ring tw:rounded-ui-xs tw:px-2 tw:py-1 tw:transition-colors"
+                       class="tw:inline-flex tw:items-center tw:gap-1.5 tw:text-ui-xs tw:text-on-surface-variant tw:hover:text-primary tw:font-semibold ui-focus-ring tw:rounded-ui-xs tw:px-2 tw:py-1 tw:transition-colors"
                        data-dashboard-customize-link>
                         <x-ui.icon name="sliders-horizontal" size="xs" />
                         <span>{{ __('common.dashboard.customize') }}</span>

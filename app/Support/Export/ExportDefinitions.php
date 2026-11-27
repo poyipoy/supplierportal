@@ -6,6 +6,7 @@ use App\Exports\Advanced\Definitions\InspectionDefinition;
 use App\Exports\Advanced\Definitions\LocalInvoiceDefinition;
 use App\Exports\Advanced\Definitions\PriceHistoryDefinition;
 use App\Exports\Advanced\Definitions\PurchaseOrderDefinition;
+use App\Exports\Advanced\Definitions\PurchasingPriceHistoryDefinition;
 use App\Exports\Advanced\Definitions\QuotationDefinition;
 use App\Exports\Advanced\Definitions\RequisitionDefinition;
 use App\Exports\Advanced\Definitions\ShipmentDefinition;
@@ -22,6 +23,7 @@ final class ExportDefinitions
         'supplier.shipments' => ShipmentDefinition::class,
         'purchasing.po' => PurchaseOrderDefinition::class,
         'supplier.po' => PurchaseOrderDefinition::class,
+        'purchasing.price-history' => PurchasingPriceHistoryDefinition::class,
         'supplier.price-history' => PriceHistoryDefinition::class,
         'qc.inspections' => InspectionDefinition::class,
         'finance.local-invoices' => LocalInvoiceDefinition::class,

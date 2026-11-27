@@ -7,7 +7,7 @@
 
 @php
     $variants = [
-        'default' => 'tw:border-outline tw:bg-surface tw:shadow-none',
+        'default' => 'tw:border-outline tw:bg-surface tw:shadow-ui-surface',
         'flat' => 'tw:border-outline tw:bg-surface tw:shadow-none',
         'tonal' => 'tw:border-outline tw:bg-surface-container tw:shadow-none',
         'elevated' => 'tw:border-outline tw:bg-surface tw:shadow-ui-2',

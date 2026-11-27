@@ -27,7 +27,7 @@
             <div>
                 <div class="tw:flex tw:items-center tw:gap-2">
                     <x-ui.icon name="award" size="sm" class="tw:text-primary" aria-hidden="true" />
-                    <h3 id="{{ $titleId }}" class="tw:m-0 tw:text-ui-sm tw:font-bold tw:text-on-surface">{{ $cardTitle }}</h3>
+                    <h3 id="{{ $titleId }}" class="tw:m-0 tw:text-ui-base tw:font-bold tw:text-on-surface">{{ $cardTitle }}</h3>
                     <x-ui.status-chip tone="neutral" size="sm">{{ $scopeLabel }}</x-ui.status-chip>
                 </div>
                 <p class="tw:mt-1 tw:mb-0 tw:text-ui-xs tw:text-on-surface-variant">
@@ -47,7 +47,7 @@
             @foreach($scorecard->metrics as $metric)
                 <div class="tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface-container tw:p-3">
                     <div class="tw:flex tw:items-center tw:justify-between tw:gap-2">
-                        <span class="tw:text-ui-xs tw:font-medium tw:text-on-surface-variant">{{ __($metric['label_key']) }}</span>
+                        <span class="tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant">{{ __($metric['label_key']) }}</span>
                         <strong class="ui-tabular-nums tw:text-ui-sm tw:font-bold tw:text-on-surface">
                             {{ $metric['has_data'] ? $metric['percentage'] . '%' : '—' }}
                         </strong>

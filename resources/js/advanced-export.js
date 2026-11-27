@@ -85,12 +85,12 @@ export function createAdvancedExport(root, { designer: suppliedDesigner } = {}) 
             return;
         }
         if (previewState.exceedsLimit) {
-            previewEl.className = `${baseClass} tw:text-error tw:font-medium`;
+            previewEl.className = `${baseClass} tw:text-error tw:font-semibold`;
             previewEl.textContent = text('preview_exceeds', { rows: fmtNumber(previewState.totalRows), limit: fmtNumber(previewState.maxRows) });
             return;
         }
         if (previewState.isEmpty) {
-            previewEl.className = `${baseClass} tw:text-warning tw:font-medium`;
+            previewEl.className = `${baseClass} tw:text-warning tw:font-semibold`;
             previewEl.textContent = text('preview_empty', { columns: fmtNumber(columnCount), format: fmt });
             return;
         }
@@ -224,8 +224,29 @@ export function createAdvancedExport(root, { designer: suppliedDesigner } = {}) 
         return data;
     };
     const currentFilters = () => {
-        const values = { ...Object.fromEntries(new URL(window.location.href).searchParams), ...JSON.parse(root.dataset.initialFilters || '{}') };
-        Object.entries(selectors).forEach(([name, selector]) => { const input = document.querySelector(selector); if (input) values[name] = input.type === 'checkbox' ? (input.checked ? '1' : '0') : input.value; });
+        const searchParams = new URL(window.location.href).searchParams;
+        const urlValues = {};
+        for (const [key, value] of searchParams.entries()) {
+            if (key.endsWith('[]')) {
+                const cleanKey = key.slice(0, -2);
+                if (!Array.isArray(urlValues[cleanKey])) urlValues[cleanKey] = [];
+                if (value !== '') urlValues[cleanKey].push(value);
+            } else {
+                urlValues[key] = value;
+            }
+        }
+        const values = { ...urlValues, ...JSON.parse(root.dataset.initialFilters || '{}') };
+        Object.entries(selectors).forEach(([name, selector]) => {
+            const input = document.querySelector(selector);
+            if (!input) return;
+            if (input.multiple) {
+                values[name] = Array.from(input.selectedOptions || []).map((option) => option.value).filter((v) => v !== '');
+            } else if (input.type === 'checkbox') {
+                values[name] = input.checked ? '1' : '0';
+            } else {
+                values[name] = input.value;
+            }
+        });
         if (!values.search) {
             const legacySearch = values.po_number || values.pr_number || values.shipment_number;
             if (legacySearch) values.search = legacySearch;
@@ -238,7 +259,14 @@ export function createAdvancedExport(root, { designer: suppliedDesigner } = {}) 
         return values;
     };
     const initial = new URL(window.location.href).searchParams;
-    Object.entries(selectors).forEach(([name, selector]) => { const input = document.querySelector(selector); if (input && initial.has(name)) { if (input.type === 'checkbox') input.checked = initial.get(name) === '1'; else input.value = initial.get(name); } });
+    Object.entries(selectors).forEach(([name, selector]) => {
+        const input = document.querySelector(selector);
+        if (!input || input.multiple || input.type === 'radio') return;
+        if (initial.has(name)) {
+            if (input.type === 'checkbox') input.checked = initial.get(name) === '1';
+            else input.value = initial.get(name);
+        }
+    });
     const syncRelativePresets = () => {
         const relative = Boolean(relativeCheckbox?.checked);
         const currentDays = String(daysInput?.value ?? '').trim();
@@ -258,7 +286,21 @@ export function createAdvancedExport(root, { designer: suppliedDesigner } = {}) 
     const setFilters = (values) => {
         form.querySelectorAll('[data-filter-name]').forEach((input) => {
             const field = definition.filters.find((f) => f.name === input.dataset.filterName);
-            const nextVal = String(values[input.dataset.filterName] ?? field?.default ?? '');
+            const rawVal = values[input.dataset.filterName] ?? field?.default ?? '';
+            if (input.multiple) {
+                const nextList = Array.isArray(rawVal)
+                    ? rawVal.map((v) => String(v)).filter((v) => v !== '')
+                    : (rawVal !== '' ? [String(rawVal)] : []);
+                Array.from(input.options || []).forEach((opt) => {
+                    opt.selected = nextList.includes(String(opt.value));
+                });
+                if (input.id && typeof window.dispatchEvent === 'function' && typeof CustomEvent === 'function') {
+                    window.dispatchEvent(new CustomEvent('set-multi-value', { detail: { id: input.id, values: nextList, silent: true } }));
+                }
+                input.dispatchEvent(new Event('change', { bubbles: true }));
+                return;
+            }
+            const nextVal = String(rawVal);
             input.value = nextVal;
             if (input.id && typeof window.dispatchEvent === 'function' && typeof CustomEvent === 'function') {
                 window.dispatchEvent(new CustomEvent('set-select-value', { detail: { id: input.id, value: nextVal, silent: true } }));
@@ -272,7 +314,15 @@ export function createAdvancedExport(root, { designer: suppliedDesigner } = {}) 
     };
     const filters = () => {
         const data = {};
-        form.querySelectorAll('[data-filter-name]').forEach((input) => { if (!input.disabled && input.value !== '') data[input.dataset.filterName] = input.value; });
+        form.querySelectorAll('[data-filter-name]').forEach((input) => {
+            if (input.disabled) return;
+            if (input.multiple) {
+                const selected = Array.from(input.selectedOptions || []).map((opt) => opt.value).filter((v) => v !== '');
+                if (selected.length > 0) data[input.dataset.filterName] = selected;
+            } else if (input.value !== '') {
+                data[input.dataset.filterName] = input.value;
+            }
+        });
         ['date_from', 'date_to'].forEach((name) => { const input = form.querySelector(`[name="${name}"]`); if (input?.value) data[name] = input.value; });
         if (relativeCheckbox?.checked) data.date_range = { mode: 'relative', days: Number(daysInput?.value) };
         return data;

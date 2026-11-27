@@ -17,15 +17,15 @@
     <p class="tw:mb-0 tw:mt-0.5 tw:text-pretty tw:text-ui-xs tw:text-on-surface-variant">
         {{ __('local_procurement.large_import.recovery_help') }}
     </p>
-    <div data-recovery-error role="alert" hidden class="tw:mt-2 tw:text-ui-xs tw:font-medium tw:text-error"></div>
+    <div data-recovery-error role="alert" hidden class="tw:mt-2 tw:text-ui-xs tw:font-semibold tw:text-error"></div>
     {{-- Preflight Tailwind dimatikan, jadi border-style harus eksplisit agar garis pemisah tergambar. --}}
     <div data-recovery-list class="tw:mt-2">
         <section data-recovery-processing-group hidden aria-labelledby="local{{ $importName }}ImportProcessingGroup">
-            <h3 id="local{{ $importName }}ImportProcessingGroup" class="tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant tw:m-0 tw:pt-2">{{ __('local_procurement.large_import.processing_group') }}</h3>
+            <h3 id="local{{ $importName }}ImportProcessingGroup" class="tw:text-ui-sm tw:font-semibold tw:text-on-surface-variant tw:m-0 tw:pt-2">{{ __('local_procurement.large_import.processing_group') }}</h3>
             <ul data-recovery-processing-list role="list" class="tw:mb-0 tw:mt-1 tw:list-none tw:border-0 tw:border-t tw:border-solid tw:border-outline-variant tw:p-0"></ul>
         </section>
         <section data-recovery-follow-up-group hidden aria-labelledby="local{{ $importName }}ImportFollowUpGroup">
-            <h3 id="local{{ $importName }}ImportFollowUpGroup" class="tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant tw:m-0 tw:pt-2">{{ __('local_procurement.large_import.follow_up_group') }}</h3>
+            <h3 id="local{{ $importName }}ImportFollowUpGroup" class="tw:text-ui-sm tw:font-semibold tw:text-on-surface-variant tw:m-0 tw:pt-2">{{ __('local_procurement.large_import.follow_up_group') }}</h3>
             <ul data-recovery-follow-up-list role="list" class="tw:mb-0 tw:mt-1 tw:list-none tw:border-0 tw:border-t tw:border-solid tw:border-outline-variant tw:p-0"></ul>
         </section>
     </div>

@@ -183,4 +183,40 @@ class PortalContextCodecTest extends TestCase
         $resolved = PortalContextCodec::resolve(Request::create($contextUrl, 'GET'), $purchasing);
         $this->assertSame('/v2/ADASI_PRD/purchasing/purchase-orders/gwpZa2E78jMEB3zbrvNnYXP5?tab=items', $resolved['internalPath']);
     }
+
+    public function test_memoized_session_index_invalidates_cleanly_on_locale_and_prefix_changes(): void
+    {
+        $this->reloadPortalRoutes([
+            'portal_urls.prefix.enabled' => true,
+            'portal_urls.prefix.value' => 'v2/ADASI_PRD',
+            'portal_urls.context_urls.enabled' => true,
+        ]);
+
+        $purchasing = User::factory()->create(['role' => 'purchasing']);
+
+        app()->setLocale('en');
+        $enUrl = PortalContextCodec::project(route('purchasing.purchase-orders.index'), $purchasing);
+        $this->assertNotNull($enUrl);
+        parse_str((string) parse_url($enUrl, PHP_URL_QUERY), $enQuery);
+        $enPayload = PortalContextCodec::decodeScv2Payload((string) ($enQuery['favoriteContext'] ?? ''));
+
+        app()->setLocale('id');
+        $idUrl = PortalContextCodec::project(route('purchasing.purchase-orders.index'), $purchasing);
+        $this->assertNotNull($idUrl);
+        parse_str((string) parse_url($idUrl, PHP_URL_QUERY), $idQuery);
+        $idPayload = PortalContextCodec::decodeScv2Payload((string) ($idQuery['favoriteContext'] ?? ''));
+
+        $this->assertSame(__('navigation.purchase_order', [], 'en'), $enPayload['description']);
+        $this->assertSame(__('navigation.purchase_order', [], 'id'), $idPayload['description']);
+
+        $this->reloadPortalRoutes([
+            'portal_urls.prefix.enabled' => true,
+            'portal_urls.prefix.value' => 'erp/ADASI_ALT',
+            'portal_urls.context_urls.enabled' => true,
+        ]);
+
+        $altUrl = PortalContextCodec::project(route('purchasing.purchase-orders.index'), $purchasing);
+        $this->assertNotNull($altUrl);
+        $this->assertStringContainsString('/erp/ADASI_ALT/', $altUrl);
+    }
 }

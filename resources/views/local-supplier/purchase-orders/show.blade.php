@@ -4,7 +4,7 @@
 @section('page-title', __('local_procurement.list.detail_short'))
 
 @section('content')
-<div class="tw:grid tw:grid-cols-[minmax(0,1fr)] tw:min-w-0 tw:gap-6 tw:pb-16">
+<div class="tw:grid tw:grid-cols-[minmax(0,1fr)] tw:min-w-0 tw:gap-6">
     <x-ui.page-header
         :title="$purchaseOrder->po_number"
         :description="__('local_procurement.review.po_document', ['date' => $regionalFormatter->date($purchaseOrder->po_date, 'human') ?? '-', 'amount' => $regionalFormatter->money($purchaseOrder->total_amount)])"
@@ -141,15 +141,14 @@
             :title="__('local_procurement.labels.invoice_history')"
             :description="__('local_procurement.review.invoice_po', ['po' => $purchaseOrder->po_number])"
         >
-            <div class="ui-table-responsive">
-                <table class="ui-table ui-table--hover tw:align-middle tw:m-0 tw:text-ui-xs">
+            <table class="ui-table ui-table--hover tw:align-middle tw:m-0 tw:text-ui-xs">
                     <thead>
                         <tr>
-                            <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('local_invoice.receipt.invoice_number') }}</th>
-                            <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('local_invoice.labels.invoice_date') }}</th>
-                            <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-end">{{ __('local_procurement.review.dpp') }}</th>
-                            <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-center">{{ __('local_invoice.labels.status') }}</th>
-                            <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-end">{{ __('common.table.action') }}</th>
+                            <th scope="col">{{ __('local_invoice.receipt.invoice_number') }}</th>
+                            <th scope="col">{{ __('local_invoice.labels.invoice_date') }}</th>
+                            <th scope="col" class="tw:text-end">{{ __('local_procurement.review.dpp') }}</th>
+                            <th scope="col" class="tw:text-center">{{ __('local_invoice.labels.status') }}</th>
+                            <th scope="col" class="tw:text-end">{{ __('common.table.action') }}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -181,7 +180,6 @@
                         @endforeach
                     </tbody>
                 </table>
-            </div>
         </x-ui.data-table>
     @endif
 </div>

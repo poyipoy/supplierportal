@@ -15,6 +15,13 @@ final class PortalPath
         'storage', 'build', 'assets', 'vendor', 'favicon.ico', 'robots.txt',
     ];
 
+    private static ?string $validatedPrefixKey = null;
+
+    public static function resetCache(): void
+    {
+        self::$validatedPrefixKey = null;
+    }
+
     public static function enabled(): bool
     {
         return (bool) config('portal_urls.prefix.enabled', false);
@@ -26,9 +33,15 @@ final class PortalPath
             return '';
         }
 
-        self::assertValid();
+        $prefix = config('portal_urls.prefix.value');
+        $cacheKey = is_string($prefix) ? $prefix."\0".public_path() : null;
 
-        return config('portal_urls.prefix.value');
+        if ($cacheKey === null || self::$validatedPrefixKey !== $cacheKey) {
+            self::assertValid();
+            self::$validatedPrefixKey = $cacheKey;
+        }
+
+        return $prefix;
     }
 
     public static function normalizeBasePath(string $raw): string

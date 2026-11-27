@@ -49,20 +49,20 @@
         <div class="tw:grid tw:min-w-0 tw:gap-5">
             @if($supportEmail)
                 <section aria-labelledby="support-email-heading" class="tw:min-w-0 tw:grid tw:gap-1.5">
-                    <h3 id="support-email-heading" class="tw:m-0 tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant">{{ __('auth.password_assistance.support') }}</h3>
+                    <h3 id="support-email-heading" class="tw:m-0 tw:text-ui-sm tw:font-semibold tw:text-on-surface-variant">{{ __('auth.password_assistance.support') }}</h3>
                     <p id="assistance-email" class="tw:m-0 tw:wrap-anywhere tw:text-ui-sm tw:text-on-surface">{{ $supportEmail }}</p>
                     <x-ui.button type="button" variant="outline" size="sm" class="tw:justify-self-start tw:border-solid tw:max-sm:min-h-11" data-password-assistance-copy="assistance-email" data-copy-label="{{ __('auth.password_assistance.email_copy_label') }}">{{ __('auth.password_assistance.copy_email') }}</x-ui.button>
                 </section>
             @endif
 
             <section aria-labelledby="subject-heading" class="tw:min-w-0 tw:grid tw:gap-1.5">
-                <h3 id="subject-heading" class="tw:m-0 tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant">{{ __('auth.password_assistance.subject_label') }}</h3>
+                <h3 id="subject-heading" class="tw:m-0 tw:text-ui-sm tw:font-semibold tw:text-on-surface-variant">{{ __('auth.password_assistance.subject_label') }}</h3>
                 <p id="assistance-subject" class="tw:m-0 tw:wrap-break-word tw:text-ui-sm tw:text-on-surface">{{ $subject }}</p>
                 <x-ui.button type="button" variant="outline" size="sm" class="tw:justify-self-start tw:border-solid tw:max-sm:min-h-11" data-password-assistance-copy="assistance-subject" data-copy-label="{{ __('auth.password_assistance.subject_label') }}">{{ __('auth.password_assistance.copy_subject') }}</x-ui.button>
             </section>
 
             <section aria-labelledby="template-heading" class="tw:min-w-0 tw:grid tw:gap-1.5">
-                <h3 id="template-heading" class="tw:m-0 tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant">{{ __('auth.password_assistance.template_label') }}</h3>
+                <h3 id="template-heading" class="tw:m-0 tw:text-ui-sm tw:font-semibold tw:text-on-surface-variant">{{ __('auth.password_assistance.template_label') }}</h3>
                 <pre id="assistance-template" class="tw:m-0 tw:whitespace-pre-wrap tw:wrap-break-word tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface-container tw:p-3 tw:font-sans tw:text-ui-sm tw:text-on-surface">{{ $template }}</pre>
                 <x-ui.button type="button" variant="outline" size="sm" class="tw:mt-1 tw:justify-self-start tw:border-solid tw:max-sm:min-h-11" data-password-assistance-copy="assistance-template" data-copy-label="{{ __('auth.password_assistance.template_copy_label') }}">{{ __('auth.password_assistance.copy_template') }}</x-ui.button>
             </section>

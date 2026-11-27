@@ -65,10 +65,10 @@
     <table class="ui-table ui-table--hover tw:align-middle tw:m-0 tw:text-ui-sm tw:w-full">
         <thead>
             <tr>
-                <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('supplier_contact.directory.col_supplier') }}</th>
-                <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('supplier_contact.directory.col_contact') }}</th>
-                <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('supplier_contact.directory.col_status') }}</th>
-                <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-end">{{ __('common.table.action') }}</th>
+                <th scope="col">{{ __('supplier_contact.directory.col_supplier') }}</th>
+                <th scope="col">{{ __('supplier_contact.directory.col_contact') }}</th>
+                <th scope="col">{{ __('supplier_contact.directory.col_status') }}</th>
+                <th scope="col" class="tw:text-end">{{ __('common.table.action') }}</th>
             </tr>
         </thead>
         <tbody>

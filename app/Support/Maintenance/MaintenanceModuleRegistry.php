@@ -126,6 +126,7 @@ final class MaintenanceModuleRegistry
         'purchasing.export.quotations.detail' => ['import.quotations', 'import.export_history'],
         'purchasing.export.purchase-orders' => ['import.purchase_orders', 'import.export_history'],
         'purchasing.export.purchase-orders.detail' => ['import.purchase_orders', 'import.export_history'],
+        'purchasing.export.price-history' => ['import.price_history', 'import.export_history'],
         'purchasing.export.shipments' => ['import.shipments', 'import.export_history'],
         'purchasing.export.supplier-audits.detail' => ['local.supplier_audit'],
         'qc.export.inspections' => ['staff.qc_inspections', 'import.export_history'],

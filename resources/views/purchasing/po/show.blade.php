@@ -14,8 +14,9 @@
     .po-tracking-step {
         padding: 0.75rem 1rem;
         background: var(--md-surface);
-        border: 1px solid var(--md-outline-variant);
-        border-radius: var(--md-shape-sm);
+        border: 1px solid var(--md-outline);
+        border-radius: var(--md-shape-md);
+        box-shadow: var(--ui-shadow-surface);
         position: relative;
     }
 
@@ -27,15 +28,15 @@
     .po-sticky-nav-bar {
         position: sticky;
         top: var(--topbar-height, 56px);
-        z-index: 1010;
+        z-index: calc(var(--ui-z-sticky) - 5);
         min-width: 0;
         max-width: 100%;
         background-color: var(--md-surface);
-        border: 1px solid var(--md-outline-variant);
-        border-radius: var(--md-shape-sm, 8px);
+        border: 1px solid var(--md-outline);
+        border-radius: var(--md-shape-md);
         padding: 0.35rem 0.5rem;
-        box-shadow: 0 2px 8px -2px rgba(0, 0, 0, 0.08);
-        transition: box-shadow 0.2s ease;
+        box-shadow: var(--ui-shadow-surface);
+        transition: box-shadow var(--ui-motion-fast) var(--ui-easing-standard);
     }
 
     .po-nav-pills {
@@ -66,8 +67,9 @@
         font-weight: 600;
         padding: 0.4rem 0.95rem;
         color: var(--md-on-surface-variant);
-        border-radius: var(--md-shape-full);
-        transition: all 0.15s ease;
+        border-radius: var(--md-shape-sm);
+        transition: background-color var(--ui-motion-fast) var(--ui-easing-standard),
+            color var(--ui-motion-fast) var(--ui-easing-standard);
         white-space: nowrap;
         text-decoration: none;
     }
@@ -85,13 +87,11 @@
     .po-nav-pills .po-nav-link.active {
         background-color: var(--md-primary) !important;
         color: var(--md-on-primary) !important;
-        box-shadow: 0 1px 3px rgba(var(--md-primary-rgb), 0.35);
     }
 
     .po-nav-pills .po-nav-link.po-nav-link--danger.active {
         background-color: var(--md-error) !important;
         color: var(--md-on-error) !important;
-        box-shadow: 0 1px 3px rgba(220, 53, 69, 0.35);
     }
 
     .po-doc-card {
@@ -104,22 +104,22 @@
 
     @keyframes sectionPulsePrimary {
         0% {
-            box-shadow: 0 0 0 0 rgba(31, 95, 166, 0);
+            box-shadow: 0 0 0 0 rgba(var(--md-primary-rgb), 0);
             outline: 2px solid transparent;
             outline-offset: 2px;
         }
         20% {
-            box-shadow: 0 0 0 5px rgba(31, 95, 166, 0.35), 0 8px 24px -4px rgba(31, 95, 166, 0.2);
+            box-shadow: 0 0 0 5px rgba(var(--md-primary-rgb), 0.35), 0 8px 24px -4px rgba(var(--md-primary-rgb), 0.2);
             outline: 2px solid var(--md-primary);
             outline-offset: 2px;
         }
         50% {
-            box-shadow: 0 0 0 6px rgba(31, 95, 166, 0.2), 0 6px 18px -4px rgba(31, 95, 166, 0.15);
+            box-shadow: 0 0 0 6px rgba(var(--md-primary-rgb), 0.2), 0 6px 18px -4px rgba(var(--md-primary-rgb), 0.15);
             outline: 2px solid var(--md-primary);
             outline-offset: 2px;
         }
         100% {
-            box-shadow: 0 0 0 0 rgba(31, 95, 166, 0);
+            box-shadow: 0 0 0 0 rgba(var(--md-primary-rgb), 0);
             outline: 2px solid transparent;
             outline-offset: 2px;
         }
@@ -127,22 +127,22 @@
 
     @keyframes sectionPulseDanger {
         0% {
-            box-shadow: 0 0 0 0 rgba(192, 57, 43, 0);
+            box-shadow: 0 0 0 0 rgba(var(--md-error-rgb), 0);
             outline: 2px solid transparent;
             outline-offset: 2px;
         }
         20% {
-            box-shadow: 0 0 0 5px rgba(192, 57, 43, 0.4), 0 8px 24px -4px rgba(192, 57, 43, 0.25);
+            box-shadow: 0 0 0 5px rgba(var(--md-error-rgb), 0.4), 0 8px 24px -4px rgba(var(--md-error-rgb), 0.25);
             outline: 2px solid var(--md-error);
             outline-offset: 2px;
         }
         50% {
-            box-shadow: 0 0 0 6px rgba(192, 57, 43, 0.2), 0 6px 18px -4px rgba(192, 57, 43, 0.15);
+            box-shadow: 0 0 0 6px rgba(var(--md-error-rgb), 0.2), 0 6px 18px -4px rgba(var(--md-error-rgb), 0.15);
             outline: 2px solid var(--md-error);
             outline-offset: 2px;
         }
         100% {
-            box-shadow: 0 0 0 0 rgba(192, 57, 43, 0);
+            box-shadow: 0 0 0 0 rgba(var(--md-error-rgb), 0);
             outline: 2px solid transparent;
             outline-offset: 2px;
         }
@@ -175,8 +175,10 @@
         :description="__('purchasing.page.po_help', ['supplier' => $po->supplier->name])"
         :record-nav="$recordNav ?? null"
     >
-        <x-slot:actions>
+        <x-slot:status>
             <x-status-badge type="po" :status="$po->status" :is-overdue="$po->is_overdue" :has-active-shipments="$po->hasActiveShipments()" size="lg" />
+        </x-slot:status>
+        <x-slot:actions>
             <x-ui.button
                 type="button"
                 variant="outline"
@@ -193,7 +195,7 @@
                 <x-ui.icon name="file-spreadsheet" />
                 <span>{{ __('purchasing.copy.export_excel') }}</span>
             </x-ui.button>
-            <x-ui.button :href="route('shared.pdf.purchase-order', $po)" variant="danger" size="sm" target="_blank" :title="__('purchasing.copy.print_purchase_order')" data-pdf-confirm>
+            <x-ui.button :href="route('shared.pdf.purchase-order', $po)" variant="outline" size="sm" target="_blank" :title="__('purchasing.copy.print_purchase_order')" data-pdf-confirm>
                 <x-ui.icon name="file-text" />
                 <span>{{ __('purchasing.copy.print_pdf') }}</span>
             </x-ui.button>
@@ -274,7 +276,7 @@
                 <strong class="ui-tabular-nums tw:text-on-surface">{{ $po->acknowledged_at ? $regionalFormatter->timestamp($po->acknowledged_at, 'datetime') : '-' }}</strong>
             </div>
             @if($po->acknowledgement_notes)
-                <div class="tw:md:col-span-3 tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface-container tw:p-3">
+                <div class="tw:min-w-0 tw:md:col-span-3 tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface-container tw:p-3">
                     <span class="tw:text-on-surface-variant tw:font-semibold tw:block">{{ __('purchasing.po_ack.fields.notes') }}</span>
                     <p class="tw:mb-0 tw:mt-1 tw:text-on-surface">{{ $po->acknowledgement_notes }}</p>
                 </div>
@@ -284,17 +286,17 @@
         @if($po->acknowledgementStatusEnum() === \App\Enums\PoAcknowledgementStatus::CHANGE_REQUESTED)
             <form method="POST" action="{{ route('purchasing.purchase-orders.respond-promise-change', $po) }}" class="tw:mt-4 tw:border-t tw:border-outline-variant tw:pt-4 tw:grid tw:gap-3 tw:md:grid-cols-12 tw:items-end">
                 @csrf
-                <div class="tw:md:col-span-6">
+                <div class="tw:min-w-0 tw:md:col-span-6">
                     <label for="purchasing-ack-response-notes" class="ui-label tw:text-ui-xs tw:font-semibold">{{ __('purchasing.po_ack.fields.response_notes') }}</label>
                     <input type="text" name="response_notes" id="purchasing-ack-response-notes" class="ui-input ui-input--sm" placeholder="{{ __('purchasing.po_ack.placeholders.response_notes') }}">
                 </div>
-                <div class="tw:md:col-span-3">
+                <div class="tw:min-w-0 tw:md:col-span-3">
                     <x-ui.button type="submit" name="decision" value="accept" variant="primary" size="sm" class="tw:w-full tw:justify-center">
                         <x-ui.icon name="check" size="sm" />
                         <span>{{ __('purchasing.po_ack.actions.accept_change') }}</span>
                     </x-ui.button>
                 </div>
-                <div class="tw:md:col-span-3">
+                <div class="tw:min-w-0 tw:md:col-span-3">
                     <x-ui.button type="submit" name="decision" value="reject" variant="danger" size="sm" class="tw:w-full tw:justify-center">
                         <x-ui.icon name="x" size="sm" />
                         <span>{{ __('purchasing.po_ack.actions.reject_change') }}</span>
@@ -365,7 +367,7 @@
                             <span class="ui-status-chip ui-status-chip--neutral">{{ $po->currency }}</span>
                         </div>
                     </div>
-                    <div class="tw:bg-surface-container tw:p-2.5 tw:sm:col-span-2">
+                    <div class="tw:min-w-0 tw:bg-surface-container tw:p-2.5 tw:sm:col-span-2">
                         <div class="tw:text-on-surface-variant tw:text-ui-xs tw:font-semibold tw:uppercase">{{ __('purchasing.copy.po_notes_remark') }}</div>
                         <div class="tw:text-on-surface tw:text-ui-sm tw:mt-0.5">{{ $po->notes ?: '-' }}</div>
                     </div>
@@ -384,8 +386,8 @@
                 <table class="ui-table ui-table--hover tw:align-middle tw:mb-0 tw:text-ui-xs tw:w-full">
                     <thead class="tw:text-center">
                         <tr>
-                            <th scope="col" style="width: 35px;">{{ __('purchasing.copy.no') }}</th>
-                            <th scope="col" class="ui-sticky-col">{{ __('purchasing.copy.material') }}</th>
+                            <th scope="col" class="ui-sticky-col" style="width: 40px; min-width: 40px;">{{ __('purchasing.copy.no') }}</th>
+                            <th scope="col" class="ui-sticky-col" style="--ui-sticky-col-left: 40px;">{{ __('purchasing.copy.material') }}</th>
                             <th scope="col">{{ __('purchasing.copy.specification') }}</th>
                             <th scope="col">{{ __('purchasing.copy.qty') }}</th>
                             <th scope="col" class="tw:text-end">{{ __('purchasing.copy.weight_unit') }}</th>
@@ -436,8 +438,8 @@
                                     if ($idr === null) { $grandIdrUnavailable = true; } else { $grandTotalIdr += $idr; }
                                 @endphp
                                 <tr>
-                                    <td class="tw:text-center tw:text-on-surface-variant ui-tabular-nums">{{ $globalNo++ }}</td>
-                                    <td class="tw:font-bold tw:text-on-surface ui-sticky-col ui-col-data-name">{{ $item->prItem->material_name }}</td>
+                                    <td class="tw:text-center tw:text-on-surface-variant ui-tabular-nums ui-sticky-col" style="width: 40px; min-width: 40px;">{{ $globalNo++ }}</td>
+                                    <td class="tw:font-bold tw:text-on-surface ui-sticky-col ui-col-data-name" style="--ui-sticky-col-left: 40px;">{{ $item->prItem->material_name }}</td>
                                     <td class="tw:text-center ui-col-data-name">
                                         @if(!$item->is_available)
                                             <span class="ui-status-chip ui-status-chip--error">{{ __('purchasing.copy.not_available') }}</span>
@@ -463,7 +465,7 @@
                                     <td class="tw:text-end tw:font-bold tw:text-on-surface ui-tabular-nums">{{ ! $item->is_available ? '—' : ($idr === null ? '— ('.__('purchasing.copy.exchange_rate_unavailable').')' : 'Rp '.$regionalFormatter->groupedDecimal($idr)) }}</td>
                                     <td class="tw:whitespace-nowrap">
                                         @if($quotation->purchaseRequisition)
-                                            <a href="{{ \App\Support\PurchasingNavigation::toRoute('purchasing.requisitions.show', $quotation->purchaseRequisition) }}" class="tw:text-primary tw:no-underline tw:font-medium" title="{{ __('purchasing.copy.open_pr_detail') }}">
+                                            <a href="{{ \App\Support\PurchasingNavigation::toRoute('purchasing.requisitions.show', $quotation->purchaseRequisition) }}" class="tw:text-primary tw:no-underline tw:font-semibold" title="{{ __('purchasing.copy.open_pr_detail') }}">
                                                 {{ $quotation->purchaseRequisition->pr_number ?? '-' }}
                                             </a>
                                         @else
@@ -831,7 +833,7 @@
                                 @else
                                     <div class="tw:rounded-lg tw:bg-surface-container-low/50 tw:border tw:border-dashed tw:border-outline-variant/60 tw:p-2 tw:text-center tw:flex tw:flex-col tw:items-center tw:justify-center" style="min-height: 72px;">
                                         <x-ui.icon name="file" size="sm" class="tw:text-on-surface-variant tw:mb-1" />
-                                        <span class="tw:text-on-surface-variant tw:text-ui-xs tw:font-medium">{{ __('purchasing.copy.no_file_uploaded') }}</span>
+                                        <span class="tw:text-on-surface-variant tw:text-ui-xs tw:font-semibold">{{ __('purchasing.copy.no_file_uploaded') }}</span>
                                     </div>
                                 @endif
                             </div>
@@ -917,7 +919,7 @@
             @if($po->status === 'claim_needed')
                 <x-ui.card :title="__('purchasing.copy.defect_claim_follow_up')" id="sec-claim" class="tw:scroll-mt-24 tw:border-error/40">
                     <x-slot:actions><span class="ui-status-chip ui-status-chip--error">NG</span></x-slot:actions>
-                    <p class="tw:text-error tw:text-ui-xs tw:font-medium tw:mb-3">
+                    <p class="tw:text-error tw:text-ui-xs tw:font-semibold tw:mb-3">
                         {{ __('purchasing.copy.quality_inspection_failed_status_ng_immediate_claim_action_is_required') }}
                     </p>
 
@@ -1004,7 +1006,7 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
-                <h6 class="modal-title tw:font-bold" id="modalDocTitle">{{ __('purchasing.copy.update_document_status') }}</h6>
+                <h2 class="modal-title tw:text-ui-lg tw:font-bold" id="modalDocTitle">{{ __('purchasing.copy.update_document_status') }}</h2>
                 <button type="button" class="btn-close" data-ui-modal-close aria-label="{{ __('purchasing.copy.close') }}"></button>
             </div>
             <div class="modal-body tw:p-3.5">
@@ -1123,7 +1125,7 @@
                 <span class="tw:text-ui-xs tw:text-on-surface-variant ui-tabular-nums" id="batchPoGlobalCounterSummary"></span>
             </div>
             <div class="tw:grid tw:grid-cols-1 tw:sm:grid-cols-12 tw:gap-2 tw:items-end">
-                <div class="tw:sm:col-span-4">
+                <div class="tw:min-w-0 tw:sm:col-span-4">
                     <label class="ui-label tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:mb-1" for="batchPoGlobalTargetStatus">
                         {{ __('purchasing.copy.select_new_status') }}
                     </label>
@@ -1133,13 +1135,13 @@
                         <option value="verified">{{ \App\Support\StatusHelper::shipmentDocLabel('verified') }}</option>
                     </select>
                 </div>
-                <div class="tw:sm:col-span-5">
+                <div class="tw:min-w-0 tw:sm:col-span-5">
                     <label class="ui-label tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:mb-1" for="batchPoGlobalReason">
                         {{ __('documents.sync.reason_label') }}
                     </label>
                     <input type="text" class="ui-input ui-input--sm" id="batchPoGlobalReason" maxlength="1000" placeholder="{{ __('documents.sync.reason_placeholder') }}">
                 </div>
-                <div class="tw:sm:col-span-3">
+                <div class="tw:min-w-0 tw:sm:col-span-3">
                     <x-ui.button type="button" variant="outline" size="sm" class="tw:w-full" id="btnApplyGlobalToAllTabs">
                         <x-ui.icon name="check-check" size="sm" class="tw:me-1" />
                         <span>{{ __('purchasing.copy.apply_to_all_tabs') }}</span>
@@ -1194,10 +1196,10 @@
                                 {{ __('documents.sync.selection_summary', ['count' => 0]) }}
                             </span>
                             <div class="tw:flex tw:items-center tw:gap-1.5">
-                                <x-ui.button type="button" variant="ghost" size="xs" class="btn-select-all-tab" data-doc-type="{{ $docType }}">
+                                <x-ui.button type="button" variant="outline" size="sm" class="btn-select-all-tab" data-doc-type="{{ $docType }}">
                                     {{ __('purchasing.copy.select_all') }}
                                 </x-ui.button>
-                                <x-ui.button type="button" variant="ghost" size="xs" class="btn-clear-tab" data-doc-type="{{ $docType }}">
+                                <x-ui.button type="button" variant="outline" size="sm" class="btn-clear-tab" data-doc-type="{{ $docType }}">
                                     {{ __('purchasing.copy.clear_all') }}
                                 </x-ui.button>
                             </div>
@@ -1206,7 +1208,7 @@
                         <div id="batchPoDocRowsContainer_{{ $docType }}" class="tw:space-y-2.5 tw:max-h-64 tw:overflow-y-auto tw:p-0.5" role="group" aria-label="{{ $def['label'] }}"></div>
 
                         <div class="tw:grid tw:grid-cols-1 tw:sm:grid-cols-12 tw:gap-2 tw:pt-2 tw:border-t tw:border-outline-variant/80 tw:items-start">
-                            <div class="tw:sm:col-span-4">
+                            <div class="tw:min-w-0 tw:sm:col-span-4">
                                 <label class="ui-label tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:mb-1" for="batchPoTabTarget_{{ $docType }}">
                                     {{ __('purchasing.copy.select_new_status') }}
                                 </label>
@@ -1216,7 +1218,7 @@
                                     <option value="verified">{{ \App\Support\StatusHelper::shipmentDocLabel('verified') }}</option>
                                 </select>
                             </div>
-                            <div class="tw:sm:col-span-8">
+                            <div class="tw:min-w-0 tw:sm:col-span-8">
                                 <label class="ui-label tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:mb-1" for="batchPoTabReason_{{ $docType }}">
                                     {{ __('documents.sync.reason_label') }}
                                 </label>
@@ -1683,7 +1685,7 @@
 
                     if (row.is_multi_po && Array.isArray(row.shared_po_numbers) && row.shared_po_numbers.length > 0) {
                         const multiPoNote = document.createElement('p');
-                        multiPoNote.className = 'tw:m-0 tw:mt-1 tw:text-ui-xs tw:text-warning tw:font-medium';
+                        multiPoNote.className = 'tw:m-0 tw:mt-1 tw:text-ui-xs tw:text-warning tw:font-semibold';
                         multiPoNote.textContent = shipmentDocCopy.multi_po.replace(':pos', row.shared_po_numbers.join(', '));
                         labelWrap.appendChild(multiPoNote);
                     }
@@ -1893,7 +1895,7 @@
 
                     if (row.is_multi_po && Array.isArray(row.shared_po_numbers) && row.shared_po_numbers.length > 0) {
                         const multiPoNote = document.createElement('p');
-                        multiPoNote.className = 'tw:m-0 tw:mt-1 tw:text-ui-xs tw:text-warning tw:font-medium';
+                        multiPoNote.className = 'tw:m-0 tw:mt-1 tw:text-ui-xs tw:text-warning tw:font-semibold';
                         multiPoNote.textContent = shipmentDocCopy.multi_po.replace(':pos', row.shared_po_numbers.join(', '));
                         labelWrap.appendChild(multiPoNote);
                     }

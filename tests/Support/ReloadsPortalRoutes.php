@@ -2,6 +2,7 @@
 
 namespace Tests\Support;
 
+use App\Support\WorkspaceShell;
 use Illuminate\Routing\RouteCollection;
 
 trait ReloadsPortalRoutes
@@ -19,5 +20,6 @@ trait ReloadsPortalRoutes
         }
         $router->getRoutes()->refreshNameLookups();
         $router->getRoutes()->refreshActionLookups();
+        WorkspaceShell::resetCaches();
     }
 }

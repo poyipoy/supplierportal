@@ -2,15 +2,6 @@
 @section('title', __('purchasing.copy.purchasing_dashboard_adasi_portal'))
 @section('page-title', __('purchasing.copy.purchasing_dashboard'))
 
-@push('styles')
-<style>
-    .op-queue-table td {
-        padding-top: 0.75rem !important;
-        padding-bottom: 0.75rem !important;
-    }
-</style>
-@endpush
-
 @section('content')
 <div class="tw:grid tw:gap-5">
     {{-- Page Header --}}
@@ -39,11 +30,11 @@
     >
         <x-slot:toolbar>
             @if($totalActionRequired > 0)
-                <span class="role-badge role-badge-qc">
+                <x-ui.status-chip tone="warning" class="ui-tabular-nums">
                     {{ trans_choice('purchasing.summary.actions_required', $totalActionRequired, ['count' => $totalActionRequired]) }}
-                </span>
+                </x-ui.status-chip>
             @else
-                <span class="role-badge role-badge-purchasing">{{ __('purchasing.copy.no_items_require_action') }}</span>
+                <x-ui.status-chip tone="success">{{ __('purchasing.copy.no_items_require_action') }}</x-ui.status-chip>
             @endif
         </x-slot:toolbar>
 
@@ -135,7 +126,7 @@
 
         <x-slot:metrics>
 {{-- 2. Restrained Operational Summary Metric Strip --}}
-    <div class="tw:grid tw:gap-px tw:overflow-hidden tw:rounded-ui-md tw:border tw:border-outline-variant tw:bg-outline-variant tw:sm:grid-cols-2 tw:xl:grid-cols-4" aria-label="{{ __('purchasing.copy.purchasing_operational_summary') }}">
+    <div class="tw:grid tw:gap-px tw:overflow-hidden tw:rounded-ui-md tw:border tw:border-outline tw:bg-outline-variant tw:shadow-ui-surface tw:sm:grid-cols-2 tw:xl:grid-cols-4" aria-label="{{ __('purchasing.copy.purchasing_operational_summary') }}">
         <x-ui.metric-card
             flat
             :label="__('purchasing.copy.active_requisitions')"
@@ -166,7 +157,7 @@
             :value="$regionalFormatter->number((string) ($materialMingguIni), 'plain')"
             icon="truck"
             tone="{{ $materialMingguIni > 0 ? 'info' : 'neutral' }}"
-            :href="route('purchasing.purchase-orders.index', ['arrival' => 'this_week'])"
+            :href="route('purchasing.purchase-orders.index', ['status' => 'active', 'arrival' => 'this_week'])"
         />
     </div>
         </x-slot:metrics>
@@ -410,7 +401,7 @@
             <form action="{{ route('purchasing.kurs.update') }}" method="POST">
                 @csrf
                 <div class="modal-header">
-                    <h6 class="modal-title tw:font-bold" id="purchasingKursModalTitle">{{ __('purchasing.copy.update_exchange_rate') }}</h6>
+                    <h2 class="modal-title tw:text-ui-lg tw:font-bold" id="purchasingKursModalTitle">{{ __('purchasing.copy.update_exchange_rate') }}</h2>
                     <button type="button" class="btn-close" data-ui-modal-close aria-label="{{ __('purchasing.copy.close') }}"></button>
                 </div>
                 <div class="modal-body">
@@ -458,14 +449,11 @@
                     datasets: [{
                         label: window.AdasiI18n.t('purchasing.js.requisitions'),
                         data: @json(array_column($prPerBulan, 'count')),
-                        backgroundColor: chart.color('series-1'),
-                        borderRadius: 4,
-                        borderSkipped: 'start',
-                        maxBarThickness: 32,
-                        barPercentage: 0.55,
+                        ...chart.barDataset({ index: 0 }),
                     }],
                 },
                 options: {
+                    interaction: { mode: 'index', intersect: false },
                     plugins: {
                         legend: { display: false },
                         tooltip: chart.getTooltip({
@@ -482,7 +470,7 @@
         const poCanvas = document.getElementById('poStatusChart');
         if (poCanvas) {
             const rows = @json($poStatusRows ?? []);
-            const scales = chart.getScales({ yBeginAtZero: true });
+            const scales = chart.getScales({ yBeginAtZero: true, xAutoSkip: false });
             new Chart(poCanvas, {
                 type: 'bar',
                 data: {
@@ -490,14 +478,12 @@
                     datasets: [{
                         label: @json(__('purchasing.copy.po_workload_distribution')),
                         data: rows.map((row) => row.count),
-                        backgroundColor: chart.color('series-1'),
-                        borderRadius: 4,
-                        borderSkipped: 'start',
-                        maxBarThickness: 18,
+                        ...chart.barDataset({ index: 0, maxBarThickness: 18 }),
                     }],
                 },
                 options: {
                     indexAxis: 'y',
+                    interaction: { mode: 'index', axis: 'y', intersect: false },
                     layout: { padding: { right: 32 } },
                     plugins: {
                         legend: { display: false },

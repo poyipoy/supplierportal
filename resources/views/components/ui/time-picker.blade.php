@@ -20,7 +20,7 @@
     $hintId = $resolvedId.'-hint';
     $helperId = $helper ? $resolvedId.'-help' : null;
     $errorId = $resolvedId.'-error';
-    $describedBy = collect([$hintId, $helperId, $errorId])->filter()->implode(' ');
+    $describedBy = collect([$hintId, $helperId, $message ? $errorId : null])->filter()->implode(' ');
     $choose = __('common.time.choose', ['label' => $label ?: __('common.time.hour')]);
 @endphp
 
@@ -34,7 +34,7 @@
     data-time-selected="{{ __('common.time.selected', ['time' => ':time']) }}"
 >
     @if($label)
-        <label for="{{ $resolvedId }}" class="tw:text-ui-sm tw:font-medium tw:text-on-surface">
+        <label for="{{ $resolvedId }}" class="tw:text-ui-sm tw:font-semibold tw:text-on-surface">
             {{ $label }}
             @if($required)<span class="tw:text-error" aria-hidden="true">*</span><span class="tw:sr-only"> {{ __('common.required') }}</span>@endif
         </label>
@@ -74,7 +74,7 @@
     @if($helper)
         <p id="{{ $helperId }}" class="tw:m-0 tw:text-ui-xs tw:text-on-surface-variant">{{ $helper }}</p>
     @endif
-    <p id="{{ $errorId }}" data-time-error class="tw:m-0 tw:flex tw:items-start tw:gap-1.5 tw:text-ui-xs tw:font-medium tw:text-error {{ $message ? '' : 'tw:hidden' }}" role="alert">
+    <p id="{{ $errorId }}" data-time-error class="tw:m-0 tw:flex tw:items-start tw:gap-1.5 tw:text-ui-xs tw:font-semibold tw:text-error {{ $message ? '' : 'tw:hidden' }}" role="alert">
         <x-ui.icon name="circle-alert" size="sm" class="tw:mt-0.5" />
         <span data-time-error-message>{{ $message }}</span>
     </p>

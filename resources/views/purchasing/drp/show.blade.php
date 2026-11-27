@@ -3,7 +3,7 @@
 @section('page-title', __('finance.drp.payment_plan_detail'))
 
 @section('content')
-<div class="tw:grid tw:gap-6 tw:pb-16">
+<div class="tw:grid tw:gap-6">
     <x-ui.page-header
         :title="__('finance.closure.batch_heading', ['number' => $batch->batch_number])"
         :description="__('finance.closure.batch_description', ['type' => __('finance.closure.batch_type_'.strtolower($batch->batch_type)), 'date' => $regionalFormatter->timestamp($batch->created_at, 'datetime'), 'name' => $batch->creator?->name ?? __('common.final_copy.system')])"
@@ -79,7 +79,7 @@
                             {{ __('common.labels_review.account_label') }} <strong>{{ $group->bank_name }}</strong> — <strong class="ui-tabular-nums">{{ $group->account_number }}</strong> {{ __('finance.drp_surface.account_holder') }} <strong>{{ $group->account_holder_name }}</strong>
                         </span>
                         @if($group->voucher_number)
-                            <span class="tw:text-[11px] tw:text-primary tw:block tw:mt-0.5">
+                            <span class="tw:text-ui-xs tw:text-primary tw:block tw:mt-0.5">
                                 {{ __('common.labels_review.voucher_label') }} <strong>{{ $group->voucher_number }}</strong> ({{ __('local_invoice.labels.date') }}: {{ $regionalFormatter->date($group->voucher_date, 'human') }})
                             </span>
                         @endif
@@ -87,11 +87,11 @@
 
                     <div class="tw:flex tw:flex-wrap tw:items-center tw:gap-4 tw:text-end">
                         <div>
-                            <span class="tw:text-[11px] tw:text-on-surface-variant tw:block">{{ __('finance.drp_surface.net_transfer') }}</span>
+                            <span class="tw:text-ui-xs tw:text-on-surface-variant tw:block">{{ __('finance.drp_surface.net_transfer') }}</span>
                             <span class="ui-tabular-nums tw:font-bold tw:text-ui-base tw:text-primary">
                                 Rp {{ $regionalFormatter->money($group->net_payment_amount, 0) }}
                             </span>
-                            <span class="tw:text-[10px] tw:text-on-surface-variant tw:block">{{ __('common.final_copy.bank_fee', ['amount' => $regionalFormatter->money($group->bank_fee, 0)]) }}</span>
+                            <span class="tw:text-ui-xs tw:text-on-surface-variant tw:block">{{ __('common.final_copy.bank_fee', ['amount' => $regionalFormatter->money($group->bank_fee, 0)]) }}</span>
                         </div>
                     </div>
                 </div>
@@ -150,18 +150,18 @@
                                             @if($item->localInvoicePayment)
                                                 @if($item->localInvoicePayment->status === \App\Models\LocalInvoicePayment::STATUS_FINALIZED)
                                                     <div class="tw:flex tw:flex-col tw:gap-1">
-                                                        <span class="tw:inline-flex tw:px-1.5 tw:py-0.5 tw:rounded-sm tw:text-[10px] tw:font-semibold tw:bg-success/10 tw:text-success tw:w-fit">
+                                                        <span class="tw:inline-flex tw:px-1.5 tw:py-0.5 tw:rounded-sm tw:text-ui-xs tw:font-semibold tw:bg-success/10 tw:text-success tw:w-fit">
                                                             {{ __('finance.drp_ui.settled_amount', ['amount' => $regionalFormatter->money($item->localInvoicePayment->actual_paid_total, 0)]) }}
                                                         </span>
                                                         @if($item->localInvoicePayment->overpayment)
                                                             @if($item->localInvoicePayment->overpayment->status === \App\Models\SupplierOverpaymentRefund::STATUS_OPEN)
-                                                                <span class="tw:inline-flex tw:items-center tw:gap-1 tw:px-1.5 tw:py-0.5 tw:rounded-sm tw:text-[10px] tw:font-semibold tw:bg-amber-100 tw:text-amber-800 tw:dark:bg-amber-950 tw:dark:text-amber-300 tw:w-fit"
+                                                                <span class="tw:inline-flex tw:items-center tw:gap-1 tw:px-1.5 tw:py-0.5 tw:rounded-sm tw:text-ui-xs tw:font-semibold tw:bg-warning-container tw:text-warning-container-foreground tw:w-fit"
                                                                       title="{{ __('finance.drp_surface.not_refunded') }}">
                                                                     <x-ui.icon name="alert-circle" size="xs" />
                                                                     <span>{{ __('finance.drp_ui.overpayment_status', ['amount' => $regionalFormatter->money($item->localInvoicePayment->overpayment->overpayment_amount, 0), 'status' => \App\Support\StatusHelper::localFinanceLabel($item->localInvoicePayment->overpayment->status)]) }}</span>
                                                                 </span>
                                                             @elseif($item->localInvoicePayment->overpayment->status === \App\Models\SupplierOverpaymentRefund::STATUS_SETTLED)
-                                                                <span class="tw:inline-flex tw:items-center tw:gap-1 tw:px-1.5 tw:py-0.5 tw:rounded-sm tw:text-[10px] tw:font-semibold tw:bg-emerald-100 tw:text-emerald-800 tw:dark:bg-emerald-950 tw:dark:text-emerald-300 tw:w-fit"
+                                                                <span class="tw:inline-flex tw:items-center tw:gap-1 tw:px-1.5 tw:py-0.5 tw:rounded-sm tw:text-ui-xs tw:font-semibold tw:bg-success-container tw:text-success-container-foreground tw:w-fit"
                                                                       title="{{ __('finance.drp_surface.refund_completed') }}">
                                                                     <x-ui.icon name="check-circle" size="xs" />
                                                                     <span>{{ __('finance.paid_ui.overpayment_settled', ['amount' => $regionalFormatter->money($item->localInvoicePayment->overpayment->overpayment_amount, 0)]) }}</span>
@@ -171,11 +171,11 @@
                                                     </div>
                                                 @elseif($item->localInvoicePayment->status === \App\Models\LocalInvoicePayment::STATUS_CORRECTION_REQUIRED)
                                                     <div class="tw:flex tw:flex-col tw:gap-0.5">
-                                                        <span class="tw:inline-flex tw:px-1.5 tw:py-0.5 tw:rounded-sm tw:text-[10px] tw:font-semibold tw:bg-warning/10 tw:text-warning-container-foreground tw:w-fit">{{ __('finance.drp_surface.underpaid') }}</span>
-                                                        <span class="tw:text-[10px] ui-tabular-nums tw:text-on-surface-variant">
+                                                        <span class="tw:inline-flex tw:px-1.5 tw:py-0.5 tw:rounded-sm tw:text-ui-xs tw:font-semibold tw:bg-warning/10 tw:text-warning-container-foreground tw:w-fit">{{ __('finance.drp_surface.underpaid') }}</span>
+                                                        <span class="tw:text-ui-xs ui-tabular-nums tw:text-on-surface-variant">
                                                             {{ __('finance.paid_ui.paid_amount', ['amount' => $regionalFormatter->money($item->localInvoicePayment->actual_paid_total, 0)]) }}
                                                         </span>
-                                                        <span class="tw:text-[10px] ui-tabular-nums tw:text-warning-container-foreground tw:font-semibold">
+                                                        <span class="tw:text-ui-xs ui-tabular-nums tw:text-warning-container-foreground tw:font-semibold">
                                                             {{ __('finance.paid_ui.remaining', ['amount' => $regionalFormatter->money(max(0, (float)$item->localInvoicePayment->expected_amount - (float)$item->localInvoicePayment->actual_paid_total), 0)]) }}
                                                         </span>
                                                     </div>

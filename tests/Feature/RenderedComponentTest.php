@@ -156,6 +156,25 @@ BLADE;
         $this->assertStringContainsString('name="bank_select"', $html);
     }
 
+    public function test_select_component_renders_accessible_attributes_and_optional_search_override(): void
+    {
+        $html = Blade::render('<x-ui.select name="currency" label="Currency" helper="Billing currency" :searchable="true" :options="[\'IDR\' => \'IDR\', \'USD\' => \'USD\']" value="USD" />');
+
+        $this->assertNoCompilerLeakage($html);
+        $this->assertStringContainsString('for="currency"', $html);
+        $this->assertStringContainsString('id="currency"', $html);
+        $this->assertStringContainsString('data-select-search="true"', $html);
+        $this->assertStringContainsString('aria-describedby="currency-help"', $html);
+        $this->assertStringContainsString('tw:cursor-pointer', $html);
+        $this->assertStringContainsString('value="USD"', $html);
+
+        $disabledSearch = Blade::render('<x-ui.select name="status" :searchable="false" :options="[\'open\' => \'Open\']" />');
+        $this->assertStringContainsString('data-select-search="false"', $disabledSearch);
+
+        $defaultSearch = Blade::render('<x-ui.select name="plain" :options="[\'a\' => \'A\']" />');
+        $this->assertStringNotContainsString('data-select-search=', $defaultSearch);
+    }
+
     public function test_searchable_select_wraps_long_digits_in_options_and_meets_wcag_controls(): void
     {
         $options = [[

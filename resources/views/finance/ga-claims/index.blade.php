@@ -3,7 +3,7 @@
 @section('page-title', __('finance.ga.register_title'))
 
 @section('content')
-<div class="tw:grid tw:gap-6 tw:pb-16">
+<div class="tw:grid tw:gap-6">
     <x-ui.page-header
         :title="__('finance.ga.register_title')"
         :description="__('finance.ga.register_help')"
@@ -127,8 +127,7 @@
         :title="__('ga.list.heading')"
         :description="__('finance.ga.verification_help')"
     >
-        <div class="ui-table-responsive">
-            <table class="ui-table ui-table--hover tw:align-middle tw:m-0 tw:text-ui-xs tw:w-full">
+        <table class="ui-table ui-table--hover tw:align-middle tw:m-0 tw:text-ui-xs tw:w-full">
                 <thead>
                     <tr>
                         <th scope="col">{{ __('finance.ga.claim_number') }}</th>
@@ -148,10 +147,10 @@
                             <td>{{ $regionalFormatter->date($claim->claim_date, 'dmy') }}</td>
                             <td>
                                 <strong class="tw:text-on-surface tw:block">{{ $claim->employee?->name }}</strong>
-                                <span class="tw:text-on-surface-variant tw:text-[11px]">{{ $claim->employee?->department }}</span>
+                                <span class="tw:text-on-surface-variant tw:text-ui-xs">{{ $claim->employee?->department }}</span>
                             </td>
                             <td>
-                                <span class="tw:inline-flex tw:px-2 tw:py-0.5 tw:rounded-sm tw:text-[11px] tw:font-semibold tw:bg-primary/10 tw:text-primary">
+                                <span class="tw:inline-flex tw:px-2 tw:py-0.5 tw:rounded-sm tw:text-ui-xs tw:font-semibold tw:bg-primary/10 tw:text-primary">
                                     {{ \App\Models\GaClaim::claimTypeLabel($claim->claim_type) }}
                                 </span>
                             </td>
@@ -159,7 +158,7 @@
                             <td>
                                 <span class="tw:font-semibold">{{ $claim->employee?->bank_name }}</span> ·
                                 <span class="ui-tabular-nums">{{ $claim->employee?->account_number }}</span>
-                                <span class="tw:block tw:text-[11px] tw:text-on-surface-variant">{{ __('finance.drp_surface.account_holder') }} {{ $claim->employee?->account_holder_name }}</span>
+                                <span class="tw:block tw:text-ui-xs tw:text-on-surface-variant">{{ __('finance.drp_surface.account_holder') }} {{ $claim->employee?->account_holder_name }}</span>
                             </td>
                             <td>
                                 <x-ui.status-chip :tone="\App\Support\StatusHelper::gaClaimTone($claim->status)">
@@ -180,7 +179,6 @@
                     @endforelse
                 </tbody>
             </table>
-        </div>
 
         @if($claims->hasPages())
             <x-slot:pagination>

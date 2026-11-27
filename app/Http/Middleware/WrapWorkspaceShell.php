@@ -139,7 +139,7 @@ class WrapWorkspaceShell
             return $response;
         }
 
-        if ($isWrapCandidate) {
+        if ($isWrapCandidate && $request->header('X-Adasi-Locale-Refresh') !== '1') {
             $prerenderKey = WorkspaceShell::prerenderCacheKey($request);
             if ($prerenderKey !== null) {
                 $responseCacheControl = (string) ($response->headers->get('Cache-Control') ?? '');

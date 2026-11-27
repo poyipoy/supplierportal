@@ -72,13 +72,13 @@
     <table class="ui-table ui-table--hover tw:align-middle tw:m-0 tw:text-ui-sm tw:w-full">
         <thead>
             <tr>
-                <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('supplier_audit.fields.supplier') }}</th>
-                <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('supplier_audit.fields.period') }}</th>
-                <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('supplier_audit.columns.progress') }}</th>
-                <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('supplier_audit.fields.due_date') }}</th>
-                <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('supplier_audit.fields.status') }}</th>
-                <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('supplier_audit.fields.submitted_at') }}</th>
-                <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-end">{{ __('common.table.action') }}</th>
+                <th scope="col">{{ __('supplier_audit.fields.supplier') }}</th>
+                <th scope="col">{{ __('supplier_audit.fields.period') }}</th>
+                <th scope="col">{{ __('supplier_audit.columns.progress') }}</th>
+                <th scope="col">{{ __('supplier_audit.fields.due_date') }}</th>
+                <th scope="col">{{ __('supplier_audit.fields.status') }}</th>
+                <th scope="col">{{ __('supplier_audit.fields.submitted_at') }}</th>
+                <th scope="col" class="tw:text-end">{{ __('common.table.action') }}</th>
             </tr>
         </thead>
         <tbody>

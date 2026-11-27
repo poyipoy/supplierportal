@@ -383,15 +383,21 @@ test('ui button and icon-button components contain no legacy palette classes or 
         /<x-lucide-/,
     ];
 
-    for (const rel of ['resources/views/components/ui/button.blade.php', 'resources/views/components/ui/icon-button.blade.php']) {
+    for (const rel of ['resources/views/components/ui/button.blade.php', 'resources/views/components/ui/icon-button.blade.php', 'resources/views/components/ui/searchable-select.blade.php']) {
         const source = readFileSync(path.join(root, rel), 'utf8');
         for (const pattern of bannedPatterns) {
             assert.doesNotMatch(source, pattern, `${rel} matched banned pattern ${pattern}`);
         }
+        if (rel.endsWith('searchable-select.blade.php')) continue;
         assert.match(source, /'outline-primary'\s*=>/);
         assert.match(source, /'danger-outline'\s*=>/);
         assert.match(source, /'outline'\s*=>[^\n]*tw:border-outline-strong[^\n]*tw:bg-surface/);
         assert.match(source, /'outline-primary'\s*=>[^\n]*tw:border-primary-text[^\n]*tw:bg-surface[^\n]*tw:text-primary-text/);
+    }
+
+    for (const rel of ['resources/views/components/ui/dialog.blade.php', 'resources/views/components/ui/drawer.blade.php', 'resources/views/components/ui/alert.blade.php', 'resources/views/components/ui/toast.blade.php']) {
+        const source = readFileSync(path.join(root, rel), 'utf8');
+        assert.match(source, /tw:border-0 tw:bg-transparent/, `${rel} dismiss button must explicitly reset border and background`);
     }
 });
 

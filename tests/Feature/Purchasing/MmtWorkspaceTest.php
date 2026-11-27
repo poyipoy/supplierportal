@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Purchasing;
 
+use App\Models\Attachment;
 use App\Models\ExchangeRate;
 use App\Models\LocalGoodsReceipt;
 use App\Models\LocalInvoice;
@@ -328,6 +329,176 @@ class MmtWorkspaceTest extends TestCase
         $this->actingAs($this->localSupplier)
             ->withHeaders($headers)
             ->getJson(route('finance.local-procurement.satellite', ['purchaseOrder' => $localPo]))
+            ->assertForbidden();
+    }
+
+    public function test_local_supplier_po_mmt_workspace_and_satellite_enforce_isolation_and_accessibility(): void
+    {
+        $otherLocalSupplier = User::factory()->create(['role' => 'supplier', 'is_active' => true, 'account_status' => 'ACTIVE']);
+        SupplierScope::query()->where('supplier_id', $otherLocalSupplier->id)->delete();
+        SupplierScope::query()->create(['supplier_id' => $otherLocalSupplier->id, 'scope' => 'local']);
+
+        $ownPo = LocalPurchaseOrder::create([
+            'po_number' => 'LPO/SUP/001',
+            'supplier_id' => $this->localSupplier->id,
+            'total_amount' => '18000000.00',
+            'currency' => 'IDR',
+            'status' => LocalPurchaseOrder::STATUS_OPEN,
+            'po_date' => BusinessTime::today()->toDateString(),
+            'source' => LocalPurchaseOrder::SOURCE_MANUAL,
+            'created_by' => $this->finance->id,
+        ]);
+
+        $otherPo = LocalPurchaseOrder::create([
+            'po_number' => 'LPO/OTHER/001',
+            'supplier_id' => $otherLocalSupplier->id,
+            'total_amount' => '9000000.00',
+            'currency' => 'IDR',
+            'status' => LocalPurchaseOrder::STATUS_OPEN,
+            'po_date' => BusinessTime::today()->toDateString(),
+            'source' => LocalPurchaseOrder::SOURCE_MANUAL,
+            'created_by' => $this->finance->id,
+        ]);
+
+        LocalGoodsReceipt::create([
+            'local_purchase_order_id' => $ownPo->id,
+            'gr_number' => 'GR-SUP-ACTIVE',
+            'gr_date' => BusinessTime::today()->toDateString(),
+            'qty' => '10.00',
+            'uom' => 'pcs',
+            'status' => LocalGoodsReceipt::STATUS_AVAILABLE,
+            'source' => LocalPurchaseOrder::SOURCE_MANUAL,
+            'created_by' => $this->finance->id,
+        ]);
+
+        LocalGoodsReceipt::create([
+            'local_purchase_order_id' => $ownPo->id,
+            'gr_number' => 'GR-SUP-CANCELLED',
+            'gr_date' => BusinessTime::today()->toDateString(),
+            'qty' => '99.00',
+            'uom' => 'pcs',
+            'status' => LocalGoodsReceipt::STATUS_CANCELLED,
+            'source' => LocalPurchaseOrder::SOURCE_MANUAL,
+            'created_by' => $this->finance->id,
+        ]);
+
+        $invoice = LocalInvoice::create([
+            'submission_number' => 'SUB/SUP/001',
+            'supplier_id' => $this->localSupplier->id,
+            'local_purchase_order_id' => $ownPo->id,
+            'po_number' => $ownPo->po_number,
+            'submitted_at' => BusinessTime::now(),
+            'payment_term_days_snapshot' => 30,
+            'invoice_number' => 'INV-SUP-001',
+            'invoice_date' => BusinessTime::today()->toDateString(),
+            'invoice_amount' => '10000000.00',
+            'tax_amount' => '1100000.00',
+            'status' => LocalInvoice::STATUS_UNDER_VERIFICATION,
+            'revision_number' => 1,
+        ]);
+
+        $attachment = Attachment::create([
+            'attachable_type' => LocalPurchaseOrder::class,
+            'attachable_id' => $ownPo->id,
+            'file_path' => 'local-po/lpo-sup-001.pdf',
+            'file_name' => 'LPO-SUP-001.pdf',
+            'file_type' => 'PO_DOCUMENT',
+            'uploaded_by' => $this->finance->id,
+        ]);
+
+        $indexRes = $this->actingAs($this->localSupplier)
+            ->get(route('local-supplier.purchase-orders.index'));
+
+        $indexRes->assertOk()
+            ->assertSee('id="supplierLocalPoMmtWorkspace"', false)
+            ->assertSee('id="supplier-local-po-mmt-satellite"', false)
+            ->assertSee('id="supplier-local-po-mmt-hint"', false)
+            ->assertSee('data-mmt-row-url="'.route('local-supplier.purchase-orders.satellite', $ownPo, false).'"', false)
+            ->assertSee('data-mmt-row-ref="LPO/SUP/001"', false)
+            ->assertSee('aria-controls="supplier-local-po-mmt-satellite"', false)
+            ->assertSee('aria-describedby="supplier-local-po-mmt-hint"', false)
+            ->assertSee('tabindex="0"', false)
+            ->assertSee('PDF<span class="tw:sr-only"> '.__('local_procurement.actions.view_po').' — LPO/SUP/001</span>', false)
+            ->assertDontSee('LPO/OTHER/001', false)
+            ->assertDontSee('ui-col-data-name', false);
+
+        $headers = [ServerTabsResponse::HEADER => '1', 'Accept' => 'application/json'];
+
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+        $grRes = $this->actingAs($this->localSupplier)
+            ->withHeaders($headers)
+            ->getJson(route('local-supplier.purchase-orders.satellite', ['purchaseOrder' => $ownPo, 'tab' => 'goods-receipts']));
+        $queryCount = count(DB::getQueryLog());
+        DB::disableQueryLog();
+
+        $this->assertLessThanOrEqual(20, $queryCount);
+        $grRes->assertOk()->assertJsonPath('tab', 'goods-receipts');
+
+        $grHtml = (string) $grRes->json('html');
+        $grNav = (string) $grRes->json('nav');
+        $this->assertStringContainsString('GR-SUP-ACTIVE', $grHtml);
+        $this->assertStringNotContainsString('GR-SUP-CANCELLED', $grHtml);
+        $this->assertStringContainsString('role="region"', $grHtml);
+        $this->assertStringContainsString('tabindex="0"', $grHtml);
+        $this->assertStringContainsString('<nav aria-label="', $grNav);
+        $this->assertStringContainsString(route('local-supplier.purchase-orders.show', $ownPo, false), $grNav);
+        $this->assertStringContainsString(' — LPO/SUP/001</span>', $grNav);
+        // Active GR count matches non-cancelled count (1), not 2.
+        $this->assertMatchesRegularExpression('/data-tab-name="goods-receipts"[\s\S]*?>\s*1\s*<\/span>/', $grNav);
+
+        $invRes = $this->actingAs($this->localSupplier)
+            ->withHeaders($headers)
+            ->getJson(route('local-supplier.purchase-orders.satellite', ['purchaseOrder' => $ownPo, 'tab' => 'invoices']));
+        $invRes->assertOk()->assertJsonPath('tab', 'invoices');
+        $this->assertStringContainsString('INV-SUP-001', (string) $invRes->json('html'));
+        $this->assertStringContainsString(route('local-supplier.invoices.show', $invoice, false), (string) $invRes->json('html'));
+
+        $docsRes = $this->actingAs($this->localSupplier)
+            ->withHeaders($headers)
+            ->getJson(route('local-supplier.purchase-orders.satellite', ['purchaseOrder' => $ownPo, 'tab' => 'documents']));
+        $docsRes->assertOk()->assertJsonPath('tab', 'documents');
+        $this->assertStringContainsString('LPO-SUP-001.pdf', (string) $docsRes->json('html'));
+        $this->assertStringContainsString(route('attachments.show', $attachment, false), (string) $docsRes->json('html'));
+
+        // Unknown tab falls back cleanly to goods-receipts.
+        $this->actingAs($this->localSupplier)
+            ->withHeaders($headers)
+            ->getJson(route('local-supplier.purchase-orders.satellite', ['purchaseOrder' => $ownPo, 'tab' => 'unknown-tab']))
+            ->assertOk()
+            ->assertJsonPath('tab', 'goods-receipts');
+
+        // Direct navigation without server-tabs header redirects cleanly to Show.
+        $this->flushHeaders()
+            ->actingAs($this->localSupplier)
+            ->get(route('local-supplier.purchase-orders.satellite', ['purchaseOrder' => $ownPo]))
+            ->assertRedirect(route('local-supplier.purchase-orders.show', $ownPo));
+
+        // Raw numeric ID returns 404 (hashids enforced).
+        $this->actingAs($this->localSupplier)
+            ->withHeaders($headers)
+            ->getJson('/local-supplier/purchase-orders/'.$ownPo->id.'/satellite')
+            ->assertNotFound();
+
+        // Cross-supplier and cross-role isolation.
+        $this->actingAs($otherLocalSupplier)
+            ->withHeaders($headers)
+            ->getJson(route('local-supplier.purchase-orders.satellite', ['purchaseOrder' => $ownPo]))
+            ->assertForbidden();
+
+        $this->actingAs($this->localSupplier)
+            ->withHeaders($headers)
+            ->getJson(route('local-supplier.purchase-orders.satellite', ['purchaseOrder' => $otherPo]))
+            ->assertForbidden();
+
+        $this->actingAs($this->importSupplier)
+            ->withHeaders($headers)
+            ->getJson(route('local-supplier.purchase-orders.satellite', ['purchaseOrder' => $ownPo]))
+            ->assertForbidden();
+
+        $this->actingAs($this->finance)
+            ->withHeaders($headers)
+            ->getJson(route('local-supplier.purchase-orders.satellite', ['purchaseOrder' => $ownPo]))
             ->assertForbidden();
     }
 }

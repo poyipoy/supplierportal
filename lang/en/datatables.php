@@ -11,5 +11,11 @@ return [
     'loadingRecords' => 'Loading...',
     'processing' => 'Processing...',
     'paginate' => ['first' => 'First', 'last' => 'Last', 'previous' => 'Previous', 'next' => 'Next'],
-    'aria' => ['sortAscending' => ': activate to sort column ascending', 'sortDescending' => ': activate to sort column descending'],
+    'aria' => [
+        'sortAscending' => ': activate to sort column ascending',
+        'sortDescending' => ': activate to sort column descending',
+        'orderable' => ': Activate to sort',
+        'orderableReverse' => ': Activate to invert sorting',
+        'orderableRemove' => ': Activate to remove sorting',
+    ],
 ];

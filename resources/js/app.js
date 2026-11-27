@@ -3,6 +3,7 @@ import { onDataTableEvent, offDataTableEvent } from './datatables-events.js';
 import { applyAdasiDataTablesSkin } from './datatables-skin.js';
 import { AdasiModal, bootAdasiModals } from './adasi-modal.js';
 import { AdasiDropdown, bootAdasiDropdowns } from './adasi-dropdown.js';
+import { AdasiSelect, bootAdasiSelects } from './adasi-select.js';
 import { AdasiTooltip, bootAdasiTooltips } from './adasi-tooltip.js';
 import { AdasiTabs, bootAdasiTabs } from './adasi-tabs.js';
 import { t } from './i18n.js';
@@ -36,6 +37,7 @@ applyAdasiDataTablesSkin(window.DataTable);
 window.AdasiDataTableEvents = Object.freeze({ on: onDataTableEvent, off: offDataTableEvent });
 window.AdasiModal = AdasiModal;
 window.AdasiDropdown = AdasiDropdown;
+window.AdasiSelect = AdasiSelect;
 window.AdasiTooltip = AdasiTooltip;
 window.AdasiTabs = AdasiTabs;
 bootAdasiModals(document);
@@ -91,6 +93,17 @@ window.AdasiFilterBar = Object.freeze({
     bindLive: (container, options = {}) => loadFilterBar().then((module) => module.bindLive(container, options)),
     sync: (container) => (filterBarModule ? filterBarModule.then((module) => module.sync(container)) : Promise.resolve()),
     reset: (container) => (filterBarModule ? filterBarModule.then((module) => module.reset(container)) : Promise.resolve()),
+});
+
+const ADVANCED_EXPORT_SELECTOR = '[data-advanced-export], [data-format-export-form]';
+let advancedExportModule = null;
+const loadAdvancedExport = () => (advancedExportModule ??= import('./advanced-export'));
+window.AdasiAdvancedExport = Object.freeze({
+    initialize: (root = document) => {
+        if (root?.matches?.(ADVANCED_EXPORT_SELECTOR) || root?.querySelector?.(ADVANCED_EXPORT_SELECTOR)) {
+            loadAdvancedExport().then((module) => module.bootAdvancedExports(root));
+        }
+    },
 });
 
 const embedReadiness = bootEmbedReadiness(window);
@@ -442,10 +455,12 @@ Alpine.data('adasiShell', () => ({
 }));
 
 Alpine.start();
+bootAdasiSelects(document);
 window.AdasiCalendar.initialize(document);
 
 window.AdasiDismissDropdowns = (exceptToggle = null) => {
     window.AdasiDropdown?.dismissAll?.(exceptToggle, document);
+    window.AdasiSelect?.closeAll?.(null, document);
 };
 
 document.addEventListener('pointerdown', (event) => {
@@ -471,7 +486,7 @@ const bootImports = () => {
         const grTableImport = import('./local-po-gr-table').then(module => module.bootLocalPoGrTable());
         embedReadiness?.trackPromise?.(grTableImport);
     }
-    if (hasMarker('[data-advanced-export], [data-format-export-form]')) import('./advanced-export');
+    if (hasMarker(ADVANCED_EXPORT_SELECTOR)) window.AdasiAdvancedExport.initialize(document);
     if (hasMarker('[data-dashboard-audience] [data-editor-config]')) import('./dashboard-editor');
     if (hasMarker('[data-quotation-form-export]')) import('./quotation-form-export');
     if (hasMarker('[data-quotation-availability-guard]')) import('./quotation-availability-guard').then(module => module.initQuotationAvailabilityGuards());

@@ -70,6 +70,7 @@ class MaintenanceModuleRegistryTest extends TestCase
             'local-supplier.purchase-orders.search' => ['local.invoices'],
             'local-invoice-documents.show' => ['local.invoices'],
             'local-supplier.purchase-orders.goods-receipts.data' => ['local.purchase_orders'],
+            'local-supplier.purchase-orders.satellite' => ['local.purchase_orders'],
             'local-supplier.vendor-profile.documents.upload' => ['local.vendor_profile'],
             'supplier-master-documents.show' => ['local.vendor_profile'],
             'local-supplier.supplier-audits.autosave' => ['local.supplier_audit'],

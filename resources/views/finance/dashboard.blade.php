@@ -3,7 +3,7 @@
 @section('page-title', __('finance.dashboard.heading'))
 
 @section('content')
-<div class="tw:grid tw:gap-6 tw:pb-16">
+<div class="tw:grid tw:gap-6">
     <x-ui.page-header
         :title="__('finance.dashboard.heading')"
         :description="__('finance.review.dashboard_help')"
@@ -81,7 +81,7 @@
             <x-slot:header>
                 <div class="tw:flex tw:flex-col tw:sm:flex-row tw:sm:items-center tw:sm:justify-between tw:gap-3 tw:w-full">
                     <div>
-                        <h2 class="tw:m-0 tw:text-sm tw:font-bold tw:text-on-surface">{{ __('finance.copy_review.forecast') }}</h2>
+                        <h2 class="tw:m-0 tw:text-ui-base tw:font-bold tw:text-on-surface">{{ __('finance.copy_review.forecast') }}</h2>
                         <p class="tw:m-0 tw:mt-0.5 tw:text-ui-xs tw:text-on-surface-variant">{{ __('finance.labels.ready_accumulation') }}</p>
                     </div>
                     <div class="tw:flex tw:flex-wrap tw:items-center tw:gap-2">
@@ -90,8 +90,8 @@
                             <button
                                 type="button"
                                 @click="setMode('weekly')"
-                                :class="mode === 'weekly' ? 'tw:bg-surface tw:text-primary tw:shadow-xs tw:font-semibold' : 'tw:bg-transparent tw:text-on-surface-variant tw:hover:text-on-surface tw:font-medium'"
-                                class="tw:border-0 tw:outline-hidden tw:focus:outline-hidden tw:h-full tw:w-20 tw:flex tw:items-center tw:justify-center tw:text-ui-xs tw:rounded-ui-sm tw:transition-colors tw:cursor-pointer"
+                                :class="mode === 'weekly' ? 'tw:bg-surface tw:text-primary tw:shadow-ui-1 tw:font-semibold' : 'tw:bg-transparent tw:text-on-surface-variant tw:hover:text-on-surface tw:font-semibold'"
+                                class="ui-focus-ring tw:border-0 tw:h-full tw:w-20 tw:flex tw:items-center tw:justify-center tw:text-ui-xs tw:rounded-ui-sm tw:transition-colors tw:cursor-pointer"
                                 :aria-pressed="mode === 'weekly'"
                             >
                                 {{ __('finance.review.weekly') }}
@@ -99,8 +99,8 @@
                             <button
                                 type="button"
                                 @click="setMode('monthly')"
-                                :class="mode === 'monthly' ? 'tw:bg-surface tw:text-primary tw:shadow-xs tw:font-semibold' : 'tw:bg-transparent tw:text-on-surface-variant tw:hover:text-on-surface tw:font-medium'"
-                                class="tw:border-0 tw:outline-hidden tw:focus:outline-hidden tw:h-full tw:w-20 tw:flex tw:items-center tw:justify-center tw:text-ui-xs tw:rounded-ui-sm tw:transition-colors tw:cursor-pointer"
+                                :class="mode === 'monthly' ? 'tw:bg-surface tw:text-primary tw:shadow-ui-1 tw:font-semibold' : 'tw:bg-transparent tw:text-on-surface-variant tw:hover:text-on-surface tw:font-semibold'"
+                                class="ui-focus-ring tw:border-0 tw:h-full tw:w-20 tw:flex tw:items-center tw:justify-center tw:text-ui-xs tw:rounded-ui-sm tw:transition-colors tw:cursor-pointer"
                                 :aria-pressed="mode === 'monthly'"
                             >
                                 {{ __('finance.labels.monthly') }}
@@ -116,7 +116,7 @@
                                 x-model="selectedMonth"
                                 @change="changeMonth($event.target.value)"
                                 :disabled="isLoading"
-                                class="ui-select ui-select--sm tw:h-8 tw:min-w-[195px] tw:text-ui-xs tw:pl-8 tw:pr-8 tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface tw:text-on-surface tw:font-medium tw:hover:border-outline tw:focus:border-primary tw:focus:ring-1 tw:focus:ring-primary tw:shadow-none"
+                                class="ui-select ui-select--sm ui-focus-ring tw:h-8 tw:min-w-[195px] tw:text-ui-xs tw:pl-8 tw:pr-8 tw:rounded-ui-sm tw:border tw:border-outline-strong tw:bg-surface tw:text-on-surface tw:font-semibold tw:hover:border-primary tw:focus:border-primary tw:shadow-none"
                             >
                                 @foreach($availableMonths as $m)
                                     <option value="{{ $m['key'] }}">
@@ -182,7 +182,7 @@
                 {{-- Chart Visualization: the period table below lists every plotted value. --}}
                 <div class="tw:mb-6">
                     <div class="tw:flex tw:flex-col tw:sm:flex-row tw:sm:items-center tw:sm:justify-between tw:gap-2 tw:mb-2">
-                        <h3 class="tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant tw:uppercase tw:tracking-wide tw:m-0">
+                        <h3 class="tw:text-ui-sm tw:font-semibold tw:text-on-surface-variant tw:uppercase tw:tracking-wide tw:m-0">
                             {{ __('finance.labels.cashflow') }}
                         </h3>
                         <div class="tw:flex tw:items-center tw:gap-4 tw:text-ui-xs tw:text-on-surface-variant" aria-hidden="true">
@@ -216,10 +216,10 @@
                         <table class="ui-table ui-table--hover tw:align-middle tw:m-0 tw:text-ui-sm tw:w-full" aria-label="{{ __('finance.review.forecast_table') }}">
                             <thead>
                                 <tr>
-                                    <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant">{{ __('finance.review.period') }}</th>
-                                    <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant tw:text-center">{{ __('finance.labels.invoice_ready') }}</th>
-                                    <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant tw:text-end">{{ __('finance.review.period_amount') }}</th>
-                                    <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant tw:text-end">{{ __('finance.labels.accumulation') }}</th>
+                                    <th scope="col">{{ __('finance.review.period') }}</th>
+                                    <th scope="col" class="tw:text-center">{{ __('finance.labels.invoice_ready') }}</th>
+                                    <th scope="col" class="tw:text-end">{{ __('finance.review.period_amount') }}</th>
+                                    <th scope="col" class="tw:text-end">{{ __('finance.labels.accumulation') }}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -282,17 +282,16 @@
             </x-ui.button>
         </x-slot:toolbar>
 
-        <div class="ui-table-responsive">
-            <table class="ui-table ui-table--hover tw:align-middle tw:m-0 tw:text-ui-sm tw:w-full">
+        <table class="ui-table ui-table--hover tw:align-middle tw:m-0 tw:text-ui-sm tw:w-full">
                 <thead>
                     <tr>
-                        <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant">{{ __('finance.copy_review.batch_number') }}</th>
-                        <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant">{{ __('local_invoice.labels.type') }}</th>
-                        <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant">{{ __('local_invoice.labels.status') }}</th>
-                        <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant tw:text-end">{{ __('finance.drp.total_amount') }}</th>
-                        <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant tw:text-end">{{ __('finance.drp.total_fee') }}</th>
-                        <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant">{{ __('local_invoice.labels.created_by') }}</th>
-                        <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant tw:text-end">{{ __('common.table.action') }}</th>
+                        <th scope="col">{{ __('finance.copy_review.batch_number') }}</th>
+                        <th scope="col">{{ __('local_invoice.labels.type') }}</th>
+                        <th scope="col">{{ __('local_invoice.labels.status') }}</th>
+                        <th scope="col" class="tw:text-end">{{ __('finance.drp.total_amount') }}</th>
+                        <th scope="col" class="tw:text-end">{{ __('finance.drp.total_fee') }}</th>
+                        <th scope="col">{{ __('local_invoice.labels.created_by') }}</th>
+                        <th scope="col" class="tw:text-end">{{ __('common.table.action') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -303,7 +302,7 @@
                                 <span class="tw:block tw:text-ui-xs tw:text-on-surface-variant">{{ $regionalFormatter->timestamp($batch->created_at, 'datetime') }}</span>
                             </td>
                             <td>
-                                <span class="tw:inline-flex tw:px-2 tw:py-0.5 tw:rounded-sm tw:text-[11px] tw:font-semibold {{ $batch->batch_type === 'SUPPLIER' ? 'tw:bg-primary/10 tw:text-primary' : 'tw:bg-info/10 tw:text-info' }}">
+                                <span class="tw:inline-flex tw:px-2 tw:py-0.5 tw:rounded-sm tw:text-ui-xs tw:font-semibold {{ $batch->batch_type === 'SUPPLIER' ? 'tw:bg-primary/10 tw:text-primary' : 'tw:bg-info/10 tw:text-info' }}">
                                     {{ __('finance.closure.batch_type_'.strtolower($batch->batch_type)) }}
                                 </span>
                             </td>
@@ -337,7 +336,6 @@
                     @endforelse
                 </tbody>
             </table>
-        </div>
     </x-ui.data-table>
         </x-slot:batches>
 
@@ -509,11 +507,7 @@ window.paymentForecastModule = function() {
             const scales = theme.getScales({
                 yMaxTicks: 5,
                 yBeginAtZero: true,
-                yFormat: function(value) {
-                    if (value >= 1e9) return 'Rp ' + self.formatNumber((value / 1e9).toFixed(1), 'decimal') + 'M';
-                    if (value >= 1e6) return 'Rp ' + self.formatNumber((value / 1e6).toFixed(0), 'decimal') + 'jt';
-                    return 'Rp ' + self.formatNumber(Number(value).toLocaleString('id-ID'), 'indonesian');
-                },
+                yFormat: theme.compactTicks('Rp '),
             });
 
             forecastChart = new Chart(canvas, {
@@ -524,27 +518,15 @@ window.paymentForecastModule = function() {
                             type: 'line',
                             label: @js(__('finance.labels.accumulation')),
                             data: cumulativeAmounts,
-                            borderColor: theme.color('series-3'),
-                            backgroundColor: theme.color('series-3'),
-                            pointBorderColor: theme.color('surface'),
-                            pointStyle: 'circle',
-                            tension: 0.25,
-                            borderWidth: 2,
-                            pointRadius: 4,
-                            pointHoverRadius: 6,
-                            pointBorderWidth: 2,
                             order: 1,
+                            ...theme.lineDataset({ color: theme.color('series-3'), pointStyle: 'circle', multi: false }),
                         },
                         {
                             type: 'bar',
                             label: @js(__('finance.review.period_amount')),
                             data: periodAmounts,
-                            backgroundColor: theme.color('series-1'),
-                            borderRadius: 4,
-                            borderSkipped: 'start',
-                            maxBarThickness: 32,
-                            barPercentage: 0.55,
                             order: 2,
+                            ...theme.barDataset({ index: 0 }),
                         },
                     ]
                 },

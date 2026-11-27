@@ -216,3 +216,32 @@ test('resetForm clears submitting state, re-enables sibling buttons, and stops a
     assert.equal(submitBtn.getAttribute('aria-busy'), null);
     assert.equal(submitBtn.textContent, 'Apply');
 });
+
+test('submitForm locks against double-submit, activates button spinner, disables siblings, and invokes native submit once', () => {
+    const form = new FakeForm('confirmForm');
+    let nativeSubmitCount = 0;
+    FakeForm.prototype.submit = function () { nativeSubmitCount += 1; };
+
+    const submitBtn = new FakeNode('button', { type: 'submit' });
+    submitBtn.textContent = 'Cancel Invoice';
+    const siblingBtn = new FakeNode('button', { type: 'button' });
+    siblingBtn.textContent = 'Back';
+    form.appendChild(submitBtn);
+    form.appendChild(siblingBtn);
+
+    const first = window.AdasiButton.submitForm(form, submitBtn);
+    const second = window.AdasiButton.submitForm(form, submitBtn);
+
+    assert.equal(first, true);
+    assert.equal(second, false, 'second submitForm call while locked must be ignored');
+    assert.equal(nativeSubmitCount, 1);
+    assert.equal(form.dataset.submitting, 'true');
+    assert.equal(submitBtn.disabled, true);
+    assert.equal(submitBtn.getAttribute('aria-busy'), 'true');
+    assert.equal(siblingBtn.disabled, true);
+
+    window.AdasiButton.resetForm(form);
+    assert.equal(form.dataset.submitting, 'false');
+    assert.equal(submitBtn.disabled, false);
+    assert.equal(siblingBtn.disabled, false);
+});

@@ -265,15 +265,20 @@ class PriceComparisonPerformanceRegressionTest extends TestCase
             ->assertJsonPath('pagination.from', 1)
             ->assertJsonPath('pagination.to', 50);
 
-        // Historical uses the annual 2024 rate (16,000), independent of the PO snapshot (15,000).
-        $this->assertEqualsWithDelta(176000, (float) $firstPage->json('tableData.0.price_idr'), 0.0001);
-        $this->assertEqualsWithDelta(1760000, (float) $firstPage->json('tableData.0.total_idr'), 0.0001);
-        $this->assertSame(11.0, (float) $firstPage->json('tableData.0.price_per_kg'));
+        // Historical uses the annual 2024 rate (16,000), independent of the PO snapshot (15,000),
+        // and Monthly Supporting Data defaults to newest PO first while preserving chronological % change.
+        $this->assertEqualsWithDelta(976000, (float) $firstPage->json('tableData.0.price_idr'), 0.0001);
+        $this->assertEqualsWithDelta(9760000, (float) $firstPage->json('tableData.0.total_idr'), 0.0001);
+        $this->assertSame(61.0, (float) $firstPage->json('tableData.0.price_per_kg'));
         $this->assertSame('USD', $firstPage->json('tableData.0.currency'));
+        $this->assertEqualsWithDelta(1.67, (float) $firstPage->json('tableData.0.change_pct'), 0.0001);
         $this->assertStringStartsWith(
-            route('purchasing.requisitions.show', $requisitions->first()),
+            route('purchasing.requisitions.show', $requisitions->last()),
             (string) $firstPage->json('tableData.0.pr_url'),
         );
+        // Bottom row of page 1 (sequence 2, 12 USD) still computes +9.09% against sequence 1 (11 USD) on page 2.
+        $this->assertSame(12.0, (float) $firstPage->json('tableData.49.price_per_kg'));
+        $this->assertEqualsWithDelta(9.09, (float) $firstPage->json('tableData.49.change_pct'), 0.0001);
 
         $secondPage = $requestPage(2)
             ->assertOk()
@@ -288,7 +293,14 @@ class PriceComparisonPerformanceRegressionTest extends TestCase
             hash('sha256', json_encode($secondPage->json('chartData'), JSON_THROW_ON_ERROR)),
         );
         $this->assertSame($firstPage->json('summary'), $secondPage->json('summary'));
-        $this->assertEqualsWithDelta(1.67, (float) $secondPage->json('tableData.0.change_pct'), 0.0001);
+        $this->assertEqualsWithDelta(176000, (float) $secondPage->json('tableData.0.price_idr'), 0.0001);
+        $this->assertEqualsWithDelta(1760000, (float) $secondPage->json('tableData.0.total_idr'), 0.0001);
+        $this->assertSame(11.0, (float) $secondPage->json('tableData.0.price_per_kg'));
+        $this->assertNull($secondPage->json('tableData.0.change_pct'));
+        $this->assertStringStartsWith(
+            route('purchasing.requisitions.show', $requisitions->first()),
+            (string) $secondPage->json('tableData.0.pr_url'),
+        );
 
         $requestPage(999)
             ->assertOk()

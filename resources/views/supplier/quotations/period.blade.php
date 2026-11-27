@@ -111,7 +111,7 @@
                 { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false, className: 'tw:text-center tw:text-on-surface-variant' },
                 { data: 'pr_number_display', name: 'pr_number', className: 'tw:font-bold tw:text-primary' },
                 { data: 'updated_date', name: 'updated_at', className: 'ui-tabular-nums tw:text-on-surface-variant' },
-                { data: 'item_count', name: 'item_count', orderable: false, searchable: false, className: 'tw:text-center tw:font-medium ui-tabular-nums' },
+                { data: 'item_count', name: 'item_count', orderable: false, searchable: false, className: 'tw:text-center tw:font-semibold ui-tabular-nums' },
                 { data: 'status_badge', name: 'status', searchable: false, className: 'tw:text-center' },
                 { data: 'action', name: 'action', orderable: false, searchable: false, className: 'tw:text-end' }
             ],

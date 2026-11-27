@@ -35,7 +35,7 @@
     $errorId = $errorId ?: $resolvedId . '-error';
     $labelId = $resolvedId . '-label';
     $panelId = $resolvedId . '-calendar-panel';
-    $describedBy = collect([$helperId, $errorId])->filter()->implode(' ');
+    $describedBy = collect([$helperId, $message ? $errorId : null])->filter()->implode(' ');
     $formatRangeDisplay = function ($value, $granularity) {
         if (! $value) {
             return __('js.calendar.any_time');
@@ -64,17 +64,17 @@
 >
     <div data-calendar-native class="{{ $compact ? 'ui-date-range-picker__native-compact' : 'tw:grid tw:gap-3 tw:sm:grid-cols-2' }}">
         <div class="tw:grid tw:gap-1.5">
-            <label for="{{ $resolvedStartId }}" class="{{ $compact ? 'tw:sr-only' : 'tw:text-ui-sm tw:font-medium tw:text-on-surface' }}">{{ $startLabel }}</label>
+            <label for="{{ $resolvedStartId }}" class="{{ $compact ? 'tw:sr-only' : 'tw:text-ui-sm tw:font-semibold tw:text-on-surface' }}">{{ $startLabel }}</label>
             <input id="{{ $resolvedStartId }}" name="{{ $startName }}" type="{{ $inputType }}" value="{{ $startResolvedValue }}" @if($startMin) min="{{ $startMin }}" @endif @if($startMax) max="{{ $startMax }}" @endif @required($required) data-calendar-native-input data-calendar-boundary-input="start" @if($describedBy) aria-describedby="{{ $describedBy }}" @endif @if($message) aria-invalid="true" @endif class="ui-calendar__native-input ui-motion tw:min-h-[var(--ui-control-height-md)] tw:w-full tw:rounded-ui-sm tw:border tw:border-outline-strong tw:bg-surface tw:px-3 tw:py-2 tw:text-ui-sm tw:text-on-surface tw:shadow-none tw:focus:border-primary tw:focus:ring-2 tw:focus:ring-primary">
         </div>
         <div class="tw:grid tw:gap-1.5">
-            <label for="{{ $resolvedEndId }}" class="{{ $compact ? 'tw:sr-only' : 'tw:text-ui-sm tw:font-medium tw:text-on-surface' }}">{{ $endLabel }}</label>
+            <label for="{{ $resolvedEndId }}" class="{{ $compact ? 'tw:sr-only' : 'tw:text-ui-sm tw:font-semibold tw:text-on-surface' }}">{{ $endLabel }}</label>
             <input id="{{ $resolvedEndId }}" name="{{ $endName }}" type="{{ $inputType }}" value="{{ $endResolvedValue }}" @if($endMin) min="{{ $endMin }}" @endif @if($endMax) max="{{ $endMax }}" @endif @required($required) data-calendar-native-input data-calendar-boundary-input="end" @if($describedBy) aria-describedby="{{ $describedBy }}" @endif @if($message) aria-invalid="true" @endif class="ui-calendar__native-input ui-motion tw:min-h-[var(--ui-control-height-md)] tw:w-full tw:rounded-ui-sm tw:border tw:border-outline-strong tw:bg-surface tw:px-3 tw:py-2 tw:text-ui-sm tw:text-on-surface tw:shadow-none tw:focus:border-primary tw:focus:ring-2 tw:focus:ring-primary">
         </div>
     </div>
 
     <div data-calendar-enhanced hidden>
-        <span id="{{ $labelId }}" class="{{ $compact ? 'tw:sr-only' : 'tw:text-ui-sm tw:font-medium tw:text-on-surface' }}">{{ __('common.review.range_label', ['start' => $startLabel, 'end' => $endLabel]) }}</span>
+        <span id="{{ $labelId }}" class="{{ $compact ? 'tw:sr-only' : 'tw:text-ui-sm tw:font-semibold tw:text-on-surface' }}">{{ __('common.review.range_label', ['start' => $startLabel, 'end' => $endLabel]) }}</span>
         <div class="ui-date-range-trigger" role="group" aria-labelledby="{{ $labelId }}" @if($describedBy) aria-describedby="{{ $describedBy }}" @endif>
             <button type="button" class="ui-date-range-trigger__field" data-calendar-boundary="start" aria-haspopup="dialog" aria-expanded="false" aria-controls="{{ $panelId }}">
                 <span class="ui-date-range-trigger__field-content">
@@ -94,7 +94,7 @@
     </div>
 
     @if($helper)<p id="{{ $helperId }}" class="tw:m-0 tw:text-ui-xs tw:text-on-surface-variant">{{ $helper }}</p>@endif
-    <p id="{{ $errorId }}" data-calendar-error class="tw:m-0 tw:flex tw:items-start tw:gap-1.5 tw:text-ui-xs tw:font-medium tw:text-error {{ $message ? '' : 'tw:hidden' }}" role="alert"><x-ui.icon name="circle-alert" size="sm" class="tw:mt-0.5" /><span data-calendar-error-message>{{ $message }}</span></p>
+    <p id="{{ $errorId }}" data-calendar-error class="tw:m-0 tw:flex tw:items-start tw:gap-1.5 tw:text-ui-xs tw:font-semibold tw:text-error {{ $message ? '' : 'tw:hidden' }}" role="alert"><x-ui.icon name="circle-alert" size="sm" class="tw:mt-0.5" /><span data-calendar-error-message>{{ $message }}</span></p>
 
     <div id="{{ $panelId }}" class="ui-calendar-panel ui-calendar-panel--range {{ $granularity === 'month' ? 'ui-calendar-panel--month-range' : 'ui-calendar-panel--day-range' }}" data-calendar-panel hidden role="dialog" aria-modal="false" aria-label="{{ __('common.calendar.choose_range') }}">
         <div class="ui-calendar-panel__topline">

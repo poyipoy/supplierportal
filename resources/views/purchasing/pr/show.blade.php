@@ -84,11 +84,11 @@
         :description="__('purchasing.copy.review_material_requirements_invited_suppliers_quotation_responses_and_workflow_progress')"
         :record-nav="$recordNav ?? null"
     >
-        <x-slot:actions>
+        <x-slot:status>
             <x-status-badge type="pr" :status="$pr->status" size="lg" />
             @if($pr->status === 'bidding')
                 <span
-                    class="ui-tabular-nums tw:inline-flex tw:items-center tw:rounded-ui-xs tw:border tw:border-primary tw:bg-primary-container tw:px-2.5 tw:py-1.5 tw:text-ui-xs tw:font-semibold tw:text-primary-container-foreground"
+                    class="ui-tabular-nums tw:ms-2 tw:inline-flex tw:items-center tw:rounded-ui-xs tw:border tw:border-primary tw:bg-primary-container tw:px-2.5 tw:py-1 tw:text-ui-xs tw:font-semibold tw:text-primary-container-foreground"
                     title="{{ __('purchasing.a11y.quotation_count', ['count' => $submittedQuotationCount]) }}"
                     aria-label="{{ __('purchasing.a11y.quotation_count', ['count' => $submittedQuotationCount]) }}"
                 >
@@ -96,6 +96,8 @@
                     {{ trans_choice('purchasing.summary.quotations', $submittedQuotationCount, ['count' => $submittedQuotationCount]) }}
                 </span>
             @endif
+        </x-slot:status>
+        <x-slot:actions>
             <x-ui.button :href="\App\Support\PurchasingNavigation::backUrl('purchasing.requisitions.index')" variant="outline" size="sm">
                 <x-ui.icon name="arrow-left" />
                 <span>{{ __('purchasing.copy.back_to_requisitions') }}</span>
@@ -120,11 +122,12 @@
     </x-ui.page-header>
 
     {{-- 4-Column Key Metrics Strip --}}
-    <div class="tw:grid tw:gap-px tw:overflow-hidden tw:rounded-ui-md tw:border tw:border-outline-variant tw:bg-outline-variant tw:sm:grid-cols-2 tw:xl:grid-cols-4">
+    <div class="tw:grid tw:gap-px tw:overflow-hidden tw:rounded-ui-md tw:border tw:border-outline tw:bg-outline-variant tw:shadow-ui-surface tw:sm:grid-cols-2 tw:xl:grid-cols-4">
         <x-ui.metric-card
             flat
             :label="__('purchasing.copy.procurement_period')"
             :value="$pr->period->display_label"
+            value-class="tw:text-ui-base"
             icon="calendar"
             tone="neutral"
         />
@@ -139,6 +142,7 @@
             flat
             :label="__('purchasing.copy.created_by')"
             :value="$pr->creator->name ?? '-'"
+            value-class="tw:text-ui-base"
             icon="user"
             tone="neutral"
         />
@@ -146,6 +150,7 @@
             flat
             :label="__('purchasing.copy.date_created')"
             :value="$regionalFormatter->timestamp($pr->created_at, 'datetime_comma')"
+            value-class="tw:text-ui-base"
             icon="clock"
             tone="neutral"
         />
@@ -358,7 +363,7 @@
                                 ]) }}
                             </p>
                             @if($pr->cancellation_reason)
-                                <p class="tw:m-0 tw:mt-2 tw:whitespace-pre-line tw:font-medium">{{ $pr->cancellation_reason }}</p>
+                                <p class="tw:m-0 tw:mt-2 tw:whitespace-pre-line tw:font-semibold">{{ $pr->cancellation_reason }}</p>
                             @endif
                         </x-ui.alert>
                     @elseif($pr->created_by !== auth()->id())
@@ -417,7 +422,7 @@
                                 <input type="hidden" name="return_url" value="{{ \App\Support\PurchasingNavigation::currentUrlForReturn() }}">
                                 <x-ui.button type="submit" variant="outline" size="sm" class="tw:w-full tw:justify-start">
                                     <x-ui.icon name="message-square" size="sm" class="tw:text-primary tw:shrink-0" />
-                                    <span class="tw:truncate tw:font-medium">{{ $quotation->supplier->supplier->company_name ?? $quotation->supplier->name }}</span>
+                                    <span class="tw:truncate tw:font-semibold">{{ $quotation->supplier->supplier->company_name ?? $quotation->supplier->name }}</span>
                                 </x-ui.button>
                             </form>
                         @endforeach
@@ -457,7 +462,7 @@
                 </ol>
                 @if($invitationEvents->isNotEmpty())
                     <section class="tw:mt-4 tw:border-t tw:border-outline-variant tw:pt-3" aria-labelledby="pr-invitation-history-title">
-                        <h3 id="pr-invitation-history-title" class="tw:m-0 tw:mb-2 tw:text-ui-xs tw:font-semibold tw:uppercase tw:text-on-surface-variant">{{ __('purchasing.copy.invitation_history') }}</h3>
+                        <h3 id="pr-invitation-history-title" class="tw:m-0 tw:mb-2 tw:text-ui-sm tw:font-semibold tw:uppercase tw:text-on-surface-variant">{{ __('purchasing.copy.invitation_history') }}</h3>
                         <ul class="tw:m-0 tw:grid tw:list-none tw:gap-2 tw:p-0">
                             @foreach($invitationEvents as $event)
                                 <li class="tw:text-ui-xs tw:text-on-surface">
@@ -519,7 +524,7 @@
                         @endphp
                         <li class="tw:flex tw:flex-wrap tw:items-center tw:justify-between tw:gap-2 tw:rounded-lg tw:border tw:border-outline-variant tw:p-2.5">
                             <div class="tw:min-w-0">
-                                <span class="tw:block tw:text-ui-sm tw:font-medium tw:text-on-surface">{{ $invitedName }}</span>
+                                <span class="tw:block tw:text-ui-sm tw:font-semibold tw:text-on-surface">{{ $invitedName }}</span>
                                 @if($removeBlockedReason)
                                     <span id="invited-lock-{{ $invited->id }}" class="tw:block tw:text-ui-xs tw:text-on-surface-variant">{{ $removeBlockedReason }}</span>
                                 @endif
@@ -694,7 +699,7 @@
                     </div>
                     <p
                         id="pr-cancellation-reason-error"
-                        class="tw:m-0 tw:min-h-[1.25rem] tw:text-ui-xs tw:font-medium tw:text-error"
+                        class="tw:m-0 tw:min-h-[1.25rem] tw:text-ui-xs tw:font-semibold tw:text-error"
                         x-show="hasError"
                         x-cloak
                         x-text="errorText"

@@ -148,7 +148,7 @@ class SupplierShipmentController extends Controller
                     }
 
                     return '<div class="tw:inline-flex tw:items-center tw:justify-end tw:gap-1">'.$primaryAction
-                        .'<div class="dropdown"><button type="button" class="ui-data-action ui-focus-ring dropdown-toggle" data-ui-dropdown-trigger popovertarget="dd-shp-'.e($shp->hash).'" aria-controls="dd-shp-'.e($shp->hash).'" aria-expanded="false" aria-label="'.e(__('purchasing.action_names.more_actions_for', ['name' => $shp->shipment_number])).'">'.e(__('shipments.copy.more')).'</button>'
+                        .'<div class="dropdown"><button type="button" class="ui-data-action ui-focus-ring dropdown-toggle" data-ui-dropdown-trigger popovertarget="dd-shp-'.e($shp->hash).'" aria-controls="dd-shp-'.e($shp->hash).'" aria-haspopup="menu" aria-expanded="false" aria-label="'.e(__('purchasing.action_names.more_actions_for', ['name' => $shp->shipment_number])).'">'.e(__('shipments.copy.more')).'</button>'
                         .'<ul id="dd-shp-'.e($shp->hash).'" popover="auto" data-ui-dropdown-menu class="dropdown-menu dropdown-menu-end">'.implode('', $secondaryActions).'</ul></div></div>';
                 })
                 ->rawColumns(['shipment_number_display', 'po_references', 'supplier_reference_display', 'items_count', 'total_qty', 'actual_weight', 'total_weight', 'shipment_date', 'shipment_date_display', 'estimated_arrival', 'missing_documents', 'status_badge', 'action'])

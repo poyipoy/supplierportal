@@ -19,14 +19,14 @@
     </x-ui.page-header>
 
     @if (session('success'))
-        <div class="tw:rounded-ui-sm tw:bg-success/15 tw:p-3.5 tw:text-on-surface tw:flex tw:items-center tw:gap-2.5 tw:text-ui-sm tw:font-medium" role="alert">
+        <div class="tw:rounded-ui-sm tw:bg-success/15 tw:p-3.5 tw:text-on-surface tw:flex tw:items-center tw:gap-2.5 tw:text-ui-sm tw:font-semibold" role="alert">
             <x-ui.icon name="check-circle" size="sm" class="tw:text-success tw:shrink-0" />
             <span>{{ session('success') }}</span>
         </div>
     @endif
 
     @if (session('error'))
-        <div class="tw:rounded-ui-sm tw:bg-error-container tw:p-3.5 tw:text-on-error-container tw:flex tw:items-center tw:gap-2.5 tw:text-ui-sm tw:font-medium" role="alert">
+        <div class="tw:rounded-ui-sm tw:bg-error-container tw:p-3.5 tw:text-on-error-container tw:flex tw:items-center tw:gap-2.5 tw:text-ui-sm tw:font-semibold" role="alert">
             <x-ui.icon name="alert-circle" size="sm" class="tw:shrink-0" />
             <span>{{ session('error') }}</span>
         </div>
@@ -107,7 +107,7 @@
                 <dl class="tw:grid tw:grid-cols-1 tw:md:grid-cols-2 tw:gap-x-4 tw:gap-y-3 tw:text-ui-sm tw:m-0">
                     <div>
                         <dt class="tw:text-ui-xs tw:text-on-surface-variant">{{ __('local_procurement.registration.legal_title') }}</dt>
-                        <dd class="tw:font-medium tw:text-on-surface tw:m-0">{{ $supplier?->company_title ?: __('local_procurement.registration.not_specified') }}</dd>
+                        <dd class="tw:font-semibold tw:text-on-surface tw:m-0">{{ $supplier?->company_title ?: __('local_procurement.registration.not_specified') }}</dd>
                     </div>
                     <div>
                         <dt class="tw:text-ui-xs tw:text-on-surface-variant">{{ __('local_procurement.registration.company_name') }}</dt>
@@ -123,11 +123,11 @@
                     </div>
                     <div>
                         <dt class="tw:text-ui-xs tw:text-on-surface-variant">{{ __('local_procurement.registration.business_category') }}</dt>
-                        <dd class="tw:font-medium tw:text-on-surface tw:m-0">{{ $supplier?->category ?? '-' }}</dd>
+                        <dd class="tw:font-semibold tw:text-on-surface tw:m-0">{{ $supplier?->category ?? '-' }}</dd>
                     </div>
                     <div>
                         <dt class="tw:text-ui-xs tw:text-on-surface-variant">{{ __('local_procurement.registration.pkp') }}</dt>
-                        <dd class="tw:font-medium tw:text-on-surface tw:m-0">
+                        <dd class="tw:font-semibold tw:text-on-surface tw:m-0">
                             @if ($supplier?->is_pkp)
                                 <span class="ui-status-chip ui-status-chip--success">{{ __('local_procurement.registration.pkp_verified') }}</span>
                             @else
@@ -137,15 +137,15 @@
                     </div>
                     <div class="tw:md:col-span-2">
                         <dt class="tw:text-ui-xs tw:text-on-surface-variant">{{ __('local_procurement.registration.legal_address') }}</dt>
-                        <dd class="tw:font-medium tw:text-on-surface tw:m-0">{{ $supplier?->address ?? '-' }}</dd>
+                        <dd class="tw:font-semibold tw:text-on-surface tw:m-0">{{ $supplier?->address ?? '-' }}</dd>
                     </div>
                     <div>
                         <dt class="tw:text-ui-xs tw:text-on-surface-variant">{{ __('local_invoice.labels.company_phone') }}</dt>
-                        <dd class="tw:font-medium tw:text-on-surface tw:m-0">{{ $supplier?->phone ?? '-' }}</dd>
+                        <dd class="tw:font-semibold tw:text-on-surface tw:m-0">{{ $supplier?->phone ?? '-' }}</dd>
                     </div>
                     <div>
                         <dt class="tw:text-ui-xs tw:text-on-surface-variant">{{ __('local_procurement.registration.portal_email') }}</dt>
-                        <dd class="tw:font-medium tw:text-on-surface tw:m-0">{{ $user->email }}</dd>
+                        <dd class="tw:font-semibold tw:text-on-surface tw:m-0">{{ $user->email }}</dd>
                     </div>
                 </dl>
             </div>
@@ -161,15 +161,15 @@
                     <div class="tw:space-y-2 tw:text-ui-sm">
                         <div>
                             <span class="tw:text-ui-xs tw:text-on-surface-variant tw:block">{{ __('common.fields.full_name') }}</span>
-                            <span class="tw:font-medium tw:text-on-surface">{{ $supplier?->pic_name ?? '-' }}</span>
+                            <span class="tw:font-semibold tw:text-on-surface">{{ $supplier?->pic_name ?? '-' }}</span>
                         </div>
                         <div>
                             <span class="tw:text-ui-xs tw:text-on-surface-variant tw:block">{{ __('common.fields.email') }}</span>
-                            <span class="tw:font-medium tw:text-on-surface">{{ $supplier?->pic_email ?? '-' }}</span>
+                            <span class="tw:font-semibold tw:text-on-surface">{{ $supplier?->pic_email ?? '-' }}</span>
                         </div>
                         <div>
                         <span class="tw:text-ui-xs tw:text-on-surface-variant tw:block">{{ __('local_procurement.registration.phone') }}</span>
-                            <span class="tw:font-medium tw:text-on-surface">{{ $supplier?->pic_phone ?? '-' }}</span>
+                            <span class="tw:font-semibold tw:text-on-surface">{{ $supplier?->pic_phone ?? '-' }}</span>
                         </div>
                     </div>
                 </div>
@@ -183,7 +183,7 @@
                     <div class="tw:space-y-2 tw:text-ui-sm">
                         <div>
                             <span class="tw:text-ui-xs tw:text-on-surface-variant tw:block">{{ __('registration.bank') }}</span>
-                            <span class="tw:font-medium tw:text-on-surface">{{ $bankAccount?->bank_name ?? '-' }}</span>
+                            <span class="tw:font-semibold tw:text-on-surface">{{ $bankAccount?->bank_name ?? '-' }}</span>
                         </div>
                         <div>
                             <span class="tw:text-ui-xs tw:text-on-surface-variant tw:block">{{ __('registration.account_number') }}</span>
@@ -191,7 +191,7 @@
                         </div>
                         <div>
                             <span class="tw:text-ui-xs tw:text-on-surface-variant tw:block">{{ __('local_invoice.labels.account_name') }}</span>
-                            <span class="tw:font-medium tw:text-on-surface">{{ $bankAccount?->account_holder_name ?? '-' }}</span>
+                            <span class="tw:font-semibold tw:text-on-surface">{{ $bankAccount?->account_holder_name ?? '-' }}</span>
                         </div>
                     </div>
                 </div>
@@ -234,7 +234,7 @@
                                         {{ $answer === null ? __('registration.questionnaire.not_answered') : __('registration.questionnaire.'.$answer) }}
                                     </span>
                                     @if ($isFlagged)
-                                        <span class="tw:mt-0.5 tw:flex tw:items-center tw:justify-end tw:gap-1 tw:text-[11px] tw:font-semibold tw:text-warning">
+                                        <span class="tw:mt-0.5 tw:flex tw:items-center tw:justify-end tw:gap-1 tw:text-ui-xs tw:font-semibold tw:text-warning">
                                             <x-ui.icon name="alert-triangle" size="xs" />
                                             {{ __('registration.questionnaire.needs_attention') }}
                                         </span>
@@ -319,9 +319,9 @@
                                     'OTHER' => __('local_procurement.registration.doc_other'),
                                     default => $doc->document_type,
                                 } }}</span>
-                                <span class="tw:text-[11px] tw:text-on-surface-variant">{{ number_format($doc->file_size / 1024, 1) }} KB</span>
+                                <span class="tw:text-ui-xs tw:text-on-surface-variant">{{ number_format($doc->file_size / 1024, 1) }} KB</span>
                             </div>
-                            <p class="tw:m-0 tw:text-[11px] tw:text-on-surface-variant tw:truncate" title="{{ $doc->original_filename }}">{{ $doc->original_filename }}</p>
+                            <p class="tw:m-0 tw:text-ui-xs tw:text-on-surface-variant tw:truncate" title="{{ $doc->original_filename }}">{{ $doc->original_filename }}</p>
 
                             <div class="tw:mt-2 tw:pt-2 tw:border-t tw:border-outline-variant tw:flex tw:justify-end">
                                 <a
@@ -356,7 +356,7 @@
                                     {{ \App\Support\StatusHelper::registrationLabel($h->status) }}
                                 </x-ui.status-chip>
                             </div>
-                            <div class="tw:text-[11px] tw:text-on-surface-variant tw:mt-1">
+                            <div class="tw:text-ui-xs tw:text-on-surface-variant tw:mt-1">
                                 {{ $h->submitted_at ? $regionalFormatter->timestamp($h->submitted_at, 'datetime_comma') : '-' }}
                             </div>
                             @if ($h->id !== $attempt->id)
@@ -436,7 +436,7 @@
                         @endforeach
                     </select>
                     @error('vendor_category')
-                        <p class="tw:m-0 tw:mt-1 tw:text-ui-xs tw:font-medium tw:text-error">{{ $message }}</p>
+                        <p class="tw:m-0 tw:mt-1 tw:text-ui-xs tw:font-semibold tw:text-error">{{ $message }}</p>
                     @enderror
                     <p class="tw:m-0 tw:mt-1.5 tw:text-ui-xs tw:text-on-surface-variant">{{ __('local_procurement.registration.vendor_category_help') }}</p>
                 </div>
@@ -467,7 +467,7 @@
                             <span>{{ __('local_procurement.registration.doc_bank_declaration') }}: {{ $declarationDoc->original_filename }}</span>
                         </a>
                     @else
-                        <p class="tw:m-0 tw:mb-3 tw:text-ui-xs tw:font-medium tw:text-error">{{ __('local_procurement.registration.bank_declaration_missing') }}</p>
+                        <p class="tw:m-0 tw:mb-3 tw:text-ui-xs tw:font-semibold tw:text-error">{{ __('local_procurement.registration.bank_declaration_missing') }}</p>
                     @endif
                     <label class="tw:flex tw:items-start tw:gap-2.5 tw:cursor-pointer">
                         <input type="checkbox" name="confirm_bank_declaration" value="1" class="ui-check tw:mt-0.5" @disabled(! $declarationDoc)>
@@ -478,7 +478,7 @@
 
                 {{-- OPTIONAL APPROVAL NOTES --}}
                 <div class="tw:mb-4">
-                    <label for="approval_notes" class="tw:block tw:text-ui-sm tw:font-medium tw:text-on-surface tw:mb-1">
+                    <label for="approval_notes" class="tw:block tw:text-ui-sm tw:font-semibold tw:text-on-surface tw:mb-1">
                         {{ __('local_procurement.registration.approval_notes') }}
                     </label>
                     <textarea

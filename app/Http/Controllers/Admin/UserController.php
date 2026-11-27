@@ -66,7 +66,7 @@ class UserController extends Controller
                         ]);
                     if ($user->id !== auth()->id()) {
                         $html .= '<div class="dropdown">'
-                            .'<button type="button" class="ui-data-action ui-focus-ring dropdown-toggle" data-ui-dropdown-trigger popovertarget="dd-user-'.e($user->hash).'" aria-controls="dd-user-'.e($user->hash).'" aria-expanded="false" aria-label="'.e(__('purchasing.action_names.more_actions_for', ['name' => $user->name])).'">'.e(__('admin.copy.more')).'</button>'
+                            .'<button type="button" class="ui-data-action ui-focus-ring dropdown-toggle" data-ui-dropdown-trigger popovertarget="dd-user-'.e($user->hash).'" aria-controls="dd-user-'.e($user->hash).'" aria-haspopup="menu" aria-expanded="false" aria-label="'.e(__('purchasing.action_names.more_actions_for', ['name' => $user->name])).'">'.e(__('admin.copy.more')).'</button>'
                             .'<ul id="dd-user-'.e($user->hash).'" popover="auto" data-ui-dropdown-menu class="dropdown-menu dropdown-menu-end">'
                             .'<li><form action="'.route('admin.users.destroy', $user).'" method="POST" class="delete-form">'.csrf_field().method_field('DELETE').'<button type="button" class="dropdown-item tw:text-error btn-delete">'.e(__('admin.copy.delete_user')).'</button></form></li>'
                             .'</ul></div>';

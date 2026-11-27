@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Purchasing;
 use App\Exports\PurchaseOrderDetailExport;
 use App\Exports\PurchaseOrdersExport;
 use App\Exports\PurchaseRequisitionDetailExport;
+use App\Exports\PurchasingHistoricalPriceExport;
 use App\Exports\QuotationDetailExport;
 use App\Exports\QuotationsExport;
 use App\Exports\RequisitionsExport;
@@ -13,6 +14,7 @@ use App\Exports\SupplierAuditExport;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Export\AdvancedExportRequest;
 use App\Http\Requests\Export\Filters\PurchaseOrderExportFilters;
+use App\Http\Requests\Export\Filters\PurchasingPriceHistoryExportFilters;
 use App\Http\Requests\Export\Filters\QuotationExportFilters;
 use App\Http\Requests\Export\Filters\RequisitionExportFilters;
 use App\Http\Requests\Export\Filters\ShipmentExportFilters;
@@ -136,6 +138,25 @@ class ExportController extends Controller
             [$filters],
             'summary_quotations_'.now()->format('Ymd_His').'.xlsx', // biz-time:ignore instant filename
             $request->exportOptions('purchasing.quotations'),
+        );
+
+        return $this->dispatchResponse($request, $exportJob);
+    }
+
+    public function priceHistory(AdvancedExportRequest $request)
+    {
+        $filters = PurchasingPriceHistoryExportFilters::validated($request);
+
+        if ($request->isMethod('get')) {
+            return ExportConfirmation::make($request, __('exports.job_labels.price_history_summary'));
+        }
+
+        $exportJob = ExportDispatcher::dispatch(
+            __('exports.job_labels.price_history_summary'),
+            PurchasingHistoricalPriceExport::class,
+            [$filters],
+            'historical_price_analysis_'.now()->format('Ymd_His').'.xlsx', // biz-time:ignore instant filename
+            $request->exportOptions('purchasing.price-history'),
         );
 
         return $this->dispatchResponse($request, $exportJob);

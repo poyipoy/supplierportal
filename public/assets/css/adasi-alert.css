@@ -1,31 +1,31 @@
 :root {
     --adasi-alert-primary: var(--md-primary, #1f5fa6);
     --adasi-alert-on-primary: var(--md-on-primary, #ffffff);
-    --adasi-alert-primary-hover: #174a85;
+    --adasi-alert-primary-hover: var(--ui-primary-hover, #184a85);
     --adasi-alert-primary-container: var(--md-primary-container, #b9e3ff);
     --adasi-alert-on-primary-container: var(--md-on-primary-container, #001e59);
     --adasi-alert-danger: var(--md-error, #b12b21);
     --adasi-alert-on-danger: var(--md-on-error, #ffffff);
-    --adasi-alert-danger-hover: #8f211b;
+    --adasi-alert-danger-hover: var(--ui-error-hover, #8f211b);
     --adasi-alert-danger-container: var(--md-error-container, #ffb79b);
     --adasi-alert-on-danger-container: var(--md-on-error-container, #590000);
-    --adasi-alert-success: var(--md-success, #198754);
+    --adasi-alert-success: var(--md-success, #146c43);
     --adasi-alert-on-success: var(--md-on-success, #ffffff);
-    --adasi-alert-success-hover: #146c43;
+    --adasi-alert-success-hover: var(--ui-success-hover, #0f5434);
     --adasi-alert-success-container: var(--md-success-container, #e1f3ea);
     --adasi-alert-on-success-container: var(--md-on-success-container, #14532d);
-    --adasi-alert-warning: var(--md-warning, #b7791f);
+    --adasi-alert-warning: var(--md-warning, #8a5708);
     --adasi-alert-warning-container: var(--md-warning-container, #fbf0dd);
     --adasi-alert-on-warning-container: var(--md-on-warning-container, #5f3d08);
     --adasi-alert-info: var(--md-info, #1f5fa6);
-    --adasi-alert-surface: var(--md-surface, #ffffff);
-    --adasi-alert-surface-container: var(--md-surface-container, #f1f5f9);
-    --adasi-alert-surface-container-high: var(--md-surface-container-high, #e9edf2);
-    --adasi-alert-text: var(--md-on-surface, #1e293b);
-    --adasi-alert-muted: var(--md-on-surface-variant, #607085);
-    --adasi-alert-outline: var(--md-outline, #cbd5e1);
-    --adasi-alert-border: var(--md-outline-variant, #e2e8f0);
-    --adasi-alert-focus: rgba(var(--md-primary-rgb, 31, 95, 166), 0.24);
+    --adasi-alert-surface: var(--ui-dialog-bg, var(--md-surface, #ffffff));
+    --adasi-alert-surface-container: var(--md-surface-container, #f3f5f8);
+    --adasi-alert-surface-container-high: var(--md-surface-container-high, #e7ebf0);
+    --adasi-alert-text: var(--md-on-surface, #0f172a);
+    --adasi-alert-muted: var(--md-on-surface-variant, #526071);
+    --adasi-alert-outline: var(--ui-input-border, var(--md-outline-strong, #5f6c7d));
+    --adasi-alert-border: var(--md-outline-variant, #e2e6ec);
+    --adasi-alert-focus: var(--md-focus-ring, var(--md-primary, #1f5fa6));
     --adasi-alert-shape-sm: var(--md-shape-sm, 0.5rem);
     --adasi-alert-shape-md: var(--md-shape-md, 0.75rem);
     --adasi-alert-shape-lg: var(--md-shape-lg, 1rem);
@@ -58,7 +58,7 @@
     color: var(--adasi-alert-text);
     font-family: var(--ui-font-sans, "Source Sans Pro", sans-serif);
     max-width: calc(100vw - 2rem);
-    padding: 1.75rem;
+    padding: clamp(1rem, 4vw, 1.75rem);
     width: 27.5rem;
 }
 
@@ -135,6 +135,7 @@
 
 .swal2-actions,
 .swal2-actions.adasi-alert-actions {
+    flex-wrap: wrap;
     font-family: var(--ui-font-sans, "Source Sans Pro", sans-serif);
     gap: 0.65rem;
     margin: 1.5rem 0 0;
@@ -157,7 +158,7 @@
     justify-content: center;
     margin: 0;
     min-height: 2.75rem;
-    min-width: 7rem;
+    min-width: min(7rem, 100%);
     padding: 0.65rem 1rem;
     transition: background-color 160ms ease, border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
 }
@@ -166,8 +167,9 @@
 .swal2-close.adasi-alert-close:focus-visible,
 .swal2-input.adasi-alert-input:focus,
 .swal2-textarea.adasi-alert-input:focus {
-    box-shadow: 0 0 0 0.25rem var(--adasi-alert-focus) !important;
-    outline: 0;
+    outline: var(--ui-focus-ring-width, 2px) solid var(--adasi-alert-focus) !important;
+    outline-offset: var(--ui-focus-ring-offset, 2px);
+    box-shadow: none !important;
 }
 
 .adasi-alert-btn:active {
@@ -310,5 +312,19 @@
 
     .adasi-alert-btn {
         transition: none;
+    }
+}
+
+@media (forced-colors: active) {
+    .swal2-popup.adasi-alert-popup {
+        border: 1px solid CanvasText;
+    }
+
+    .adasi-alert-btn:focus-visible,
+    .swal2-close.adasi-alert-close:focus-visible,
+    .swal2-input.adasi-alert-input:focus,
+    .swal2-textarea.adasi-alert-input:focus {
+        outline: 2px solid Highlight !important;
+        outline-offset: 2px;
     }
 }

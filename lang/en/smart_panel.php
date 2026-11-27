@@ -11,6 +11,13 @@ return [
     'open_in_new_tab' => 'Open / Download',
     'expand_preview' => 'Full width',
     'collapse_preview' => 'Default width',
+    'current_badge' => 'Current',
+    'read_only_hint' => 'Summary only',
+    'open_detail_label' => 'Open :label :reference',
+    'retry' => 'Try again',
+    'loading_preview' => 'Loading document preview...',
+    'empty_chain' => 'No linked documents were found in this workflow chain yet.',
+    'empty_sla' => 'No SLA or timeline summary metrics are available for this document yet.',
     'tabs' => [
         'chain' => 'Document Chain',
         'preview' => 'Split PDF Preview',

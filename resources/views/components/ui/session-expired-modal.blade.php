@@ -39,7 +39,7 @@
             <span class="tw:inline-flex tw:shrink-0 tw:items-center" aria-hidden="true">
                 <x-ui.icon name="shield-alert" size="sm" />
             </span>
-            <p class="tw:m-0 tw:text-ui-sm tw:font-medium">
+            <p class="tw:m-0 tw:text-ui-sm tw:font-semibold">
                 {{ __('security.session_modal.reminder_bar_text') }}
             </p>
         </div>
@@ -107,7 +107,7 @@
                                 {{ __('security.session_modal.title') }}
                             </h2>
                             <p
-                                class="tw:m-0 tw:mt-1 tw:text-ui-sm tw:font-medium tw:text-on-surface-variant"
+                                class="tw:m-0 tw:mt-1 tw:text-ui-sm tw:font-semibold tw:text-on-surface-variant"
                                 x-text="reasonText"
                             ></p>
                         </div>
@@ -140,7 +140,7 @@
                                     </p>
                                     <ul
                                         x-show="dirtyTabs.length > 0"
-                                        class="tw:m-0 tw:mt-2 tw:list-disc tw:space-y-1 tw:pl-4 tw:text-ui-xs tw:font-medium"
+                                        class="tw:m-0 tw:mt-2 tw:list-disc tw:space-y-1 tw:pl-4 tw:text-ui-xs tw:font-semibold"
                                     >
                                         <template x-for="(tab, idx) in dirtyTabs" :key="tab.frameId || idx">
                                             <li class="tw:break-words" x-text="tab.title"></li>
@@ -157,7 +157,7 @@
                             role="alert"
                             aria-live="assertive"
                             data-session-expired-error
-                            class="ui-session-modal__error tw:flex tw:items-start tw:gap-2.5 tw:rounded-ui-sm tw:p-3 tw:text-ui-xs tw:font-medium"
+                            class="ui-session-modal__error tw:flex tw:items-start tw:gap-2.5 tw:rounded-ui-sm tw:p-3 tw:text-ui-xs tw:font-semibold"
                         >
                             <span class="tw:mt-0.5 tw:inline-flex tw:shrink-0 tw:items-center" aria-hidden="true">
                                 <x-ui.icon name="circle-alert" size="sm" />

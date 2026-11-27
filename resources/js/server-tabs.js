@@ -43,21 +43,39 @@ const instances = new Map();
 
 // ─── In-Memory Fragment Cache ─────────────────────────────────────────────
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
-const fragmentCache = new Map(); // url → { html, tab, metrics, data, timestamp }
+const fragmentCache = new Map(); // normalized url → { html, tab, metrics, data, timestamp }
+
+function normalizeCacheUrl(rawUrl) {
+    if (typeof rawUrl !== 'string' || !rawUrl.includes('_embed=')) {
+        return rawUrl;
+    }
+    const hashIdx = rawUrl.indexOf('#');
+    const beforeHash = hashIdx >= 0 ? rawUrl.slice(0, hashIdx) : rawUrl;
+    const hashPart = hashIdx >= 0 ? rawUrl.slice(hashIdx) : '';
+    const qIdx = beforeHash.indexOf('?');
+    if (qIdx === -1) return rawUrl;
+    const base = beforeHash.slice(0, qIdx);
+    const params = new URLSearchParams(beforeHash.slice(qIdx + 1));
+    params.delete('_embed');
+    const qs = params.toString();
+    const rebuilt = qs ? `${base}?${qs}` : base;
+    return `${rebuilt}${hashPart}`;
+}
 
 function cacheGet(url, ttlMs = CACHE_TTL_MS) {
     if (ttlMs <= 0) return null;
-    const entry = fragmentCache.get(url);
+    const key = normalizeCacheUrl(url);
+    const entry = fragmentCache.get(key);
     if (!entry) return null;
     if (Date.now() - entry.timestamp > ttlMs) {
-        fragmentCache.delete(url);
+        fragmentCache.delete(key);
         return null;
     }
     return entry;
 }
 
 function cacheSet(url, data) {
-    fragmentCache.set(url, {
+    fragmentCache.set(normalizeCacheUrl(url), {
         html: data.html,
         tab: data.tab,
         metrics: data.metrics,
@@ -86,7 +104,14 @@ function cacheTtlFor(state) {
 }
 
 // ─── Prefetch Tracking ───────────────────────────────────────────────────
-const prefetchInFlight = new Set(); // URLs currently being prefetched
+const prefetchControllers = new Map(); // normalized URL -> AbortController
+
+function abortAllPrefetches() {
+    for (const controller of prefetchControllers.values()) {
+        controller?.abort?.();
+    }
+    prefetchControllers.clear();
+}
 
 // X-Adasi-Server-Tabs lets a controller tell a fragment request apart from a DataTables/other XHR on the same URL.
 const FRAGMENT_REQUEST_HEADERS = Object.freeze({
@@ -161,7 +186,7 @@ function init(containerSelector, options = {}) {
                 if (targetTab) {
                     updateTabActiveStates(container, targetTab);
                 }
-                fetchAndSwap(state, url, true);
+                fetchAndSwap(state, url, true, null, null, { preserveScroll: true });
             }
             return;
         }
@@ -171,7 +196,7 @@ function init(containerSelector, options = {}) {
         if (pageLink) {
             e.preventDefault();
             const url = pageLink.getAttribute('href');
-            if (url) fetchAndSwap(state, url, true);
+            if (url) fetchAndSwap(state, url, true, null, null, { preserveScroll: false });
         }
     });
 
@@ -219,7 +244,7 @@ function init(containerSelector, options = {}) {
         if (!url) return;
 
         // Don't prefetch if already cached or already fetching
-        if (cacheGet(url, cacheTtlFor(state)) || prefetchInFlight.has(url)) return;
+        if (cacheGet(url, cacheTtlFor(state)) || prefetchControllers.has(normalizeCacheUrl(url))) return;
 
         // 60ms debounce to avoid prefetching on accidental hover-through
         clearTimeout(prefetchTimer);
@@ -385,26 +410,33 @@ function sanitizeServerFragment(rawHtml) {
  * @param {number} [ttlMs] — freshness window of an already cached copy.
  */
 async function speculativePrefetch(url, ttlMs = CACHE_TTL_MS) {
-    if (prefetchInFlight.has(url) || cacheGet(url, ttlMs)) return;
+    const cacheKey = normalizeCacheUrl(url);
+    if (prefetchControllers.has(cacheKey) || cacheGet(url, ttlMs)) return;
 
-    prefetchInFlight.add(url);
+    const controller = typeof AbortController === 'function' ? new AbortController() : null;
+    prefetchControllers.set(cacheKey, controller);
     try {
         const response = await fetch(url, {
             priority: 'low',
+            signal: controller?.signal,
             headers: {
                 ...FRAGMENT_REQUEST_HEADERS,
                 'X-Adasi-Prefetch': '1',
             },
         });
 
-        if (!response.ok) return;
+        if (!response.ok || controller?.signal?.aborted) return;
 
         const data = await response.json();
-        cacheSet(url, data);
+        if (!controller?.signal?.aborted) {
+            cacheSet(url, data);
+        }
     } catch {
         // Silently discard prefetch errors — they don't affect UX
     } finally {
-        prefetchInFlight.delete(url);
+        if (prefetchControllers.get(cacheKey) === controller) {
+            prefetchControllers.delete(cacheKey);
+        }
     }
 }
 
@@ -502,7 +534,7 @@ function clearBusyState(target, state = null) {
     }
 }
 
-async function fetchAndSwap(state, url, pushHistory, historyIndex = null, sourceForm = null) {
+async function fetchAndSwap(state, url, pushHistory, historyIndex = null, sourceForm = null, navOptions = {}) {
     const { container, options } = state;
     if (sourceForm) {
         if (state.activeForm && state.activeForm !== sourceForm) {
@@ -532,6 +564,11 @@ async function fetchAndSwap(state, url, pushHistory, historyIndex = null, source
         return false;
     }
     options.onLoading?.();
+    container.dispatchEvent?.(new CustomEvent('adasi:server-tabs:loading', {
+        bubbles: true,
+        detail: { url },
+    }));
+    abortAllPrefetches();
 
     // Cancel any in-flight request (handles rapid tab clicking)
     if (state.abortController) {
@@ -542,9 +579,12 @@ async function fetchAndSwap(state, url, pushHistory, historyIndex = null, source
     const controller = new AbortController();
     state.abortController = controller;
 
-    // Close any active calendar popover before swapping DOM content
+    // Close any active calendar or select popover before swapping DOM content
     if (window.AdasiCalendar?.closeActive) {
         window.AdasiCalendar.closeActive();
+    }
+    if (window.AdasiSelect?.closeAll) {
+        window.AdasiSelect.closeAll(null, document);
     }
 
     // ── Cache Hit: instant swap without network ──
@@ -552,7 +592,7 @@ async function fetchAndSwap(state, url, pushHistory, historyIndex = null, source
     if (cached) {
         // The request this click replaced no longer cleans up after itself, so clear its busy state here.
         clearBusyState(tableTarget, state);
-        applyData(state, container, tableTarget, cached.data, url, pushHistory, options, historyIndex);
+        applyData(state, container, tableTarget, cached.data, url, pushHistory, options, historyIndex, navOptions);
         releaseSubmittedForm(state, sourceForm);
         state.abortController = null;
         return true;
@@ -618,7 +658,7 @@ async function fetchAndSwap(state, url, pushHistory, historyIndex = null, source
         // A newer click may have taken over while the body was being read; never paint stale content over it.
         if (state.abortController !== controller) return false;
 
-        applyData(state, container, tableTarget, data, url, pushHistory, options, historyIndex);
+        applyData(state, container, tableTarget, data, url, pushHistory, options, historyIndex, navOptions);
         return true;
     } catch (err) {
         clearTimeout(timeoutId);
@@ -678,7 +718,11 @@ async function fetchAndSwap(state, url, pushHistory, historyIndex = null, source
  * Apply fetched or cached data to the DOM.
  * Extracted so both cache-hit and network paths use the same logic.
  */
-function applyData(state, container, tableTarget, data, url, pushHistory, options, historyIndex = null) {
+function applyData(state, container, tableTarget, data, url, pushHistory, options, historyIndex = null, navOptions = {}) {
+    const savedScrollY = navOptions?.preserveScroll && typeof window.scrollY === 'number'
+        ? window.scrollY
+        : null;
+
     // 0. Dispatch before-swap event for cleanup (Chart.js, DataTables, etc.)
     container.dispatchEvent(new CustomEvent('adasi:server-tabs:before-swap', {
         bubbles: true,
@@ -759,12 +803,18 @@ function applyData(state, container, tableTarget, data, url, pushHistory, option
     // 7. Re-init Bootstrap tooltips inside swapped content
     reinitTooltips(tableTarget);
 
-    // 7b. Re-init Adasi Calendars & Form A11y baseline inside swapped content
+    // 7b. Re-init Adasi Calendars, Custom Selects & Form A11y baseline inside swapped content
     if (window.AdasiCalendar?.initialize) {
         window.AdasiCalendar.initialize(tableTarget);
     }
+    if (window.AdasiSelect?.initialize) {
+        window.AdasiSelect.initialize(tableTarget);
+    }
     if (window.AdasiFormA11y?.syncContainer) {
         window.AdasiFormA11y.syncContainer(tableTarget);
+    }
+    if (window.AdasiAdvancedExport?.initialize) {
+        window.AdasiAdvancedExport.initialize(tableTarget);
     }
 
     // 8. Dispatch custom event for page-specific re-binding
@@ -776,6 +826,15 @@ function applyData(state, container, tableTarget, data, url, pushHistory, option
     // 9. Callback
     if (typeof options.onUpdated === 'function') {
         options.onUpdated(data);
+    }
+
+    // 10. Restore vertical scroll position on tab switches (avoids jumping to top when content height changes)
+    if (savedScrollY !== null && savedScrollY > 0 && typeof window.scrollTo === 'function') {
+        try {
+            window.scrollTo({ top: savedScrollY, behavior: 'instant' });
+        } catch {
+            window.scrollTo(0, savedScrollY);
+        }
     }
 
     // Clear optimistic rollback state on success
@@ -794,10 +853,10 @@ function getContainerSelector(state) {
 function updateTabActiveStates(container, activeTab) {
     // 1. Update Segmented Pill Tabs (exclude metric cards)
     const pillTabs = container.querySelectorAll('[data-server-tab]:not([data-server-tab-card])');
-    const pillActiveClasses = ['tw:bg-primary', 'tw:text-primary-foreground', 'tw-shadow-xs'];
+    const pillActiveClasses = ['tw:bg-primary', 'tw:text-primary-foreground', 'tw:shadow-xs'];
     const pillInactiveClasses = ['tw:text-on-surface-variant'];
     const pillHoverClasses = ['tw:hover:bg-surface', 'tw:hover:text-on-surface'];
-    const activeBadgeClasses = ['tw:bg-white/20', 'tw:text-white'];
+    const activeBadgeClasses = ['tw:bg-primary-foreground/15', 'tw:text-primary-foreground'];
     const inactiveBadgeClasses = ['tw:bg-surface', 'tw:text-on-surface-variant'];
 
     pillTabs.forEach((tab) => {
@@ -1112,7 +1171,10 @@ export function bootServerTabs() {
     document.querySelectorAll('[data-server-tabs-container]').forEach((container) => {
         const selector = container.id ? `#${container.id}` : null;
         if (selector) {
-            init(selector);
+            const prefetchAttr = container.dataset?.serverTabsPrefetch
+                ?? container.getAttribute?.('data-server-tabs-prefetch');
+            const options = prefetchAttr === 'false' ? { prefetch: false } : {};
+            init(selector, options);
         }
     });
 }

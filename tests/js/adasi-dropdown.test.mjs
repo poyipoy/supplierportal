@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { AdasiDropdown, bootAdasiDropdowns } from '../../resources/js/adasi-dropdown.js';
 
 function makeNode(tagName, { id = null, attrs = {}, classes = [], parentElement = null } = {}) {
@@ -276,4 +277,26 @@ test('AdasiDropdown keyboard arrows navigate menu items and Escape restores focu
 
     doc.dispatchEvent({ type: 'keydown', key: 'Escape', target: item1, preventDefault() {} });
     assert.equal(doc.activeElement, trigger);
+});
+
+test('AdasiDropdown ensures aria-haspopup="menu" and app.css restores .dropdown-toggle::after chevron + symmetric flip margin', () => {
+    const css = readFileSync(new URL('../../resources/css/app.css', import.meta.url), 'utf8');
+    assert.match(css, /\.dropdown-toggle::after\s*\{/);
+    assert.match(css, /\[data-ui-dropdown-menu\]\[popover\]:popover-open\s*\{[^}]*margin-block:\s*0\.25rem;/s);
+
+    const { doc, body } = makeDoc({ anchorSupported: true });
+    bootAdasiDropdowns(doc);
+    const trigger = makeNode('BUTTON', {
+        attrs: { 'data-ui-dropdown-trigger': '', popovertarget: 'dynMenu', 'aria-expanded': 'false' },
+        parentElement: body,
+    });
+    trigger.ownerDocument = doc;
+    const menu = makeNode('UL', { id: 'dynMenu', attrs: { popover: 'auto', 'data-ui-dropdown-menu': '' }, parentElement: body });
+    menu.ownerDocument = doc;
+    doc._register('dynMenu', menu);
+    doc._registerQuery('[popovertarget="dynMenu"]', trigger);
+    doc._registerQuery('ALL:[data-ui-dropdown-open="true"]', []);
+
+    AdasiDropdown.show(trigger, doc);
+    assert.equal(trigger.getAttribute('aria-haspopup'), 'menu');
 });

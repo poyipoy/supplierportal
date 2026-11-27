@@ -3,6 +3,17 @@ const bootedDocuments = new WeakSet();
 
 const TOP_DIALOG_BLOCKER_SELECTOR = '.swal2-container, [data-session-expired-modal][open]';
 const INNER_POPUP_SELECTOR = '.ui-calendar-panel:not([hidden]), .ui-time-panel:not([hidden])';
+const INNER_SELECT_POPOVER_SELECTOR = '.ui-custom-select__popover[data-ui-select-open="true"], .ui-custom-select__popover.is-open';
+
+function normalizeModalTargetSelector(trigger, attrName) {
+    const raw = (trigger?.getAttribute?.(attrName) || '').trim();
+    if (!raw) return '';
+    const lower = raw.toLowerCase();
+    if (lower === attrName || lower === 'true' || lower === '1') {
+        return '';
+    }
+    return raw;
+}
 
 function resolveElement(target, doc = typeof document !== 'undefined' ? document : null) {
     if (!target) return null;
@@ -11,7 +22,11 @@ function resolveElement(target, doc = typeof document !== 'undefined' ? document
         if (target.startsWith('#')) {
             return doc.getElementById(target.slice(1));
         }
-        return doc.querySelector(target);
+        try {
+            return doc.querySelector(target);
+        } catch {
+            return null;
+        }
     }
     return typeof target === 'object' ? target : null;
 }
@@ -143,6 +158,11 @@ export class AdasiModal {
         this._activeRelatedTarget = normalizedTrigger;
         this._trackedOpen = true;
         this._suppressNextHideEvent = false;
+        try {
+            this.el.returnValue = '';
+        } catch {
+            // Readonly property in partial shims.
+        }
 
         if (typeof this.el.showModal === 'function' && this.el.isConnected !== false) {
             if (!this.el.open) {
@@ -235,7 +255,8 @@ export class AdasiModal {
             return;
         }
 
-        const innerPopup = doc?.querySelector?.(INNER_POPUP_SELECTOR);
+        const innerPopup = doc?.querySelector?.(INNER_POPUP_SELECTOR)
+            || doc?.querySelector?.(INNER_SELECT_POPOVER_SELECTOR);
         if (innerPopup && this.el.contains?.(innerPopup)) {
             event.preventDefault?.();
             return;
@@ -321,6 +342,11 @@ export class AdasiModal {
             detail: { reason },
         });
         this.el.dispatchEvent?.(hiddenEvt);
+        try {
+            this.el.returnValue = '';
+        } catch {
+            // Readonly property in partial shims.
+        }
 
         if (!doc) return;
         const blocker = doc.querySelector?.('.swal2-container');
@@ -344,7 +370,8 @@ export function bootAdasiModals(root = typeof document !== 'undefined' ? documen
     doc.addEventListener('click', (event) => {
         const closeTrigger = event.target?.closest?.('[data-ui-modal-close]');
         if (closeTrigger) {
-            const targetSelector = closeTrigger.getAttribute('data-ui-modal-close');
+            if (closeTrigger.disabled || closeTrigger.getAttribute?.('aria-disabled') === 'true') return;
+            const targetSelector = normalizeModalTargetSelector(closeTrigger, 'data-ui-modal-close');
             const dialogEl = targetSelector
                 ? resolveElement(targetSelector, doc)
                 : closeTrigger.closest('dialog.ui-native-dialog, dialog');
@@ -357,9 +384,9 @@ export function bootAdasiModals(root = typeof document !== 'undefined' ? documen
 
         const openTrigger = event.target?.closest?.('[data-ui-modal-open]');
         if (!openTrigger) return;
-        if (openTrigger.disabled || openTrigger.getAttribute('aria-disabled') === 'true') return;
+        if (openTrigger.disabled || openTrigger.getAttribute?.('aria-disabled') === 'true') return;
 
-        const targetSelector = openTrigger.getAttribute('data-ui-modal-open') || openTrigger.getAttribute('href');
+        const targetSelector = normalizeModalTargetSelector(openTrigger, 'data-ui-modal-open') || openTrigger.getAttribute?.('href');
         const dialogEl = resolveElement(targetSelector, doc);
         if (!dialogEl) return;
 

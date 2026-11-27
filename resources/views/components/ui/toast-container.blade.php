@@ -66,7 +66,7 @@
 
                 <button
                     type="button"
-                    class="adasi-toast__close ui-focus-ring"
+                    class="adasi-toast__close ui-focus-ring tw:border-0 tw:bg-transparent"
                     @click="dismiss(toast.id)"
                     aria-label="{{ __('common.notification.dismiss') }}"
                 >

@@ -17,6 +17,7 @@ import {
     MIN_SHORTCUTS_PANE_WIDTH_PX,
     normalizeShortcutsLayout,
     resizeShortcutsPairByDelta,
+    resolveActiveSidebarLinks,
     resolveDragTargetZoneIndex,
     resolveGroupSessionMenuItems,
     resolveModuleKey,
@@ -109,6 +110,8 @@ export function bootWorkspaceShell() {
     let hasCompletedInitialSync = false;
     let localeSyncSeq = 0;
     const syncedLocaleFrames = new Set();
+    const pendingLocaleSyncFrames = new Map();
+    let latestLocalePayload = null;
 
     const prefersReducedMotion = () => Boolean(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches);
 
@@ -1793,6 +1796,8 @@ export function bootWorkspaceShell() {
 
     const unmountFramePanel = (frameId) => {
         if (!frameId) return;
+        pendingLocaleSyncFrames.delete(frameId);
+        syncedLocaleFrames.delete(frameId);
         const iframe = frames.get(frameId);
         if (iframe) {
             delete iframe.dataset.workspaceNavigated;
@@ -1981,18 +1986,32 @@ export function bootWorkspaceShell() {
     };
 
     const syncSidebarHighlight = (activeUrl) => {
+        const links = Array.from(document.querySelectorAll('#sidebar a.sidebar-link'));
         if (!activeUrl) {
-            document.querySelectorAll('#sidebar a.sidebar-link').forEach((link) => {
+            links.forEach((link) => {
                 link.classList.remove('active');
                 link.removeAttribute('aria-current');
             });
             return;
         }
-        const matchedKey = resolveModuleForUrl(activeUrl);
-        document.querySelectorAll('#sidebar a.sidebar-link').forEach((link) => {
+        const resolvedActive = resolveLinkTarget(activeUrl);
+        const activeInternalUrl = resolvedActive.url || stripEmbedParam(activeUrl, origin);
+        const matchedKey = resolvedActive.key || resolveModuleForUrl(activeInternalUrl);
+        const resolvedLinks = links.map((link) => {
             const target = resolveLinkTarget(link.getAttribute('href'));
-            const linkKey = target.key || resolveModuleKey(target.url, catalog, origin);
-            const active = linkKey === matchedKey;
+            return {
+                url: target.url,
+                key: target.key || resolveModuleKey(target.url, catalog, origin),
+            };
+        });
+        const activeFlags = resolveActiveSidebarLinks(resolvedLinks, {
+            activeUrl: activeInternalUrl,
+            activeKey: matchedKey,
+            catalog,
+            origin,
+        });
+        links.forEach((link, index) => {
+            const active = Boolean(activeFlags[index]);
             link.classList.toggle('active', active);
             if (active) link.setAttribute('aria-current', 'page');
             else link.removeAttribute('aria-current');
@@ -2985,28 +3004,76 @@ export function bootWorkspaceShell() {
         });
     };
 
+    const applySyncedFrameTitle = (frameId, iframe, res) => {
+        if (!res?.ok) return false;
+        const updatedCtx = store.getFrameContext(frameId);
+        if (!updatedCtx) return false;
+        const updatedTitle = resolveCanonicalFrameTitle(updatedCtx, updatedCtx.frame.url, res.title || updatedCtx.frame.title);
+        updatedCtx.frame.title = updatedTitle;
+        if (updatedCtx.frame.role === 'parent') updatedCtx.group.baseLabel = updatedTitle;
+        if (iframe) iframe.title = updatedTitle;
+        return true;
+    };
+
+    const syncFrameLocale = async (frameId, iframe, payload = null, { seq = null } = {}) => {
+        if (!frameId || !iframe || frames.get(frameId) !== iframe || syncedLocaleFrames.has(frameId)) {
+            return false;
+        }
+
+        let childWin = null;
+        try {
+            childWin = iframe.contentWindow;
+            if (!childWin || !isSameOriginUrl(childWin.location?.href, origin)) return false;
+        } catch {
+            return false;
+        }
+
+        pendingLocaleSyncFrames.delete(frameId);
+
+        if (typeof childWin.AdasiLocaleSwitcher?.syncLocaleInPlace !== 'function') {
+            const ctx = store.getFrameContext(frameId);
+            if (ctx) {
+                ctx.frame.stale = true;
+                if (ctx.frame.loading) {
+                    try {
+                        childWin.location.replace(appendEmbedParam(ctx.frame.url, origin));
+                    } catch {}
+                }
+            }
+            return false;
+        }
+
+        const resolvedPayload = {
+            locale: payload?.locale || latestLocalePayload?.locale || document.documentElement?.lang || 'en',
+            i18n: payload?.i18n ?? latestLocalePayload?.i18n ?? null,
+            datatables: payload?.datatables ?? latestLocalePayload?.datatables ?? null,
+            session_copy: payload?.session_copy ?? latestLocalePayload?.session_copy ?? null,
+            pagination_label: payload?.pagination_label ?? latestLocalePayload?.pagination_label ?? null,
+        };
+
+        syncedLocaleFrames.add(frameId);
+        try {
+            const res = await childWin.AdasiLocaleSwitcher.syncLocaleInPlace(resolvedPayload);
+            if (seq !== null && seq !== localeSyncSeq) return false;
+            if (!applySyncedFrameTitle(frameId, iframe, res)) return false;
+            forceRebuildAllTabs();
+            return true;
+        } catch {
+            return false;
+        } finally {
+            syncedLocaleFrames.delete(frameId);
+        }
+    };
+
     const syncLocaleIfNeeded = (frameId, iframe, frameWin, frameDoc) => {
         const topLocale = document.documentElement?.lang;
         const embedLocale = frameDoc?.documentElement?.lang;
-        if (!topLocale || !embedLocale || embedLocale === topLocale || syncedLocaleFrames.has(frameId)) {
+        const isPending = pendingLocaleSyncFrames.has(frameId);
+        if (!topLocale || (!isPending && (!embedLocale || embedLocale === topLocale)) || syncedLocaleFrames.has(frameId)) {
             return;
         }
-        syncedLocaleFrames.add(frameId);
-        frameWin.AdasiLocaleSwitcher?.syncLocaleInPlace?.({ locale: topLocale })
-            .then((res) => {
-                syncedLocaleFrames.delete(frameId);
-                if (!res?.ok) return;
-                const updatedCtx = store.getFrameContext(frameId);
-                if (!updatedCtx) return;
-                const updatedTitle = resolveCanonicalFrameTitle(updatedCtx, updatedCtx.frame.url, res.title || updatedCtx.frame.title);
-                updatedCtx.frame.title = updatedTitle;
-                if (updatedCtx.frame.role === 'parent') updatedCtx.group.baseLabel = updatedTitle;
-                if (iframe) iframe.title = updatedTitle;
-                notifyActiveSurface('replace');
-            })
-            .catch(() => {
-                syncedLocaleFrames.delete(frameId);
-            });
+        const queuedPayload = pendingLocaleSyncFrames.get(frameId) || latestLocalePayload || { locale: topLocale };
+        void syncFrameLocale(frameId, iframe, queuedPayload);
     };
 
     const finalizeFrameReady = (frameId, frameWin = null) => {
@@ -3569,6 +3636,17 @@ export function bootWorkspaceShell() {
             ensureFrameMounted(res.frame);
         } else if (res.shouldRefresh) {
             refreshFrameSilently(res.frame);
+        } else {
+            const activeIframe = frames.get(res.frame.frameId);
+            if (activeIframe) {
+                try {
+                    const activeWin = activeIframe.contentWindow;
+                    const activeDoc = activeWin?.document;
+                    if (activeWin && activeDoc) {
+                        syncLocaleIfNeeded(res.frame.frameId, activeIframe, activeWin, activeDoc);
+                    }
+                } catch {}
+            }
         }
 
         notifyActiveSurface(historyMode);
@@ -3614,6 +3692,17 @@ export function bootWorkspaceShell() {
             ensureFrameMounted(res.frame);
         } else if (res.shouldRefresh) {
             refreshFrameSilently(res.frame);
+        } else {
+            const activeIframe = frames.get(res.frame.frameId);
+            if (activeIframe) {
+                try {
+                    const activeWin = activeIframe.contentWindow;
+                    const activeDoc = activeWin?.document;
+                    if (activeWin && activeDoc) {
+                        syncLocaleIfNeeded(res.frame.frameId, activeIframe, activeWin, activeDoc);
+                    }
+                } catch {}
+            }
         }
 
         notifyActiveSurface(historyMode);
@@ -5563,12 +5652,12 @@ export function bootWorkspaceShell() {
         notifyActiveSurface('replace');
     };
 
-    // Translate workspace chrome, tabs, shortcuts, config maps, and all live embeds on locale switch.
+    // Translate workspace chrome, tabs, shortcuts, config maps, and prioritize active embed before staggered background sync.
     window.addEventListener('adasi:locale-changed', async (event) => {
         const seq = ++localeSyncSeq;
         const detail = event?.detail || {};
         const nextLocale = detail.locale || document.documentElement?.lang || 'en';
-        const nextConfig = parseWorkspaceConfigFromDocument(detail.document);
+        const nextConfig = detail.workspace_config || parseWorkspaceConfigFromDocument(detail.document);
 
         if (nextConfig) {
             const nextI18n = nextConfig.i18n || {};
@@ -5580,6 +5669,7 @@ export function bootWorkspaceShell() {
             if (nextConfig.menuPathTitles) config.menuPathTitles = nextConfig.menuPathTitles;
             if (nextConfig.contextLinks) config.contextLinks = nextConfig.contextLinks;
             if (nextConfig.quickAccessPaths) config.quickAccessPaths = nextConfig.quickAccessPaths;
+            if (nextConfig.shortcutsSession) config.shortcutsSession = nextConfig.shortcutsSession;
             if (nextConfig.indexPaths) {
                 indexPaths.splice(0, indexPaths.length, ...nextConfig.indexPaths);
                 config.indexPaths = indexPaths;
@@ -5593,54 +5683,57 @@ export function bootWorkspaceShell() {
         closeTabMenu();
         forceRebuildAllTabs();
 
-        const liveFrameUpdates = [];
+        const syncPayload = {
+            locale: nextLocale,
+            i18n: detail.i18n || null,
+            datatables: detail.datatables || null,
+            session_copy: detail.session_copy || null,
+            pagination_label: detail.pagination_label || null,
+        };
+        latestLocalePayload = syncPayload;
+        pendingLocaleSyncFrames.clear();
+
+        const activeFrameId = store.activeFrame()?.frameId || null;
+        let activeIframe = null;
+        const backgroundFrameIds = [];
+
         frames.forEach((iframe, frameId) => {
+            if (frameId === activeFrameId) {
+                activeIframe = iframe;
+                return;
+            }
             try {
                 const childWin = iframe.contentWindow;
                 if (!childWin || !isSameOriginUrl(childWin.location?.href, origin)) return;
-
-                if (typeof childWin.AdasiLocaleSwitcher?.syncLocaleInPlace === 'function') {
-                    liveFrameUpdates.push(
-                        childWin.AdasiLocaleSwitcher.syncLocaleInPlace({
-                            locale: nextLocale,
-                            i18n: detail.i18n || null,
-                            datatables: detail.datatables || null,
-                            session_copy: detail.session_copy || null,
-                        }).then((result) => ({ frameId, iframe, result })),
-                    );
-                } else {
-                    const ctx = store.getFrameContext(frameId);
-                    if (ctx) {
-                        ctx.frame.stale = true;
-                        if (ctx.frame.loading) {
-                            childWin.location.replace(appendEmbedParam(ctx.frame.url, origin));
-                        }
-                    }
-                }
+                // Hot-swap JS dictionaries immediately with zero network cost while DOM morphing waits in queue
+                childWin.AdasiLocaleSwitcher?.syncLocaleDictionaries?.(syncPayload);
             } catch {}
+            pendingLocaleSyncFrames.set(frameId, syncPayload);
+            backgroundFrameIds.push(frameId);
         });
 
-        if (liveFrameUpdates.length === 0) return;
+        // Priority 1: Sync active visible tab immediately with zero background contention
+        if (activeFrameId && activeIframe) {
+            await syncFrameLocale(activeFrameId, activeIframe, syncPayload, { seq });
+            if (seq !== localeSyncSeq) return;
+        }
 
-        const settled = await Promise.allSettled(liveFrameUpdates);
-        if (seq !== localeSyncSeq) return;
+        // Priority 2: Drain remaining background tabs sequentially (1 at a time) so UI & server stay responsive
+        for (const frameId of backgroundFrameIds) {
+            if (seq !== localeSyncSeq) return;
+            if (!pendingLocaleSyncFrames.has(frameId)) continue;
 
-        settled.forEach((entry) => {
-            if (entry.status !== 'fulfilled') return;
-            const { frameId, iframe, result } = entry.value;
-            if (!result?.ok) return;
-            const ctx = store.getFrameContext(frameId);
-            if (!ctx) return;
+            await new Promise((resolve) => window.setTimeout(resolve, 60));
+            if (seq !== localeSyncSeq) return;
+            if (!pendingLocaleSyncFrames.has(frameId)) continue;
 
-            const updatedTitle = resolveCanonicalFrameTitle(ctx, ctx.frame.url, result.title || ctx.frame.title);
-            ctx.frame.title = updatedTitle;
-            if (ctx.frame.role === 'parent') {
-                ctx.group.baseLabel = updatedTitle;
+            const bgIframe = frames.get(frameId);
+            if (!bgIframe) {
+                pendingLocaleSyncFrames.delete(frameId);
+                continue;
             }
-            iframe.title = updatedTitle;
-        });
-
-        forceRebuildAllTabs();
+            await syncFrameLocale(frameId, bgIframe, syncPayload, { seq });
+        }
     });
 
     const frameIdForWindow = (frameWin) => {

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Purchasing;
 
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\Purchasing\Concerns\PriceComparisonSharedTrait;
+use App\Models\ExchangeRate;
 use App\Models\MaterialReferencePrice;
 use App\Models\PrItem;
 use App\Models\PurchaseRequisition;
@@ -11,11 +12,13 @@ use App\Models\User;
 use App\Services\Pricing\HistoricalPriceQueryService;
 use App\Services\Pricing\QuotationHistoryService;
 use App\Services\RegionalDisplayFormatter;
+use App\Support\BusinessTime;
 use App\Support\HashidCodec;
 use App\Support\Money;
 use App\Support\Pricing\EvaluationContext;
 use App\Support\Procurement\LogisticsTerms;
 use App\Support\PurchasingNavigation;
+use App\Support\ServerTabsResponse;
 use App\Support\StatusHelper;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -80,20 +83,32 @@ class HistoricalPriceComparisonController extends Controller
         $selectedSupplierKey = $selectedSupplier?->getKey();
         $selectedMaterialName = $request->input('material_name');
         $periodView = $request->input('period_view', 'monthly') === 'yearly' ? 'yearly' : 'monthly';
+        $sortDir = HistoricalPriceQueryService::normalizeSortDirection($request->input('sort_dir'));
         $range = $this->queryService->normalizeHistoricalRange($periodView, $request->input('range'));
         $monthlyRangeOptions = $this->queryService->historicalRangeOptions('monthly');
         $yearlyRangeOptions = $this->queryService->historicalRangeOptions('yearly');
         $rangeOptions = $this->queryService->historicalRangeOptions($periodView);
-        $dateFrom = $this->queryService->dateFromRange($range);
+        $categoryOptions = $this->queryService->activeCategoryOptions();
+        $supportingFilters = $this->queryService->extractSupportingFilters($request, $categoryOptions);
+        $hasExplicitDateRange = $supportingFilters['start_date'] !== null || $supportingFilters['end_date'] !== null;
+        $dateFrom = $hasExplicitDateRange
+            ? ($supportingFilters['start_date'] !== null ? BusinessTime::parseDate($supportingFilters['start_date'])->startOfDay() : null)
+            : $this->queryService->dateFromRange($range);
+        $dateTo = $supportingFilters['end_date'] !== null
+            ? BusinessTime::parseDate($supportingFilters['end_date'])->endOfDay()
+            : null;
 
         $materials = $this->queryService->historicalMaterialsForSupplier($selectedSupplierKey);
-        $selectedMaterial = $this->queryService->selectHistoricalMaterial($materials, $selectedMaterialName, $request->input('shape'));
-        if ($selectedMaterial === null) {
-            $selectedMaterialName = null;
-        }
-        $selectedShape = $selectedMaterial['shape'] ?? null;
-        $keyField = MaterialReferencePrice::DIMENSION_FIELD_BY_SHAPE[$selectedMaterial['shape'] ?? ''] ?? null;
-        [$keyMin, $keyMax] = $this->queryService->keyDimensionRange($request, $keyField);
+        $selectedMaterials = $this->queryService->selectHistoricalMaterials($materials, $request);
+        $selectedMaterial = $selectedMaterials[0] ?? null;
+        $selectedMaterialName = $selectedMaterial['name'] ?? null;
+        $selectedMaterialKeys = array_values(array_map(
+            fn (array $m) => $m['key'] ?? HistoricalPriceQueryService::encodeMaterialKey($m['name'], $m['shape'] ?? null),
+            $selectedMaterials
+        ));
+        $distinctSelectedShapes = collect($selectedMaterials)->pluck('shape')->filter()->unique()->values();
+        $selectedShape = $distinctSelectedShapes->count() === 1 ? $distinctSelectedShapes->first() : null;
+        $keyDimension = $this->queryService->keyDimensionRangeForMaterials($request, $selectedMaterials);
 
         $chartData = null;
         $tableData = collect();
@@ -101,23 +116,42 @@ class HistoricalPriceComparisonController extends Controller
         $summary = [
             'average_change_pct' => null,
             'total_change_pct' => null,
+            'weighted_average' => null,
+            'best' => null,
+            'highest' => null,
+            'line_count' => 0,
+            'po_count' => 0,
+            'total_kg' => '0.0000',
+            'excluded' => ['lines' => 0, 'kg' => '0.0000', 'currencies' => []],
+            'is_multi' => count($selectedMaterials) > 1,
+            'per_material' => [],
         ];
 
-        if ($selectedMaterial) {
-            [$chartData, $tableData, $tablePagination, $summary] = $this->queryService->buildHistoricalData([
-                'material_name' => $selectedMaterial['name'],
-                'material_master_id' => $selectedMaterial['master_id'],
-                'shape' => $selectedMaterial['shape'],
-                'shape_is_null' => $selectedMaterial['shape'] === null,
-                'key_min' => $keyMin,
-                'key_max' => $keyMax,
-                'supplier_id' => $selectedSupplierKey,
-                'date_from' => $dateFrom,
-            ], $periodView, $currency, $context, max(1, $request->integer('history_page', 1)));
+        if ($selectedMaterials !== []) {
+            [$chartData, $tableData, $tablePagination, $summary] = $this->queryService->buildMultiHistoricalData(
+                $selectedMaterials,
+                [
+                    'key_min' => $keyDimension['min'],
+                    'key_max' => $keyDimension['max'],
+                    'supplier_id' => $selectedSupplierKey,
+                    'date_from' => $dateFrom,
+                    'date_to' => $dateTo,
+                    'category_ranges' => $supportingFilters['category_ranges'],
+                    'source_currencies' => $supportingFilters['source_currencies'],
+                    'document_search' => $supportingFilters['doc_search'],
+                    'price_min' => $supportingFilters['price_min'],
+                    'price_max' => $supportingFilters['price_max'],
+                    'change_direction' => $supportingFilters['change_direction'],
+                    'sort_direction' => $sortDir,
+                ],
+                $periodView,
+                $currency,
+                $context,
+                max(1, $request->integer('history_page', 1))
+            );
         }
 
         $evaluation = $this->evaluationMeta($currency, $context, true);
-        $keyDimension = ['field' => $keyField, 'min' => $keyMin, 'max' => $keyMax];
 
         $payload = [
             'chartData' => $chartData,
@@ -141,6 +175,11 @@ class HistoricalPriceComparisonController extends Controller
         }
 
         $materials = $materials->map(fn (array $material) => HistoricalPriceQueryService::historicalMaterialOption($material))->values();
+        $sourceCurrencyOptions = array_map(
+            static fn (string $code): array => ['value' => $code, 'label' => $code],
+            ExchangeRate::CURRENCIES
+        );
+        $activeSupportingFilterCount = HistoricalPriceQueryService::countActiveSupportingFilters($supportingFilters);
         $viewData = compact(
             'suppliers',
             'materials',
@@ -150,8 +189,11 @@ class HistoricalPriceComparisonController extends Controller
             'tablePagination',
             'selectedSupplierId',
             'selectedMaterialName',
+            'selectedMaterials',
+            'selectedMaterialKeys',
             'selectedShape',
             'periodView',
+            'sortDir',
             'range',
             'rangeOptions',
             'monthlyRangeOptions',
@@ -160,14 +202,18 @@ class HistoricalPriceComparisonController extends Controller
             'currency',
             'evaluation',
             'keyDimension',
+            'categoryOptions',
+            'sourceCurrencyOptions',
+            'supportingFilters',
+            'activeSupportingFilterCount',
         );
 
-        if ($request->ajax()) {
-            return response()->json([
-                'html' => view('purchasing.comparison._historical_content', $viewData)->render(),
-                'tab' => 'historical',
-                'url' => route('purchasing.comparison.historical', $request->query()),
-            ]);
+        if (ServerTabsResponse::wants($request) || $request->ajax()) {
+            return ServerTabsResponse::make(
+                view('purchasing.comparison._historical_content', $viewData)->render(),
+                'historical',
+                $request,
+            );
         }
 
         return view('purchasing.comparison.historical', $viewData);
@@ -267,12 +313,12 @@ class HistoricalPriceComparisonController extends Controller
             'regionalFormatter' => $this->regionalFormatter,
         ];
 
-        if ($request->ajax()) {
-            return response()->json([
-                'html' => view('purchasing.comparison._historical_content', $viewData)->render(),
-                'tab' => 'historical',
-                'url' => route('purchasing.comparison.historical', $request->query()),
-            ]);
+        if (ServerTabsResponse::wants($request) || $request->ajax()) {
+            return ServerTabsResponse::make(
+                view('purchasing.comparison._historical_content', $viewData)->render(),
+                'historical',
+                $request,
+            );
         }
 
         return view('purchasing.comparison.historical', $viewData);

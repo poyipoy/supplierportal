@@ -88,11 +88,12 @@ class ConversationMessageController extends Controller
             ->update(['read_at' => now()]);
 
         $hasMore = $conversation->loadRecentMessages();
+        $relatedQuotation = ConversationPresenter::relatedQuotation($conversation);
 
         return response()->json([
             'conversation' => $this->formatConversation($conversation),
-            'context' => ConversationPresenter::context($conversation, auth()->user()),
-            'quick_actions' => ConversationPresenter::quickActions($conversation, auth()->user()),
+            'context' => ConversationPresenter::context($conversation, auth()->user(), $relatedQuotation),
+            'quick_actions' => ConversationPresenter::quickActions($conversation, auth()->user(), $relatedQuotation),
             'templates' => ConversationPresenter::templates($conversation, auth()->user()),
             'messages' => $conversation->messages->map(fn (Message $message) => $this->formatMessage($message)),
             'has_more_messages' => $hasMore,
@@ -194,12 +195,15 @@ class ConversationMessageController extends Controller
         $validated = StoreConversationMessageRequest::validateQuickAction($request);
         $message = $messageService->executeQuickAction($conversation, $validated);
 
+        $freshConversation = $conversation->fresh(['conversable', 'supplierUser.supplier', 'purchasingUser', 'latestMessage.sender']);
+        $relatedQuotation = ConversationPresenter::relatedQuotation($freshConversation);
+
         return response()->json([
             'success' => true,
             'message' => $this->formatMessage($message->load(['sender', 'attachments'])),
-            'conversation' => $this->formatConversation($conversation->fresh(['latestMessage.sender'])),
-            'context' => ConversationPresenter::context($conversation->fresh(['conversable', 'supplierUser.supplier', 'purchasingUser']), auth()->user()),
-            'quick_actions' => ConversationPresenter::quickActions($conversation, auth()->user()),
+            'conversation' => $this->formatConversation($freshConversation),
+            'context' => ConversationPresenter::context($freshConversation, auth()->user(), $relatedQuotation),
+            'quick_actions' => ConversationPresenter::quickActions($freshConversation, auth()->user(), $relatedQuotation),
         ]);
     }
 

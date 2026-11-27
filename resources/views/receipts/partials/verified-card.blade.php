@@ -3,7 +3,7 @@
     Expects: $title, $unit, $receiptNumber, $rows ([label, value, emphasis?, numeric?]),
     $amountLabel, $amount (formatted, without currency), $statusLabel, $statement.
 --}}
-<article class="tw:mx-auto tw:max-w-lg tw:overflow-hidden tw:rounded-ui-md tw:border tw:border-outline-variant tw:bg-surface tw:shadow-ui-1">
+<article class="tw:mx-auto tw:max-w-lg tw:overflow-hidden tw:rounded-ui-md tw:border tw:border-outline tw:bg-surface tw:shadow-ui-surface">
     <header class="tw:flex tw:items-start tw:gap-3 tw:border-b tw:border-outline-variant tw:bg-success-container tw:px-5 tw:py-4 tw:text-success-container-foreground">
         <x-ui.icon name="shield-check" size="lg" class="tw:mt-0.5 tw:shrink-0" aria-hidden="true" />
         <div class="tw:min-w-0">
@@ -13,7 +13,7 @@
     </header>
 
     <div class="tw:px-5 tw:pt-5">
-        <p class="tw:m-0 tw:text-ui-xs tw:font-medium tw:uppercase tw:tracking-wide tw:text-on-surface-variant">{{ rtrim(__('common.final_review.receipt_number'), ': ') }}</p>
+        <p class="tw:m-0 tw:text-ui-xs tw:font-semibold tw:uppercase tw:tracking-wide tw:text-on-surface-variant">{{ rtrim(__('common.final_review.receipt_number'), ': ') }}</p>
         <p class="tw:m-0 tw:mt-1 tw:break-all tw:text-xl tw:font-semibold tw:tabular-nums tw:text-primary">{{ $receiptNumber }}</p>
     </div>
 
@@ -31,7 +31,7 @@
     </dl>
 
     <div class="tw:mx-5 tw:flex tw:flex-wrap tw:items-baseline tw:justify-between tw:gap-2 tw:rounded-ui-sm tw:border tw:border-outline-variant tw:px-4 tw:py-3">
-        <span class="tw:text-ui-xs tw:font-medium tw:text-on-surface-variant">{{ rtrim($amountLabel, ': ') }}</span>
+        <span class="tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant">{{ rtrim($amountLabel, ': ') }}</span>
         <span class="tw:text-lg tw:font-semibold tw:tabular-nums tw:text-on-surface">Rp {{ $amount }}</span>
     </div>
 

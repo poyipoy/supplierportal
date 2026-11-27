@@ -4,6 +4,7 @@ namespace App\Support;
 
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Routing\AbstractRouteCollectionInterface;
 use Illuminate\Routing\Route;
 use Illuminate\Support\Facades\Route as RouteFacade;
 use JsonException;
@@ -45,6 +46,18 @@ final class PortalContextCodec
 
     /** @var list<string> */
     private const PAYLOAD_KEYS = ['description', 'application', 'type', 'action', 'path', 'argument'];
+
+    /** @var array<string, list<array{action: string, route: string, logicalId: string, pathTemplate: string, params: list<string>, queryAllowlist: list<string>, hashedKeys: list<string>, description: string}>> */
+    private static array $sessionIndexCache = [];
+
+    /** @var array<string, array{static: array<string, array<string, mixed>>, parameterized: array<int, list<array{entry: array<string, mixed>, segments: list<string>, templateLen: int}>>}> */
+    private static array $compiledIndexCache = [];
+
+    public static function resetCaches(): void
+    {
+        self::$sessionIndexCache = [];
+        self::$compiledIndexCache = [];
+    }
 
     public static function encodeScv2Payload(string $description, string $action, string $argument): string
     {
@@ -153,14 +166,21 @@ final class PortalContextCodec
      */
     public static function sessionIndex(?User $user = null, ?string $activeSupplierScope = null, ?string $prefixOverride = null): array
     {
-        $sessions = config('portal_sessions', []);
-        if (! is_array($sessions)) {
-            return [];
+        $routes = RouteFacade::getRoutes();
+        $activePrefix = trim(PortalPath::prefix(), '/');
+        $logicalPrefix = (string) config('portal_urls.context_urls.logical_id_prefix', 'lid://adasi.portal.');
+        $memoKey = self::sessionIndexMemoKey($routes, $activePrefix, $logicalPrefix, $user, $activeSupplierScope, $prefixOverride);
+
+        if (isset(self::$sessionIndexCache[$memoKey])) {
+            return self::$sessionIndexCache[$memoKey];
         }
 
-        $logicalPrefix = (string) config('portal_urls.context_urls.logical_id_prefix', 'lid://adasi.portal.');
+        $sessions = config('portal_sessions', []);
+        if (! is_array($sessions)) {
+            return self::$sessionIndexCache[$memoKey] = [];
+        }
+
         $routeLabels = WorkspaceShell::menuRouteLabelMap();
-        $routes = RouteFacade::getRoutes();
         $entries = [];
 
         foreach ($sessions as $action => $spec) {
@@ -180,7 +200,7 @@ final class PortalContextCodec
 
             $params = array_values(array_filter($spec['params'] ?? [], 'is_string'));
             $queryAllowlist = array_values(array_filter($spec['query_allowlist'] ?? [], 'is_string'));
-            $pathTemplate = self::routePathTemplate($route, $prefixOverride);
+            $pathTemplate = self::routePathTemplate($route, $prefixOverride, $activePrefix);
 
             $hashedKeys = [];
             foreach ($params as $param) {
@@ -206,7 +226,7 @@ final class PortalContextCodec
             ];
         }
 
-        return $entries;
+        return self::$sessionIndexCache[$memoKey] = $entries;
     }
 
     /**
@@ -250,8 +270,16 @@ final class PortalContextCodec
             ? trim((string) $options['prefix'], '/')
             : trim(PortalPath::prefix(), '/');
 
-        $index = $sessionIndex ?? self::sessionIndex($user, null, $prefix);
-        $matched = self::matchPathAgainstIndex($matchPath, $index);
+        if ($sessionIndex === null) {
+            $routes = RouteFacade::getRoutes();
+            $activePrefix = trim(PortalPath::prefix(), '/');
+            $logicalPrefix = (string) config('portal_urls.context_urls.logical_id_prefix', 'lid://adasi.portal.');
+            $memoKey = self::sessionIndexMemoKey($routes, $activePrefix, $logicalPrefix, $user, null, $prefix);
+            $index = self::sessionIndex($user, null, $prefix);
+            $matched = self::matchPathAgainstCompiledIndex($matchPath, $memoKey, $index);
+        } else {
+            $matched = self::matchPathAgainstIndex($matchPath, $sessionIndex);
+        }
         if ($matched === null) {
             return null;
         }
@@ -654,12 +682,127 @@ final class PortalContextCodec
         return $best;
     }
 
-    private static function routePathTemplate(Route $route, ?string $prefixOverride = null): string
+    /**
+     * @param  AbstractRouteCollectionInterface  $routes
+     */
+    private static function sessionIndexMemoKey(
+        object $routes,
+        string $activePrefix,
+        string $logicalPrefix,
+        ?User $user,
+        ?string $activeSupplierScope,
+        ?string $prefixOverride
+    ): string {
+        $userKey = $user instanceof User
+            ? implode(':', [
+                (string) $user->getKey(),
+                (string) ($user->role ?? ''),
+                $user->is_active ? '1' : '0',
+                (string) ($activeSupplierScope ?? ''),
+                $user->isSupplier() ? implode(',', $user->supplierScopeValues()) : '',
+            ])
+            : '__all__';
+
+        return implode('|', [
+            (string) spl_object_id($routes),
+            (string) count($routes->getRoutes()),
+            app()->getLocale(),
+            $prefixOverride ?? '__null__',
+            $activePrefix,
+            $logicalPrefix,
+            $userKey,
+        ]);
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $index
+     * @return null|array{entry: array<string, mixed>, params: array<string, string>}
+     */
+    private static function matchPathAgainstCompiledIndex(string $path, string $memoKey, array $index): ?array
+    {
+        if (! isset(self::$compiledIndexCache[$memoKey])) {
+            $static = [];
+            $parameterized = [];
+
+            foreach ($index as $entry) {
+                $template = (string) ($entry['pathTemplate'] ?? '');
+                if (! str_contains($template, '{')) {
+                    if (! isset($static[$template])) {
+                        $static[$template] = $entry;
+                    }
+
+                    continue;
+                }
+
+                $tplSegments = $template === '/' ? [] : explode('/', trim($template, '/'));
+                $parameterized[count($tplSegments)][] = [
+                    'entry' => $entry,
+                    'segments' => $tplSegments,
+                    'templateLen' => strlen($template),
+                ];
+            }
+
+            self::$compiledIndexCache[$memoKey] = [
+                'static' => $static,
+                'parameterized' => $parameterized,
+            ];
+        }
+
+        $compiled = self::$compiledIndexCache[$memoKey];
+        if (isset($compiled['static'][$path])) {
+            return ['entry' => $compiled['static'][$path], 'params' => []];
+        }
+
+        $pathSegments = $path === '/' ? [] : explode('/', trim($path, '/'));
+        $candidates = $compiled['parameterized'][count($pathSegments)] ?? [];
+        if ($candidates === []) {
+            return null;
+        }
+
+        $best = null;
+        $bestScore = null;
+
+        foreach ($candidates as $candidate) {
+            $matchedParams = [];
+            $staticCount = 0;
+            $ok = true;
+
+            foreach ($candidate['segments'] as $i => $tplSeg) {
+                $actualSeg = $pathSegments[$i];
+                if (str_starts_with($tplSeg, '{') && str_ends_with($tplSeg, '}')) {
+                    if ($actualSeg === '') {
+                        $ok = false;
+                        break;
+                    }
+                    $matchedParams[substr($tplSeg, 1, -1)] = rawurldecode($actualSeg);
+                } elseif ($tplSeg === $actualSeg) {
+                    $staticCount++;
+                } else {
+                    $ok = false;
+                    break;
+                }
+            }
+
+            if (! $ok) {
+                continue;
+            }
+
+            $score = ($staticCount * 1000) - (count($matchedParams) * 100) + $candidate['templateLen'];
+            if ($bestScore === null || $score > $bestScore) {
+                $bestScore = $score;
+                $best = ['entry' => $candidate['entry'], 'params' => $matchedParams];
+            }
+        }
+
+        return $best;
+    }
+
+    private static function routePathTemplate(Route $route, ?string $prefixOverride = null, ?string $activePrefix = null): string
     {
         $uri = trim($route->uri(), '/');
 
         if ($prefixOverride !== null) {
-            $activePrefix = trim(PortalPath::prefix(), '/');
+            $activePrefix ??= trim(PortalPath::prefix(), '/');
             $bareUri = $uri;
             if ($activePrefix !== '' && str_starts_with($bareUri, $activePrefix.'/')) {
                 $bareUri = substr($bareUri, strlen($activePrefix) + 1);

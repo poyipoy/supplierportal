@@ -14,24 +14,23 @@
         >
             <x-ui.icon name="download" size="sm" />
             <span>{{ __('exports.actions.transfer') }}</span>
-            <span id="exportTransferCountPaid" class="tw:hidden tw:ml-1.5 tw:inline-flex tw:items-center tw:justify-center tw:rounded-full tw:bg-white/20 tw:text-white tw:text-[10px] tw:font-bold tw:px-1.5 tw:py-0.5"></span>
+            <span id="exportTransferCountPaid" class="tw:hidden tw:ml-1.5 tw:inline-flex tw:items-center tw:justify-center tw:rounded-full tw:bg-primary-foreground/15 tw:text-primary-foreground tw:text-ui-xs tw:font-bold tw:px-1.5 tw:py-0.5"></span>
         </x-ui.button>
     </x-slot:toolbar>
-    <div class="ui-table-responsive tw:border-0 tw:bg-transparent tw:rounded-none tw:w-full tw:min-w-0">
-        <table class="ui-table ui-table--hover tw:align-middle tw:m-0 tw:text-ui-sm tw:w-full">
+    <table class="ui-table ui-table--hover tw:align-middle tw:m-0 tw:text-ui-sm tw:w-full">
             <thead>
                 <tr>
                     <th scope="col" style="width: 40px;">
                         <input type="checkbox" class="ui-check" id="selectAllBatchesPaid" title="{{ __('finance.drp_surface.all_supplier_batches') }}">
                     </th>
-                    <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:whitespace-nowrap">{{ __('finance.drp_surface.batch_number') }}</th>
-                    <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:whitespace-nowrap">{{ __('common.labels_review.type_date') }}</th>
-                    <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-center tw:whitespace-nowrap">{{ __('finance.drp.group_items') }}</th>
-                    <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-end tw:whitespace-nowrap">{{ __('local_invoice.labels.total_amount') }}</th>
-                    <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-end tw:whitespace-nowrap">{{ __('common.final_copy.net_payment_rp') }}</th>
-                    <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-center tw:whitespace-nowrap">{{ __('local_invoice.labels.status') }}</th>
-                    <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:whitespace-nowrap">{{ __('local_invoice.labels.payment_info') }}</th>
-                    <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-end tw:whitespace-nowrap">{{ __('common.table.action') }}</th>
+                    <th scope="col" class="tw:whitespace-nowrap">{{ __('finance.drp_surface.batch_number') }}</th>
+                    <th scope="col" class="tw:whitespace-nowrap">{{ __('common.labels_review.type_date') }}</th>
+                    <th scope="col" class="tw:text-center tw:whitespace-nowrap">{{ __('finance.drp.group_items') }}</th>
+                    <th scope="col" class="tw:text-end tw:whitespace-nowrap">{{ __('local_invoice.labels.total_amount') }}</th>
+                    <th scope="col" class="tw:text-end tw:whitespace-nowrap">{{ __('common.final_copy.net_payment_rp') }}</th>
+                    <th scope="col" class="tw:text-center tw:whitespace-nowrap">{{ __('local_invoice.labels.status') }}</th>
+                    <th scope="col" class="tw:whitespace-nowrap">{{ __('local_invoice.labels.payment_info') }}</th>
+                    <th scope="col" class="tw:text-end tw:whitespace-nowrap">{{ __('common.table.action') }}</th>
                 </tr>
             </thead>
             <tbody>
@@ -49,12 +48,12 @@
                         </td>
                         <td>
                             <div class="tw:flex tw:items-center tw:gap-1.5 tw:whitespace-nowrap">
-                                <span class="tw:inline-flex tw:items-center tw:px-1.5 tw:py-0.5 tw:rounded-sm tw:text-[10px] tw:font-semibold {{ $batch->batch_type === 'SUPPLIER' ? 'tw:bg-primary/10 tw:text-primary' : 'tw:bg-secondary/10 tw:text-secondary' }}">
+                                <span class="tw:inline-flex tw:items-center tw:px-1.5 tw:py-0.5 tw:rounded-sm tw:text-ui-xs tw:font-semibold {{ $batch->batch_type === 'SUPPLIER' ? 'tw:bg-primary/10 tw:text-primary' : 'tw:bg-secondary/10 tw:text-secondary' }}">
                                     {{ __('finance.closure.batch_type_'.strtolower($batch->batch_type)) }}
                                 </span>
                                 <span class="tw:text-ui-xs tw:text-on-surface-variant">{{ $regionalFormatter->date($batch->created_at, 'human') }}</span>
                             </div>
-                            <div class="tw:text-[11px] tw:text-on-surface-variant tw:mt-0.5 tw:truncate tw:max-w-[170px]" title="{{ $batch->creator?->name ?? __('ga.detail.system') }}">
+                            <div class="tw:text-ui-xs tw:text-on-surface-variant tw:mt-0.5 tw:truncate tw:max-w-[170px]" title="{{ $batch->creator?->name ?? __('ga.detail.system') }}">
                                 {{ __('ga.detail.actor', ['name' => $batch->creator?->name ?? __('ga.detail.system')]) }}
                             </div>
                         </td>
@@ -70,12 +69,12 @@
                                 Rp {{ $regionalFormatter->money($batch->total_net_amount, 0) }}
                             </div>
                             @if($batch->hasOverpayment())
-                                <div class="tw:text-[11px] tw:text-amber-700 tw:dark:text-amber-400 tw:font-semibold tw:mt-0.5" title="{{ __('finance.drp_surface.exceeds_net') }}">
+                                <div class="tw:text-ui-xs tw:text-warning-container-foreground tw:font-semibold tw:mt-0.5" title="{{ __('finance.drp_surface.exceeds_net') }}">
                                     {{ __('finance.paid_ui.transferred', ['amount' => $regionalFormatter->money($batch->actual_transferred_amount, 0)]) }}
                                 </div>
                             @endif
                             @if($batch->status === \App\Models\PaymentBatch::STATUS_PARTIALLY_PAID)
-                                <div class="tw:text-[11px] tw:text-warning-container-foreground tw:font-semibold tw:mt-0.5" title="{{ __('finance.drp_surface.remaining_unpaid') }}">
+                                <div class="tw:text-ui-xs tw:text-warning-container-foreground tw:font-semibold tw:mt-0.5" title="{{ __('finance.drp_surface.remaining_unpaid') }}">
                                     {{ __('finance.paid_ui.remaining', ['amount' => $regionalFormatter->money($batch->remaining_amount, 0)]) }}
                                 </div>
                             @endif
@@ -95,21 +94,21 @@
                                     <span>{{ __('finance.paid_ui.paid_date', ['date' => $regionalFormatter->date($batch->paid_at, 'human') ?? '-']) }}</span>
                                 </div>
                                 @if($sampleGroup?->transfer_reference)
-                                    <div class="tw:text-[11px] ui-tabular-nums tw:text-on-surface-variant tw:truncate tw:max-w-[200px]" title="{{ $sampleGroup->transfer_reference }}">
+                                    <div class="tw:text-ui-xs ui-tabular-nums tw:text-on-surface-variant tw:truncate tw:max-w-[200px]" title="{{ $sampleGroup->transfer_reference }}">
                                         {{ __('finance.drp_ui.transfer_reference_short', ['reference' => $sampleGroup->transfer_reference]) }}
                                     </div>
                                 @endif
                                 @if($batch->hasOverpayment())
                                     @if($batch->hasOpenOverpayment())
                                         <a href="{{ route('finance.overpayments.index', ['q' => $batch->batch_number]) }}"
-                                           class="tw:inline-flex tw:items-center tw:gap-1 tw:px-2 tw:py-0.5 tw:rounded-sm tw:text-[11px] tw:font-semibold tw:bg-amber-100 tw:text-amber-800 tw:dark:bg-amber-950 tw:dark:text-amber-300 tw:mt-1 tw:no-underline tw:hover:underline ui-tabular-nums tw:whitespace-nowrap"
+                                           class="tw:inline-flex tw:items-center tw:gap-1 tw:px-2 tw:py-0.5 tw:rounded-sm tw:text-ui-xs tw:font-semibold tw:bg-warning-container tw:text-warning-container-foreground tw:mt-1 tw:no-underline tw:hover:underline ui-tabular-nums tw:whitespace-nowrap"
                                            title="{{ __('finance.drp_surface.open_refund') }}">
                                             <x-ui.icon name="alert-circle" size="xs" />
                                             <span>{{ __('finance.paid_ui.overpayment', ['amount' => $regionalFormatter->money($batch->total_overpayment_amount, 0)]) }}</span>
                                         </a>
                                     @else
                                         <a href="{{ route('finance.overpayments.index', ['q' => $batch->batch_number]) }}"
-                                           class="tw:inline-flex tw:items-center tw:gap-1 tw:px-2 tw:py-0.5 tw:rounded-sm tw:text-[11px] tw:font-semibold tw:bg-emerald-100 tw:text-emerald-800 tw:dark:bg-emerald-950 tw:dark:text-emerald-300 tw:mt-1 tw:no-underline tw:hover:underline ui-tabular-nums tw:whitespace-nowrap"
+                                           class="tw:inline-flex tw:items-center tw:gap-1 tw:px-2 tw:py-0.5 tw:rounded-sm tw:text-ui-xs tw:font-semibold tw:bg-success-container tw:text-success-container-foreground tw:mt-1 tw:no-underline tw:hover:underline ui-tabular-nums tw:whitespace-nowrap"
                                            title="{{ __('finance.drp_surface.refund_history') }}">
                                             <x-ui.icon name="check-circle" size="xs" />
                                             <span>{{ __('finance.paid_ui.overpayment_settled', ['amount' => $regionalFormatter->money($batch->total_overpayment_amount, 0)]) }}</span>
@@ -119,22 +118,22 @@
                             @elseif($batch->status === \App\Models\PaymentBatch::STATUS_PARTIALLY_PAID)
                                 <div class="tw:flex tw:flex-col tw:gap-0.5">
                                     <span class="tw:text-ui-xs tw:text-primary tw:font-semibold">{{ __('finance.paid_ui.partial') }}</span>
-                                    <div class="tw:text-[11px] ui-tabular-nums tw:text-on-surface-variant tw:whitespace-nowrap">
-                                        <span class="tw:text-success tw:font-medium">{{ __('finance.paid_ui.paid_amount', ['amount' => $regionalFormatter->money($batch->actual_paid_amount, 0)]) }}</span>
+                                    <div class="tw:text-ui-xs ui-tabular-nums tw:text-on-surface-variant tw:whitespace-nowrap">
+                                        <span class="tw:text-success tw:font-semibold">{{ __('finance.paid_ui.paid_amount', ['amount' => $regionalFormatter->money($batch->actual_paid_amount, 0)]) }}</span>
                                         <span class="tw:text-on-surface-variant">·</span>
                                         <span class="tw:text-warning-container-foreground tw:font-bold">{{ __('finance.paid_ui.remaining', ['amount' => $regionalFormatter->money($batch->remaining_amount, 0)]) }}</span>
                                     </div>
                                     @if($batch->hasOverpayment())
                                         @if($batch->hasOpenOverpayment())
                                             <a href="{{ route('finance.overpayments.index', ['q' => $batch->batch_number]) }}"
-                                               class="tw:inline-flex tw:items-center tw:gap-1 tw:px-2 tw:py-0.5 tw:rounded-sm tw:text-[11px] tw:font-semibold tw:bg-amber-100 tw:text-amber-800 tw:dark:bg-amber-950 tw:dark:text-amber-300 tw:mt-0.5 tw:no-underline tw:hover:underline ui-tabular-nums tw:whitespace-nowrap"
+                                               class="tw:inline-flex tw:items-center tw:gap-1 tw:px-2 tw:py-0.5 tw:rounded-sm tw:text-ui-xs tw:font-semibold tw:bg-warning-container tw:text-warning-container-foreground tw:mt-0.5 tw:no-underline tw:hover:underline ui-tabular-nums tw:whitespace-nowrap"
                                                title="{{ __('finance.drp_surface.open_refund') }}">
                                                <x-ui.icon name="alert-circle" size="xs" />
                                                <span>{{ __('finance.paid_ui.overpayment', ['amount' => $regionalFormatter->money($batch->total_overpayment_amount, 0)]) }}</span>
                                             </a>
                                         @else
                                             <a href="{{ route('finance.overpayments.index', ['q' => $batch->batch_number]) }}"
-                                               class="tw:inline-flex tw:items-center tw:gap-1 tw:px-2 tw:py-0.5 tw:rounded-sm tw:text-[11px] tw:font-semibold tw:bg-emerald-100 tw:text-emerald-800 tw:dark:bg-emerald-950 tw:dark:text-emerald-300 tw:mt-0.5 tw:no-underline tw:hover:underline ui-tabular-nums tw:whitespace-nowrap"
+                                               class="tw:inline-flex tw:items-center tw:gap-1 tw:px-2 tw:py-0.5 tw:rounded-sm tw:text-ui-xs tw:font-semibold tw:bg-success-container tw:text-success-container-foreground tw:mt-0.5 tw:no-underline tw:hover:underline ui-tabular-nums tw:whitespace-nowrap"
                                                title="{{ __('finance.drp_surface.refund_history') }}">
                                                <x-ui.icon name="check-circle" size="xs" />
                                                <span>{{ __('finance.paid_ui.overpayment_settled', ['amount' => $regionalFormatter->money($batch->total_overpayment_amount, 0)]) }}</span>
@@ -142,7 +141,7 @@
                                         @endif
                                     @endif
                                     @if($batch->hasUnvoucheredSupplierItems())
-                                        <span class="tw:text-[11px] tw:text-warning-container-foreground tw:font-semibold tw:flex tw:items-center tw:gap-1 tw:mt-0.5 tw:whitespace-nowrap">
+                                        <span class="tw:text-ui-xs tw:text-warning-container-foreground tw:font-semibold tw:flex tw:items-center tw:gap-1 tw:mt-0.5 tw:whitespace-nowrap">
                                             <x-ui.icon name="alert-triangle" size="sm" />
                                             <span>{{ __('finance.voucher.pending') }}</span>
                                         </span>
@@ -155,17 +154,17 @@
                                             <x-ui.icon name="alert-triangle" size="sm" />
                                             <span>{{ __('finance.voucher.incomplete') }}</span>
                                         </span>
-                                        <span class="tw:text-[11px] tw:text-on-surface-variant">{{ __('finance.paid_ui.generate_detail') }}</span>
+                                        <span class="tw:text-ui-xs tw:text-on-surface-variant">{{ __('finance.paid_ui.generate_detail') }}</span>
                                     </div>
                                 @else
-                                    <span class="tw:text-ui-xs tw:text-on-surface-variant tw:font-medium">{{ __('finance.paid_ui.ready') }}</span>
+                                    <span class="tw:text-ui-xs tw:text-on-surface-variant tw:font-semibold">{{ __('finance.paid_ui.ready') }}</span>
                                 @endif
                             @elseif($batch->status === \App\Models\PaymentBatch::STATUS_CANCELLED)
-                                <span class="tw:text-ui-xs tw:text-error tw:font-medium">{{ __('local_invoice.labels.cancelled') }}</span>
+                                <span class="tw:text-ui-xs tw:text-error tw:font-semibold">{{ __('local_invoice.labels.cancelled') }}</span>
                             @elseif($batch->status === \App\Models\PaymentBatch::STATUS_DRAFT)
-                                <span class="tw:text-ui-xs tw:text-warning-container-foreground tw:font-medium">{{ __('finance.paid_ui.finalize_required') }}</span>
+                                <span class="tw:text-ui-xs tw:text-warning-container-foreground tw:font-semibold">{{ __('finance.paid_ui.finalize_required') }}</span>
                             @else
-                                <span class="tw:text-ui-xs tw:text-on-surface-variant tw:font-medium">-</span>
+                                <span class="tw:text-ui-xs tw:text-on-surface-variant tw:font-semibold">-</span>
                             @endif
                         </td>
                         <td class="tw:text-end">
@@ -217,7 +216,6 @@
                 @endforelse
             </tbody>
         </table>
-    </div>
 
     @if($batches->hasPages())
         <x-slot:pagination>

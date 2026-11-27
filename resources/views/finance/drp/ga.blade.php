@@ -3,7 +3,7 @@
 @section('page-title', __('finance.drp.ga_heading'))
 
 @section('content')
-<div class="tw:grid tw:gap-6 tw:pb-16">
+<div class="tw:grid tw:gap-6">
     <x-ui.page-header
         :title="__('finance.drp.general_affairs')"
         :description="__('finance.drp_surface.ga_help')"
@@ -64,7 +64,6 @@
             :reset-url="$gaCandidateResetUrl"
             :reset-label="__('finance.candidates.reset')"
             :submit-label="__('common.labels_review.filter')"
-            class="tw:mb-4"
         >
             <x-slot:search>
                 <label for="ga-candidate-search" class="tw:sr-only">{{ __('local_invoice.actions.search') }}</label>
@@ -137,16 +136,15 @@
         :title="__('finance.drp.ga_list')"
         :description="__('finance.drp.ga_submissions')"
     >
-        <div class="ui-table-responsive">
-            <table class="ui-table ui-table--hover tw:align-middle tw:m-0 tw:text-ui-sm tw:w-full">
+        <table class="ui-table ui-table--hover tw:align-middle tw:m-0 tw:text-ui-sm tw:w-full">
                 <thead>
                     <tr>
-                        <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('finance.drp_surface.batch_number') }}</th>
-                        <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('local_invoice.labels.date') }}</th>
-                        <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('ga.labels.active_employees') }}</th>
-                        <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-end">{{ __('finance.drp.total_amount_rp') }}</th>
-                        <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('local_invoice.labels.status') }}</th>
-                        <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-end">{{ __('common.table.action') }}</th>
+                        <th scope="col">{{ __('finance.drp_surface.batch_number') }}</th>
+                        <th scope="col">{{ __('local_invoice.labels.date') }}</th>
+                        <th scope="col">{{ __('ga.labels.active_employees') }}</th>
+                        <th scope="col" class="tw:text-end">{{ __('finance.drp.total_amount_rp') }}</th>
+                        <th scope="col">{{ __('local_invoice.labels.status') }}</th>
+                        <th scope="col" class="tw:text-end">{{ __('common.table.action') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -182,7 +180,6 @@
                     @endforelse
                 </tbody>
             </table>
-        </div>
 
         @if($batches->hasPages())
             <x-slot:pagination>

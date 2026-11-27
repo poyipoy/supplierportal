@@ -1,4 +1,4 @@
-@props(['exportKey', 'action', 'suppliers' => [], 'periods' => [], 'initialFilters' => [], 'filterSelectors' => [], 'table' => null, 'triggerId' => null])
+@props(['exportKey', 'action', 'suppliers' => [], 'periods' => [], 'materials' => [], 'filterOptions' => [], 'initialFilters' => [], 'filterSelectors' => [], 'table' => null, 'triggerId' => null])
 @php
     $uid = 'advanced-export-'.str_replace('.', '-', $exportKey);
     $definition = \App\Support\Export\ExportDefinitions::get($exportKey);
@@ -30,7 +30,7 @@
                     <h2 class="modal-title tw:text-ui-lg" id="{{ $uid }}-title" tabindex="-1">{{ __('exports.advanced.title') }}</h2>
                     <button type="button" class="btn-close" data-ui-modal-close aria-label="{{ __('common.actions.close') }}"></button>
                 </div>
-                <form action="{{ $action }}" method="POST" data-advanced-export-form data-managed-submit data-no-loader class="tw:flex tw:flex-col tw:min-h-0 tw:overflow-hidden">
+                <form action="{{ $action }}" method="POST" data-advanced-export-form data-managed-submit data-no-loader data-track-unsaved="false" class="tw:flex tw:flex-col tw:min-h-0 tw:overflow-hidden">
                     @csrf
                     <div class="modal-body ui-export-designer__body tw:grid tw:gap-4">
                         <p id="{{ $uid }}-help" class="tw:m-0 tw:text-ui-sm tw:text-on-surface-variant">{{ __('exports.advanced.help') }}</p>
@@ -58,7 +58,7 @@
                                                 :placeholder="__('exports.advanced.all')"
                                                 :data-filter-name="$field['name']"
                                                 :show-sublabel-on-trigger="false"
-                                                :options="collect($suppliers)->map(fn ($supplier) => ['value' => (string) $supplier->getRouteKey(), 'label' => (string) $supplier->name])->values()->all()"
+                                                :options="collect($suppliers)->map(fn ($supplier) => ['value' => (string) $supplier->getRouteKey(), 'label' => ($supplier->relationLoaded('supplier') && trim((string) $supplier->supplier?->company_name) !== '' ? trim((string) $supplier->supplier->company_name) : (string) $supplier->name)])->values()->all()"
                                             />
                                         @elseif($field['type'] === 'period')
                                             <x-ui.searchable-select
@@ -70,6 +70,20 @@
                                                 :data-filter-name="$field['name']"
                                                 :show-sublabel-on-trigger="false"
                                                 :options="collect($periods)->map(fn ($period) => ['value' => (string) $period->id, 'label' => (string) $period->display_label])->values()->all()"
+                                            />
+                                        @elseif($field['type'] === 'multi-select')
+                                            @php($multiOptions = $filterOptions[$field['name']] ?? ($field['name'] === 'materials' ? $materials : []))
+                                            @php($multiUnit = isset($field['unit_label']) ? __($field['unit_label']) : __('exports.advanced.filters.'.$field['name']))
+                                            <x-ui.multi-select
+                                                size="sm"
+                                                :id="$fieldId"
+                                                :name="$field['name'].'[]'"
+                                                :label="__('exports.advanced.filters.'.$field['name'])"
+                                                :placeholder="__('exports.advanced.all')"
+                                                :search-placeholder="__('exports.advanced.filters.'.$field['name']).'...'"
+                                                :item-unit-label="$multiUnit"
+                                                :data-filter-name="$field['name']"
+                                                :options="$multiOptions"
                                             />
                                         @elseif(in_array($field['name'], ['search', 'q'], true))
                                             @php($placeholder = isset($field['placeholder']) ? __($field['placeholder']) : __('exports.advanced.all'))
@@ -93,7 +107,7 @@
                                                 :suggestions-url="route('exports.search-suggestions', ['export_key' => $exportKey])"
                                             />
                                         @else
-                                            <label for="{{ $fieldId }}" class="tw:text-ui-sm tw:font-medium">{{ __('exports.advanced.filters.'.$field['name']) }}</label>
+                                            <label for="{{ $fieldId }}" class="tw:text-ui-sm tw:font-semibold">{{ __('exports.advanced.filters.'.$field['name']) }}</label>
                                             @if($field['type'] === 'select')
                                                 <select id="{{ $fieldId }}" name="{{ $field['name'] }}" data-filter-name="{{ $field['name'] }}" class="ui-select ui-select--sm">
                                                     @if(!($field['required'] ?? false))<option value="">{{ __('exports.advanced.all') }}</option>@endif
@@ -112,6 +126,7 @@
                                                         data-filter-name="{{ $field['name'] }}"
                                                         class="ui-input ui-input--sm"
                                                         maxlength="255"
+                                                        @if($field['type'] === 'number') step="any" min="0" @endif
                                                         @if($placeholder) placeholder="{{ $placeholder }}" @endif
                                                         @if($hint) aria-describedby="{{ $fieldId }}-hint" @endif
                                                     >
@@ -130,7 +145,7 @@
                                 </label>
                                 <div id="{{ $uid }}-relative-panel" data-export-relative-panel hidden class="ui-export-relative-panel">
                                     <div class="ui-export-relative-panel__controls">
-                                        <label for="{{ $uid }}-days" class="tw:text-ui-sm tw:font-medium tw:mb-0">{{ __('exports.advanced.days') }}</label>
+                                        <label for="{{ $uid }}-days" class="tw:text-ui-sm tw:font-semibold tw:mb-0">{{ __('exports.advanced.days') }}</label>
                                         <input id="{{ $uid }}-days" type="number" min="1" max="3650" value="30" data-export-days aria-describedby="{{ $uid }}-relative-hint" class="ui-input ui-input--sm ui-tabular-nums tw:w-24" disabled>
                                         <div class="ui-export-relative-panel__presets" role="group" aria-label="{{ __('exports.advanced.days') }}">
                                             @foreach([7, 30, 90] as $presetDays)
@@ -151,8 +166,8 @@
                                 <x-ui.button type="button" size="sm" variant="outline" data-column-command="move-right"><x-ui.icon name="arrow-right" />{{ __('exports.advanced.right') }}</x-ui.button>
                                 <x-ui.button type="button" size="sm" variant="outline" data-column-command="menu" aria-haspopup="menu" aria-controls="{{ $uid }}-menu"><x-ui.icon name="ellipsis" />{{ __('exports.advanced.column_menu') }}</x-ui.button>
                                 <x-ui.button type="button" size="sm" variant="ghost" data-column-command="reset" data-export-reset><x-ui.icon name="rotate-ccw" />{{ __('exports.advanced.quick_default') }}</x-ui.button>
-                                <x-ui.button type="button" size="sm" variant="ghost" data-column-command="select-all">{{ __('exports.advanced.quick_all') }}</x-ui.button>
-                                <x-ui.button type="button" size="sm" variant="ghost" data-column-command="minimal">{{ __('exports.advanced.quick_minimal') }}</x-ui.button>
+                                <x-ui.button type="button" size="sm" variant="outline" data-column-command="select-all">{{ __('exports.advanced.quick_all') }}</x-ui.button>
+                                <x-ui.button type="button" size="sm" variant="outline" data-column-command="minimal">{{ __('exports.advanced.quick_minimal') }}</x-ui.button>
                             </div>
                             <div class="ui-column-search-bar">
                                 <label for="{{ $uid }}-column-search" class="tw:sr-only">{{ __('exports.advanced.search_columns_label') }}</label>

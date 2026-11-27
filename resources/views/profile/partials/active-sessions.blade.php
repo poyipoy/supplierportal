@@ -4,9 +4,9 @@
     </p>
 
     @if (session('status') === 'session-revoked')
-        <p class="tw:m-0 tw:mb-4 tw:text-ui-xs tw:font-medium tw:text-primary" role="status">{{ __('security.device_signed_out') }}</p>
+        <p class="tw:m-0 tw:mb-4 tw:text-ui-xs tw:font-semibold tw:text-primary" role="status">{{ __('security.device_signed_out') }}</p>
     @elseif (session('warning'))
-        <p class="tw:m-0 tw:mb-4 tw:text-ui-xs tw:font-medium tw:text-error" role="alert">{{ session('warning') }}</p>
+        <p class="tw:m-0 tw:mb-4 tw:text-ui-xs tw:font-semibold tw:text-error" role="alert">{{ session('warning') }}</p>
     @endif
 
     <div class="tw:grid tw:gap-2">
@@ -15,7 +15,7 @@
                 <div class="tw:flex tw:min-w-0 tw:items-start tw:gap-2.5">
                     <x-ui.icon name="monitor" size="sm" />
                     <div class="tw:min-w-0 tw:wrap-break-word">
-                        <p class="tw:m-0 tw:text-ui-sm tw:font-medium tw:text-on-surface">
+                        <p class="tw:m-0 tw:text-ui-sm tw:font-semibold tw:text-on-surface">
                             {{ $activeSession->ip_address ?: __('security.unknown_ip') }}
                             @if ($activeSession->is_current)
                                 <span class="tw:ml-1 tw:rounded-ui-xs tw:bg-primary/10 tw:px-1.5 tw:py-0.5 tw:text-ui-xs tw:font-semibold tw:text-primary">{{ __('security.this_device') }}</span>
@@ -32,7 +32,7 @@
                         @csrf
                         @method('DELETE')
                         <input type="hidden" name="session_token" value="{{ $activeSession->revocation_token }}">
-                        <button type="submit" class="ui-focus-ring ui-motion tw:inline-flex tw:h-8 tw:shrink-0 tw:items-center tw:gap-1.5 tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-transparent tw:px-2.5 tw:text-ui-xs tw:font-medium tw:text-error tw:hover:bg-error/10">
+                        <button type="submit" class="ui-focus-ring ui-motion tw:inline-flex tw:h-8 tw:shrink-0 tw:items-center tw:gap-1.5 tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-transparent tw:px-2.5 tw:text-ui-xs tw:font-semibold tw:text-error tw:hover:bg-error/10">
                             <x-ui.icon name="trash-2" size="sm" />{{ __('security.sign_out') }}
                         </button>
                     </form>

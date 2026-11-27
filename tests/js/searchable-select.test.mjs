@@ -194,3 +194,48 @@ test('selectHighlighted ignores Enter during IME composition (isComposing or key
         globalThis.Option = originalOption;
     }
 });
+
+test('setExternalOptions replaces option list, syncs native select options, and respects silent flag', () => {
+    const originalOption = globalThis.Option;
+    globalThis.Option = function FakeOption(text, value) {
+        this.text = text;
+        this.value = value;
+        this.dataset = {};
+    };
+
+    try {
+        const nativeSelect = createFakeNativeSelect({ name: 'range', filterName: 'range' });
+        nativeSelect.innerHTML = '';
+        nativeSelect.options = [];
+        nativeSelect.add = (opt) => nativeSelect.options.push(opt);
+
+        const instance = searchableSelect({
+            selectedValue: '3m',
+            options: [{ value: '3m', label: '3 Months', searchKeywords: '3 months' }],
+            clearable: false,
+        });
+        instance.$refs = { nativeSelect };
+        instance.$watch = () => {};
+        instance.init();
+
+        instance.setExternalOptions(
+            [
+                { value: '1y', label: '1 Year', dataset: { period: 'yearly' } },
+                { value: 'all', label: 'All Years' },
+            ],
+            { value: '1y', disabled: false, silent: true },
+        );
+
+        assert.equal(instance.options.length, 2);
+        assert.equal(instance.selectedValue, '1y');
+        assert.equal(nativeSelect.value, '1y');
+        assert.equal(nativeSelect.options.length, 2);
+        assert.equal(nativeSelect.options[0].dataset.period, 'yearly');
+        assert.deepEqual(nativeSelect.dispatched, []);
+
+        instance.setExternalOptions([{ value: 'all', label: 'All Years' }], { value: 'all', silent: false });
+        assert.deepEqual(nativeSelect.dispatched, ['change']);
+    } finally {
+        globalThis.Option = originalOption;
+    }
+});

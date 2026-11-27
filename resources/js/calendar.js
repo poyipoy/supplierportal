@@ -739,9 +739,10 @@ class CalendarController {
     }
 
     resolveLayerHost() {
-        return this.placeholder?.closest?.('dialog[open]')
-            || this.input?.closest?.('dialog[open]')
+        return this.wrapper?.closest?.('dialog[open]')
+            || this.boundaryTriggers?.[0]?.closest?.('dialog[open]')
             || this.trigger?.closest?.('dialog[open]')
+            || this.native?.[0]?.closest?.('dialog[open]')
             || document.body;
     }
 
@@ -765,20 +766,33 @@ class CalendarController {
         this.dayGrid?.setAttribute('months', mobile ? '1' : this.type === 'range' ? '2' : '1');
         this.trigger?.setAttribute('aria-expanded', 'true');
         this.boundaryTriggers.forEach((button) => button.setAttribute('aria-expanded', 'true'));
-        if (mobile) return;
+        if (mobile) {
+            this.panel.style.top = '';
+            this.panel.style.left = '';
+            this.panel.style.right = '';
+            this.panel.style.maxWidth = '';
+            return;
+        }
 
         const anchor = this.type === 'single'
             ? this.trigger
             : (this.wrapper.querySelector('.ui-date-range-trigger') || this.boundaryTriggers[0]);
         if (!anchor) return;
 
+        const gap = parseFloat(getComputedStyle(this.panel).getPropertyValue('--ui-calendar-anchor-gap')) || 8;
+        const maxViewportWidth = Math.max(0, window.innerWidth - (gap * 2));
+        if (maxViewportWidth > 0) {
+            this.panel.style.maxWidth = `${Math.round(maxViewportWidth)}px`;
+        }
         const rect = anchor.getBoundingClientRect();
         const panelRect = this.panel.getBoundingClientRect();
-        const gap = parseFloat(getComputedStyle(this.panel).getPropertyValue('--ui-calendar-anchor-gap')) || 8;
-        const top = rect.bottom + panelRect.height + gap > window.innerHeight && rect.top > panelRect.height
-            ? Math.max(gap, rect.top - panelRect.height - gap)
-            : Math.min(window.innerHeight - panelRect.height - gap, rect.bottom + gap);
-        const left = Math.min(Math.max(gap, rect.left), window.innerWidth - panelRect.width - gap);
+        const maxTop = Math.max(gap, window.innerHeight - panelRect.height - gap);
+        const maxLeft = Math.max(gap, window.innerWidth - panelRect.width - gap);
+        const preferredTop = rect.bottom + panelRect.height + gap > window.innerHeight && rect.top > panelRect.height
+            ? rect.top - panelRect.height - gap
+            : rect.bottom + gap;
+        const top = Math.max(gap, Math.min(preferredTop, maxTop));
+        const left = Math.max(gap, Math.min(rect.left, maxLeft));
         this.panel.style.top = `${Math.round(top)}px`;
         this.panel.style.left = `${Math.round(left)}px`;
     }
@@ -1165,6 +1179,20 @@ class CalendarController {
         }
     }
 
+    syncErrorDescribedBy(includeError) {
+        const errorId = this.error?.id;
+        if (!errorId) return;
+        const targets = this.type === 'single'
+            ? [this.trigger, this.native[0]].filter(Boolean)
+            : [this.wrapper.querySelector('.ui-date-range-trigger'), ...this.native].filter(Boolean);
+        for (const el of targets) {
+            const tokens = (el.getAttribute('aria-describedby') || '').trim().split(/\s+/).filter(Boolean).filter((t) => t !== errorId);
+            if (includeError) tokens.push(errorId);
+            if (tokens.length) el.setAttribute('aria-describedby', tokens.join(' '));
+            else el.removeAttribute('aria-describedby');
+        }
+    }
+
     setError(message) {
         if (!this.error || !this.errorMessage) return;
         this.errorMessage.textContent = message;
@@ -1172,6 +1200,7 @@ class CalendarController {
         this.wrapper.dataset.calendarInvalid = 'true';
         const target = this.type === 'single' ? this.trigger : this.boundaryTriggers[0];
         target?.setAttribute('aria-invalid', 'true');
+        this.syncErrorDescribedBy(true);
     }
 
     clearError() {
@@ -1179,6 +1208,7 @@ class CalendarController {
         this.wrapper.dataset.calendarInvalid = 'false';
         this.trigger?.removeAttribute('aria-invalid');
         this.boundaryTriggers.forEach((button) => button.removeAttribute('aria-invalid'));
+        this.syncErrorDescribedBy(false);
     }
 
     announce(message) {

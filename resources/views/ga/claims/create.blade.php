@@ -3,7 +3,7 @@
 @section('page-title', __('ga.labels.claim_form'))
 
 @section('content')
-<div class="tw:grid tw:gap-6 tw:pb-16">
+<div class="tw:grid tw:gap-6">
     <x-ui.page-header
         :title="__('ga.form.heading')"
         :description="__('ga.form.description')"
@@ -114,7 +114,7 @@
                             {{ __('ga.form.upload_supporting') }}
                         </label>
                         <input type="file" name="supporting" id="supporting" class="ui-input ui-input--sm" accept=".pdf,.jpg,.jpeg,.png,.xlsx,.xls,.doc,.docx" aria-describedby="supporting-help" @if($errors->has('supporting')) aria-invalid="true" @endif>
-                        <span id="supporting-help" class="tw:text-[11px] tw:text-on-surface-variant tw:block tw:mt-1">
+                        <span id="supporting-help" class="tw:text-ui-xs tw:text-on-surface-variant tw:block tw:mt-1">
                             {{ __('ga.form.entertainment_supporting') }}
                             {{ __('ga.form.support_formats') }}
                         </span>

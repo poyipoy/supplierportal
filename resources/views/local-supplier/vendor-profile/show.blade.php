@@ -3,7 +3,7 @@
 @section('page-title', __('local_procurement.vendor_ui.profile_title'))
 
 @section('content')
-<div class="tw:grid tw:gap-6 tw:pb-16">
+<div class="tw:grid tw:gap-6">
     <x-ui.page-header
         :title="__('local_procurement.vendor_ui.profile_title')"
         :description="__('local_procurement.vendor_ui.profile_help')"
@@ -40,7 +40,7 @@
 
     <div class="tw:grid tw:grid-cols-1 tw:lg:grid-cols-12 tw:gap-6">
         {{-- Kolom Kiri: Profil Master & Form Pengajuan --}}
-        <div class="tw:lg:col-span-8 tw:space-y-6">
+        <div class="tw:min-w-0 tw:lg:col-span-8 tw:space-y-6">
             {{-- Data Master Aktif --}}
             <x-ui.card :title="__('local_invoice.labels.active_master')">
                 <div class="tw:grid tw:grid-cols-2 tw:sm:grid-cols-3 tw:gap-4 tw:text-ui-xs">
@@ -112,7 +112,7 @@
                                     </td>
                                     <td>
                                         @if($b->status === 'VERIFIED')
-                                            <span class="tw:inline-flex tw:px-2 tw:py-0.5 tw:rounded-sm tw:text-[10px] tw:bg-primary/10 tw:text-primary tw:font-bold">{{ __('local_procurement.vendor_ui.active_account') }}</span>
+                                            <span class="tw:inline-flex tw:px-2 tw:py-0.5 tw:rounded-sm tw:text-ui-xs tw:bg-primary/10 tw:text-primary tw:font-bold">{{ __('local_procurement.vendor_ui.active_account') }}</span>
                                         @elseif($b->status === 'PENDING')
                                             <span class="tw:text-on-surface-variant">{{ __('local_procurement.vendor_ui.pending_verification') }}</span>
                                         @else
@@ -144,11 +144,11 @@
 
                     <div class="tw:grid tw:grid-cols-1 tw:sm:grid-cols-2 tw:gap-4">
                         <div>
-                            <label for="company_name" class="ui-label tw:text-ui-xs tw:font-medium">{{ __('local_procurement.vendor_ui.company') }}</label>
+                            <label for="company_name" class="ui-label tw:text-ui-xs tw:font-semibold">{{ __('local_procurement.vendor_ui.company') }}</label>
                             <input type="text" id="company_name" name="company_name" class="ui-input ui-input--sm" value="{{ old('company_name', $supplier?->company_name) }}">
                         </div>
                         <div>
-                            <label for="vendor_category" class="ui-label tw:text-ui-xs tw:font-medium">{{ __('local_invoice.labels.vendor_category') }}</label>
+                            <label for="vendor_category" class="ui-label tw:text-ui-xs tw:font-semibold">{{ __('local_invoice.labels.vendor_category') }}</label>
                             <select id="vendor_category" name="vendor_category" class="ui-select ui-select--sm">
                                 <option value="Barang" @selected(old('vendor_category', $supplier?->vendor_category) === 'Barang')>{{ __('local_procurement.vendor_ui.goods') }}</option>
                                 <option value="Jasa" @selected(old('vendor_category', $supplier?->vendor_category) === 'Jasa')>{{ __('local_procurement.vendor_ui.services') }}</option>
@@ -156,47 +156,47 @@
                             </select>
                         </div>
                         <div>
-                            <label for="npwp" class="ui-label tw:text-ui-xs tw:font-medium">NPWP</label>
+                            <label for="npwp" class="ui-label tw:text-ui-xs tw:font-semibold">NPWP</label>
                             <input type="text" id="npwp" name="npwp" class="ui-input ui-input--sm" value="{{ old('npwp', $supplier?->npwp) }}">
                         </div>
                         <div>
-                            <label for="is_pkp" class="ui-label tw:text-ui-xs tw:font-medium">{{ __('local_invoice.labels.tax_status') }}</label>
+                            <label for="is_pkp" class="ui-label tw:text-ui-xs tw:font-semibold">{{ __('local_invoice.labels.tax_status') }}</label>
                             <select id="is_pkp" name="is_pkp" class="ui-select ui-select--sm">
                                 <option value="1" @selected(old('is_pkp', $supplier?->is_pkp) == 1)>{{ __('local_procurement.vendor_ui.pkp_required') }}</option>
                                 <option value="0" @selected(old('is_pkp', $supplier?->is_pkp) == 0)>Non-PKP</option>
                             </select>
                         </div>
                         <div>
-                            <label for="phone" class="ui-label tw:text-ui-xs tw:font-medium">{{ __('local_invoice.labels.company_phone') }}</label>
+                            <label for="phone" class="ui-label tw:text-ui-xs tw:font-semibold">{{ __('local_invoice.labels.company_phone') }}</label>
                             <input type="text" id="phone" name="phone" class="ui-input ui-input--sm" value="{{ old('phone', $supplier?->phone) }}">
                         </div>
-                        <div class="tw:sm:col-span-2">
-                            <label for="address" class="ui-label tw:text-ui-xs tw:font-medium">{{ __('local_invoice.labels.company_address') }}</label>
+                        <div class="tw:min-w-0 tw:sm:col-span-2">
+                            <label for="address" class="ui-label tw:text-ui-xs tw:font-semibold">{{ __('local_invoice.labels.company_address') }}</label>
                             <textarea id="address" name="address" rows="2" class="ui-textarea tw:text-ui-xs tw:px-2 tw:py-1">{{ old('address', $supplier?->address) }}</textarea>
                         </div>
                     </div>
 
                     <hr class="tw:border-outline-variant tw:my-4">
-                    <h4 class="tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:mb-3">{{ __('local_procurement.vendor_ui.pic_information') }}</h4>
+                    <h4 class="tw:text-ui-sm tw:font-semibold tw:text-on-surface tw:mb-3">{{ __('local_procurement.vendor_ui.pic_information') }}</h4>
 
                     <div class="tw:grid tw:grid-cols-1 tw:sm:grid-cols-3 tw:gap-4">
                         <div>
-                            <label for="pic_name" class="ui-label tw:text-ui-xs tw:font-medium">{{ __('local_procurement.vendor_ui.pic_name') }}</label>
+                            <label for="pic_name" class="ui-label tw:text-ui-xs tw:font-semibold">{{ __('local_procurement.vendor_ui.pic_name') }}</label>
                             <input type="text" id="pic_name" name="pic_name" class="ui-input ui-input--sm" value="{{ old('pic_name', $supplier?->pic_name) }}">
                         </div>
                         <div>
-                            <label for="pic_email" class="ui-label tw:text-ui-xs tw:font-medium">{{ __('local_invoice.labels.pic_email') }}</label>
+                            <label for="pic_email" class="ui-label tw:text-ui-xs tw:font-semibold">{{ __('local_invoice.labels.pic_email') }}</label>
                             <input type="email" id="pic_email" name="pic_email" class="ui-input ui-input--sm" value="{{ old('pic_email', $supplier?->pic_email) }}">
                         </div>
                         <div>
-                            <label for="pic_phone" class="ui-label tw:text-ui-xs tw:font-medium">{{ __('local_procurement.vendor_ui.pic_phone') }}</label>
+                            <label for="pic_phone" class="ui-label tw:text-ui-xs tw:font-semibold">{{ __('local_procurement.vendor_ui.pic_phone') }}</label>
                             <input type="text" id="pic_phone" name="pic_phone" class="ui-input ui-input--sm" value="{{ old('pic_phone', $supplier?->pic_phone) }}">
                         </div>
                     </div>
 
                     <hr class="tw:border-outline-variant tw:my-4">
-                    <h4 class="tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:mb-3">{{ __('local_invoice.labels.proposed_bank') }}</h4>
-                    <p class="tw:text-[11px] tw:text-on-surface-variant tw:mb-3">{{ __('local_invoice.labels.bank_change_help') }}</p>
+                    <h4 class="tw:text-ui-sm tw:font-semibold tw:text-on-surface tw:mb-3">{{ __('local_invoice.labels.proposed_bank') }}</h4>
+                    <p class="tw:text-ui-xs tw:text-on-surface-variant tw:mb-3">{{ __('local_invoice.labels.bank_change_help') }}</p>
 
                     @php
                         $supplierBankDocs = $documents->where('document_type', \App\Models\SupplierMasterDocument::TYPE_SURAT_PERNYATAAN_REKENING);
@@ -221,21 +221,21 @@
                                 :value="old('bank_name')"
                             />
                             @error('bank_name')
-                                <div class="tw:text-error tw:text-[11px] tw:mt-1">{{ $message }}</div>
+                                <div class="tw:text-error tw:text-ui-xs tw:mt-1">{{ $message }}</div>
                             @enderror
                         </div>
                         <div>
-                            <label for="account_number" class="ui-label tw:text-ui-xs tw:font-medium">{{ __('local_procurement.vendor_ui.bank_number') }}</label>
+                            <label for="account_number" class="ui-label tw:text-ui-xs tw:font-semibold">{{ __('local_procurement.vendor_ui.bank_number') }}</label>
                             <input type="text" id="account_number" name="account_number" class="ui-input ui-input--sm @error('account_number') is-invalid @enderror" placeholder="{{ __('local_procurement.vendor_ui.bank_number') }}" value="{{ old('account_number') }}">
                             @error('account_number')
-                                <div class="ui-field-error tw:text-[11px]">{{ $message }}</div>
+                                <div class="ui-field-error tw:text-ui-xs">{{ $message }}</div>
                             @enderror
                         </div>
                         <div>
-                            <label for="account_holder_name" class="ui-label tw:text-ui-xs tw:font-medium">{{ __('local_procurement.vendor_ui.account_owner') }}</label>
+                            <label for="account_holder_name" class="ui-label tw:text-ui-xs tw:font-semibold">{{ __('local_procurement.vendor_ui.account_owner') }}</label>
                             <input type="text" id="account_holder_name" name="account_holder_name" class="ui-input ui-input--sm @error('account_holder_name') is-invalid @enderror" placeholder="{{ __('local_invoice.labels.account_book_name') }}" value="{{ old('account_holder_name') }}">
                             @error('account_holder_name')
-                                <div class="ui-field-error tw:text-[11px]">{{ $message }}</div>
+                                <div class="ui-field-error tw:text-ui-xs">{{ $message }}</div>
                             @enderror
                         </div>
                     </div>
@@ -250,7 +250,7 @@
                                 @endforeach
                             </select>
                             @error('bank_confirmation_document_id')
-                                <div class="ui-field-error tw:text-[11px]">{{ $message }}</div>
+                                <div class="ui-field-error tw:text-ui-xs">{{ $message }}</div>
                             @enderror
                         </div>
                         <x-ui.button type="submit" variant="primary" size="sm">
@@ -285,7 +285,7 @@
                                         </x-ui.status-chip>
                                     </td>
                                     <td>
-                                        <div class="tw:text-[11px] tw:space-y-0.5 tw:max-w-xs">
+                                        <div class="tw:text-ui-xs tw:space-y-0.5 tw:max-w-xs">
                                             @php
                                                 $fieldLabels = [
                                                     'company_name' => __('local_procurement.vendor_ui.company'),
@@ -335,13 +335,13 @@
         </div>
 
         {{-- Kolom Kanan: Dokumen Legalitas Master --}}
-        <div class="tw:lg:col-span-4 tw:space-y-6">
+        <div class="tw:min-w-0 tw:lg:col-span-4 tw:space-y-6">
             {{-- Form Upload Dokumen Legalitas --}}
             <x-ui.card :title="__('local_invoice.actions.upload_legal')">
                 <form action="{{ route('local-supplier.vendor-profile.documents.upload') }}" method="POST" enctype="multipart/form-data" data-async-submit class="tw:space-y-3">
                     @csrf
                     <div>
-                        <label for="document_type" class="ui-label tw:text-ui-xs tw:font-medium">{{ __('local_invoice.labels.document_type') }}</label>
+                        <label for="document_type" class="ui-label tw:text-ui-xs tw:font-semibold">{{ __('local_invoice.labels.document_type') }}</label>
                         <select id="document_type" name="document_type" class="ui-select ui-select--sm" required>
                             <option value="">{{ __('local_procurement.vendor_ui.document_select') }}</option>
                             <option value="NIB">{{ __('local_procurement.vendor_ui.document_types.nib') }}</option>
@@ -353,7 +353,7 @@
                     </div>
 
                     <div>
-                        <label for="document" class="ui-label tw:text-ui-xs tw:font-medium">{{ __('local_procurement.vendor_ui.file_limit') }}</label>
+                        <label for="document" class="ui-label tw:text-ui-xs tw:font-semibold">{{ __('local_procurement.vendor_ui.file_limit') }}</label>
                         <input type="file" id="document" name="document" class="ui-input ui-input--sm" accept=".pdf,.jpg,.jpeg,.png" required>
                     </div>
 
@@ -373,8 +373,8 @@
                         <div class="tw:p-3 tw:rounded-sm tw:border tw:border-outline-variant tw:bg-surface-container tw:flex tw:items-center tw:justify-between">
                             <div class="tw:overflow-hidden tw:pr-2">
                                 <strong class="tw:text-ui-xs tw:text-on-surface tw:block">{{ __('local_procurement.vendor_ui.document_types.'.strtolower($doc->document_type)) }}</strong>
-                                <span class="tw:text-[11px] tw:text-on-surface-variant tw:truncate tw:block" title="{{ $doc->original_filename }}">{{ $doc->original_filename }}</span>
-                                <span class="tw:text-[10px] tw:text-on-surface-variant">{{ number_format($doc->file_size / 1024, 1) }} KB · {{ $regionalFormatter->date($doc->created_at) }}</span>
+                                <span class="tw:text-ui-xs tw:text-on-surface-variant tw:truncate tw:block" title="{{ $doc->original_filename }}">{{ $doc->original_filename }}</span>
+                                <span class="tw:text-ui-xs tw:text-on-surface-variant">{{ number_format($doc->file_size / 1024, 1) }} KB · {{ $regionalFormatter->date($doc->created_at) }}</span>
                             </div>
                             <x-ui.button :href="route('supplier-master-documents.show', $doc)" target="_blank" variant="outline-primary" size="sm" class="tw:shrink-0">
                                 {{ __('local_invoice.actions.download') }}

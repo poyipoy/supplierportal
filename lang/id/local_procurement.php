@@ -728,6 +728,13 @@ return [
         'satellite_empty_title' => 'Pilih baris PO Lokal',
         'satellite_empty' => 'Klik baris PO di atas (atau tekan Enter) untuk melihat Goods Receipt, invoice terkait, dan dokumen PDF PO di sini.',
         'open_detail' => 'Buka Detail PO',
+        'satellite_tabs_label' => 'Bagian detail satelit',
+        'row_hint' => 'Tekan Enter atau Spasi pada baris PO untuk memuat Goods Receipt, invoice terkait, dan lampiran PDF PO di panel detail di bawah.',
+        'table_regions' => [
+            'goods_receipts' => 'Tabel Goods Receipt',
+            'invoices' => 'Tabel invoice terkait',
+            'documents' => 'Tabel dokumen PO',
+        ],
         'tabs' => [
             'goods_receipts' => 'Goods Receipt',
             'invoices' => 'Invoice',

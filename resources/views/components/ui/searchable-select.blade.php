@@ -1,5 +1,5 @@
 @props([
-    'name',
+    'name' => null,
     'id' => null,
     'label' => null,
     'helper' => null,
@@ -13,6 +13,8 @@
     'emptyMessage' => __('common.select.empty'),
     'showSublabelOnTrigger' => true,
     'allowCustom' => false,
+    'clearable' => true,
+    'customOptionLabel' => null,
     'suggestionsUrl' => null,
     'remote' => false,
     'preloadOnOpen' => false,
@@ -21,15 +23,18 @@
     'size' => 'md',
     'dataFilterName' => null,
     'helperId' => null,
-    'labelClass' => 'tw:text-ui-sm tw:font-medium tw:text-on-surface',
+    'labelClass' => 'tw:text-ui-sm tw:font-semibold tw:text-on-surface',
+    'selectAttributes' => [],
 ])
 
 @php
     $showSub = filter_var($showSublabelOnTrigger, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? true;
-    $resolvedId = $id ?: preg_replace('/[^A-Za-z0-9_-]+/', '-', $name);
-    $validationKey = trim(preg_replace('/\[([^\]]*)\]/', '.$1', $name), '.');
-    $message = $error ?: (isset($errors) && $errors->has($validationKey) ? $errors->first($validationKey) : null);
-    $resolvedValue = old($validationKey, $value);
+    $isClearable = filter_var($clearable, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? true;
+    $hasName = $name !== null && $name !== '';
+    $resolvedId = $id ?: ($hasName ? preg_replace('/[^A-Za-z0-9_-]+/', '-', $name) : 'searchable-select-'.\Illuminate\Support\Str::random(6));
+    $validationKey = $hasName ? trim(preg_replace('/\[([^\]]*)\]/', '.$1', $name), '.') : '';
+    $message = $error ?: ($validationKey !== '' && isset($errors) && $errors->has($validationKey) ? $errors->first($validationKey) : null);
+    $resolvedValue = $validationKey !== '' ? old($validationKey, $value) : $value;
     $resolvedHelperId = $helper ? ($helperId ?: $resolvedId . '-help') : null;
     $errorId = $message ? $resolvedId . '-error' : null;
     $describedBy = collect([$resolvedHelperId, $errorId])->filter()->implode(' ');
@@ -42,6 +47,7 @@
             $badge = isset($item['badge']) ? (string) $item['badge'] : null;
             $badgeTone = isset($item['badgeTone']) ? (string) $item['badgeTone'] : 'neutral';
             $keywords = (string) ($item['searchKeywords'] ?? ($lbl . ' ' . ($sub ?? '') . ' ' . ($badge ?? '')));
+            $dataset = is_array($item['dataset'] ?? null) ? $item['dataset'] : [];
             return [
                 'value' => $val,
                 'label' => $lbl,
@@ -49,6 +55,7 @@
                 'badge' => $badge,
                 'badgeTone' => $badgeTone,
                 'searchKeywords' => strtolower($keywords),
+                'dataset' => $dataset,
             ];
         }
         return [
@@ -58,8 +65,14 @@
             'badge' => null,
             'badgeTone' => 'neutral',
             'searchKeywords' => strtolower((string) $item),
+            'dataset' => [],
         ];
     })->values()->all();
+
+    $hasEmptyOption = collect($normalizedOptions)->contains(fn ($opt) => $opt['value'] === '');
+    $matchCondition = $hasName
+        ? '($event.detail?.name === '.\Illuminate\Support\Js::from($name).' || $event.detail?.id === '.\Illuminate\Support\Js::from($resolvedId).')'
+        : '($event.detail?.id === '.\Illuminate\Support\Js::from($resolvedId).')';
 @endphp
 
 <div
@@ -68,6 +81,8 @@
         selectedValue: @js((string) ($resolvedValue ?? '')),
         options: @js($normalizedOptions),
         allowCustom: @js(filter_var($allowCustom, FILTER_VALIDATE_BOOLEAN)),
+        clearable: @js($isClearable),
+        placeholder: @js($placeholder),
         suggestionsUrl: @js($suggestionsUrl),
         remoteSearch: @js(filter_var($remote, FILTER_VALIDATE_BOOLEAN)),
         preloadOnOpen: @js(filter_var($preloadOnOpen, FILTER_VALIDATE_BOOLEAN)),
@@ -79,8 +94,9 @@
     x-on:adasi:dismiss-overlays.window="if (open) close(false)"
     @keydown.escape.stop="close(true)"
     @focusout="if ($event.relatedTarget && !$el.contains($event.relatedTarget)) close(false)"
-    x-on:set-select-value.window="if ($event.detail?.name === '{{ $name }}' || $event.detail?.id === '{{ $resolvedId }}') { setExternalValue($event.detail.value, Boolean($event.detail?.silent)); }"
-    x-on:set-select-disabled.window="if ($event.detail?.name === '{{ $name }}' || $event.detail?.id === '{{ $resolvedId }}') { isDisabled = Boolean($event.detail.disabled); if (isDisabled) close(false); }"
+    x-on:set-select-value.window="if ({{ $matchCondition }}) { setExternalValue($event.detail.value, Boolean($event.detail?.silent)); }"
+    x-on:set-select-options.window="if ({{ $matchCondition }}) { setExternalOptions($event.detail.options, $event.detail); }"
+    x-on:set-select-disabled.window="if ({{ $matchCondition }}) { isDisabled = Boolean($event.detail.disabled); if (isDisabled) close(false); }"
 >
     @if($label)
         {{-- The native select is visually hidden; clicking the label moves focus to the combobox trigger. --}}
@@ -91,25 +107,12 @@
     @endif
 
     {{-- Native Hidden Select for Form Submission and Validation --}}
-    <select
-        id="{{ $resolvedId }}"
-        name="{{ $name }}"
-        x-ref="nativeSelect"
-        @if($dataFilterName) data-filter-name="{{ $dataFilterName }}" @endif
-        @required($required)
-        :disabled="isDisabled"
-        @if($describedBy) aria-describedby="{{ $describedBy }}" @endif
-        @if($message) aria-invalid="true" @endif
-        x-on:invalid.capture="open = true; $nextTick(() => $refs.searchInput?.focus())"
-        x-on:focus="if (!open) $refs.triggerButton?.focus()"
-        tabindex="-1"
-        style="position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); border: 0;"
-    >
-        <option value="">{{ $placeholder }}</option>
+    <select id="{{ $resolvedId }}" @if($hasName) name="{{ $name }}" @endif x-ref="nativeSelect" @if($dataFilterName) data-filter-name="{{ $dataFilterName }}" @endif @foreach($selectAttributes as $attrKey => $attrVal) @if($attrVal === true) {{ $attrKey }} @elseif($attrVal !== false && $attrVal !== null) {{ $attrKey }}="{{ $attrVal }}" @endif @endforeach @required($required) :disabled="isDisabled" @if($describedBy) aria-describedby="{{ $describedBy }}" @endif @if($message) aria-invalid="true" @endif x-on:invalid.capture="open = true; $nextTick(() => $refs.searchInput?.focus())" x-on:focus="if (!open) $refs.triggerButton?.focus()" tabindex="-1" style="position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); border: 0;">
+        @if(!$hasEmptyOption)
+            <option value="">{{ $placeholder }}</option>
+        @endif
         @foreach($normalizedOptions as $opt)
-            <option value="{{ $opt['value'] }}" @selected((string) $resolvedValue === (string) $opt['value'])>
-                {{ $opt['label'] }}
-            </option>
+            <option value="{{ $opt['value'] }}" @selected((string) ($resolvedValue ?? '') === (string) $opt['value'])@foreach($opt['dataset'] ?? [] as $dataKey => $dataVal) data-{{ \Illuminate\Support\Str::kebab($dataKey) }}="{{ $dataVal }}"@endforeach>{{ $opt['label'] }}</option>
         @endforeach
     </select>
 
@@ -131,28 +134,28 @@
             aria-haspopup="listbox"
             :aria-expanded="open"
             :aria-controls="'{{ $resolvedId }}-listbox'"
-            class="ui-motion tw:flex {{ $size === 'sm' ? 'tw:min-h-[var(--ui-control-height-sm)] tw:px-2.5 tw:py-1' : 'tw:min-h-[var(--ui-control-height-md)] tw:px-3 tw:py-2' }} tw:w-full tw:min-w-0 tw:items-center tw:justify-between tw:gap-2 tw:rounded-ui-sm tw:border tw:bg-surface tw:text-start tw:text-ui-sm tw:text-on-surface tw:shadow-none ui-focus-ring tw:disabled:cursor-not-allowed tw:disabled:bg-surface-container tw:disabled:opacity-75"
+            class="ui-motion tw:cursor-pointer tw:flex {{ $size === 'sm' ? 'tw:min-h-[var(--ui-control-height-sm)] tw:px-2.5 tw:py-1' : 'tw:min-h-[var(--ui-control-height-md)] tw:px-3 tw:py-2' }} tw:w-full tw:min-w-0 tw:items-center tw:justify-between tw:gap-2 tw:rounded-ui-sm tw:border tw:bg-surface tw:text-start tw:text-ui-sm tw:text-on-surface tw:shadow-none ui-focus-ring tw:hover:border-primary tw:hover:bg-surface-container-low tw:disabled:cursor-not-allowed tw:disabled:bg-surface-container tw:disabled:opacity-75"
             :class="{
                 'tw:border-error': {{ $message ? 'true' : 'false' }} || hasAsyncError,
                 'tw:border-outline-strong': !({{ $message ? 'true' : 'false' }} || hasAsyncError) && !open,
                 'tw:border-primary tw:ring-2 tw:ring-primary/20': open
             }"
         >
-            <div class="tw:flex-1 tw:min-w-0 tw:truncate" :class="selectedOption && !isDisabled ? 'tw:pe-8' : ''">
+            <div class="tw:flex-1 tw:min-w-0 tw:truncate" :class="clearable && selectedValue !== '' && selectedOption && !isDisabled ? 'tw:pe-8' : ''">
                 <template x-if="selectedOption">
                     @if($showSub)
                         <div class="tw:flex tw:flex-col tw:gap-0.5 tw:min-w-0">
-                            <span class="ui-tabular-nums tw:font-medium tw:text-on-surface tw:truncate" :title="selectedOption.label" x-text="selectedOption.label"></span>
+                            <span class="ui-tabular-nums tw:truncate" :class="selectedValue === '' ? 'tw:font-normal tw:text-on-surface-variant' : 'tw:font-semibold tw:text-on-surface'" :title="selectedOption.label" x-text="selectedOption.label"></span>
                             <template x-if="selectedOption.sublabel">
                                 <span class="tw:text-ui-xs tw:text-on-surface-variant tw:truncate" x-text="selectedOption.sublabel"></span>
                             </template>
                         </div>
                     @else
-                        <span class="ui-tabular-nums tw:font-medium tw:text-on-surface tw:truncate tw:block" :title="selectedOption.label" x-text="selectedOption.label"></span>
+                        <span class="ui-tabular-nums tw:truncate tw:block" :class="selectedValue === '' ? 'tw:font-normal tw:text-on-surface-variant' : 'tw:font-semibold tw:text-on-surface'" :title="selectedOption.label" x-text="selectedOption.label"></span>
                     @endif
                 </template>
                 <template x-if="!selectedOption">
-                    <span class="tw:text-on-surface-variant">{{ $placeholder }}</span>
+                    <span class="tw:text-on-surface-variant" x-text="placeholderText">{{ $placeholder }}</span>
                 </template>
             </div>
 
@@ -164,7 +167,7 @@
             />
         </button>
 
-        <template x-if="selectedOption && !isDisabled">
+        <template x-if="clearable && selectedValue !== '' && selectedOption && !isDisabled">
             <button
                 type="button"
                 @click.stop="clear(); $nextTick(() => $refs.triggerButton?.focus())"
@@ -190,11 +193,11 @@
         x-transition:leave-start="tw:opacity-100 tw:translate-y-0"
         x-transition:leave-end="tw:opacity-0 tw:translate-y-1"
         :class="openUpwards ? 'tw:bottom-full tw:mb-1.5' : 'tw:top-full tw:mt-1.5'"
-        class="tw:absolute tw:left-0 tw:right-0 tw:z-dropdown tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface tw:shadow-ui-2 tw:overflow-hidden"
+        class="tw:absolute tw:left-0 tw:right-0 tw:z-dropdown tw:rounded-ui-md tw:border tw:border-outline tw:bg-surface tw:shadow-ui-2 tw:overflow-hidden"
         style="background-color: var(--ui-menu-bg); z-index: calc(var(--ui-z-modal) + 10);"
     >
         {{-- Search Input in Popover --}}
-        <div class="tw:p-2 tw:border-b tw:border-outline-variant/60 tw:bg-surface-container-low">
+        <div class="tw:p-1.5 tw:border-b tw:border-outline-variant tw:bg-surface-container-low">
             <label for="{{ $resolvedId }}-search" class="tw:sr-only">{{ $searchPlaceholder }}</label>
             <div style="position: relative; display: flex; align-items: center; width: 100%;">
                 <span aria-hidden="true" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; pointer-events: none; display: flex; align-items: center; justify-content: center; z-index: 2;" class="tw:text-on-surface-variant">
@@ -236,7 +239,7 @@
             id="{{ $resolvedId }}-listbox"
             x-ref="optionsList"
             role="listbox"
-            class="tw:max-h-60 tw:overflow-y-auto tw:p-1 tw:divide-y tw:divide-outline-variant/30"
+            class="tw:max-h-60 tw:overflow-y-auto tw:p-1 tw:space-y-0.5"
         >
             <template x-for="(opt, idx) in filteredOptions" :key="opt.value">
                 <div
@@ -247,24 +250,25 @@
                     role="option"
                     tabindex="-1"
                     :aria-selected="String(opt.value) === String(selectedValue)"
-                    class="tw:flex tw:items-start tw:justify-between tw:gap-2 tw:p-2.5 tw:rounded-ui-sm tw:cursor-pointer ui-motion"
+                    class="tw:flex tw:items-start tw:justify-between tw:gap-2 tw:px-2.5 tw:py-2 tw:rounded-ui-sm tw:cursor-pointer ui-motion"
                     :class="{
-                        'tw:bg-primary/10 tw:text-primary': idx === highlightedIndex,
-                        'tw:bg-surface-container-low': String(opt.value) === String(selectedValue) && idx !== highlightedIndex,
-                        'tw:hover:bg-surface-container': idx !== highlightedIndex
+                        'tw:bg-primary-container tw:text-on-primary-container': String(opt.value) === String(selectedValue) && idx !== highlightedIndex,
+                        'tw:bg-primary-container tw:text-on-primary-container tw:ring-1 tw:ring-primary': String(opt.value) === String(selectedValue) && idx === highlightedIndex,
+                        'tw:bg-surface-container-high tw:text-on-surface': String(opt.value) !== String(selectedValue) && idx === highlightedIndex,
+                        'tw:hover:bg-surface-container-high': String(opt.value) !== String(selectedValue) && idx !== highlightedIndex
                     }"
                 >
                     <div class="tw:flex tw:flex-col tw:gap-0.5 tw:min-w-0 tw:flex-1">
                         <div class="tw:flex tw:flex-wrap tw:items-center tw:gap-x-2 tw:gap-y-1 tw:min-w-0">
-                            <span class="ui-tabular-nums tw:min-w-0 tw:max-w-full tw:text-ui-sm tw:font-semibold tw:text-on-surface tw:break-words" style="overflow-wrap: anywhere;" x-text="opt.label"></span>
+                            <span class="ui-tabular-nums tw:min-w-0 tw:max-w-full tw:text-ui-sm tw:font-semibold tw:break-words" :class="String(opt.value) === String(selectedValue) ? 'tw:text-on-primary-container' : 'tw:text-on-surface'" style="overflow-wrap: anywhere;" x-text="opt.label"></span>
                             <template x-if="opt.badge">
                                 <span
-                                    class="tw:shrink-0 tw:inline-flex tw:items-center tw:px-1.5 tw:py-0.5 tw:rounded-full tw:text-[10px] tw:font-bold tw:uppercase tw:tracking-wider"
+                                    class="tw:shrink-0 tw:inline-flex tw:items-center tw:px-1.5 tw:py-0.5 tw:rounded-full tw:text-ui-xs tw:font-bold tw:uppercase tw:tracking-wider"
                                     :class="{
-                                        'tw:bg-emerald-100 tw:text-emerald-800': opt.badgeTone === 'success' || opt.badge === 'OPEN',
-                                        'tw:bg-amber-100 tw:text-amber-800': opt.badgeTone === 'warning',
-                                        'tw:bg-rose-100 tw:text-rose-800': opt.badgeTone === 'error',
-                                        'tw:bg-slate-100 tw:text-slate-800': opt.badgeTone === 'neutral'
+                                        'tw:bg-success-container tw:text-on-success-container': opt.badgeTone === 'success' || opt.badge === 'OPEN',
+                                        'tw:bg-warning-container tw:text-on-warning-container': opt.badgeTone === 'warning',
+                                        'tw:bg-error-container tw:text-on-error-container': opt.badgeTone === 'error',
+                                        'tw:bg-surface-container tw:text-on-surface-variant': opt.badgeTone === 'neutral'
                                     }"
                                     x-text="opt.badge"
                                 ></span>
@@ -276,7 +280,7 @@
                     </div>
 
                     <div class="tw:shrink-0 tw:mt-0.5" x-show="String(opt.value) === String(selectedValue)">
-                        <x-ui.icon name="check" size="sm" class="tw:text-primary" />
+                        <x-ui.icon name="check" size="sm" class="tw:text-on-primary-container" />
                     </div>
                 </div>
             </template>
@@ -295,7 +299,7 @@
                 >
                     <x-ui.icon name="plus-circle" size="sm" class="tw:text-primary tw:shrink-0" />
                     <div class="tw:min-w-0 tw:flex-1 tw:text-ui-xs tw:break-words" style="overflow-wrap: anywhere;">
-                        <span class="tw:text-on-surface-variant">{{ __('common.select.use_custom') }}: </span>
+                        <span class="tw:text-on-surface-variant">{{ $customOptionLabel ?: __('common.select.use_custom') }}: </span>
                         <span class="ui-tabular-nums tw:font-bold tw:text-primary" x-text="search.trim()"></span>
                     </div>
                 </div>
@@ -325,7 +329,7 @@
 
     @if($helper)<p id="{{ $resolvedHelperId }}" class="tw:m-0 tw:text-ui-xs tw:text-on-surface-variant">{{ $helper }}</p>@endif
     @if($message)
-        <p id="{{ $errorId }}" class="tw:m-0 tw:flex tw:items-start tw:gap-1.5 tw:text-ui-xs tw:font-medium tw:text-error" role="alert">
+        <p id="{{ $errorId }}" class="tw:m-0 tw:flex tw:items-start tw:gap-1.5 tw:text-ui-xs tw:font-semibold tw:text-error" role="alert">
             <x-ui.icon name="circle-alert" size="sm" class="tw:mt-0.5" /><span>{{ $message }}</span>
         </p>
     @endif

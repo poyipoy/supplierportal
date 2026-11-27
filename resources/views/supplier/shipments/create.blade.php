@@ -221,7 +221,7 @@
                         <dl class="tw:m-0 tw:grid tw:gap-x-6 tw:gap-y-2 tw:text-ui-xs tw:sm:grid-cols-2">
                             <div>
                                 <dt class="tw:text-on-surface-variant tw:font-semibold">{{ __('shipments.preshipment.exporter_title') }}</dt>
-                                <dd class="tw:m-0 tw:text-on-surface tw:font-medium" data-psi-summary="exporter_name">{{ $psiSummaryVal('exporter_name') ?: __('shipments.preshipment.summary_empty') }}</dd>
+                                <dd class="tw:m-0 tw:text-on-surface tw:font-semibold" data-psi-summary="exporter_name">{{ $psiSummaryVal('exporter_name') ?: __('shipments.preshipment.summary_empty') }}</dd>
                                 <dd class="tw:m-0 tw:text-on-surface-variant">
                                     <span>{{ __('shipments.preshipment.port_of_loading') }}:</span>
                                     <span data-psi-summary="exporter_port_of_loading">{{ $psiSummaryVal('exporter_port_of_loading') ?: __('shipments.preshipment.summary_empty') }}</span>
@@ -229,7 +229,7 @@
                             </div>
                             <div>
                                 <dt class="tw:text-on-surface-variant tw:font-semibold">{{ __('shipments.preshipment.supplier_title') }}</dt>
-                                <dd class="tw:m-0 tw:text-on-surface tw:font-medium" data-psi-summary="supplier_name">{{ $psiSummaryVal('supplier_name') ?: __('shipments.preshipment.summary_empty') }}</dd>
+                                <dd class="tw:m-0 tw:text-on-surface tw:font-semibold" data-psi-summary="supplier_name">{{ $psiSummaryVal('supplier_name') ?: __('shipments.preshipment.summary_empty') }}</dd>
                                 <dd class="tw:m-0 tw:text-on-surface-variant">
                                     <span>{{ __('shipments.preshipment.city') }}:</span>
                                     <span data-psi-summary="supplier_city">{{ $psiSummaryVal('supplier_city') ?: __('shipments.preshipment.summary_empty') }}</span>

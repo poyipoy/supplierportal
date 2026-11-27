@@ -65,37 +65,36 @@
         :eyebrow="__('shipments.copy.delivery_package_logistics')"
         :description="__('shipments.copy.consolidated_shipment_batch_details_shipping_documentation_upload_and_receiving_status')"
     >
+        <x-slot:status>
+            <x-ui.status-chip :tone="\App\Support\StatusHelper::shipmentTone($shipment->status)" size="md">
+                {{ \App\Support\StatusHelper::shipmentLabel($shipment->status) }}
+            </x-ui.status-chip>
+        </x-slot:status>
         <x-slot:actions>
-            <div class="tw:flex tw:flex-wrap tw:gap-2 tw:items-center">
-                <x-ui.status-chip :tone="\App\Support\StatusHelper::shipmentTone($shipment->status)" size="md">
-                    {{ \App\Support\StatusHelper::shipmentLabel($shipment->status) }}
-                </x-ui.status-chip>
+            @if($isDraft)
+                <x-ui.button :href="route('supplier.shipments.edit', $shipment)" variant="outline" size="sm">
+                    <x-slot:leading><x-ui.icon name="pencil" size="sm" /></x-slot:leading>
+                    {{ __('shipments.copy.edit_draft_64d64e') }}
+                </x-ui.button>
 
-                @if($isDraft)
-                    <x-ui.button :href="route('supplier.shipments.edit', $shipment)" variant="outline" size="sm">
-                        <x-slot:leading><x-ui.icon name="pencil" size="sm" /></x-slot:leading>
-                        {{ __('shipments.copy.edit_draft_64d64e') }}
+                <form method="POST" action="{{ route('supplier.shipments.submit', $shipment) }}" class="tw:inline" id="submitShipmentForm">
+                    @csrf
+                    <x-ui.button type="button" variant="primary" size="sm" id="btnConfirmSubmit">
+                        <x-slot:leading><x-ui.icon name="truck" size="sm" /></x-slot:leading>
+                        {{ __('shipments.copy.submit_shipment') }}
                     </x-ui.button>
+                </form>
+            @endif
 
-                    <form method="POST" action="{{ route('supplier.shipments.submit', $shipment) }}" class="tw:inline" id="submitShipmentForm">
-                        @csrf
-                        <x-ui.button type="button" variant="primary" size="sm" id="btnConfirmSubmit">
-                            <x-slot:leading><x-ui.icon name="truck" size="sm" /></x-slot:leading>
-                            {{ __('shipments.copy.submit_shipment') }}
-                        </x-ui.button>
-                    </form>
-                @endif
-
-                @if(in_array($shipment->status, ['draft', 'submitted'], true))
-                    <form method="POST" action="{{ route('supplier.shipments.cancel', $shipment) }}" class="tw:inline" id="cancelShipmentForm">
-                        @csrf
-                        <x-ui.button type="button" variant="danger" size="sm" id="btnConfirmCancel">
-                            <x-slot:leading><x-ui.icon name="x-circle" size="sm" /></x-slot:leading>
-                            {{ __('shipments.copy.cancel_shipment_f1cc5e') }}
-                        </x-ui.button>
-                    </form>
-                @endif
-            </div>
+            @if(in_array($shipment->status, ['draft', 'submitted'], true))
+                <form method="POST" action="{{ route('supplier.shipments.cancel', $shipment) }}" class="tw:inline" id="cancelShipmentForm">
+                    @csrf
+                    <x-ui.button type="button" variant="danger" size="sm" id="btnConfirmCancel">
+                        <x-slot:leading><x-ui.icon name="x-circle" size="sm" /></x-slot:leading>
+                        {{ __('shipments.copy.cancel_shipment_f1cc5e') }}
+                    </x-ui.button>
+                </form>
+            @endif
         </x-slot:actions>
     </x-ui.page-header>
 
@@ -282,7 +281,7 @@
                                     {{ $item->purchaseOrder->po_number }}
                                 </a>
                             </td>
-                            <td class="tw:font-medium ui-col-data-name">
+                            <td class="tw:font-semibold ui-col-data-name">
                                 {{ $item->quotationItem->prItem->material_name ?? __('shipments.copy.material') }}
                             </td>
                             <td class="tw:text-end tw:font-bold tw:text-primary ui-tabular-nums">
@@ -354,7 +353,7 @@
                             @endif
 
                             @if($latestAtt)
-                                <a href="{{ route('attachments.show', $latestAtt) }}" target="_blank" class="tw:text-primary tw:no-underline tw:inline-flex tw:items-center tw:gap-1 tw:font-medium">
+                                <a href="{{ route('attachments.show', $latestAtt) }}" target="_blank" class="tw:text-primary tw:no-underline tw:inline-flex tw:items-center tw:gap-1 tw:font-semibold">
                                     <x-ui.icon name="file-text" size="sm" />
                                     <span class="tw:truncate" style="max-width: 170px;" title="{{ $latestAtt->file_name }}">
                                         {{ $latestAtt->file_name }}
@@ -387,7 +386,7 @@
                             <div class="staged-file-badge tw:mt-1.5 tw:p-1.5 tw:rounded tw:bg-primary-container/30 tw:border tw:border-primary/20 tw:flex tw:items-center tw:justify-between tw:gap-1 tw:hidden">
                                 <div class="tw:flex tw:items-center tw:gap-1 tw:min-w-0">
                                     <x-ui.icon name="file-check" size="sm" class="tw:text-primary tw:shrink-0" />
-                                    <span class="staged-file-info tw:text-ui-xs tw:truncate tw:text-primary tw:font-medium"></span>
+                                    <span class="staged-file-info tw:text-ui-xs tw:truncate tw:text-primary tw:font-semibold"></span>
                                 </div>
                                 <x-ui.icon-button type="button" icon="x" variant="ghost" size="xs" :label="__('shipments.copy.clear_all_staged')" class="btn-remove-staged" />
                             </div>

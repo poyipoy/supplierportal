@@ -4,7 +4,7 @@
 @section('page-title', __('purchasing.copy.price_comparison'))
 
 @section('content')
-<div id="purchasingComparisonContainer" class="tw:grid tw:gap-6 tw:min-w-0 tw:max-w-full" data-server-tabs-container>
+<div id="purchasingComparisonContainer" class="tw:grid tw:gap-6 tw:min-w-0 tw:max-w-full" data-server-tabs-container data-server-tabs-prefetch="false">
     <x-ui.page-header
         :title="__('purchasing.copy.current_vs_best_price')"
         :description="__('purchasing.copy.prioritize_price_gaps_against_the_historical_best_after_exchange_rate_conversion')"
@@ -23,11 +23,11 @@
 @include('purchasing.comparison._scripts')
 <script>
 if (typeof AdasiServerTabs !== 'undefined') {
-    AdasiServerTabs.init('#purchasingComparisonContainer');
+    AdasiServerTabs.init('#purchasingComparisonContainer', { prefetch: false });
 } else {
     document.addEventListener('DOMContentLoaded', function() {
         if (typeof AdasiServerTabs !== 'undefined') {
-            AdasiServerTabs.init('#purchasingComparisonContainer');
+            AdasiServerTabs.init('#purchasingComparisonContainer', { prefetch: false });
         }
     });
 }

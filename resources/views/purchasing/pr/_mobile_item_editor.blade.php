@@ -6,7 +6,7 @@
             <span class="tw:text-ui-xs tw:font-bold tw:uppercase tw:tracking-wider tw:text-on-surface-variant">
                 {{ __('purchasing.copy.material_requirements') }}
             </span>
-            <span class="tw:inline-flex tw:items-center tw:justify-center tw:rounded-full tw:px-2 tw:py-0.5 tw:text-[11px] tw:font-bold tw:bg-primary-container tw:text-primary ui-tabular-nums" id="prMobileItemCount">
+            <span class="tw:inline-flex tw:items-center tw:justify-center tw:rounded-full tw:px-2 tw:py-0.5 tw:text-ui-xs tw:font-bold tw:bg-primary-container tw:text-primary ui-tabular-nums" id="prMobileItemCount">
                 0
             </span>
         </div>
@@ -111,9 +111,9 @@
                     <div id="mmSelectedFeedback" class="tw:hidden tw:mt-2 tw:p-2.5 tw:rounded-ui-sm tw:bg-surface-container-low tw:border tw:border-outline-variant tw:flex tw:items-center tw:justify-between">
                         <div class="tw:min-w-0">
                             <div class="tw:text-ui-xs tw:font-bold tw:text-on-surface" id="mmSelectedName"></div>
-                            <div class="tw:text-[11px] tw:text-on-surface-variant" id="mmSelectedGrade"></div>
+                            <div class="tw:text-ui-xs tw:text-on-surface-variant" id="mmSelectedGrade"></div>
                         </div>
-                        <span class="tw:inline-flex tw:items-center tw:gap-1 tw:text-[11px] tw:font-semibold tw:text-success tw:bg-success-container tw:px-2 tw:py-0.5 tw:rounded-ui-xs">
+                        <span class="tw:inline-flex tw:items-center tw:gap-1 tw:text-ui-xs tw:font-semibold tw:text-success tw:bg-success-container tw:px-2 tw:py-0.5 tw:rounded-ui-xs">
                             <x-ui.icon name="check-circle" size="xs" /> Terpilih
                         </span>
                     </div>
@@ -149,7 +149,7 @@
                     <div class="tw:grid tw:grid-cols-2 tw:sm:grid-cols-3 tw:gap-2.5" id="mmDimensionsGrid">
                         @foreach(\App\Models\PrItem::FIXED_DIMENSION_ORDER as $dim)
                             <div class="mm-dim-container" data-dim-field="{{ $dim }}">
-                                <label for="mm_dim_{{ $dim }}" class="tw:text-[11px] tw:font-semibold tw:text-on-surface-variant tw:mb-1 tw:block">
+                                <label for="mm_dim_{{ $dim }}" class="tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant tw:mb-1 tw:block">
                                     {{ \App\Models\PrItem::dimensionLabel($dim) }} (mm)
                                 </label>
                                 <input
@@ -177,7 +177,7 @@
                             <input type="number" step="0.0001" id="mmWeightNeeded" class="ui-input tw:text-end ui-tabular-nums" value="0.0000">
                             <span class="ui-input-group-text">kg/unit</span>
                         </div>
-                        <div class="tw:text-[11px] tw:text-on-surface-variant tw:mt-1">
+                        <div class="tw:text-ui-xs tw:text-on-surface-variant tw:mt-1">
                             Total: <strong id="mmTotalWeightDisplay" class="ui-tabular-nums tw:text-on-surface">0.0000 kg</strong>
                         </div>
                     </div>
@@ -189,7 +189,7 @@
                         </label>
                         <div class="tw:flex tw:items-center tw:gap-2 tw:mt-1">
                             <input type="text" id="mmHsCode" class="ui-input ui-input--sm" placeholder="7228.xx.xx">
-                            <span id="mmHsBadge" class="ui-status-chip ui-status-chip--neutral tw:text-[11px] tw:whitespace-nowrap">
+                            <span id="mmHsBadge" class="ui-status-chip ui-status-chip--neutral tw:text-ui-xs tw:whitespace-nowrap">
                                 Otomatis
                             </span>
                         </div>

@@ -187,7 +187,6 @@
                 // Regional display is explicit and in-memory; raw values remain business inputs.
                 const regional = Object.freeze({ ...(preferences.regional || {}) });
                 const regionalRegistry = preferences.regionalRegistry || {};
-                const displayLocale = root.lang === 'id' ? 'id-ID' : 'en-GB';
                 const displayZone = (() => {
                     const zone = regional.timezone;
                     if (typeof zone !== 'string' || zone === '' || zone === 'system') return 'system';
@@ -199,6 +198,7 @@
                     }
                 })();
                 const displayMonthName = (month) => {
+                    const displayLocale = root.lang === 'id' ? 'id-ID' : 'en-GB';
                     if (root.lang !== 'id' && typeof regionalRegistry.months?.[month - 1] === 'string') {
                         return regionalRegistry.months[month - 1];
                     }
@@ -522,15 +522,88 @@
             // A single page of results keeps the summary but drops the pager (see .ui-dt-single-page in app.css).
             // The pager also becomes a labelled navigation landmark, like the Laravel pagination view.
             const defaultPaginationLabel = @js(__('pagination.navigation'));
-            const syncDataTableDrawState = (_event, settings) => {
+            const initializedTables = new WeakSet();
+            const lastSortSignature = new WeakMap();
+            let spaceArmedSortControl = null;
+
+            const orderSignature = (api) => {
+                const order = typeof api?.order === 'function' ? api.order() : [];
+                if (!Array.isArray(order) || order.length === 0) return '';
+                return order
+                    .filter((entry) => Array.isArray(entry) && entry.length >= 2)
+                    .map(([colIdx, dir]) => `${colIdx}:${dir}`)
+                    .join('|');
+            };
+
+            const ensureSortLiveRegion = (wrapper) => {
+                const host = wrapper.closest('.ui-data-table') || wrapper.parentElement || wrapper;
+                let region = host.querySelector(':scope > [data-adasi-dt-sort-status="true"]');
+                if (!region) {
+                    region = document.createElement('p');
+                    region.className = 'tw:sr-only';
+                    region.setAttribute('data-adasi-dt-sort-status', 'true');
+                    region.setAttribute('role', 'status');
+                    region.setAttribute('aria-live', 'polite');
+                    region.setAttribute('aria-atomic', 'true');
+                    host.appendChild(region);
+                }
+                return region;
+            };
+
+            const announceDataTableSort = (api, tableNode, wrapper) => {
+                const signature = orderSignature(api);
+                if (!initializedTables.has(tableNode)) {
+                    lastSortSignature.set(tableNode, signature);
+                    return;
+                }
+                const previousSignature = lastSortSignature.get(tableNode) ?? '';
+                if (signature === previousSignature) {
+                    return;
+                }
+                lastSortSignature.set(tableNode, signature);
+
+                const region = ensureSortLiveRegion(wrapper);
+                const info = api.page.info();
+                const count = String(info?.recordsDisplay ?? 0);
+                const order = api.order();
+                if (!Array.isArray(order) || order.length === 0) {
+                    region.textContent = window.AdasiI18n.t('js.tables.sort_cleared', { count });
+                    return;
+                }
+
+                const [colIdx, rawDir] = order[0];
+                const headerCell = api.column(colIdx)?.header?.();
+                const columnLabel = (
+                    headerCell?.querySelector('.dt-column-title')?.textContent
+                    || headerCell?.textContent
+                    || ''
+                ).trim();
+                if (!columnLabel) {
+                    return;
+                }
+
+                const directionLabel = window.AdasiI18n.t(
+                    rawDir === 'desc' ? 'js.tables.sort_desc' : 'js.tables.sort_asc'
+                );
+                region.textContent = window.AdasiI18n.t('js.tables.sorted_status', {
+                    column: columnLabel,
+                    direction: directionLabel,
+                    count,
+                });
+            };
+
+            const syncDataTableDrawState = (event, settings) => {
                 const ApiCtor = window.DataTable?.Api;
                 if (!ApiCtor || !settings) return;
                 const api = new ApiCtor(settings);
                 const wrapper = api.table().container();
-                if (!wrapper) return;
+                const tableNode = settings?.table;
+                if (!wrapper || !tableNode) return;
 
-                wrapper.querySelectorAll('th[aria-sort="none"]').forEach((th) => {
-                    th.removeAttribute('aria-sort');
+                wrapper.querySelectorAll('th[aria-sort]').forEach((th) => {
+                    if (th.getAttribute('aria-sort') === 'none') {
+                        th.removeAttribute('aria-sort');
+                    }
                 });
 
                 const pages = api.page.info().pages;
@@ -549,8 +622,43 @@
                         pager.setAttribute('aria-label', label);
                     }
                 }
+
+                if (event?.type === 'draw') {
+                    announceDataTableSort(api, tableNode, wrapper);
+                }
             };
+
+            // DataTables 3.x renders div.dt-column-order[role="button"] with Enter support only; add native Space-key activation per ARIA APG.
+            document.addEventListener('keydown', (event) => {
+                if (event.key !== ' ' || event.altKey || event.ctrlKey || event.metaKey) return;
+                const sortControl = event.target instanceof Element
+                    ? event.target.closest('table.dataTable thead th .dt-column-order[role="button"]')
+                    : null;
+                if (!sortControl) return;
+                event.preventDefault();
+                spaceArmedSortControl = sortControl;
+            });
+            document.addEventListener('keyup', (event) => {
+                if (event.key !== ' ' || !spaceArmedSortControl) return;
+                const armed = spaceArmedSortControl;
+                spaceArmedSortControl = null;
+                if (document.activeElement === armed && armed.isConnected) {
+                    armed.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, shiftKey: event.shiftKey }));
+                }
+            });
+            document.addEventListener('blur', () => {
+                spaceArmedSortControl = null;
+            }, true);
+
             window.DataTable.Dom.s(document).on('draw.dt', syncDataTableDrawState);
+            window.DataTable.Dom.s(document).on('init.dt', (_event, settings) => {
+                const ApiCtor = window.DataTable?.Api;
+                const tableNode = settings?.table;
+                if (!ApiCtor || !tableNode) return;
+                const api = new ApiCtor(settings);
+                initializedTables.add(tableNode);
+                lastSortSignature.set(tableNode, orderSignature(api));
+            });
             window.DataTable.Dom.s(document).on('preInit.dt', (_event, settings) => {
                 const tableNode = settings?.table;
                 if (tableNode) {
@@ -1228,16 +1336,15 @@
                     category,
                     readUrl
                 ) => {
-                    const item = document.createElement('div');
+                    const item = document.createElement('button');
 
-                    item.className = 'notification-item tw:bg-surface-container-low';
-                    item.setAttribute('role', 'button');
+                    item.type = 'button';
+                    item.className = 'notification-item ui-focus-ring tw:block tw:w-full tw:text-start tw:bg-surface-container-low';
                     item.dataset.notificationItem = '';
                     item.dataset.notificationCategory = category;
                     item.dataset.notificationUnread = '1';
                     item.dataset.notificationReadUrl = readUrl;
                     item.dataset.notificationId = String(notification.id);
-                    item.style.cursor = 'pointer';
 
                     const row = document.createElement('div');
                     row.className = 'tw:flex tw:gap-3';

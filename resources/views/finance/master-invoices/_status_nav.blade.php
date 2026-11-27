@@ -41,12 +41,12 @@
             data-server-tab
             data-tab-name="{{ $key }}"
             @if($isActive) aria-current="page" @endif
-            class="ui-focus-ring ui-motion tw:group tw:inline-flex tw:shrink-0 tw:items-center tw:gap-2 tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface tw:px-3.5 tw:py-2 tw:text-ui-sm tw:font-medium tw:text-on-surface-variant tw:no-underline tw:hover:bg-surface-container tw:aria-[current=page]:border-primary tw:aria-[current=page]:bg-primary tw:aria-[current=page]:text-primary-foreground"
+            class="ui-focus-ring ui-motion tw:group tw:inline-flex tw:shrink-0 tw:items-center tw:gap-2 tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface tw:px-3.5 tw:py-2 tw:text-ui-sm tw:font-semibold tw:text-on-surface-variant tw:no-underline tw:hover:bg-surface-container tw:aria-[current=page]:border-primary tw:aria-[current=page]:bg-primary tw:aria-[current=page]:text-primary-foreground"
         >
             <x-ui.icon :name="$tab['icon']" size="xs" />
             <span>{{ $tab['label'] }}</span>
             <span
-                class="ui-tabular-nums tw:inline-flex tw:min-w-5 tw:items-center tw:justify-center tw:rounded-full tw:px-2 tw:py-0.5 tw:text-[11px] tw:font-bold {{ $tab['tone'] }} tw:group-aria-[current=page]:bg-surface tw:group-aria-[current=page]:text-primary"
+                class="ui-tabular-nums tw:inline-flex tw:min-w-5 tw:items-center tw:justify-center tw:rounded-full tw:px-2 tw:py-0.5 tw:text-ui-xs tw:font-bold {{ $tab['tone'] }} tw:group-aria-[current=page]:bg-surface tw:group-aria-[current=page]:text-primary"
                 data-tab-count="{{ $key }}"
             >{{ number_format($counts[$key] ?? 0) }}</span>
         </a>

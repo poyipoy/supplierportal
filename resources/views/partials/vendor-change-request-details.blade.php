@@ -47,7 +47,7 @@
             <x-ui.icon name="file-text" size="sm" class="tw:text-primary" />
             <span>{{ __('local_procurement.change_details.heading') }}</span>
         </span>
-        <span class="tw:text-[11px] tw:text-on-surface-variant">
+        <span class="tw:text-ui-xs tw:text-on-surface-variant">
             {{ __('local_procurement.change_details.help') }}
         </span>
     </div>
@@ -55,11 +55,11 @@
     @if(!empty($proposed))
         <div class="ui-table-responsive">
             <table class="ui-table ui-table--sm ui-table--hover tw:m-0 tw:text-ui-xs tw:align-middle">
-                <thead class="tw:bg-surface-container-lowest tw:border-b tw:border-outline-variant/60">
+                <thead>
                     <tr>
-                        <th scope="col" class="tw:py-2 tw:ps-3 tw:text-on-surface-variant tw:font-semibold" style="width: 25%;">{{ __('local_procurement.change_details.field') }}</th>
-                        <th scope="col" class="tw:py-2 tw:text-on-surface-variant tw:font-semibold" style="width: 35%;">{{ __('local_procurement.change_details.current') }}</th>
-                        <th scope="col" class="tw:py-2 tw:text-on-surface-variant tw:font-semibold" style="width: 40%;">{{ __('local_procurement.change_details.proposed') }}</th>
+                        <th scope="col" class="tw:py-2 tw:ps-3" style="width: 25%;">{{ __('local_procurement.change_details.field') }}</th>
+                        <th scope="col" class="tw:py-2" style="width: 35%;">{{ __('local_procurement.change_details.current') }}</th>
+                        <th scope="col" class="tw:py-2" style="width: 40%;">{{ __('local_procurement.change_details.proposed') }}</th>
                     </tr>
                 </thead>
                 <tbody class="tw:divide-y tw:divide-outline-variant/30">
@@ -79,7 +79,7 @@
                             <td class="tw:py-2.5 tw:ps-3 tw:text-on-surface ui-col-data-name">
                                 <div class="tw:flex tw:items-center tw:gap-2">
                                     <x-ui.icon :name="$meta['icon']" size="sm" class="tw:text-on-surface-variant/70 tw:shrink-0" />
-                                    <span class="tw:font-medium">{{ $meta['label'] }}</span>
+                                    <span class="tw:font-semibold">{{ $meta['label'] }}</span>
                                 </div>
                             </td>
                             <td class="tw:py-2.5 tw:text-on-surface-variant">

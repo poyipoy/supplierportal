@@ -18,8 +18,10 @@
         :description="__('claims.audit_ui.detail_help', ['po' => $claim->purchaseOrder?->po_number ?? '-', 'supplier' => $claim->purchaseOrder?->supplier?->name ?? __('claims.copy.supplier')])"
         :record-nav="$recordNav ?? null"
     >
-        <x-slot:actions>
+        <x-slot:status>
             <x-status-badge type="claim" :status="$claim->status" size="lg" />
+        </x-slot:status>
+        <x-slot:actions>
             <x-ui.button :href="\App\Support\PurchasingNavigation::backUrl('purchasing.claims.index')" variant="outline" size="sm">
                 <x-ui.icon name="arrow-left" size="sm" />
                 <span>{{ __('claims.copy.back_to_claim_list') }}</span>
@@ -97,7 +99,7 @@
                                     <div>
                                         <a href="{{ route('attachments.show', $att) }}" {{ $isImage ? 'class=image-preview-trigger' : 'target=_blank' }} class="tw:flex tw:items-center tw:gap-2 tw:p-2.5 tw:border tw:border-outline-variant tw:rounded-ui-sm tw:no-underline tw:bg-surface tw:hover:bg-surface-low" title="{{ $att->file_name }}">
                                             <x-ui.icon :name="$isImage ? 'image' : 'file-text'" size="sm" class="tw:text-primary tw:shrink-0" />
-                                            <span class="tw:text-ui-xs tw:truncate tw:text-on-surface tw:font-medium">{{ $att->file_name }}</span>
+                                            <span class="tw:text-ui-xs tw:truncate tw:text-on-surface tw:font-semibold">{{ $att->file_name }}</span>
                                         </a>
                                     </div>
                                 @endforeach

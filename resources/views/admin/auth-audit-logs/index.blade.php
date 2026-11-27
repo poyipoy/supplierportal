@@ -114,7 +114,7 @@
             },
             columns: [
                 {data: 'created_at', name: 'created_at', className: 'tw:whitespace-nowrap'},
-                {data: 'event_display', name: 'event', className: 'tw:whitespace-nowrap tw:font-medium'},
+                {data: 'event_display', name: 'event', className: 'tw:whitespace-nowrap tw:font-semibold'},
                 {data: 'user_display', name: 'user.name', orderable: false},
                 {data: 'email_attempted', name: 'email_attempted'},
                 {data: 'ip_address', name: 'ip_address', orderable: false, className: 'ui-tabular-nums tw:whitespace-nowrap'},

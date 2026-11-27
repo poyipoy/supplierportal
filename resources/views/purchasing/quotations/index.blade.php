@@ -179,7 +179,7 @@
 
         {{-- 3. Balanced Data Table --}}
         <x-ui.data-table density="compact">
-            <div class="ui-table-responsive" id="quotationTableContainer">
+            <div id="quotationTableContainer">
                 <table class="ui-table ui-table--hover tw:align-middle tw:mb-0 tw:text-ui-sm tw:w-full">
                     <thead>
                         <tr>
@@ -193,7 +193,7 @@
                             <th scope="col">{{ __('purchasing.copy.date_submitted') }}</th>
                             <th scope="col">
                                 {{ __('purchasing.copy.valid_until') }}
-                                <x-ui.icon name="info" class="tw:ms-1 tw:text-on-surface-variant" data-ui-tooltip="{{ __('purchasing.copy.expired_quotations_cannot_be_used_to_create_a_po_until_the_supplier_submits_a_revision') }}" />
+                                <x-ui.icon name="info" tabindex="0" class="tw:ms-1 tw:text-on-surface-variant focus:tw:outline-hidden" data-ui-tooltip="{{ __('purchasing.copy.expired_quotations_cannot_be_used_to_create_a_po_until_the_supplier_submits_a_revision') }}" />
                             </th>
                             <th scope="col" class="tw:text-end" style="min-width: 96px;">{{ __('common.table.action') }}</th>
                         </tr>
@@ -213,7 +213,7 @@
                                 </td>
                                 <td>{{ $q->purchaseRequisition->period->display_label ?? $q->purchaseRequisition->period->name ?? '-' }}</td>
                                 <td class="tw:text-center"><span class="ui-status-chip ui-status-chip--neutral">{{ $q->currency }}</span></td>
-                                <td class="tw:text-center tw:font-medium">{{ $regionalFormatter->number((string) $q->items->count(), 'plain') }}</td>
+                                <td class="tw:text-center tw:font-semibold">{{ $regionalFormatter->number((string) $q->items->count(), 'plain') }}</td>
                                 <td class="tw:text-center">
                                     <x-status-badge type="quotation" :status="$q->status" />
                                 </td>

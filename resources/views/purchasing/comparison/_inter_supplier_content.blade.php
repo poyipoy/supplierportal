@@ -142,10 +142,10 @@
     @endif
 
     {{-- Grafik Batang --}}
-    <x-ui.card :title="__('purchasing.comparison_analytics.chart_title', ['currency' => $currency])">
+    <x-ui.card :title="__('purchasing.comparison_analytics.chart_title', ['currency' => $currency])" x-data="{ chartOpen: true }">
         <x-slot:actions>
             <div class="tw:flex tw:flex-wrap tw:items-end tw:gap-3">
-                <div class="tw:inline-flex tw:gap-1 tw:rounded-ui-sm tw:border tw:border-outline tw:p-1" role="group" aria-label="{{ __('purchasing.comparison_analytics.chart_scale') }}">
+                <div class="tw:inline-flex tw:gap-1 tw:rounded-ui-sm tw:border tw:border-outline tw:p-1" role="group" aria-label="{{ __('purchasing.comparison_analytics.chart_scale') }}" x-show="chartOpen">
                     @foreach(['price' => __('purchasing.comparison_analytics.chart_scale_price', ['currency' => $currency]), 'relative' => __('purchasing.comparison_analytics.chart_scale_relative')] as $scale => $scaleLabel)
                         <button type="button"
                                 class="ui-focus-ring tw:min-h-8 tw:rounded-ui-sm tw:border-0 tw:bg-transparent tw:px-3 tw:text-ui-sm tw:font-semibold tw:text-on-surface-variant tw:hover:bg-surface-container tw:aria-pressed:bg-primary tw:aria-pressed:text-primary-foreground"
@@ -153,26 +153,56 @@
                                 data-comparison-chart-scale="{{ $scale }}">{{ $scaleLabel }}</button>
                     @endforeach
                 </div>
-                <div class="tw:min-w-60">
-                    <label class="ui-label tw:text-ui-xs tw:font-bold tw:mb-1" for="comparisonMaterialFilter">{{ __('purchasing.copy.material') }}</label>
-                    <select class="ui-select ui-select--sm" id="comparisonMaterialFilter">
-                        <option value="">{{ __('purchasing.copy.all_material') }}</option>
-                        @foreach($materialOptions as $material)
-                            <option value="{{ $material->id }}" data-material-name="{{ $material->material_name }}" data-shape="{{ $material->shape ?? '' }}">{{ $material->material_name }}{{ $materialOptions->where('material_name', $material->material_name)->count() > 1 && $material->shape ? ' ('.$material->shape.')' : '' }}</option>
-                        @endforeach
-                    </select>
+                @php
+                    $interMaterialFilterOptions = collect([
+                        ['value' => '', 'label' => __('purchasing.copy.all_material'), 'dataset' => ['material-name' => '', 'shape' => '']],
+                    ])->merge(
+                        $materialOptions->map(fn ($material) => [
+                            'value' => (string) $material->id,
+                            'label' => $material->material_name.($materialOptions->where('material_name', $material->material_name)->count() > 1 && $material->shape ? ' ('.$material->shape.')' : ''),
+                            'dataset' => [
+                                'material-name' => (string) $material->material_name,
+                                'shape' => (string) ($material->shape ?? ''),
+                            ],
+                        ])
+                    )->values()->all();
+                @endphp
+                <div class="tw:min-w-60" x-show="chartOpen">
+                    <x-ui.searchable-select
+                        id="comparisonMaterialFilter"
+                        :label="__('purchasing.copy.material')"
+                        label-class="ui-label tw:text-ui-xs tw:font-bold tw:mb-0"
+                        size="sm"
+                        :placeholder="__('purchasing.copy.all_material')"
+                        :show-sublabel-on-trigger="false"
+                        value=""
+                        :options="$interMaterialFilterOptions"
+                        class="tw:gap-1"
+                    />
                 </div>
+                <x-ui.button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    @click="chartOpen = !chartOpen"
+                    ::aria-expanded="chartOpen.toString()"
+                    aria-controls="comparisonChartCollapsibleBody"
+                >
+                    <x-ui.icon name="chevron-down" size="sm" class="tw:transition-transform tw:duration-150" ::class="chartOpen ? 'tw:rotate-180' : ''" />
+                    <span x-text="chartOpen ? @js(__('common.actions.hide')) : @js(__('common.actions.show'))">{{ __('common.actions.hide') }}</span>
+                </x-ui.button>
             </div>
         </x-slot:actions>
-        {{-- The aria-label carries the lowest-offer summary (set by the chart script); the matrix below lists every price. --}}
-        <x-ui.chart id="comparisonChart" :label="__('purchasing.copy.supplier_quotation_price_comparison')" :fallback="__('purchasing.copy.supplier_quotation_price_comparison_chart')" :auto-summary="false" plot-class="tw:h-80" :scrollable="true" />
-        <div id="comparisonChartLegend" class="tw:mt-3 tw:flex tw:flex-wrap tw:items-stretch tw:justify-center tw:gap-2.5" role="list" aria-label="{{ __('purchasing.copy.supplier_quotation_price_comparison') }}"></div>
-
+        <div id="comparisonChartCollapsibleBody" x-show="chartOpen">
+            {{-- The aria-label carries the lowest-offer summary (set by the chart script); the matrix below lists every price. --}}
+            <x-ui.chart id="comparisonChart" :label="__('purchasing.copy.supplier_quotation_price_comparison')" :fallback="__('purchasing.copy.supplier_quotation_price_comparison_chart')" :auto-summary="false" plot-class="tw:h-80" :scrollable="true" />
+            <div id="comparisonChartLegend" class="tw:mt-3 tw:flex tw:flex-wrap tw:items-stretch tw:justify-center tw:gap-2.5" role="list" aria-label="{{ __('purchasing.copy.supplier_quotation_price_comparison') }}"></div>
+        </div>
     </x-ui.card>
 
     {{-- Item-Level Selection Coverage Banner --}}
     @if($awardCoverage)
-        <div class="tw:p-4 tw:rounded-sm tw:border tw:border-outline-variant tw:bg-surface-container tw:flex tw:flex-wrap tw:items-center tw:justify-between tw:gap-3">
+        <div class="tw:p-4 tw:rounded-ui-md tw:border tw:border-outline-variant tw:bg-surface-container tw:flex tw:flex-wrap tw:items-center tw:justify-between tw:gap-3">
             <div class="tw:flex tw:items-center tw:gap-3">
                 <div class="tw:rounded-full tw:p-2.5 tw:bg-primary-container tw:text-primary">
                     <x-ui.icon name="clipboard-check" size="md" />
@@ -243,18 +273,18 @@
                                 $minIdr = $idrPrices->count() > 0 ? $idrPrices->min() : null;
                             @endphp
                             <tr data-comparison-row data-material-id="{{ $row['item']->id }}" class="{{ ($row['spread_pct'] ?? 0) > 15 ? 'tw:bg-warning-container/30' : '' }}">
-                                <td class="tw:font-medium ui-sticky-col ui-table-sticky-col comparison-material-col ui-col-data-name">
+                                <td class="tw:font-semibold ui-sticky-col ui-table-sticky-col comparison-material-col ui-col-data-name">
                                     <div class="tw:font-semibold tw:text-on-surface">{{ $row['item']->material_name }}</div>
                                     <div class="tw:text-on-surface-variant tw:text-ui-xs tw:mt-0.5" data-requested-dimensions>{{ $row['dimension_display'] }}</div>
                                     @if(($row['spread_pct'] ?? 0) > 15)
-                                        <div class="tw:text-ui-xs tw:text-error tw:mt-1" data-ui-tooltip="{{ __('purchasing.copy.high_price_spread_15') }}">
+                                        <button type="button" class="ui-focus-ring tw:inline-flex tw:items-center tw:border-0 tw:bg-transparent tw:p-0 tw:text-ui-xs tw:text-error tw:mt-1 tw:cursor-help" data-ui-tooltip="{{ __('purchasing.copy.high_price_spread_15') }}">
                                             <x-ui.icon name="triangle-alert" class="tw:me-1" />{{ __('purchasing.copy.price_spread') }} {{ isset($regionalFormatter) ? $regionalFormatter->number(number_format($row['spread_pct'], 1, ',', '.'), 'indonesian') : number_format($row['spread_pct'], 1) }}%
-                                        </div>
+                                        </button>
                                     @endif
                                 </td>
                                 <td class="tw:text-center col-ref-qty">{{ $formatInteger($row['item']->quantity_value) }}</td>
                                 <td class="tw:text-center col-ref-weight">{{ $formatNumber($row['item']->weight_needed) }}</td>
-                                <td class="tw:text-center tw:font-medium tw:text-primary col-ref-total-weight">{{ $formatNumber($row['item']->total_weight) }}</td>
+                                <td class="tw:text-center tw:font-semibold tw:text-primary col-ref-total-weight">{{ $formatNumber($row['item']->total_weight) }}</td>
                                 @foreach($comparison['suppliers'] as $sup)
                                     @php $p = $row['prices'][$sup['quotation_id']] ?? null; @endphp
                                     @if($p && !$p['is_available'])
@@ -478,25 +508,25 @@
                 @unless($poGenerationEnabled)
                     <x-ui.alert tone="warning" class="tw:mt-3">{{ __('procurement.po_generation.disabled_notice') }}</x-ui.alert>
                 @endunless
-
-                <x-slot:footer>
-                    <div class="tw:flex tw:flex-wrap tw:items-center tw:justify-between tw:gap-3">
-                        <div id="awardPreviewFooterSummary" class="tw:text-ui-xs tw:text-on-surface-variant tw:font-semibold" aria-live="polite">
-                            {{ __('purchasing.copy.selected_offers_summary_empty') }}
-                        </div>
-                        <div class="tw:flex tw:flex-wrap tw:gap-2">
-                            <x-ui.button type="submit" name="action" value="save" variant="outline" size="sm">
-                                <x-slot:leading><x-ui.icon name="save" size="sm" /></x-slot:leading>
-                                {{ __('purchasing.copy.save_selected_offers') }}
-                            </x-ui.button>
-                            <x-ui.button type="submit" name="action" value="generate_pos" variant="primary" size="sm" id="btnGeneratePos" :disabled="! $poGenerationEnabled">
-                                <x-slot:leading><x-ui.icon name="receipt" size="sm" /></x-slot:leading>
-                                {{ __('purchasing.audit_ui.confirm_generation') }}
-                            </x-ui.button>
-                        </div>
-                    </div>
-                </x-slot:footer>
             </x-ui.card>
+
+            <x-ui.action-bar :sticky="true" class="tw:mt-4">
+                <x-slot:left>
+                    <div id="awardPreviewFooterSummary" class="tw:text-ui-xs tw:text-on-surface-variant tw:font-semibold" aria-live="polite">
+                        {{ __('purchasing.copy.selected_offers_summary_empty') }}
+                    </div>
+                </x-slot:left>
+                <x-slot:right>
+                    <x-ui.button type="submit" name="action" value="save" variant="outline" size="sm">
+                        <x-slot:leading><x-ui.icon name="save" size="sm" /></x-slot:leading>
+                        {{ __('purchasing.copy.save_selected_offers') }}
+                    </x-ui.button>
+                    <x-ui.button type="submit" name="action" value="generate_pos" variant="primary" size="sm" id="btnGeneratePos" :disabled="! $poGenerationEnabled">
+                        <x-slot:leading><x-ui.icon name="receipt" size="sm" /></x-slot:leading>
+                        {{ __('purchasing.audit_ui.confirm_generation') }}
+                    </x-ui.button>
+                </x-slot:right>
+            </x-ui.action-bar>
         @elseif($allItemsAssignedToPurchaseOrder)
             <x-ui.card :title="__('purchasing.copy.purchase_order_s_already_generated')" class="tw:mt-4">
                 <div class="tw:flex tw:flex-col tw:gap-3">

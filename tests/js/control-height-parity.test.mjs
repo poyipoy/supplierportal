@@ -23,7 +23,10 @@ test('coarse pointer and mobile breakpoint co-scale buttons and adjacent fields 
 
     for (const expectedSelector of [
         '.ui-button',
+        '.ui-icon-button',
         '.ui-data-action',
+        '.ui-dt-search-input',
+        '.ui-dt-length-select',
         '.ui-input--sm',
         '.ui-select--sm',
         '.ui-input-group--sm > :is(.ui-input, .ui-select, .ui-button)',

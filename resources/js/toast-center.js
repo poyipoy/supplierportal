@@ -24,13 +24,13 @@ export function registerToastCenter(Alpine, { navigateUrl = null, flushQueue = t
         message: 'message-square-text',
         progress: 'loader-circle',
     };
-    const toastTitles = {
-        success: t('js.toast.completed'),
-        error: t('js.toast.failed'),
-        warning: t('js.toast.attention'),
-        info: t('js.toast.update'),
-        message: t('js.toast.message'),
-        progress: t('js.processing'),
+    const toastTitleKeys = {
+        success: 'js.toast.completed',
+        error: 'js.toast.failed',
+        warning: 'js.toast.attention',
+        info: 'js.toast.update',
+        message: 'js.toast.message',
+        progress: 'js.processing',
     };
     const allowedToastTypes = new Set(Object.keys(toastDefaults));
     const maxVisibleToasts = 4;
@@ -377,7 +377,7 @@ export function registerToastCenter(Alpine, { navigateUrl = null, flushQueue = t
         return {
             id: options.id || `adasi-toast-${Date.now()}-${++toastSequence}`,
             type,
-            title: String(options.title || toastTitles[type]),
+            title: String(options.title || t(toastTitleKeys[type] || 'js.toast.update')),
             message: String(options.message ?? options.text ?? ''),
             timestamp: options.timestamp ? String(options.timestamp) : '',
             icon: Object.values(toastIcons).includes(options.icon) ? options.icon : toastIcons[type],

@@ -30,10 +30,10 @@ class ConversationPresenter
             ->first();
     }
 
-    public static function context(Conversation $conversation, User $viewer): array
+    public static function context(Conversation $conversation, User $viewer, Quotation|false|null $quotation = false): array
     {
         $conversation->loadMissing(['conversable', 'supplierUser.supplier', 'purchasingUser']);
-        $quotation = self::relatedQuotation($conversation);
+        $quotation = $quotation === false ? self::relatedQuotation($conversation) : $quotation;
         $conversable = $conversation->conversable;
 
         if ($conversable instanceof PurchaseRequisition) {
@@ -103,9 +103,9 @@ class ConversationPresenter
         ];
     }
 
-    public static function quickActions(Conversation $conversation, User $viewer): array
+    public static function quickActions(Conversation $conversation, User $viewer, Quotation|false|null $quotation = false): array
     {
-        $quotation = self::relatedQuotation($conversation);
+        $quotation = $quotation === false ? self::relatedQuotation($conversation) : $quotation;
 
         if (! $quotation) {
             return [];

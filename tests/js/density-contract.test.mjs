@@ -39,6 +39,8 @@ test('table headers, row actions, status chips, sidebar headings, and workspace 
     assert.match(css, /--ui-density-table-chip-min,\s*1\.5rem/);
     assert.match(css, /\.sidebar-heading\s*\{[^}]*var\(--ui-density-sidebar-heading-min,\s*2\.625rem\)/s);
     assert.match(css, /\.ui-section\s*\{[^}]*var\(--ui-density-stack-sm/s);
+    assert.match(css, /\.ui-form-section__header\s*\{\s*padding:\s*var\(--ui-density-panel-block/);
+    assert.match(css, /dialog\.ui-native-dialog,\s*\[data-ui-dialog\],\s*\[data-ui-drawer\]/);
     assert.match(workspaceCss, /\.workspace-sessionbar\s*\{[^}]*min-height:\s*var\(--ui-density-sessionbar-min,\s*2\.875rem\)/s);
     assert.match(workspaceCss, /\.workspace-session__trigger\s*\{[^}]*min-height:\s*var\(--ui-density-session-min,\s*2\.5625rem\)/s);
 });

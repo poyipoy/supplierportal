@@ -287,14 +287,14 @@
         <table class="ui-table ui-table--hover tw:align-middle tw:m-0 tw:text-ui-sm tw:w-full">
             <thead>
                 <tr>
-                    <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('payment_voucher.labels.voucher_number') }}</th>
-                    <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('payment_voucher.labels.payee') }}</th>
-                    <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('payment_voucher.labels.department') }}</th>
-                    <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('payment_voucher.labels.voucher_date') }}</th>
-                    <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('payment_voucher.labels.payment_method') }}</th>
-                    <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-end">{{ __('payment_voucher.labels.net_amount') }}</th>
-                    <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-center">{{ __('payment_voucher.labels.status') }}</th>
-                    <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-end">{{ __('common.table.action') }}</th>
+                    <th scope="col">{{ __('payment_voucher.labels.voucher_number') }}</th>
+                    <th scope="col">{{ __('payment_voucher.labels.payee') }}</th>
+                    <th scope="col">{{ __('payment_voucher.labels.department') }}</th>
+                    <th scope="col">{{ __('payment_voucher.labels.voucher_date') }}</th>
+                    <th scope="col">{{ __('payment_voucher.labels.payment_method') }}</th>
+                    <th scope="col" class="tw:text-end">{{ __('payment_voucher.labels.net_amount') }}</th>
+                    <th scope="col" class="tw:text-center">{{ __('payment_voucher.labels.status') }}</th>
+                    <th scope="col" class="tw:text-end">{{ __('common.table.action') }}</th>
                 </tr>
             </thead>
             <tbody>
@@ -305,14 +305,14 @@
                                 {{ $voucher->voucher_number }}
                             </a>
                             @if($voucher->reference_number)
-                                <div class="tw:text-[11px] tw:text-on-surface-variant">
+                                <div class="tw:text-ui-xs tw:text-on-surface-variant">
                                     {{ __('payment_voucher.table.reference_prefix') }} {{ $voucher->reference_number }}
                                 </div>
                             @endif
                         </td>
                         <td>
-                            <div class="tw:font-medium tw:text-on-surface">{{ $voucher->payee_name_snapshot }}</div>
-                            <div class="tw:text-[11px] tw:text-on-surface-variant">
+                            <div class="tw:font-semibold tw:text-on-surface">{{ $voucher->payee_name_snapshot }}</div>
+                            <div class="tw:text-ui-xs tw:text-on-surface-variant">
                                 {{ PaymentVoucher::payeeTypeLabel($voucher->payee_type) }}
                                 @if($voucher->isBankMethod() && $voucher->bank_name_snapshot)
                                     · {{ $voucher->bank_name_snapshot }} {{ $voucher->bank_account_snapshot }}
@@ -320,7 +320,7 @@
                             </div>
                         </td>
                         <td>
-                            <span class="tw:text-ui-xs tw:font-medium tw:text-on-surface">
+                            <span class="tw:text-ui-xs tw:font-semibold tw:text-on-surface">
                                 {{ PaymentVoucher::departmentLabel($voucher->source_department) }}
                             </span>
                         </td>
@@ -330,7 +330,7 @@
                             </span>
                         </td>
                         <td>
-                            <span class="tw:text-ui-xs tw:font-medium tw:text-on-surface">
+                            <span class="tw:text-ui-xs tw:font-semibold tw:text-on-surface">
                                 {{ $voucher->isBankMethod() ? __('payment_voucher.methods.bank') : __('payment_voucher.methods.kas') }}
                             </span>
                         </td>

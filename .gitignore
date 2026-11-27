@@ -48,5 +48,9 @@ owned-chrome-profiles/
 /PNR261178.pdf
 /TARIKAN TRANSFER.xlsx
 /docs/naufal raw material.xlsx
+*.sql
+tmp/
+.ecc/
+/assets/
 /temp_view.html
 /api/

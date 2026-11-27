@@ -32,34 +32,34 @@
         <div class="tw:flex tw:flex-col tw:sm:flex-row tw:gap-6 tw:items-start">
             <dl class="tw:grid tw:grid-cols-12 tw:gap-x-3 tw:gap-y-1.5 tw:text-ui-xs tw:flex-1 tw:m-0">
                 <dt class="tw:col-span-12 tw:sm:col-span-4 tw:font-semibold tw:text-on-surface-variant">{{ __('local_invoice.receipt.number') }}</dt>
-                <dd class="tw:col-span-12 tw:sm:col-span-8 tw:m-0"><strong class="ui-tabular-nums tw:text-primary">{{ $claim->receipt?->receipt_number }}</strong></dd>
+                <dd class="tw:min-w-0 tw:col-span-12 tw:sm:col-span-8 tw:m-0"><strong class="ui-tabular-nums tw:text-primary">{{ $claim->receipt?->receipt_number }}</strong></dd>
 
                 <dt class="tw:col-span-12 tw:sm:col-span-4 tw:font-semibold tw:text-on-surface-variant">{{ __('ga.receipt.claim_number') }}</dt>
-                <dd class="tw:col-span-12 tw:sm:col-span-8 tw:m-0"><strong class="ui-tabular-nums">{{ $claim->claim_number }}</strong></dd>
+                <dd class="tw:min-w-0 tw:col-span-12 tw:sm:col-span-8 tw:m-0"><strong class="ui-tabular-nums">{{ $claim->claim_number }}</strong></dd>
 
                 <dt class="tw:col-span-12 tw:sm:col-span-4 tw:font-semibold tw:text-on-surface-variant">{{ __('ga.labels.employee_name') }}</dt>
-                <dd class="tw:col-span-12 tw:sm:col-span-8 tw:m-0"><strong>{{ $claim->employee?->name }}</strong> ({{ $claim->employee?->department }})</dd>
+                <dd class="tw:min-w-0 tw:col-span-12 tw:sm:col-span-8 tw:m-0"><strong>{{ $claim->employee?->name }}</strong> ({{ $claim->employee?->department }})</dd>
 
                 <dt class="tw:col-span-12 tw:sm:col-span-4 tw:font-semibold tw:text-on-surface-variant">{{ __('ga.labels.claim_type') }}</dt>
-                <dd class="tw:col-span-12 tw:sm:col-span-8 tw:m-0">{{ \App\Models\GaClaim::claimTypeLabel($claim->claim_type) }}</dd>
+                <dd class="tw:min-w-0 tw:col-span-12 tw:sm:col-span-8 tw:m-0">{{ \App\Models\GaClaim::claimTypeLabel($claim->claim_type) }}</dd>
 
                 <dt class="tw:col-span-12 tw:sm:col-span-4 tw:font-semibold tw:text-on-surface-variant">{{ __('ga.labels.claim_date') }}</dt>
-                <dd class="tw:col-span-12 tw:sm:col-span-8 tw:m-0">{{ $regionalFormatter->date($claim->claim_date, 'human') }}</dd>
+                <dd class="tw:min-w-0 tw:col-span-12 tw:sm:col-span-8 tw:m-0">{{ $regionalFormatter->date($claim->claim_date, 'human') }}</dd>
 
                 <dt class="tw:col-span-12 tw:sm:col-span-4 tw:font-semibold tw:text-on-surface-variant">{{ __('ga.labels.claim_amount') }}</dt>
-                <dd class="tw:col-span-12 tw:sm:col-span-8 tw:m-0"><strong class="ui-tabular-nums tw:text-ui-sm">Rp {{ number_format($claim->amount, 0, ',', '.') }}</strong></dd>
+                <dd class="tw:min-w-0 tw:col-span-12 tw:sm:col-span-8 tw:m-0"><strong class="ui-tabular-nums tw:text-ui-sm">Rp {{ number_format($claim->amount, 0, ',', '.') }}</strong></dd>
 
                 <dt class="tw:col-span-12 tw:sm:col-span-4 tw:font-semibold tw:text-on-surface-variant">{{ __('ga.receipt.bank_account') }}</dt>
-                <dd class="tw:col-span-12 tw:sm:col-span-8 tw:m-0">{{ $claim->employee?->bank_name }} - {{ $claim->employee?->account_number }} {{ __('finance.drp_surface.account_holder') }} {{ $claim->employee?->account_holder_name }}</dd>
+                <dd class="tw:min-w-0 tw:col-span-12 tw:sm:col-span-8 tw:m-0">{{ $claim->employee?->bank_name }} - {{ $claim->employee?->account_number }} {{ __('finance.drp_surface.account_holder') }} {{ $claim->employee?->account_holder_name }}</dd>
 
                 <dt class="tw:col-span-12 tw:sm:col-span-4 tw:font-semibold tw:text-on-surface-variant">{{ __('local_invoice.labels.submitted_time') }}</dt>
-                <dd class="tw:col-span-12 tw:sm:col-span-8 tw:m-0">{{ $regionalFormatter->timestamp($claim->created_at, 'datetime') }}</dd>
+                <dd class="tw:min-w-0 tw:col-span-12 tw:sm:col-span-8 tw:m-0">{{ $regionalFormatter->timestamp($claim->created_at, 'datetime') }}</dd>
             </dl>
 
             @if(isset($qrCode))
                 <div class="tw:text-center tw:shrink-0 tw:p-3 tw:bg-surface-container tw:rounded-lg tw:border tw:border-outline-variant">
                     <img src="{{ $qrCode }}" alt="{{ __('local_invoice.receipt.qr_alt') }}" class="tw:w-28 tw:h-28 tw:mx-auto">
-                    <span class="tw:block tw:text-[10px] tw:text-on-surface-variant tw:mt-1.5">{{ __('local_invoice.receipt.scan_valid') }}</span>
+                    <span class="tw:block tw:text-ui-xs tw:text-on-surface-variant tw:mt-1.5">{{ __('local_invoice.receipt.scan_valid') }}</span>
                 </div>
             @endif
         </div>

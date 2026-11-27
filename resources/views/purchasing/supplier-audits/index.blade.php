@@ -3,7 +3,7 @@
 @section('page-title', __('supplier_audit.title'))
 
 @section('content')
-<div id="supplierAuditQueueContainer" class="tw:grid tw:gap-5 tw:pb-16" data-server-tabs-container>
+<div id="supplierAuditQueueContainer" class="tw:grid tw:gap-5" data-server-tabs-container>
     <x-ui.page-header
         :title="__('supplier_audit.title')"
         :description="__('supplier_audit.purchasing_description')"

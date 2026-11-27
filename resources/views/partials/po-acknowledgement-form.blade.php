@@ -16,7 +16,7 @@
         x-data="{ mode: @js($initialMode) }"
     >
         @csrf
-        <div class="tw:md:col-span-3">
+        <div class="tw:min-w-0 tw:md:col-span-3">
             <label for="{{ $idPrefix }}-mode" class="ui-label tw:text-ui-xs tw:font-semibold">{{ __('purchasing.po_ack.fields.action_mode') }}</label>
             <select name="mode" id="{{ $idPrefix }}-mode" x-model="mode" class="ui-focus-ring ui-select ui-select--sm tw:min-h-[36px]">
                 <option value="confirm">{{ __('purchasing.po_ack.actions.confirm_po') }}</option>
@@ -25,7 +25,7 @@
         </div>
 
         <div
-            class="tw:md:col-span-3"
+            class="tw:min-w-0 tw:md:col-span-3"
             x-show="mode === 'propose_change'"
             x-cloak
             x-effect="const isPropose = mode === 'propose_change'; $el.querySelectorAll('input, [data-calendar-trigger]').forEach((el) => { el.disabled = !isPropose; }); const dp = $el.querySelector('[data-adasi-date-picker]'); if (dp) { dp.dataset.calendarDisabled = isPropose ? 'false' : 'true'; }"
@@ -40,7 +40,7 @@
             />
         </div>
 
-        <div class="tw:md:col-span-4">
+        <div class="tw:min-w-0 tw:md:col-span-4">
             <label for="{{ $idPrefix }}-notes" class="ui-label tw:text-ui-xs tw:font-semibold">
                 {{ __('purchasing.po_ack.fields.notes') }}
                 <span class="tw:text-error" x-show="mode === 'propose_change'" x-cloak aria-hidden="true">*</span>
@@ -57,12 +57,12 @@
                 x-bind:placeholder="mode === 'propose_change' ? @js(__('purchasing.po_ack.placeholders.notes_required')) : @js(__('purchasing.po_ack.placeholders.notes_optional'))"
                 aria-describedby="{{ $idPrefix }}-notes-hint"
             >
-            <p id="{{ $idPrefix }}-notes-hint" class="tw:m-0 tw:mt-1 tw:text-[11px] tw:text-on-surface-variant" x-show="mode === 'propose_change'" x-cloak>
+            <p id="{{ $idPrefix }}-notes-hint" class="tw:m-0 tw:mt-1 tw:text-ui-xs tw:text-on-surface-variant" x-show="mode === 'propose_change'" x-cloak>
                 {{ __('purchasing.po_ack.notes_required_hint') }}
             </p>
         </div>
 
-        <div class="tw:md:col-span-2 tw:md:pt-6 tw:flex tw:justify-end">
+        <div class="tw:min-w-0 tw:md:col-span-2 tw:md:pt-6 tw:flex tw:justify-end">
             <x-ui.button type="submit" variant="primary" size="sm" class="ui-focus-ring tw:min-h-[36px] tw:w-full tw:justify-center">
                 <x-ui.icon name="check" size="sm" />
                 <span>{{ __('purchasing.po_ack.actions.submit') }}</span>

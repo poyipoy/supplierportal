@@ -75,7 +75,7 @@
                             value="1"
                             {{ old('is_published', $announcement->published_at) ? 'checked' : '' }}
                         >
-                        <label class="tw:cursor-pointer tw:text-ui-sm tw:font-medium tw:text-on-surface" for="is_published">
+                        <label class="tw:cursor-pointer tw:text-ui-sm tw:font-semibold tw:text-on-surface" for="is_published">
                             {{ __('admin.copy.published_visible_on_user_dashboards') }}
                         </label>
                     </div>

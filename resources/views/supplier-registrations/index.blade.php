@@ -11,14 +11,14 @@
     />
 
     @if (session('success'))
-        <div class="tw:rounded-ui-sm tw:bg-success/15 tw:p-3.5 tw:text-on-surface tw:flex tw:items-center tw:gap-2.5 tw:text-ui-sm tw:font-medium" role="alert">
+        <div class="tw:rounded-ui-sm tw:bg-success/15 tw:p-3.5 tw:text-on-surface tw:flex tw:items-center tw:gap-2.5 tw:text-ui-sm tw:font-semibold" role="alert">
             <x-ui.icon name="check-circle" size="sm" class="tw:text-success tw:shrink-0" />
             <span>{{ session('success') }}</span>
         </div>
     @endif
 
     @if (session('error'))
-        <div class="tw:rounded-ui-sm tw:bg-error-container tw:p-3.5 tw:text-on-error-container tw:flex tw:items-center tw:gap-2.5 tw:text-ui-sm tw:font-medium" role="alert">
+        <div class="tw:rounded-ui-sm tw:bg-error-container tw:p-3.5 tw:text-on-error-container tw:flex tw:items-center tw:gap-2.5 tw:text-ui-sm tw:font-semibold" role="alert">
             <x-ui.icon name="alert-circle" size="sm" class="tw:shrink-0" />
             <span>{{ session('error') }}</span>
         </div>

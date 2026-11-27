@@ -1,5 +1,5 @@
 <div class="tw:relative tw:inline-flex" role="group">
-    <x-ui.button type="button" variant="outline" size="sm" class="dropdown-toggle" data-ui-dropdown-trigger popovertarget="quotationImportActionsMenu" aria-controls="quotationImportActionsMenu" aria-expanded="false">
+    <x-ui.button type="button" variant="outline" size="sm" class="dropdown-toggle" data-ui-dropdown-trigger popovertarget="quotationImportActionsMenu" aria-controls="quotationImportActionsMenu" aria-haspopup="menu" aria-expanded="false">
         <x-ui.icon name="upload" class="tw:me-1" /> {{ __('supplier.copy.import_data') }}
     </x-ui.button>
     <ul id="quotationImportActionsMenu" popover="auto" data-ui-dropdown-menu class="dropdown-menu dropdown-menu-end">

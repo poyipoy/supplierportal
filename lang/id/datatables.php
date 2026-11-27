@@ -11,5 +11,11 @@ return [
     'loadingRecords' => 'Memuat...',
     'processing' => 'Memproses...',
     'paginate' => ['first' => 'Pertama', 'last' => 'Terakhir', 'previous' => 'Sebelumnya', 'next' => 'Berikutnya'],
-    'aria' => ['sortAscending' => ': aktifkan untuk mengurutkan kolom secara menaik', 'sortDescending' => ': aktifkan untuk mengurutkan kolom secara menurun'],
+    'aria' => [
+        'sortAscending' => ': aktifkan untuk mengurutkan kolom secara menaik',
+        'sortDescending' => ': aktifkan untuk mengurutkan kolom secara menurun',
+        'orderable' => ': Aktifkan untuk mengurutkan kolom',
+        'orderableReverse' => ': Aktifkan untuk membalikkan urutan kolom',
+        'orderableRemove' => ': Aktifkan untuk menghapus pengurutan kolom',
+    ],
 ];

@@ -207,6 +207,10 @@ class PriceComparisonServerTabsTest extends TestCase
         $response->assertOk();
         $response->assertSee('id="historicalResultsStatus" class="tw:sr-only" aria-live="polite"', false);
         $response->assertSee('id="historicalResults" class="tw:grid tw:gap-4" aria-busy="false"', false);
+        $response->assertSee('id="historicalChartAxisSwitch"', false);
+        $response->assertSee('data-historical-axis-mode="period"', false);
+        $response->assertSee('data-historical-axis-mode="material"', false);
+        $response->assertSee('id="historicalChartAxisCapNote"', false);
         $response->assertDontSee('id="historicalResults" class="tw:grid tw:gap-4" aria-live="polite"', false);
 
         $fragment = $this->actingAs($this->purchasing)
@@ -225,5 +229,92 @@ class PriceComparisonServerTabsTest extends TestCase
             $scripts,
             'Historical filters without a selected material must sync URL state instead of dispatching an unhandled synthetic submit that triggers AdasiLoader'
         );
+    }
+
+    public function test_comparison_tabs_include_embed_param_when_rendered_inside_workspace_shell(): void
+    {
+        config(['ui.workspace_shell.enabled' => true]);
+
+        $response = $this->actingAs($this->purchasing)
+            ->get(route('purchasing.comparison.inter-supplier', [
+                '_embed' => '1',
+                'currency' => 'USD',
+            ]));
+
+        $response->assertOk();
+        $response->assertSee('data-server-tabs-prefetch="false"', false);
+
+        $html = $response->getContent();
+        $this->assertIsString($html);
+        $this->assertSame(1, preg_match_all('/<a\b(?=[^>]*\bdata-server-tab\b)(?=[^>]*\bdata-tab-name="historical")(?=[^>]*\bhref="([^"]+)")[^>]*>/', $html, $matches));
+        $historicalHref = html_entity_decode($matches[1][0], ENT_QUOTES);
+        $query = [];
+        parse_str((string) parse_url($historicalHref, PHP_URL_QUERY), $query);
+
+        $this->assertSame('1', $query['_embed'] ?? null, 'SSR comparison tab href inside _embed=1 frame must keep _embed=1 before JS/CDN boot');
+        $this->assertSame('USD', $query['currency'] ?? null);
+    }
+
+    public function test_comparison_controllers_use_server_tabs_response_and_strip_embed_from_json_url(): void
+    {
+        foreach ([
+            'inter-supplier' => 'purchasing.comparison.inter-supplier',
+            'historical' => 'purchasing.comparison.historical',
+            'vs-best' => 'purchasing.comparison.vs-best',
+        ] as $expectedTab => $routeName) {
+            $response = $this->actingAs($this->purchasing)
+                ->withHeaders([
+                    'X-Requested-With' => 'XMLHttpRequest',
+                    'X-Adasi-Server-Tabs' => '1',
+                ])
+                ->get(route($routeName, ['_embed' => '1', 'currency' => 'USD']));
+
+            $response->assertOk();
+            $this->assertSame($expectedTab, $response->json('tab'));
+            $resolvedUrl = (string) $response->json('url');
+            $this->assertStringContainsString('currency=USD', $resolvedUrl);
+            $this->assertStringNotContainsString('_embed=', $resolvedUrl, "ServerTabsResponse on {$routeName} must strip _embed=1 from history url");
+        }
+    }
+
+    public function test_vs_best_renders_integrated_accessible_table_toolbar_without_default_datatables_chrome(): void
+    {
+        $response = $this->actingAs($this->purchasing)
+            ->get(route('purchasing.comparison.vs-best'));
+
+        $response->assertOk();
+        $response->assertSee('<search class="tw:block tw:w-full"', false);
+        $response->assertSee('class="ui-vs-best-filter-grid"', false);
+        $response->assertSee('id="vsBestTableSearch"', false);
+        $response->assertSee('id="vsBestTableSearchClear"', false);
+        $response->assertSee('ui-date-range-picker--single-line', false);
+        $response->assertSee('enterkeyhint="search"', false);
+        $response->assertDontSee('id="vsBestPageLength"', false);
+
+        $fragment = $this->actingAs($this->purchasing)
+            ->withHeaders([
+                'X-Requested-With' => 'XMLHttpRequest',
+                'X-Adasi-Server-Tabs' => '1',
+            ])
+            ->get(route('purchasing.comparison.vs-best', ['search' => 'SKD11']));
+
+        $fragment->assertOk();
+        $html = (string) $fragment->json('html');
+        $this->assertStringContainsString('class="ui-vs-best-filter-grid"', $html);
+        $this->assertStringContainsString('id="vsBestTableSearch"', $html);
+        $this->assertStringContainsString('value="SKD11"', $html);
+        $this->assertStringNotContainsString('id="vsBestPageLength"', $html);
+
+        // Array query string (?search[value]=...) must not cause Array-to-string errors.
+        $malformedSearch = $this->actingAs($this->purchasing)
+            ->get(route('purchasing.comparison.vs-best', ['search' => ['value' => 'SKD11']]));
+        $malformedSearch->assertOk();
+
+        $scripts = file_get_contents(resource_path('views/purchasing/comparison/_scripts.blade.php'));
+        $this->assertIsString($scripts);
+        $this->assertStringNotContainsString("topStart: 'pageLength'", $scripts);
+        $this->assertStringNotContainsString("topEnd: 'search'", $scripts);
+        $this->assertStringContainsString('topStart: null', $scripts);
+        $this->assertStringContainsString('topEnd: null', $scripts);
     }
 }

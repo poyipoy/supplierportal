@@ -23,9 +23,9 @@
         </x-slot:actions>
     </x-ui.page-header>
 
-    <section aria-labelledby="maintenanceSummaryTitle" class="tw:overflow-hidden tw:rounded-ui-md tw:border tw:border-outline tw:bg-surface" data-maintenance-summary>
-        <header class="tw:border-b tw:border-outline-variant tw:bg-surface-container tw:px-4 tw:py-3">
-            <h2 id="maintenanceSummaryTitle" class="tw:m-0 tw:text-ui-xs tw:font-bold tw:uppercase tw:tracking-wider tw:text-on-surface">{{ __('maintenance.summary.title') }}</h2>
+    <section aria-labelledby="maintenanceSummaryTitle" class="tw:overflow-hidden tw:rounded-ui-md tw:border tw:border-outline tw:bg-surface tw:shadow-ui-surface" data-maintenance-summary>
+        <header class="tw:border-b tw:border-outline-variant tw:px-4 tw:py-3">
+            <h2 id="maintenanceSummaryTitle" class="tw:m-0 tw:text-ui-base tw:font-bold tw:uppercase tw:tracking-wider tw:text-on-surface">{{ __('maintenance.summary.title') }}</h2>
             <p class="tw:m-0 tw:mt-0.5 tw:text-ui-xs tw:text-on-surface-variant">{{ __('maintenance.summary.description') }}</p>
         </header>
         <div class="tw:grid tw:gap-5 tw:p-4 tw:lg:grid-cols-3">

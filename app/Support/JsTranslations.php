@@ -4,10 +4,17 @@ namespace App\Support;
 
 final class JsTranslations
 {
+    /** @var array<string, array{locale: string, messages: array<string, mixed>}> */
+    private static array $payloadCache = [];
+
     /** Only application-controlled JS copy is exposed, never business data. */
     public static function payload(): array
     {
         $locale = app()->getLocale() === 'id' ? 'id' : 'en';
+        if (isset(self::$payloadCache[$locale])) {
+            return self::$payloadCache[$locale];
+        }
+
         $messages = [];
         foreach (['js', 'datatables'] as $domain) {
             $english = trans($domain, [], 'en');
@@ -28,7 +35,12 @@ final class JsTranslations
             }
         }
 
-        return ['locale' => $locale, 'messages' => $messages];
+        return self::$payloadCache[$locale] = ['locale' => $locale, 'messages' => $messages];
+    }
+
+    public static function resetCache(): void
+    {
+        self::$payloadCache = [];
     }
 
     /** Import-only copy is delivered once on the import page, outside the shared dictionary. */

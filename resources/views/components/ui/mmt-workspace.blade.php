@@ -20,12 +20,12 @@
     data-mmt-satellite-target="#{{ $resolvedSatelliteId }}"
 >
     <section
-        class="{{ $masterFrameless ? 'tw:min-w-0' : 'ui-card tw:rounded-ui-md tw:border tw:border-outline-variant tw:bg-surface tw:shadow-ui-1 tw:overflow-hidden tw:min-w-0' }}"
+        class="{{ $masterFrameless ? 'tw:min-w-0' : 'ui-card tw:rounded-ui-md tw:border tw:border-outline tw:bg-surface tw:shadow-ui-surface tw:overflow-hidden tw:min-w-0' }}"
         data-mmt-master-pane
         @if ($masterLabel !== '') aria-label="{{ $masterLabel }}" @endif
     >
         @isset($masterToolbar)
-            <div class="tw:border-b tw:border-outline-variant tw:bg-surface-container tw:px-4 tw:py-2.5">
+            <div class="tw:border-b tw:border-outline-variant tw:px-4 tw:py-2.5">
                 {{ $masterToolbar }}
             </div>
         @endisset
@@ -36,16 +36,16 @@
     </section>
 
     <section
-        class="ui-card tw:rounded-ui-md tw:border tw:border-outline-variant tw:bg-surface tw:shadow-ui-1 tw:overflow-hidden tw:min-w-0"
+        class="ui-card tw:rounded-ui-md tw:border tw:border-outline tw:bg-surface tw:shadow-ui-surface tw:overflow-hidden tw:min-w-0"
         data-mmt-satellite-pane-wrapper
         @if ($satelliteTitle !== '') aria-label="{{ $satelliteTitle }}" @endif
     >
         @if ($satelliteTitle !== '' || isset($satelliteHeader))
-            <header class="tw:flex tw:flex-wrap tw:items-center tw:justify-between tw:gap-2 tw:border-b tw:border-outline-variant tw:bg-surface-container tw:px-4 tw:py-2.5">
+            <header class="tw:flex tw:flex-wrap tw:items-center tw:justify-between tw:gap-2 tw:border-b tw:border-outline-variant tw:px-4 tw:py-2.5">
                 <div class="tw:flex tw:min-w-0 tw:items-center tw:gap-2">
                     <x-ui.icon name="layers" size="xs" class="tw:shrink-0 tw:text-primary" aria-hidden="true" />
                     @if ($satelliteTitle !== '')
-                        <h2 class="tw:m-0 tw:truncate tw:text-ui-sm tw:font-semibold tw:text-on-surface">{{ $satelliteTitle }}</h2>
+                        <h2 class="tw:m-0 tw:truncate tw:text-ui-base tw:font-semibold tw:text-on-surface">{{ $satelliteTitle }}</h2>
                     @endif
                     <span
                         class="tw:hidden tw:inline-flex tw:items-center tw:rounded-ui-full tw:border tw:border-outline-variant tw:bg-surface-low tw:px-2.5 tw:py-0.5 tw:text-ui-xs tw:font-semibold tw:text-primary ui-tabular-nums"
@@ -58,7 +58,7 @@
                 @endisset
             </header>
         @else
-            <div class="tw:flex tw:items-center tw:gap-2 tw:border-b tw:border-outline-variant tw:bg-surface-container tw:px-4 tw:py-2" data-mmt-ref-bar hidden>
+            <div class="tw:flex tw:items-center tw:gap-2 tw:border-b tw:border-outline-variant tw:px-4 tw:py-2" data-mmt-ref-bar hidden>
                 <x-ui.icon name="layers" size="xs" class="tw:shrink-0 tw:text-primary" aria-hidden="true" />
                 <span
                     class="tw:hidden tw:inline-flex tw:items-center tw:rounded-ui-full tw:border tw:border-outline-variant tw:bg-surface-low tw:px-2.5 tw:py-0.5 tw:text-ui-xs tw:font-semibold tw:text-primary ui-tabular-nums"

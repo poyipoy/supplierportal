@@ -30,7 +30,7 @@
     <x-ui.dashboard-layout audience="supplier.import">
         <x-slot:metrics>
             {{-- Restrained operational summary provides high-level metrics at a glance. --}}
-            <div class="tw:grid tw:gap-px tw:overflow-hidden tw:rounded-ui-md tw:border tw:border-outline-variant tw:bg-outline-variant tw:sm:grid-cols-2 tw:lg:grid-cols-4" aria-label="{{ __('supplier.copy.supplier_operational_summary') }}">
+            <div class="tw:grid tw:gap-px tw:overflow-hidden tw:rounded-ui-md tw:border tw:border-outline tw:bg-outline-variant tw:shadow-ui-surface tw:sm:grid-cols-2 tw:lg:grid-cols-4" aria-label="{{ __('supplier.copy.supplier_operational_summary') }}">
                 <x-ui.metric-card flat :label="__('supplier.copy.active_periods')" :value="$regionalFormatter->number((string) ($periodeAktif), 'plain')" icon="calendar" tone="neutral" :href="route('supplier.quotations.index')" />
                 <x-ui.metric-card flat :label="__('supplier.copy.awaiting_quotation')" :value="$regionalFormatter->number((string) ($belumDirespons), 'plain')" icon="clock" :tone="$belumDirespons > 0 ? 'error' : 'neutral'" :href="route('supplier.quotations.index')" />
                 <x-ui.metric-card flat :label="__('supplier.copy.submitted_this_month')" :value="$regionalFormatter->number((string) ($penawaranTerkirim), 'plain')" icon="send" tone="success" :href="route('supplier.quotations.index')" />
@@ -73,7 +73,7 @@
                         @foreach($prBelumRespons as $pr)
                             <tr>
                                 <td class="tw:font-bold tw:text-primary">{{ $pr->pr_number ?? '-' }}</td>
-                                <td class="tw:font-medium tw:text-on-surface">{{ $pr->period->display_label ?? $pr->period->name }}</td>
+                                <td class="tw:font-semibold tw:text-on-surface">{{ $pr->period->display_label ?? $pr->period->name }}</td>
                                 <td class="tw:text-center tw:font-semibold ui-tabular-nums">{{ trans_choice('purchasing.copy.item_count', $pr->items->count(), ['count' => $pr->items->count()]) }}</td>
                                 <td class="tw:text-on-surface-variant ui-tabular-nums">{{ $regionalFormatter->timestamp($pr->created_at, 'date') }}</td>
                                 <td class="tw:text-end">
@@ -218,11 +218,11 @@
                 <div class="tw:divide-y tw:divide-outline-variant">
                     @forelse($announcements as $ann)
                         <div class="tw:p-3">
-                            <h6 class="tw:mb-1 tw:font-bold tw:text-ui-xs">
+                            <h3 class="tw:m-0 tw:mb-1 tw:font-bold tw:text-ui-sm">
                                 <a href="{{ route('supplier.announcements.show', $ann->id) }}" class="tw:no-underline tw:text-on-surface tw:hover:text-primary">
                                     {{ $ann->title }}
                                 </a>
-                            </h6>
+                            </h3>
                             <div class="tw:text-on-surface-variant tw:text-ui-xs tw:mb-1.5">{{ Str::limit($ann->content, 90) }}</div>
                             <div class="tw:text-on-surface-variant tw:text-ui-xs tw:flex tw:items-center tw:gap-1">
                                 <x-ui.icon name="clock" size="sm" />

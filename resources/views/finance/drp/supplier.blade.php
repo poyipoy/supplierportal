@@ -3,7 +3,7 @@
 @section('page-title', __('finance.drp.supplier_heading'))
 
 @section('content')
-<div class="tw:grid tw:gap-6 tw:pb-16">
+<div class="tw:grid tw:gap-6">
     <x-ui.page-header
         :title="__('finance.drp.supplier_title')"
         :description="__('finance.drp_surface.supplier_help')"
@@ -89,7 +89,6 @@
             :reset-url="$drpSupplierBaseUrl"
             :reset-label="__('finance.candidates.reset')"
             :submit-label="__('common.labels_review.filter')"
-            class="tw:mb-4"
         >
             <x-slot:hidden>
                 <input type="hidden" name="sort" value="{{ $candidateSort }}">
@@ -121,27 +120,46 @@
                 <x-ui.filter-chips :items="$drpSupplierChips" :clear-url="$drpSupplierResetUrl" />
             </x-slot:chips>
         </x-ui.filter-bar>
+        <p id="drpCandidatesSortStatus" class="tw:sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
         <form method="POST" action="{{ route('finance.drp.supplier.create') }}">
             @csrf
             <div class="tw:space-y-4">
                 <div class="ui-table-responsive">
-                    <table class="ui-table ui-table--hover tw:align-middle tw:m-0 tw:text-ui-sm tw:w-full">
+                    <table id="drpSupplierCandidateTable" class="ui-table ui-table--hover tw:align-middle tw:m-0 tw:text-ui-sm tw:w-full">
                         <thead>
                             <tr>
                                 <th scope="col" style="width: 40px;">{{ __('common.actions.choose') }}</th>
-                                <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('finance.drp.payee_account') }}</th>
-                                <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('finance.drp_surface.invoice_po') }}</th>
+                                <th scope="col">{{ __('finance.drp.payee_account') }}</th>
+                                <th scope="col">{{ __('finance.drp_surface.invoice_po') }}</th>
                                 @foreach(['due_date' => __('local_invoice.labels.due_date'), 'verification_date' => __('finance.candidates.verification_date')] as $sortKey => $sortLabel)
-                                    <th scope="col" class="tw:text-ui-xs tw:font-semibold" @if($candidateSort === $sortKey) aria-sort="{{ $candidateDirection === 'asc' ? 'ascending' : 'descending' }}" @endif>
-                                        <a class="tw:inline-flex tw:items-center tw:gap-1 tw:min-h-6" href="{{ route('finance.drp.supplier', array_merge(request()->except('candidate_page'), ['sort' => $sortKey, 'direction' => $candidateSort === $sortKey && $candidateDirection === 'asc' ? 'desc' : 'asc'])) }}">
-                                            {{ $sortLabel }}
-                                            @if($candidateSort === $sortKey)<x-ui.icon :name="$candidateDirection === 'asc' ? 'arrow-up' : 'arrow-down'" size="sm" />@endif
+                                    @php
+                                        $isCandidateSorted = $candidateSort === $sortKey;
+                                        $nextCandidateDirection = $isCandidateSorted && $candidateDirection === 'asc' ? 'desc' : 'asc';
+                                        $candidateSortAction = $nextCandidateDirection === 'asc' ? __('common.table.sort_asc') : __('common.table.sort_desc');
+                                    @endphp
+                                    <th scope="col" @if($isCandidateSorted) aria-sort="{{ $candidateDirection === 'asc' ? 'ascending' : 'descending' }}" @endif>
+                                        <a
+                                            class="ui-table-sort-btn"
+                                            data-drp-sort-link="{{ $sortKey }}"
+                                            aria-label="{{ __('common.table.sort_action', ['column' => $sortLabel, 'direction' => $candidateSortAction]) }}"
+                                            href="{{ route('finance.drp.supplier', array_merge(request()->except('candidate_page'), ['sort' => $sortKey, 'direction' => $nextCandidateDirection])) }}"
+                                        >
+                                            <span>{{ $sortLabel }}</span>
+                                            @if($isCandidateSorted)
+                                                <span class="ui-table-sort-icon" aria-hidden="true">
+                                                    <x-ui.icon name="arrow-down" size="xs" class="tw:shrink-0 tw:text-current" />
+                                                </span>
+                                            @else
+                                                <span class="ui-table-sort-icon ui-table-sort-icon--neutral" aria-hidden="true">
+                                                    <x-ui.icon name="arrow-up-down" size="xs" class="tw:shrink-0 tw:text-current" />
+                                                </span>
+                                            @endif
                                         </a>
                                     </th>
                                 @endforeach
-                                <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-end">{{ __('local_invoice.labels.dpp_amount') }}</th>
-                                <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-end">{{ __('finance.drp_ui.ppn_amount') }}</th>
-                                <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-end">{{ __('finance.drp.total_payment') }}</th>
+                                <th scope="col" class="tw:text-end">{{ __('local_invoice.labels.dpp_amount') }}</th>
+                                <th scope="col" class="tw:text-end">{{ __('finance.drp_ui.ppn_amount') }}</th>
+                                <th scope="col" class="tw:text-end">{{ __('finance.drp.total_payment') }}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -161,7 +179,7 @@
                                         </span>
                                     </td>
                                     <td>
-                                        <span class="tw:font-medium">{{ $inv->invoice_number }}</span>
+                                        <span class="tw:font-semibold">{{ $inv->invoice_number }}</span>
                                         <span class="tw:block tw:text-ui-xs tw:text-on-surface-variant">{{ __('finance.drp_ui.po_reference', ['number' => $inv->po_number]) }}</span>
                                     </td>
                                     <td>
@@ -219,24 +237,23 @@
             >
                 <x-ui.icon name="download" size="sm" />
                 <span>{{ __('exports.actions.transfer') }}</span>
-                <span id="exportTransferCount" class="tw:hidden tw:ml-1.5 tw:inline-flex tw:items-center tw:justify-center tw:rounded-full tw:bg-white/20 tw:text-white tw:text-[10px] tw:font-bold tw:px-1.5 tw:py-0.5"></span>
+                <span id="exportTransferCount" class="tw:hidden tw:ml-1.5 tw:inline-flex tw:items-center tw:justify-center tw:rounded-full tw:bg-primary-foreground/15 tw:text-primary-foreground tw:text-ui-xs tw:font-bold tw:px-1.5 tw:py-0.5"></span>
             </x-ui.button>
         </x-slot:toolbar>
 
-        <div class="ui-table-responsive">
-            <table class="ui-table ui-table--hover tw:align-middle tw:m-0 tw:text-ui-sm tw:w-full" id="drpBatchTable">
+        <table class="ui-table ui-table--hover tw:align-middle tw:m-0 tw:text-ui-sm tw:w-full" id="drpBatchTable">
                 <thead>
                     <tr>
                         <th scope="col" style="width: 40px;">
                             <input type="checkbox" class="ui-check" id="selectAllBatches" title="{{ __('finance.drp_surface.all_batches') }}">
                         </th>
-                        <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('finance.drp_surface.batch_number') }}</th>
-                        <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('local_invoice.labels.date') }}</th>
-                        <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('finance.drp.group_payee') }}</th>
-                        <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-end">{{ __('finance.drp.total_amount_rp') }}</th>
-                        <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-end">{{ __('finance.drp.total_fee_rp') }}</th>
-                        <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('local_invoice.labels.status') }}</th>
-                        <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-end">{{ __('common.table.action') }}</th>
+                        <th scope="col">{{ __('finance.drp_surface.batch_number') }}</th>
+                        <th scope="col">{{ __('local_invoice.labels.date') }}</th>
+                        <th scope="col">{{ __('finance.drp.group_payee') }}</th>
+                        <th scope="col" class="tw:text-end">{{ __('finance.drp.total_amount_rp') }}</th>
+                        <th scope="col" class="tw:text-end">{{ __('finance.drp.total_fee_rp') }}</th>
+                        <th scope="col">{{ __('local_invoice.labels.status') }}</th>
+                        <th scope="col" class="tw:text-end">{{ __('common.table.action') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -279,7 +296,6 @@
                     @endforelse
                 </tbody>
             </table>
-        </div>
 
         @if($batches->hasPages())
             <x-slot:pagination>
@@ -293,6 +309,46 @@
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    const candidateSortFocusKey = 'adasi:drp-supplier-sort-focus';
+    const candidateTable = document.getElementById('drpSupplierCandidateTable');
+    const candidateSortStatus = document.getElementById('drpCandidatesSortStatus');
+    const candidateSortAnnouncement = @js(
+        __('common.table.sorted_status', [
+            'column' => $candidateSort === 'verification_date'
+                ? __('finance.candidates.verification_date')
+                : __('local_invoice.labels.due_date'),
+            'direction' => $candidateDirection === 'desc'
+                ? __('common.table.direction_desc')
+                : __('common.table.direction_asc'),
+            'count' => method_exists($eligibleInvoices, 'total') ? $eligibleInvoices->total() : $eligibleInvoices->count(),
+        ])
+    );
+
+    if (candidateTable) {
+        candidateTable.querySelectorAll('[data-drp-sort-link]').forEach((link) => {
+            link.addEventListener('click', () => {
+                try {
+                    sessionStorage.setItem(candidateSortFocusKey, link.dataset.drpSortLink || '');
+                } catch (e) {}
+            });
+        });
+
+        try {
+            const pendingFocusKey = sessionStorage.getItem(candidateSortFocusKey);
+            if (pendingFocusKey) {
+                sessionStorage.removeItem(candidateSortFocusKey);
+                const activeSortLink = Array.from(candidateTable.querySelectorAll('[data-drp-sort-link]'))
+                    .find((el) => el.dataset.drpSortLink === pendingFocusKey);
+                if (activeSortLink) {
+                    activeSortLink.focus({ preventScroll: true });
+                }
+                if (candidateSortStatus) {
+                    candidateSortStatus.textContent = candidateSortAnnouncement;
+                }
+            }
+        } catch (e) {}
+    }
+
     const selectAll = document.getElementById('selectAllBatches');
     const checkboxes = () => document.querySelectorAll('.batch-checkbox');
     const btnExport = document.getElementById('btnExportTransfer');

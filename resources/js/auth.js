@@ -37,8 +37,14 @@ const bootDeferredAuthModules = () => {
     }
     if (hasMarker('[data-password-assistance]')) import('./password-assistance');
     if (hasMarker('form[data-async-submit]')) import('./async-form-submit');
-    if (hasMarker('form[data-locale-switcher]')) import('./locale-switcher');
+    if (hasMarker('form[data-locale-switcher], [data-locale-option]')) import('./locale-switcher');
     if (hasMarker('[role="dialog"]')) import('./overlay-modality');
+    if (hasMarker('select:not([multiple]):not([data-native-select="true"]):not([x-ref="nativeSelect"]):not([x-ref="nativeMultiSelect"])')) {
+        import('./adasi-select').then((module) => {
+            window.AdasiSelect = module.AdasiSelect;
+            module.bootAdasiSelects(document);
+        });
+    }
 };
 
 if (document.readyState === 'loading') {

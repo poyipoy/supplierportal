@@ -166,7 +166,7 @@
 
                             <div class="tw:grid tw:grid-cols-12 tw:gap-3">
                                 {{-- Left Column: Read-Only Requested Specifications --}}
-                                <div class="tw:col-span-12 tw:lg:col-span-5 tw:lg:border-e tw:lg:border-outline-variant tw:lg:pe-3">
+                                <div class="tw:min-w-0 tw:col-span-12 tw:lg:col-span-5 tw:lg:border-e tw:lg:border-outline-variant tw:lg:pe-3">
                                     <div class="tw:text-on-surface-variant tw:text-ui-xs tw:font-semibold tw:uppercase tw:mb-2">{{ __('qc.copy.ordered_specification') }}</div>
                                     @if($prItem && $canonicalShape === null)
                                         <p class="tw:m-0 tw:mb-2 tw:text-ui-xs tw:text-on-surface-variant" role="note">{{ __('qc.copy.shape_not_set_notice') }}</p>
@@ -210,7 +210,7 @@
                                 </div>
 
                                 {{-- Right Column: Actual Measurement Inputs & Status --}}
-                                <div class="tw:col-span-12 tw:lg:col-span-7 tw:lg:ps-3">
+                                <div class="tw:min-w-0 tw:col-span-12 tw:lg:col-span-7 tw:lg:ps-3">
                                     <div class="tw:flex tw:justify-between tw:items-center tw:mb-2">
                                         <div class="tw:flex tw:items-center tw:gap-2">
                                             <div class="tw:text-primary tw:text-ui-xs tw:font-semibold tw:uppercase">{{ __('qc.copy.actual_inspection_measurements') }}</div>

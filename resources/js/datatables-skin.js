@@ -71,22 +71,52 @@ export function applyAdasiDataTablesSkin(DataTable = typeof window !== 'undefine
         },
     });
 
-    DataTable.ext.renderer.pagingButton.adasi = (_settings, _buttonType, content, active, disabled) => {
+    DataTable.ext.renderer.pagingButton.adasi = (_settings, buttonType, content, active, disabled) => {
+        const type = String(buttonType || '');
         const itemClasses = ['dt-paging-button', 'page-item'];
+        if (type === 'previous' || type === 'next') {
+            itemClasses.push(type);
+        }
         if (active) {
             itemClasses.push('active');
         }
-        if (disabled) {
+        if (disabled || type === 'ellipsis') {
             itemClasses.push('disabled');
         }
 
         const li = DataTable.Dom.c('li').classAdd(itemClasses.join(' '));
+        if (type === 'ellipsis') {
+            li.attr('aria-hidden', 'true');
+            const span = DataTable.Dom.c('span')
+                .classAdd('page-link ellipsis')
+                .html(content)
+                .appendTo(li);
+
+            return {
+                display: li.get(0),
+                clicker: span.get(0),
+            };
+        }
+
+        const btnClasses = ['page-link'];
+        if (type === 'previous' || type === 'next') {
+            btnClasses.push(type);
+        }
+
         const btn = DataTable.Dom.c('button')
-            .classAdd('page-link')
-            .attr('role', 'link')
+            .classAdd(btnClasses.join(' '))
             .attr('type', 'button')
-            .html(content)
-            .appendTo(li);
+            .html(content);
+
+        if (active) {
+            btn.attr('aria-current', 'page');
+        }
+        if (disabled) {
+            btn.attr('disabled', 'disabled')
+                .attr('aria-disabled', 'true');
+        }
+
+        btn.appendTo(li);
 
         return {
             display: li.get(0),

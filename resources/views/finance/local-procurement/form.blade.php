@@ -11,7 +11,7 @@
 @section('page-title', $isEdit ? __('finance.closure.po_edit') : __('finance.closure.po_create'))
 
 @section('content')
-<div class="tw:grid tw:gap-6 tw:pb-16">
+<div class="tw:grid tw:gap-6">
     <x-ui.page-header
         :title="$isEdit ? __('finance.closure.po_edit') : __('finance.closure.po_create')"
         :description="__('common.final_review.po_locked_help')"
@@ -43,7 +43,7 @@
 
         <div class="tw:grid tw:gap-6 tw:lg:grid-cols-12 tw:items-start">
             {{-- Kolom Kiri: Form Sections --}}
-            <div class="tw:lg:col-span-8">
+            <div class="tw:min-w-0 tw:lg:col-span-8">
                 {{-- 1. Identitas Dokumen & Supplier --}}
                 <x-ui.form-section
                     :title="__('local_invoice.labels.document_identity')"
@@ -57,7 +57,7 @@
                                     {{ __('local_invoice.receipt.po_number') }} <span class="tw:text-error">*</span>
                                 </label>
                                 @if($isLocked)
-                                    <span class="tw:inline-flex tw:items-center tw:gap-1 tw:px-2 tw:py-0.5 tw:rounded-sm tw:text-[11px] tw:font-semibold tw:bg-warning-container tw:text-warning-container-foreground">
+                                    <span class="tw:inline-flex tw:items-center tw:gap-1 tw:px-2 tw:py-0.5 tw:rounded-sm tw:text-ui-xs tw:font-semibold tw:bg-warning-container tw:text-warning-container-foreground">
                                         <x-ui.icon name="lock" size="sm" />
                                         <span>{{ __('local_procurement.surface.audit_locked') }}</span>
                                     </span>
@@ -77,7 +77,7 @@
                                 <div class="ui-field-error tw:text-ui-xs">{{ $message }}</div>
                             @enderror
                             @if($isLocked)
-                                <div class="ui-field-help tw:text-[11px] tw:text-on-surface-variant">{{ __('local_procurement.surface.number_locked') }}</div>
+                                <div class="ui-field-help tw:text-ui-xs tw:text-on-surface-variant">{{ __('local_procurement.surface.number_locked') }}</div>
                             @endif
                         </div>
 
@@ -86,13 +86,13 @@
                             @if($isEdit && filled($purchaseOrder->pr_number))
                                 <div class="tw:flex tw:items-center tw:justify-between tw:min-h-6 tw:mb-1">
                                     <label for="pr_number" class="ui-label tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:mb-0">{{ __('local_procurement.pr.number_label') }}</label>
-                                    <span class="tw:inline-flex tw:items-center tw:gap-1 tw:px-2 tw:py-0.5 tw:rounded-sm tw:text-[11px] tw:font-semibold tw:bg-warning-container tw:text-warning-container-foreground">
+                                    <span class="tw:inline-flex tw:items-center tw:gap-1 tw:px-2 tw:py-0.5 tw:rounded-sm tw:text-ui-xs tw:font-semibold tw:bg-warning-container tw:text-warning-container-foreground">
                                         <x-ui.icon name="lock" size="sm" />
                                         <span>{{ __('local_invoice.labels.locked') }}</span>
                                     </span>
                                 </div>
                                 <input id="pr_number" name="pr_number" value="{{ $purchaseOrder->pr_number }}" readonly maxlength="100" class="ui-input ui-input--sm ui-tabular-nums tw:bg-surface-container">
-                                <div class="ui-field-help tw:text-[11px] tw:text-on-surface-variant">{{ __('local_procurement.pr.manual_locked') }}</div>
+                                <div class="ui-field-help tw:text-ui-xs tw:text-on-surface-variant">{{ __('local_procurement.pr.manual_locked') }}</div>
                             @else
                                 <x-ui.searchable-select
                                     name="pr_number"
@@ -115,7 +115,7 @@
                                     {{ __('local_invoice.labels.local_supplier') }} <span class="tw:text-error">*</span>
                                 </label>
                                 @if($isLocked)
-                                    <span class="tw:inline-flex tw:items-center tw:gap-1 tw:px-2 tw:py-0.5 tw:rounded-sm tw:text-[11px] tw:font-semibold tw:bg-warning-container tw:text-warning-container-foreground">
+                                    <span class="tw:inline-flex tw:items-center tw:gap-1 tw:px-2 tw:py-0.5 tw:rounded-sm tw:text-ui-xs tw:font-semibold tw:bg-warning-container tw:text-warning-container-foreground">
                                         <x-ui.icon name="lock" size="sm" />
                                         <span>{{ __('local_invoice.labels.locked') }}</span>
                                     </span>
@@ -132,7 +132,7 @@
                                         @endif
                                     @endforeach
                                 </select>
-                                <div class="ui-field-help tw:text-[11px] tw:text-on-surface-variant">{{ __('local_procurement.surface.supplier_locked') }}</div>
+                                <div class="ui-field-help tw:text-ui-xs tw:text-on-surface-variant">{{ __('local_procurement.surface.supplier_locked') }}</div>
                             @else
                                 <select
                                     name="supplier_id"
@@ -201,7 +201,7 @@
                                 <div class="tw:text-error tw:text-ui-xs tw:mt-1">{{ $message }}</div>
                             @enderror
                             @if($isLocked && $activeInvoicedTotal > 0)
-                                <div class="ui-field-help tw:text-[11px] tw:text-warning tw:mt-1">
+                                <div class="ui-field-help tw:text-ui-xs tw:text-warning tw:mt-1">
                                     {{ __('finance.closure.plafon_minimum', ['amount' => $regionalFormatter->money($activeInvoicedTotal, 2)]) }}
                                 </div>
                             @endif
@@ -233,14 +233,14 @@
             </div>
 
             {{-- Kolom Kanan: Sticky Sidebar Ringkasan Dokumen PO --}}
-            <div class="tw:lg:col-span-4 tw:sticky" style="top: calc(var(--topbar-height, 56px) + 1.25rem)">
+            <div class="tw:min-w-0 tw:lg:col-span-4 tw:sticky" style="top: calc(var(--topbar-height, 56px) + 1.25rem)">
                 <x-ui.card :title="__('local_procurement.labels.po_document_summary')">
                     <div class="tw:space-y-4">
                         {{-- Kartu Highlight Nilai PO --}}
                         <div class="tw:rounded-ui-md tw:border tw:border-outline-variant tw:bg-surface-container tw:p-3.5 tw:space-y-1">
                             <div class="tw:flex tw:items-center tw:justify-between tw:text-ui-xs">
-                                <span class="tw:font-medium tw:text-on-surface-variant">{{ __('local_procurement.surface.po_ceiling') }}</span>
-                                <span class="tw:inline-flex tw:items-center tw:px-2 tw:py-0.5 tw:rounded-sm tw:text-[10px] tw:font-bold tw:bg-primary/10 tw:text-primary">
+                                <span class="tw:font-semibold tw:text-on-surface-variant">{{ __('local_procurement.surface.po_ceiling') }}</span>
+                                <span class="tw:inline-flex tw:items-center tw:px-2 tw:py-0.5 tw:rounded-sm tw:text-ui-xs tw:font-bold tw:bg-primary/10 tw:text-primary">
                                     IDR
                                 </span>
                             </div>
@@ -258,7 +258,7 @@
 
                             <div class="tw:flex tw:items-center tw:justify-between tw:text-on-surface-variant">
                                 <span>{{ __('local_procurement.labels.purchase_source') }}:</span>
-                                <span class="tw:inline-flex tw:items-center tw:gap-1 tw:px-2 tw:py-0.5 tw:rounded-sm tw:text-[11px] tw:font-medium tw:bg-surface-container-high tw:text-on-surface">
+                                <span class="tw:inline-flex tw:items-center tw:gap-1 tw:px-2 tw:py-0.5 tw:rounded-sm tw:text-ui-xs tw:font-semibold tw:bg-surface-container-high tw:text-on-surface">
                                     {{ __('local_procurement.sources.'.strtolower($purchaseOrder->source ?: 'MANUAL')) }}
                                 </span>
                             </div>
@@ -279,7 +279,7 @@
                                 <x-ui.icon name="shield-alert" size="sm" class="tw:text-primary" />
                                 <span>{{ __('local_procurement.surface.audit_integrity') }}</span>
                             </div>
-                            <p class="tw:text-[11px] tw:text-on-surface-variant tw:leading-relaxed tw:mb-0">
+                            <p class="tw:text-ui-xs tw:text-on-surface-variant tw:leading-relaxed tw:mb-0">
                                 {{ __('local_procurement.surface.audit_integrity_help') }}
                             </p>
                         </div>

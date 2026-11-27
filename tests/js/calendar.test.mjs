@@ -35,6 +35,30 @@ test('day range year selection clamps leap day without changing the selected ran
     assert.equal(controller.dayGrid.focusedDate, '2028-02-29');
 });
 
+test('error described-by sync reads the native inputs the controller actually owns', () => {
+    // Regression: syncErrorDescribedBy() iterated undefined this.nativeInputs/this.nativeInput, so clearError()
+    // threw at the top of open() and no range or single calendar panel could ever appear.
+    const source = readFileSync(new URL('../../resources/js/calendar.js', import.meta.url), 'utf8');
+    assert.doesNotMatch(source, /this\.nativeInputs?\b/);
+
+    const classSource = source.slice(source.indexOf('class CalendarController'), source.indexOf('export function initializeAdasiCalendars'));
+    const Controller = runInNewContext(`${classSource}; CalendarController`, { Date, t: () => '' });
+    const makeEl = () => ({ attrs: {}, getAttribute(n) { return this.attrs[n] ?? null; }, setAttribute(n, v) { this.attrs[n] = v; }, removeAttribute(n) { delete this.attrs[n]; } });
+    const triggerEl = makeEl();
+    const inputs = [makeEl(), makeEl()];
+    const controller = Object.create(Controller.prototype);
+    controller.type = 'range';
+    controller.native = inputs;
+    controller.error = { id: 'err' };
+    controller.wrapper = { querySelector: () => triggerEl };
+
+    controller.syncErrorDescribedBy(true);
+    assert.equal(triggerEl.attrs['aria-describedby'], 'err');
+    assert.equal(inputs[1].attrs['aria-describedby'], 'err');
+    controller.syncErrorDescribedBy(false);
+    assert.equal(inputs[0].getAttribute('aria-describedby'), null);
+});
+
 test('calendar core validates ISO day and month values without accepting invalid local dates', () => {
     assert.equal(isIsoDate('2026-02-28'), true);
     assert.equal(isIsoDate('2026-02-30'), false);
@@ -96,4 +120,64 @@ test('every caller of bootAdasiCalendars waits for the single in-flight engine l
     assert.equal(result.error?.code, undefined, 'boot must not spin forever: ' + (result.error?.message ?? ''));
     assert.equal(result.status, 0, result.stderr);
     assert.equal(result.stdout.trim(), 'first,second');
+});
+
+test('calendar reposition clears stale desktop coordinates in mobile sheet mode and clamps narrow desktop popovers', () => {
+    const source = readFileSync(new URL('../../resources/js/calendar.js', import.meta.url), 'utf8');
+    const classSource = source.slice(source.indexOf('class CalendarController'), source.indexOf('export function initializeAdasiCalendars'));
+    let mobile = false;
+    const windowMock = { innerWidth: 280, innerHeight: 400 };
+    const Controller = runInNewContext(`${classSource}; CalendarController`, {
+        Date,
+        t: () => '',
+        window: windowMock,
+        getComputedStyle: () => ({ getPropertyValue: () => '8' }),
+        MOBILE_BREAKPOINT: { get matches() { return mobile; } },
+    });
+
+    const controller = Object.create(Controller.prototype);
+    const panelClasses = new Set();
+    const attrs = new Map();
+    const triggerAttrs = new Map();
+    controller.isOpen = true;
+    controller.type = 'single';
+    controller.panel = {
+        hidden: false,
+        style: { maxWidth: '', top: '', left: '', right: '' },
+        classList: { toggle: (name, force) => (force ? panelClasses.add(name) : panelClasses.delete(name)) },
+        setAttribute: (name, value) => attrs.set(name, String(value)),
+        getBoundingClientRect: () => ({ width: 264, height: 320 }),
+    };
+    controller.trigger = {
+        getBoundingClientRect: () => ({ left: 220, bottom: 260, top: 220 }),
+        setAttribute: (name, value) => triggerAttrs.set(name, String(value)),
+    };
+    controller.wrapper = { querySelector: () => null };
+    controller.boundaryTriggers = [];
+    controller.dayGrid = { setAttribute() {} };
+
+    // Narrow desktop viewport (e.g. direct/non-embedded frame): never produce negative left or clip right.
+    controller.reposition();
+    assert.equal(panelClasses.has('ui-calendar-panel--popover'), true);
+    assert.equal(panelClasses.has('ui-calendar-panel--sheet'), false);
+    assert.equal(controller.panel.style.maxWidth, '264px');
+    assert.equal(controller.panel.style.left, '8px');
+    assert.equal(controller.panel.style.top, '72px');
+    assert.equal(attrs.get('aria-modal'), 'false');
+    assert.equal(triggerAttrs.get('aria-expanded'), 'true');
+
+    // Entering mobile sheet mode (e.g. narrow workspace iframe < 992px): clear stale desktop coords.
+    mobile = true;
+    controller.reposition();
+    assert.equal(panelClasses.has('ui-calendar-panel--sheet'), true);
+    assert.equal(panelClasses.has('ui-calendar-panel--popover'), false);
+    assert.equal(controller.panel.style.top, '');
+    assert.equal(controller.panel.style.left, '');
+    assert.equal(controller.panel.style.right, '');
+    assert.equal(controller.panel.style.maxWidth, '');
+    assert.equal(attrs.get('aria-modal'), 'true');
+
+    const appCss = readFileSync(new URL('../../resources/css/app.css', import.meta.url), 'utf8');
+    assert.match(appCss, /\.ui-calendar-panel--sheet\s*\{[^}]*inset-inline:\s*0;[^}]*left:\s*0;[^}]*right:\s*0;[^}]*top:\s*auto;/s);
+    assert.match(appCss, /\.ui-calendar-panel--single\s*\{[^}]*width:\s*min\(312px,\s*calc\(100vw\s*-\s*1rem\)\)/s);
 });

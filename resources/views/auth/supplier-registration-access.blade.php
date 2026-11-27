@@ -28,14 +28,14 @@
 </header>
 
 @if (session('error'))
-    <div class="tw:rounded-ui-sm tw:bg-error-container tw:p-3 tw:text-on-error-container tw:mb-4 tw:flex tw:items-center tw:gap-2 tw:text-ui-xs tw:font-medium" role="alert">
+    <div class="tw:rounded-ui-sm tw:bg-error-container tw:p-3 tw:text-on-error-container tw:mb-4 tw:flex tw:items-center tw:gap-2 tw:text-ui-xs tw:font-semibold" role="alert">
         <x-ui.icon name="alert-circle" size="sm" class="tw:shrink-0" />
         <span>{{ session('error') }}</span>
     </div>
 @endif
 
 @if (session('info'))
-    <div class="tw:rounded-ui-sm tw:bg-info-container tw:p-3 tw:text-on-info-container tw:mb-4 tw:flex tw:items-center tw:gap-2 tw:text-ui-xs tw:font-medium" role="alert">
+    <div class="tw:rounded-ui-sm tw:bg-info-container tw:p-3 tw:text-on-info-container tw:mb-4 tw:flex tw:items-center tw:gap-2 tw:text-ui-xs tw:font-semibold" role="alert">
         <x-ui.icon name="info" size="sm" class="tw:shrink-0" />
         <span>{{ session('info') }}</span>
     </div>
@@ -86,7 +86,7 @@
         @csrf
 
         <div class="tw:grid tw:gap-1.5">
-            <label for="reference" class="tw:text-ui-sm tw:font-medium tw:text-on-surface">{{ __('registration.reference') }}</label>
+            <label for="reference" class="tw:text-ui-sm tw:font-semibold tw:text-on-surface">{{ __('registration.reference') }}</label>
             <div class="tw:relative">
                 <div class="tw:absolute tw:inset-y-0 tw:start-0 tw:flex tw:items-center tw:pl-3 tw:pointer-events-none tw:text-on-surface-variant">
                     <x-ui.icon name="hash" size="sm" />
@@ -103,11 +103,11 @@
                     @if ($initialTab === 'key') autofocus @endif
                 >
             </div>
-            @error('reference')<p class="tw:m-0 tw:text-ui-xs tw:font-medium tw:text-error">{{ $message }}</p>@enderror
+            @error('reference')<p class="tw:m-0 tw:text-ui-xs tw:font-semibold tw:text-error">{{ $message }}</p>@enderror
         </div>
 
         <div class="tw:grid tw:gap-1.5" x-data="{ showKey: false }">
-            <label for="access_key" class="tw:text-ui-sm tw:font-medium tw:text-on-surface">{{ __('registration.key') }}</label>
+            <label for="access_key" class="tw:text-ui-sm tw:font-semibold tw:text-on-surface">{{ __('registration.key') }}</label>
             <div class="tw:relative">
                 <div class="tw:absolute tw:inset-y-0 tw:start-0 tw:flex tw:items-center tw:pl-3 tw:pointer-events-none tw:text-on-surface-variant">
                     <x-ui.icon name="key" size="sm" />
@@ -132,7 +132,7 @@
                     <x-ui.icon name="eye-off" size="sm" x-show="showKey" />
                 </button>
             </div>
-            @error('access_key')<p class="tw:m-0 tw:text-ui-xs tw:font-medium tw:text-error">{{ $message }}</p>@enderror
+            @error('access_key')<p class="tw:m-0 tw:text-ui-xs tw:font-semibold tw:text-error">{{ $message }}</p>@enderror
         </div>
 
         <button type="submit" class="ui-focus-ring ui-motion tw:mt-1 tw:flex tw:h-11 tw:w-full tw:items-center tw:justify-center tw:gap-2 tw:rounded-ui-sm tw:border-0 tw:bg-primary tw:text-ui-sm tw:font-semibold tw:text-primary-foreground tw:hover:brightness-95 tw:active:brightness-90 tw:active:scale-[0.96]">
@@ -158,7 +158,7 @@
         <p class="tw:m-0 tw:text-ui-xs tw:text-on-surface-variant" style="text-wrap: pretty;">{{ __('registration.credential_access.help') }}</p>
 
         <div class="tw:grid tw:gap-1.5">
-            <label for="credential_email" class="tw:text-ui-sm tw:font-medium tw:text-on-surface">{{ __('registration.credential_access.email') }}</label>
+            <label for="credential_email" class="tw:text-ui-sm tw:font-semibold tw:text-on-surface">{{ __('registration.credential_access.email') }}</label>
             <div class="tw:relative">
                 <div class="tw:absolute tw:inset-y-0 tw:start-0 tw:flex tw:items-center tw:pl-3 tw:pointer-events-none tw:text-on-surface-variant">
                     <x-ui.icon name="mail" size="sm" />
@@ -177,11 +177,11 @@
                     @if ($initialTab === 'credentials') autofocus @endif
                 >
             </div>
-            @if ($emailError)<p class="tw:m-0 tw:text-ui-xs tw:font-medium tw:text-error" role="alert">{{ $emailError }}</p>@endif
+            @if ($emailError)<p class="tw:m-0 tw:text-ui-xs tw:font-semibold tw:text-error" role="alert">{{ $emailError }}</p>@endif
         </div>
 
         <div class="tw:grid tw:gap-1.5" x-data="{ showPassword: false }">
-            <label for="credential_password" class="tw:text-ui-sm tw:font-medium tw:text-on-surface">{{ __('registration.credential_access.password') }}</label>
+            <label for="credential_password" class="tw:text-ui-sm tw:font-semibold tw:text-on-surface">{{ __('registration.credential_access.password') }}</label>
             <div class="tw:relative">
                 <div class="tw:absolute tw:inset-y-0 tw:start-0 tw:flex tw:items-center tw:pl-3 tw:pointer-events-none tw:text-on-surface-variant">
                     <x-ui.icon name="lock" size="sm" />
@@ -206,13 +206,13 @@
                     <x-ui.icon name="eye-off" size="sm" x-show="showPassword" />
                 </button>
             </div>
-            @if ($passwordError)<p class="tw:m-0 tw:text-ui-xs tw:font-medium tw:text-error" role="alert">{{ $passwordError }}</p>@endif
+            @if ($passwordError)<p class="tw:m-0 tw:text-ui-xs tw:font-semibold tw:text-error" role="alert">{{ $passwordError }}</p>@endif
         </div>
 
         @if (! empty($turnstileRequired) && ! empty($turnstileSiteKey))
             <div>
                 <div class="cf-turnstile" data-sitekey="{{ $turnstileSiteKey }}"></div>
-                @error('cf-turnstile-response')<p class="tw:m-0 tw:mt-1 tw:text-ui-xs tw:font-medium tw:text-error" role="alert">{{ $message }}</p>@enderror
+                @error('cf-turnstile-response')<p class="tw:m-0 tw:mt-1 tw:text-ui-xs tw:font-semibold tw:text-error" role="alert">{{ $message }}</p>@enderror
             </div>
         @endif
 

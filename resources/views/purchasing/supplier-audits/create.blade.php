@@ -117,7 +117,7 @@
             <div class="tw:grid tw:gap-3 tw:md:col-span-2">
                 <div class="tw:flex tw:flex-col tw:gap-2 tw:sm:flex-row tw:sm:items-end tw:sm:justify-between">
                     <label class="tw:grid tw:gap-1.5 tw:sm:w-80" for="supplierAuditSearch">
-                        <span class="tw:text-ui-sm tw:font-medium tw:text-on-surface">{{ __('supplier_audit.create.search_placeholder') }}</span>
+                        <span class="tw:text-ui-sm tw:font-semibold tw:text-on-surface">{{ __('supplier_audit.create.search_placeholder') }}</span>
                         <input type="search" id="supplierAuditSearch" x-model.debounce.150ms="search" autocomplete="off" data-unsaved-ignore
                             class="ui-motion tw:min-h-[var(--ui-control-height-md)] tw:w-full tw:rounded-ui-sm tw:border tw:border-outline-strong tw:bg-surface tw:px-3 tw:py-2 tw:text-ui-sm tw:text-on-surface tw:focus:border-primary tw:focus:ring-2 tw:focus:ring-primary">
                     </label>
@@ -141,7 +141,7 @@
                                         <input type="checkbox" name="supplier_ids[]" class="ui-check tw:m-0 tw:shrink-0"
                                             :value="row.value" :disabled="row.disabled" x-model="selected">
                                         <span class="tw:min-w-0 tw:flex-1">
-                                            <span class="tw:block tw:truncate tw:text-ui-sm tw:font-medium tw:text-on-surface" x-text="row.label"></span>
+                                            <span class="tw:block tw:truncate tw:text-ui-sm tw:font-semibold tw:text-on-surface" x-text="row.label"></span>
                                             <span class="tw:block tw:truncate tw:text-ui-xs tw:text-on-surface-variant" x-text="row.email"></span>
                                             <span class="tw:block tw:truncate tw:text-ui-xs tw:text-on-surface-variant" x-text="row.last"></span>
                                         </span>
@@ -173,14 +173,14 @@
                     />
 
                     <div class="tw:grid tw:gap-1.5">
-                        <span class="tw:text-[11px] tw:font-semibold tw:text-on-surface-variant tw:tracking-wider tw:uppercase">
+                        <span class="tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant tw:tracking-wider tw:uppercase">
                             {{ __('supplier_audit.create_extra.quick_presets') }}
                         </span>
                         <div class="tw:flex tw:flex-wrap tw:gap-1.5" data-period-presets>
                             @foreach($periodPresets as $presetLabel)
                                 <button
                                     type="button"
-                                    class="ui-motion tw:inline-flex tw:items-center tw:gap-1.5 tw:rounded-ui-xs tw:border tw:px-2.5 tw:py-1 tw:text-ui-xs tw:font-medium transition-colors tw:focus-visible:outline-2 tw:focus-visible:outline-offset-1 tw:focus-visible:outline-primary"
+                                    class="ui-motion tw:inline-flex tw:items-center tw:gap-1.5 tw:rounded-ui-xs tw:border tw:px-2.5 tw:py-1 tw:text-ui-xs tw:font-semibold transition-colors tw:focus-visible:outline-2 tw:focus-visible:outline-offset-1 tw:focus-visible:outline-primary"
                                     :class="period === @js($presetLabel)
                                         ? 'tw:border-primary tw:bg-primary/10 tw:text-primary tw:font-semibold'
                                         : 'tw:border-outline-variant tw:bg-surface tw:text-on-surface-variant tw:hover:border-outline tw:hover:bg-surface-container tw:hover:text-on-surface'"
@@ -209,14 +209,14 @@
                     />
 
                     <div class="tw:grid tw:gap-1.5">
-                        <span class="tw:text-[11px] tw:font-semibold tw:text-on-surface-variant tw:tracking-wider tw:uppercase">
+                        <span class="tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant tw:tracking-wider tw:uppercase">
                             {{ __('supplier_audit.create_extra.quick_presets') }}
                         </span>
                         <div class="tw:flex tw:flex-wrap tw:gap-1.5" data-deadline-presets>
                             @foreach($deadlinePresets as $presetValue => $presetLabel)
                                 <button
                                     type="button"
-                                    class="ui-motion tw:inline-flex tw:items-center tw:gap-1.5 tw:rounded-ui-xs tw:border tw:px-2.5 tw:py-1 tw:text-ui-xs tw:font-medium transition-colors tw:focus-visible:outline-2 tw:focus-visible:outline-offset-1 tw:focus-visible:outline-primary"
+                                    class="ui-motion tw:inline-flex tw:items-center tw:gap-1.5 tw:rounded-ui-xs tw:border tw:px-2.5 tw:py-1 tw:text-ui-xs tw:font-semibold transition-colors tw:focus-visible:outline-2 tw:focus-visible:outline-offset-1 tw:focus-visible:outline-primary"
                                     :class="(deadline === @js($presetValue) || (!deadline && @js($presetValue) === ''))
                                         ? 'tw:border-primary tw:bg-primary/10 tw:text-primary tw:font-semibold'
                                         : 'tw:border-outline-variant tw:bg-surface tw:text-on-surface-variant tw:hover:border-outline tw:hover:bg-surface-container tw:hover:text-on-surface'"
@@ -243,7 +243,7 @@
                                 <x-ui.icon name="clipboard-check" size="md" />
                             </div>
                             <div class="tw:grid tw:gap-0.5 tw:min-w-0">
-                                <span class="tw:text-ui-xs tw:font-medium tw:text-on-surface-variant">
+                                <span class="tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant">
                                     {{ __('supplier_audit.fields.template') }}
                                 </span>
                                 <span class="tw:text-ui-sm tw:font-semibold tw:text-on-surface tw:truncate" title="{{ $template?->title }}">
@@ -253,7 +253,7 @@
                         </div>
                         @if($template)
                             <div class="tw:flex tw:items-center tw:gap-2 tw:shrink-0">
-                                <span class="tw:inline-flex tw:items-center tw:gap-1.5 tw:rounded-full tw:bg-success/10 tw:px-2.5 tw:py-1 tw:text-ui-xs tw:font-medium tw:text-success">
+                                <span class="tw:inline-flex tw:items-center tw:gap-1.5 tw:rounded-full tw:bg-success/10 tw:px-2.5 tw:py-1 tw:text-ui-xs tw:font-semibold tw:text-success">
                                     <span class="tw:h-1.5 tw:w-1.5 tw:rounded-full tw:bg-success"></span>
                                     <span>v{{ $template->version }} · {{ __('supplier_audit.create_extra.active_badge') }}</span>
                                 </span>

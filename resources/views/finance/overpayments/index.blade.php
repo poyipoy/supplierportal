@@ -3,7 +3,7 @@
 @section('page-title', __('finance.refund.register'))
 
 @section('content')
-<div class="tw:grid tw:gap-6 tw:pb-16">
+<div class="tw:grid tw:gap-6">
     <x-ui.page-header
         :title="__('finance.refund.register')"
         :description="__('finance.refund_surface.overpayment_help')"
@@ -139,8 +139,7 @@
     </x-ui.filter-bar>
 
     <x-ui.data-table :title="__('finance.refund.receivable')">
-        <div class="ui-table-responsive">
-            <table class="ui-table tw:align-middle tw:text-ui-sm">
+        <table class="ui-table tw:align-middle tw:text-ui-sm">
                 <thead>
                     <tr>
                         <th scope="col">{{ __('local_invoice.labels.invoice') }}</th>
@@ -155,7 +154,7 @@
                 <tbody>
                     @forelse($overpayments as $refund)
                         <tr>
-                            <td class="tw:font-medium">{{ $refund->invoice->invoice_number }}</td>
+                            <td class="tw:font-semibold">{{ $refund->invoice->invoice_number }}</td>
                             <td>{{ $refund->supplier->supplier?->company_name ?: $refund->supplier->name }}</td>
                             <td>
                                 @forelse($refund->payment?->transfers ?? [] as $transfer)
@@ -205,7 +204,6 @@
                     @endforelse
                 </tbody>
             </table>
-        </div>
         <x-slot:pagination>{{ $overpayments->links() }}</x-slot:pagination>
     </x-ui.data-table>
 
@@ -233,7 +231,7 @@
                                         <x-ui.icon name="hand-coins" size="md" />
                                     </div>
                                     <div>
-                                        <h5 class="modal-title tw:text-ui-base tw:font-bold tw:text-on-surface" id="refundModalLabel-{{ $refund->id }}">
+                                        <h5 class="modal-title tw:text-ui-lg tw:font-bold tw:text-on-surface" id="refundModalLabel-{{ $refund->id }}">
                                             {{ __('finance.refund_ui.heading') }}
                                         </h5>
                                         <p class="tw:text-ui-xs tw:text-on-surface-variant tw:m-0">
@@ -248,9 +246,9 @@
                             <div class="modal-body tw:px-6 tw:py-5 tw:space-y-4">
                                 {{-- Ringkasan Konteks Transaksi --}}
                                 <div class="tw:rounded-ui-md tw:bg-surface-container tw:border tw:border-outline-variant/50 tw:p-4">
-                                    <h6 class="tw:text-ui-xs tw:font-bold tw:text-on-surface-variant tw:uppercase tw:tracking-wider tw:mb-3">
+                                    <h3 class="tw:m-0 tw:text-ui-sm tw:font-bold tw:text-on-surface-variant tw:uppercase tw:tracking-wider tw:mb-3">
                                         {{ __('finance.refund.summary') }}
-                                    </h6>
+                                    </h3>
                                     <div class="tw:grid tw:grid-cols-1 tw:sm:grid-cols-2 tw:gap-3 tw:text-ui-xs">
                                         <div>
                                             <span class="tw:text-on-surface-variant tw:block">{{ __('finance.refund_ui.supplier') }}</span>
@@ -310,7 +308,7 @@
                                             class="ui-input ui-input--sm"
                                             required
                                         >
-                                        <div class="tw:text-[11px] tw:text-on-surface-variant tw:mt-1">
+                                        <div class="tw:text-ui-xs tw:text-on-surface-variant tw:mt-1">
                                             {{ __('finance.refund_ui.formats') }}
                                         </div>
                                     </div>

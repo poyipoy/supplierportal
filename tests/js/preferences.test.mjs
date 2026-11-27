@@ -356,7 +356,9 @@ test('slate semantic tokens meet text and focus contrast in Light and Dark', asy
         return [1, 3, 5].map(index => parseInt(hex.slice(index, index + 2), 16) / 255).map(c => c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4).reduce((sum, c, i) => sum + c * [0.2126, 0.7152, 0.0722][i], 0);
     };
     const ratio = (a, b) => (Math.max(luminance(a), luminance(b)) + 0.05) / (Math.min(luminance(a), luminance(b)) + 0.05);
-    for (const [selector, surface] of [[':root[data-accent="slate"]', '#FFFFFF'], [':root[data-theme="dark"][data-accent="slate"]', '#171F2C']]) {
+    const lightSurface = value(body(':root'), '--md-surface');
+    const darkSurface = value(body(':root[data-theme="dark"]'), '--md-surface');
+    for (const [selector, surface] of [[':root[data-accent="slate"]', lightSurface], [':root[data-theme="dark"][data-accent="slate"]', darkSurface]]) {
         const tokens = body(selector);
         assert.ok(ratio(value(tokens, '--md-primary'), value(tokens, '--md-on-primary')) >= 4.5);
         assert.ok(ratio(value(tokens, '--ui-primary-hover'), value(tokens, '--md-on-primary')) >= 4.5);
@@ -409,10 +411,31 @@ test('dark overlays form a tonal elevation ladder and dark chart series stay per
     assert.match(dark, /--ui-menu-bg:\s*var\(--md-surface-container\);/);
     assert.match(dark, /--ui-dialog-bg:\s*var\(--md-surface-container-high\);/);
 
-    // workspace < card (surface) < menu (container) < dialog (container-high): each tier is strictly lighter.
-    const tones = ['--ui-workspace-bg', '--md-surface', '--md-surface-container', '--md-surface-container-high']
-        .map(token => luminance(value(dark, token)));
+    // Full 6-tier dark tonal elevation ladder:
+    // workspace < surface < container-low < container < container-high < container-highest.
+    const tones = [
+        '--ui-workspace-bg',
+        '--md-surface',
+        '--md-surface-container-low',
+        '--md-surface-container',
+        '--md-surface-container-high',
+        '--md-surface-container-highest',
+    ].map(token => luminance(value(dark, token)));
     tones.slice(1).forEach((tone, index) => assert.ok(tone > tones[index], 'overlay tier ' + (index + 1) + ' is lighter than the tier below'));
+
+    // Dark table stripe stays between surface and thead, while light tones decrease strictly toward the workspace canvas.
+    const darkStripe = luminance(value(dark, '--ui-table-row-stripe-bg'));
+    const darkThead = luminance(value(dark, '--md-surface-container'));
+    assert.ok(darkStripe >= luminance(value(dark, '--md-surface')) && darkStripe <= darkThead, 'dark table stripe sits cleanly between surface and thead');
+
+    const light = body(':root');
+    const lightTones = [
+        luminance(value(light, '--md-surface')),
+        luminance(value(light, '--ui-table-row-stripe-bg')),
+        luminance(value(light, '--md-surface-container')),
+        luminance(value(light, '--ui-workspace-bg')),
+    ];
+    lightTones.slice(1).forEach((tone, index) => assert.ok(tone < lightTones[index], 'light surface step ' + (index + 1) + ' is strictly separated from the tier above'));
 
     const dialog = value(dark, '--md-surface-container-high');
     assert.ok(ratio(value(dark, '--md-on-surface'), dialog) >= 4.5, 'primary text on dialogs');
@@ -427,7 +450,9 @@ test('dark overlays form a tonal elevation ladder and dark chart series stay per
     assert.match(css, /dialog\.ui-native-dialog\s*>\s*\.modal-dialog\s*>\s*\.modal-content[\s\S]*?background-color:\s*var\(--ui-dialog-bg\);/, 'native dialog consumes --ui-dialog-bg');
     assert.match(css, /\[data-ui-dropdown-menu\]\[popover\]\s*\{[^}]*background-color:\s*var\(--ui-menu-bg\);/s, 'dropdown popover consumes --ui-menu-bg');
     assert.match(css, /\.ui-tooltip\[popover\]\s*\{[^}]*background:\s*var\(--md-on-surface\);/s, 'tooltip popover uses inverted surface token');
-    assert.match(dark, /--ui-primary-text:\s*#A8C9F0;/, 'dark brand primary text token is readable on dark surface');
+    assert.match(dark, /--md-primary:\s*#8FB9EA;/, 'dark brand primary token is readable across dark surfaces');
+    assert.match(dark, /--md-on-primary:\s*#0B192C;/, 'dark brand on-primary token passes AA on #8FB9EA');
+    assert.match(dark, /--ui-primary-text:\s*#8FB9EA;/, 'dark brand primary text token is readable on dark surface');
 });
 
 test('history restoration synchronizes appearance radios with saved preference values', async () => {
@@ -448,7 +473,7 @@ test('slate and dark primary hover tokens use contrast-safe palette without Boot
     const css = await readFile(new URL('../../resources/css/app.css', import.meta.url), 'utf8');
     assert.match(css, /\.ui-button\.tw\\:bg-primary:hover:not\(:disabled\):not\(\[aria-disabled="true"\]\)\s*\{\s*background-color:\s*var\(--ui-primary-hover\);/s, 'primary button hover uses --ui-primary-hover token');
     const darkBrand = css.slice(css.indexOf(':root[data-theme="dark"] {'));
-    assert.match(darkBrand.slice(0, darkBrand.indexOf('}')), /--ui-primary-hover: #2B70B5;/);
+    assert.match(darkBrand.slice(0, darkBrand.indexOf('}')), /--ui-primary-hover: #A6C8F0;/);
     const darkSlate = css.slice(css.indexOf(':root[data-theme="dark"][data-accent="slate"] {'));
     assert.match(darkSlate.slice(0, darkSlate.indexOf('}')), /--ui-primary-hover: #C1CDDF/);
 });
@@ -486,7 +511,9 @@ test('brand default tokens and legacy appearance are strictly locked', async () 
     const darkRootIdx = css.indexOf(':root[data-theme="dark"] {');
     assert.notEqual(darkRootIdx, -1, 'dark theme root is defined');
     const darkRoot = css.slice(darkRootIdx, css.indexOf('}', darkRootIdx));
-    assert.match(darkRoot, /--ui-primary-text:\s*#A8C9F0;/, 'brand dark primary text is #A8C9F0');
+    assert.match(darkRoot, /--md-primary:\s*#8FB9EA;/, 'brand dark primary is #8FB9EA');
+    assert.match(darkRoot, /--md-on-primary:\s*#0B192C;/, 'brand dark on-primary is #0B192C');
+    assert.match(darkRoot, /--ui-primary-text:\s*#8FB9EA;/, 'brand dark primary text is #8FB9EA');
     assert.match(darkRoot, /--md-primary-container:\s*#1B3654;/, 'brand dark container is #1B3654');
     assert.match(darkRoot, /--md-on-primary-container:\s*#D9E9FF;/, 'brand dark on-container is #D9E9FF');
     assert.match(darkRoot, /--ui-input-focus:\s*#8FB9EA;/, 'brand dark input focus is #8FB9EA');
@@ -521,11 +548,13 @@ test('all approved preset tokens meet text, hover, and focus contrast in Light a
     };
     const ratio = (a, b) => (Math.max(luminance(a), luminance(b)) + 0.05) / (Math.min(luminance(a), luminance(b)) + 0.05);
 
+    const lightSurface = value(body(':root'), '--md-surface');
+    const darkSurface = value(body(':root[data-theme="dark"]'), '--md-surface');
     const nonBrandPresets = ['slate', 'indigo', 'teal', 'violet'];
     for (const preset of nonBrandPresets) {
         for (const [selector, surface] of [
-            [':root[data-accent="' + preset + '"]', '#FFFFFF'],
-            [':root[data-theme="dark"][data-accent="' + preset + '"]', '#171F2C'],
+            [':root[data-accent="' + preset + '"]', lightSurface],
+            [':root[data-theme="dark"][data-accent="' + preset + '"]', darkSurface],
         ]) {
             const tokens = body(selector);
             const primary = value(tokens, '--md-primary');
@@ -558,7 +587,7 @@ test('all five accent swatches are statically defined with exact palette colors'
         brand: '#1F5FA6',
         slate: '#475569',
         indigo: '#4338CA',
-        teal: '#0F766E',
+        teal: '#0D6B63',
         violet: '#6D28D9',
     };
     for (const [key, color] of Object.entries(expected)) {

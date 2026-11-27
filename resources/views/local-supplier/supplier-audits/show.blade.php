@@ -3,7 +3,7 @@
 @section('page-title', __('supplier_audit.title'))
 
 @section('content')
-<div class="tw:grid tw:gap-6 tw:pb-16">
+<div class="tw:grid tw:gap-6">
     <x-ui.page-header :title="__('supplier_audit.title').' · '.$audit->period_label" :description="__('supplier_audit.description')" :eyebrow="__('supplier_audit.eyebrow')">
         <x-slot:status>
             <x-ui.status-chip :tone="\App\Support\StatusHelper::supplierAuditTone($audit->status)">{{ \App\Support\StatusHelper::supplierAuditLabel($audit->status) }}</x-ui.status-chip>
@@ -45,7 +45,7 @@
             @if($audit->status === \App\Models\SupplierAudit::STATUS_RESULT_PUBLISHED && $audit->latestResult)
                 <div class="tw:flex tw:flex-col tw:gap-3 tw:sm:flex-row tw:sm:items-center tw:sm:justify-between">
                     <span class="tw:min-w-0">
-                        <span class="tw:block tw:truncate tw:text-ui-sm tw:font-medium tw:text-on-surface">{{ $audit->latestResult->file_name }}</span>
+                        <span class="tw:block tw:truncate tw:text-ui-sm tw:font-semibold tw:text-on-surface">{{ $audit->latestResult->file_name }}</span>
                         <span class="tw:block tw:text-ui-xs tw:text-on-surface-variant" style="font-variant-numeric: tabular-nums;">{{ $regionalFormatter->timestamp($audit->latestResult->created_at) }}</span>
                     </span>
                     <x-ui.button :href="route('attachments.show', $audit->latestResult)" variant="primary" size="sm" target="_blank" rel="noopener">

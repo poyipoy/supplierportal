@@ -130,8 +130,15 @@ class UserPreferenceService
     /** @return array<string, mixed> */
     private function loadPreferences(User $user): array
     {
-        $defaults = config('user_preferences.defaults');
         $stored = UserPreference::query()->where('user_id', $user->getKey())->first();
+
+        return $this->buildPreferences($user, $stored);
+    }
+
+    /** @return array<string, mixed> */
+    private function buildPreferences(User $user, ?UserPreference $stored): array
+    {
+        $defaults = config('user_preferences.defaults');
         $rawDashboard = is_array($stored?->dashboard_preferences) ? $stored->dashboard_preferences : [];
 
         return $stored instanceof UserPreference
@@ -157,6 +164,30 @@ class UserPreferenceService
                 'import_timezone' => self::normalizeImportTimezone($stored->import_timezone),
             ]
             : [...$defaults, 'revision' => 0, 'notification_preferences' => [], 'workspace_shortcuts' => []];
+    }
+
+    /** @param  array<string, mixed>  $preferences */
+    private function rememberPreferences(User $user, array $preferences): void
+    {
+        if (app()->bound('request')) {
+            request()->attributes->set($this->requestCacheKey($user), [
+                'preferences' => $preferences,
+            ]);
+        }
+
+        $userId = $user->getKey();
+        if (! is_numeric($userId) || (int) $userId <= 0) {
+            return;
+        }
+
+        $cacheKey = self::cacheKey((int) $userId);
+        if (DB::transactionLevel() === 0) {
+            Cache::put($cacheKey, $preferences, self::CACHE_TTL_SECONDS);
+
+            return;
+        }
+
+        DB::afterCommit(static fn () => Cache::put($cacheKey, $preferences, self::CACHE_TTL_SECONDS));
     }
 
     public function save(User $user, array $values): array
@@ -253,8 +284,13 @@ class UserPreferenceService
     public function saveLocale(User $user, mixed $locale): array
     {
         $locale = self::normalizeLocale($locale);
+        $current = $this->for($user);
 
-        return DB::transaction(function () use ($user, $locale): array {
+        if ($current['locale'] === $locale && (int) ($current['revision'] ?? 0) > 0) {
+            return $current;
+        }
+
+        $saved = DB::transaction(function () use ($user, $locale): UserPreference {
             $lockedUser = User::query()->whereKey($user->getKey())->lockForUpdate()->firstOrFail();
             $stored = $lockedUser->preference()->first();
             $preference = $stored ?? new UserPreference;
@@ -262,6 +298,8 @@ class UserPreferenceService
             if ($stored === null) {
                 $preference->fill(config('user_preferences.defaults'));
                 $preference->sidebar_revision = 1;
+            } elseif (self::normalizeLocale($stored->locale) === $locale) {
+                return $stored;
             }
 
             $preference->locale = $locale;
@@ -270,8 +308,13 @@ class UserPreferenceService
             self::forgetForUser((int) $lockedUser->getKey());
             app(NotificationPreferenceService::class)->forget($lockedUser);
 
-            return $this->for($lockedUser->refresh());
+            return $preference;
         }, 3);
+
+        $preferences = $this->buildPreferences($user, $saved);
+        $this->rememberPreferences($user, $preferences);
+
+        return $preferences;
     }
 
     /**

@@ -22,6 +22,11 @@ class ReferencePriceRulePolicy
         return $this->manages($user);
     }
 
+    public function delete(User $user, ReferencePriceRule $rule): bool
+    {
+        return $this->manages($user);
+    }
+
     private function manages(User $user): bool
     {
         return $user->is_active && in_array($user->role, ['admin', 'purchasing'], true);

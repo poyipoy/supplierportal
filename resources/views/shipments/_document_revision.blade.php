@@ -18,7 +18,7 @@
 @endif
 @if($versions->count() > 1)
     <details class="tw:mt-1 tw:text-ui-xs">
-        <summary class="tw:cursor-pointer tw:text-primary tw:font-medium">{{ __('shipments.copy.document_version_history') }} ({{ $versions->count() }})</summary>
+        <summary class="tw:cursor-pointer tw:text-primary tw:font-semibold">{{ __('shipments.copy.document_version_history') }} ({{ $versions->count() }})</summary>
         <ol class="tw:mt-1 tw:mb-0 tw:ps-4 tw:grid tw:gap-0.5">
             @foreach($versions as $index => $version)
                 <li>

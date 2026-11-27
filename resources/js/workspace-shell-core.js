@@ -244,6 +244,51 @@ export function resolveModuleKey(rawUrl, catalog = [], origin = 'http://localhos
     return parts.slice(-2).join('-') || 'page';
 }
 
+/**
+ * Determine which sidebar links should be marked active for the current URL.
+ * Prefers the longest exact/prefix path match so sibling sidebar entries sharing
+ * a moduleKey (e.g. "Submit Invoice" /invoices/create vs "Invoice Register" /invoices)
+ * never highlight simultaneously, while falling back to moduleKey for non-prefix
+ * sibling views (e.g. /comparison/historical).
+ */
+export function resolveActiveSidebarLinks(
+    links = [],
+    { activeUrl = '', activeKey = null, catalog = [], origin = 'http://localhost' } = {},
+) {
+    if (!activeUrl || !Array.isArray(links) || links.length === 0) {
+        return links.map(() => false);
+    }
+
+    const activePath = normalizePathname(stripEmbedParam(activeUrl, origin), origin);
+    const resolvedActiveKey = activeKey || resolveModuleKey(activeUrl, catalog, origin);
+
+    let bestPathScore = -1;
+    const candidates = links.map((entry) => {
+        const entryUrl = entry?.url || '';
+        const linkPath = entryUrl ? normalizePathname(stripEmbedParam(entryUrl, origin), origin) : '';
+        const linkKey = entry?.key || (entryUrl ? resolveModuleKey(entryUrl, catalog, origin) : null);
+
+        let pathScore = -1;
+        if (linkPath === '/') {
+            if (activePath === '/') pathScore = 1;
+        } else if (linkPath !== '' && (activePath === linkPath || activePath.startsWith(`${linkPath}/`))) {
+            pathScore = linkPath.length;
+        }
+
+        if (pathScore > bestPathScore) {
+            bestPathScore = pathScore;
+        }
+
+        return { linkKey, pathScore };
+    });
+
+    if (bestPathScore >= 0) {
+        return candidates.map((candidate) => candidate.pathScore === bestPathScore);
+    }
+
+    return candidates.map((candidate) => Boolean(resolvedActiveKey && candidate.linkKey === resolvedActiveKey));
+}
+
 function normalizedPathnameAndSearch(rawUrl, origin = 'http://localhost') {
     try {
         const parsed = new URL(stripEmbedParam(rawUrl, origin), origin);

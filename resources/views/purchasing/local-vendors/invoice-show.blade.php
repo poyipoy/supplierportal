@@ -3,7 +3,7 @@
 @section('page-title', __('accounting.labels.read_only'))
 
 @section('content')
-<div class="tw:grid tw:gap-6 tw:pb-16">
+<div class="tw:grid tw:gap-6">
     <x-ui.page-header
         :title="__('finance.invoice_ui.audit_heading', ['number' => $invoice->invoice_number])"
         :description="__('finance.invoice_ui.reference', ['number' => $invoice->submission_number, 'supplier' => $invoice->supplier->supplier?->company_name ?: $invoice->supplier->name])"
@@ -30,7 +30,7 @@
     @endif
 
     <div class="tw:grid tw:grid-cols-1 tw:lg:grid-cols-12 tw:gap-6">
-        <div class="tw:lg:col-span-8 tw:space-y-6">
+        <div class="tw:min-w-0 tw:lg:col-span-8 tw:space-y-6">
             {{-- Overview Card --}}
             <x-ui.card :title="__('local_invoice.labels.billing_information')">
                 <div class="tw:grid tw:grid-cols-2 tw:sm:grid-cols-3 tw:gap-4 tw:text-ui-xs">
@@ -177,7 +177,7 @@
             </x-ui.card>
         </div>
 
-        <div class="tw:lg:col-span-4 tw:space-y-6">
+        <div class="tw:min-w-0 tw:lg:col-span-4 tw:space-y-6">
             {{-- Jadwal Pembayaran --}}
             <x-ui.card :title="__('local_invoice.labels.payment_and_due')">
                 <div class="tw:space-y-3 tw:text-ui-xs">
@@ -214,7 +214,7 @@
                             </div>
                             <div class="tw:text-on-surface-variant">{{ __('ga.detail.actor', ['name' => $hist->actor?->name ?? __('ga.detail.system')]) }}</div>
                             @if($hist->notes)
-                                <div class="tw:mt-1 tw:text-[11px] tw:italic">{{ $hist->notes }}</div>
+                                <div class="tw:mt-1 tw:text-ui-xs tw:italic">{{ $hist->notes }}</div>
                             @endif
                         </div>
                     @empty

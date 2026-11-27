@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { AdasiModal, bootAdasiModals } from '../../resources/js/adasi-modal.js';
 
 function createMockNode(tagName, { id = null, attrs = {}, parentElement = null } = {}) {
@@ -227,6 +228,37 @@ test('bootAdasiModals delegates triggers, closes enclosing popovers first, and s
     assert.equal(dialog.open, true);
     doc.dispatchEvent({ type: 'click', target: closeBtn, preventDefault() {} });
     assert.equal(dialog.open, false);
+
+    // Laravel Blade components (<x-ui.button data-ui-modal-close>) emit boolean value equal to attribute name,
+    // or "true"/"1", often clicked on an inner label <span>.
+    for (const boolValue of ['data-ui-modal-close', 'true', '1']) {
+        const bladeOpen = createMockNode('A', {
+            attrs: { 'data-ui-modal-open': 'data-ui-modal-open', href: '#importModal' },
+            parentElement: body,
+        });
+        bladeOpen.ownerDocument = doc;
+        doc.dispatchEvent({ type: 'click', target: bladeOpen, preventDefault() {} });
+        assert.equal(dialog.open, true);
+
+        const bladeCancel = createMockNode('BUTTON', {
+            attrs: { 'data-ui-modal-close': boolValue },
+            parentElement: dialog,
+        });
+        bladeCancel.ownerDocument = doc;
+        const cancelLabel = createMockNode('SPAN', { parentElement: bladeCancel });
+        cancelLabel.ownerDocument = doc;
+
+        doc.dispatchEvent({ type: 'click', target: cancelLabel, preventDefault() {} });
+        assert.equal(dialog.open, false, `must dismiss enclosing dialog when data-ui-modal-close="${boolValue}"`);
+    }
+
+    // Explicit target selector still closes the named dialog from anywhere inside document.
+    doc.dispatchEvent({ type: 'click', target: openBtn, preventDefault() {} });
+    assert.equal(dialog.open, true);
+    const externalClose = createMockNode('BUTTON', { attrs: { 'data-ui-modal-close': '#importModal' }, parentElement: body });
+    externalClose.ownerDocument = doc;
+    doc.dispatchEvent({ type: 'click', target: externalClose, preventDefault() {} });
+    assert.equal(dialog.open, false);
 });
 
 test('AdasiModal ignores stale queued native close events delivered after dialog is reopened', () => {
@@ -271,4 +303,18 @@ test('AdasiModal ignores stale queued native close events delivered after dialog
     dialog.removeAttribute('open');
     dialog.dispatchEvent(new Event('close'));
     assert.deepEqual(events.slice(eventsBeforeStaleClose), ['hide', 'hidden']);
+    assert.equal(dialog.returnValue, '');
+
+    const css = readFileSync(new URL('../../resources/css/app.css', import.meta.url), 'utf8');
+    assert.match(css, /dialog\.ui-native-dialog::backdrop\s*\{[^}]*overscroll-behavior:\s*contain;/s);
+
+    // dialog.ui-native-dialog[open] must never declare transform/translate/filter/perspective/contain,
+    // which turn <dialog> into a containing block for position:fixed menus/pickers and misalign them.
+    const openDialogRule = css.match(/dialog\.ui-native-dialog\[open\]\s*\{([^}]*)\}/);
+    assert.ok(openDialogRule, 'dialog.ui-native-dialog[open] rule must exist');
+    assert.equal(
+        /\b(?:transform|translate|scale|rotate|filter|backdrop-filter|perspective|contain)\s*:/i.test(openDialogRule[1]),
+        false,
+        'dialog.ui-native-dialog[open] must not create a containing block for position:fixed descendants',
+    );
 });

@@ -97,10 +97,11 @@
             ? rect.right + window.scrollX - badgeWidth
             : rect.left + window.scrollX;
 
-        // Keep within viewport horizontally
-        const maxLeft = window.innerWidth - badgeWidth - 12;
+        // Keep within viewport horizontally (accounting for horizontal document scroll)
+        const minLeft = window.scrollX + 8;
+        const maxLeft = Math.max(minLeft, window.scrollX + window.innerWidth - badgeWidth - 12);
         if (left > maxLeft) left = maxLeft;
-        if (left < 10) left = 10;
+        if (left < minLeft) left = minLeft;
 
         badge.style.top = `${top}px`;
         badge.style.left = `${left}px`;

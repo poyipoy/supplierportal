@@ -65,7 +65,7 @@
                             @foreach($preview['candidate_rules'] as $idx => $cand)
                                 <tr>
                                     <td class="ui-tabular-nums tw:text-on-surface-variant">{{ $idx + 1 }}</td>
-                                    <td class="tw:font-medium ui-tabular-nums">{{ $cand['category_key'] }}</td>
+                                    <td class="tw:font-semibold ui-tabular-nums">{{ $cand['category_key'] }}</td>
                                     <td class="ui-tabular-nums">{{ $cand['dimension_min'] }} mm</td>
                                     <td class="ui-tabular-nums">{{ $cand['dimension_max'] }} mm</td>
                                     <td>
@@ -90,7 +90,7 @@
                         <th scope="col" class="tw:text-end">{{ __($rp.'.rules.dimension_min') }}</th>
                         <th scope="col" class="tw:text-end">{{ __($rp.'.rules.dimension_max') }}</th>
                         <th scope="col" class="tw:text-center">{{ __($rp.'.rules.status') }}</th>
-                        <th scope="col" class="tw:text-end" style="width: 140px;">{{ __($rp.'.rules.actions') }}</th>
+                        <th scope="col" class="tw:text-end" style="width: 170px;">{{ __($rp.'.rules.actions') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -166,6 +166,29 @@
                                         data-dimension-min="{{ $rule->dimension_min }}"
                                         data-dimension-max="{{ $rule->dimension_max }}"
                                     />
+                                    @can('delete', $rule)
+                                        <form
+                                            method="POST"
+                                            action="{{ route($prefix.'.rules.category.destroy', $rule) }}"
+                                            class="tw:inline"
+                                            data-managed-submit
+                                            data-delete-category-form
+                                            data-category-key="{{ $rule->category_key }}"
+                                            data-category-name="{{ $rule->category_name }}"
+                                        >
+                                            @csrf
+                                            @method('DELETE')
+                                            <x-ui.icon-button
+                                                type="button"
+                                                icon="trash-2"
+                                                variant="danger-outline"
+                                                size="sm"
+                                                data-no-auto-spinner
+                                                data-delete-category-trigger
+                                                :label="__($rp.'.rules.action_delete', ['key' => $rule->category_key])"
+                                            />
+                                        </form>
+                                    @endcan
                                 </div>
                             </td>
                         </tr>
@@ -343,7 +366,7 @@
                                     <span class="ui-status-chip ui-status-chip--neutral tw:ms-1">{{ $hRow['shape'] }}</span>
                                 @endif
                             </td>
-                            <td class="ui-tabular-nums tw:font-medium">{{ $hRow['dimension_display'] ?? '-' }}</td>
+                            <td class="ui-tabular-nums tw:font-semibold">{{ $hRow['dimension_display'] ?? '-' }}</td>
                             <td>
                                 <span class="ui-status-chip {{ ($hRow['range_classification'] ?? '-') !== '-' ? 'ui-status-chip--info' : 'ui-status-chip--neutral' }}">
                                     {{ $hRow['range_classification'] ?? '-' }}
@@ -383,15 +406,15 @@
             </table>
 
             @if($historicalItems instanceof \Illuminate\Contracts\Pagination\Paginator && $historicalItems->hasPages())
-                <x-slot:footer>
+                <x-slot:pagination>
                     {{ $historicalItems->links() }}
-                </x-slot:footer>
+                </x-slot:pagination>
             @endif
         </x-ui.data-table>
 
     {{-- TAB 3: LEGACY ARCHIVE --}}
     @elseif($activeTab === 'legacy')
-        <div class="tw:p-3 tw:rounded-lg tw:bg-surface-variant/40 tw:border tw:border-outline-variant tw:flex tw:items-center tw:gap-3 tw:mb-4">
+        <div class="tw:p-3 tw:rounded-ui-md tw:bg-surface-container tw:border tw:border-outline-variant tw:flex tw:items-center tw:gap-3 tw:mb-4">
             <x-ui.icon name="info" size="sm" class="tw:text-primary tw:shrink-0" />
             <p class="tw:text-ui-xs tw:text-on-surface-variant tw:m-0">{{ __($rp.'.legacy.notice') }}</p>
         </div>
@@ -537,10 +560,10 @@
                     @if($legacyPrices)
                         @forelse($legacyPrices as $price)
                             <tr>
-                                <td class="tw:font-medium">{{ $price->materialMaster?->material_code }}</td>
+                                <td class="tw:font-semibold">{{ $price->materialMaster?->material_code }}</td>
                                 <td>{{ $price->shape }}</td>
                                 <td class="ui-tabular-nums">{{ $price->dimension_min }}–{{ $price->dimension_max }} mm</td>
-                                <td class="tw:text-end ui-tabular-nums tw:font-medium">{{ $price->currency }} {{ number_format($price->price_per_kg, 4) }}</td>
+                                <td class="tw:text-end ui-tabular-nums tw:font-semibold">{{ $price->currency }} {{ number_format($price->price_per_kg, 4) }}</td>
                                 <td>{{ $price->valid_from?->format('d/m/Y') }}</td>
                                 <td>{{ $price->valid_until ? $price->valid_until->format('d/m/Y') : __($rp.'.open_ended') }}</td>
                                 <td class="tw:text-center ui-tabular-nums">v{{ $price->version }}</td>

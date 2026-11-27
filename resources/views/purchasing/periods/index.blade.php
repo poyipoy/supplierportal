@@ -44,7 +44,7 @@
                 <form action="{{ route('purchasing.periods.store') }}" method="POST">
                     @csrf
                     <div class="modal-header">
-                        <h6 class="modal-title tw:font-bold" id="createPeriodModalTitle">{{ __('purchasing.copy.add_new_procurement_period') }}</h6>
+                        <h2 class="modal-title tw:text-ui-lg tw:font-bold" id="createPeriodModalTitle">{{ __('purchasing.copy.add_new_procurement_period') }}</h2>
                         <button type="button" class="btn-close" data-ui-modal-close aria-label="{{ __('purchasing.copy.close') }}"></button>
                     </div>
                     <div class="modal-body">
@@ -73,7 +73,7 @@
                     @csrf
                     @method('PUT')
                     <div class="modal-header">
-                        <h6 class="modal-title tw:font-bold" id="editPeriodModalTitle">{{ __('purchasing.copy.edit_procurement_period') }}</h6>
+                        <h2 class="modal-title tw:text-ui-lg tw:font-bold" id="editPeriodModalTitle">{{ __('purchasing.copy.edit_procurement_period') }}</h2>
                         <button type="button" class="btn-close" data-ui-modal-close aria-label="{{ __('purchasing.copy.close') }}"></button>
                     </div>
                     <div class="modal-body">

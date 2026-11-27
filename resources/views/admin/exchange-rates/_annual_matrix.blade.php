@@ -93,7 +93,7 @@
         <form method="GET" action="{{ route($masterRoutePrefix.'.exchange-rates.index') }}" class="tw:flex tw:flex-wrap tw:items-end tw:gap-3 tw:border-b tw:border-outline-variant tw:p-4" data-track-unsaved="false" data-server-tabs-form>
             @foreach($annualListQuery as $key => $value)<input type="hidden" name="{{ $key }}" value="{{ $value }}">@endforeach
             <input type="hidden" name="annual_new" value="1">
-            <label for="annual-new-year" class="tw:grid tw:gap-1 tw:text-ui-sm tw:font-medium">
+            <label for="annual-new-year" class="tw:grid tw:gap-1 tw:text-ui-sm tw:font-semibold">
                 {{ __('annual_rates.new_year') }}
                 <input id="annual-new-year" name="annual_new_year" type="text" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" value="{{ is_scalar(request('annual_new_year')) ? request('annual_new_year') : '' }}" class="ui-input ui-tabular-nums tw:w-32" required autofocus>
             </label>

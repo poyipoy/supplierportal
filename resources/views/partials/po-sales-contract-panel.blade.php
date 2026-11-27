@@ -44,7 +44,7 @@
             <div class="tw:rounded-ui-sm tw:border tw:border-outline-variant tw:p-3">
                 <div class="tw:font-semibold tw:text-on-surface">{{ __('purchasing.copy.sales_contract_supplier_file') }}</div>
                 @if($supplierFile)
-                    <a href="{{ route('attachments.show', $supplierFile) }}" target="_blank" rel="noopener" class="tw:inline-flex tw:items-center tw:gap-1 tw:text-primary tw:no-underline tw:font-medium tw:mt-1">
+                    <a href="{{ route('attachments.show', $supplierFile) }}" target="_blank" rel="noopener" class="tw:inline-flex tw:items-center tw:gap-1 tw:text-primary tw:no-underline tw:font-semibold tw:mt-1">
                         <x-ui.icon name="file-text" size="sm" />
                         <span class="tw:truncate" style="max-width: 18rem;" title="{{ $supplierFile->file_name }}">{{ $supplierFile->file_name }}</span>
                     </a>
@@ -58,7 +58,7 @@
             <div class="tw:rounded-ui-sm tw:border tw:border-outline-variant tw:p-3">
                 <div class="tw:font-semibold tw:text-on-surface">{{ __('purchasing.copy.sales_contract_purchasing_signed_file') }}</div>
                 @if($signedFile)
-                    <a href="{{ route('attachments.show', $signedFile) }}" target="_blank" rel="noopener" class="tw:inline-flex tw:items-center tw:gap-1 tw:text-primary tw:no-underline tw:font-medium tw:mt-1">
+                    <a href="{{ route('attachments.show', $signedFile) }}" target="_blank" rel="noopener" class="tw:inline-flex tw:items-center tw:gap-1 tw:text-primary tw:no-underline tw:font-semibold tw:mt-1">
                         <x-ui.icon name="file-check" size="sm" />
                         <span class="tw:truncate" style="max-width: 18rem;" title="{{ $signedFile->file_name }}">{{ $signedFile->file_name }}</span>
                     </a>
@@ -80,18 +80,18 @@
         @if($canSupplierUpload)
             <form method="POST" action="{{ route('supplier.purchase-orders.sales-contract.store', $po) }}" enctype="multipart/form-data" data-async-submit class="tw:mt-4 tw:border-t tw:border-outline-variant tw:pt-4 tw:grid tw:gap-3 tw:md:grid-cols-12 tw:items-start">
                 @csrf
-                <div class="tw:md:col-span-5">
+                <div class="tw:min-w-0 tw:md:col-span-5">
                     <label for="sales_contract_file" class="ui-label tw:text-ui-xs tw:font-semibold">{{ __('purchasing.copy.sales_contract_file_label') }} <span class="tw:text-error" aria-hidden="true">*</span></label>
                     <input type="file" name="sales_contract_file" id="sales_contract_file" required accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" aria-describedby="{{ $fileHelpId }}"
                         class="ui-input ui-input--sm @error('sales_contract_file') is-invalid @enderror">
                     <div id="{{ $fileHelpId }}" class="ui-field-help tw:text-ui-xs">{{ __('purchasing.copy.sales_contract_file_help') }}</div>
                     @error('sales_contract_file')<div class="ui-field-error">{{ $message }}</div>@enderror
                 </div>
-                <div class="tw:md:col-span-4">
+                <div class="tw:min-w-0 tw:md:col-span-4">
                     <label for="sales_contract_notes" class="ui-label tw:text-ui-xs tw:font-semibold">{{ __('purchasing.copy.sales_contract_notes_label') }}</label>
                     <input type="text" name="sales_contract_notes" id="sales_contract_notes" maxlength="2000" value="{{ old('sales_contract_notes') }}" class="ui-input ui-input--sm">
                 </div>
-                <div class="tw:md:col-span-3">
+                <div class="tw:min-w-0 tw:md:col-span-3">
                     <span class="ui-label tw:text-ui-xs tw:font-semibold tw:hidden tw:md:block tw:invisible" aria-hidden="true">&nbsp;</span>
                     <x-ui.button type="submit" variant="primary" size="sm" class="tw:w-full tw:justify-center">
                         <x-ui.icon name="upload" size="sm" />

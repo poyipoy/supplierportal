@@ -3,7 +3,7 @@
 @section('page-title', __('local_procurement.labels.vendor_data'))
 
 @section('content')
-<div class="tw:grid tw:gap-6 tw:pb-16">
+<div class="tw:grid tw:gap-6">
     <x-ui.page-header
         :title="__('local_procurement.labels.vendor_data')"
         :description="__('local_procurement.vendor_ui.index_help')"
@@ -32,7 +32,7 @@
                                     <strong class="tw:text-ui-sm tw:text-on-surface">
                                         {{ $req->supplier->supplier?->company_name ?: $req->supplier->name }}
                                     </strong>
-                                    <span class="tw:inline-flex tw:px-2 tw:py-0.5 tw:rounded-sm tw:text-[11px] tw:font-semibold tw:bg-warning tw:text-warning-foreground">
+                                    <span class="tw:inline-flex tw:px-2 tw:py-0.5 tw:rounded-sm tw:text-ui-xs tw:font-semibold tw:bg-warning tw:text-warning-foreground">
                                         {{ __('local_procurement.vendor_ui.type', ['type' => match($req->change_type) { 'profile' => __('local_procurement.vendor_ui.change_profile'), 'bank_account' => __('local_procurement.vendor_ui.change_bank'), default => ucwords(str_replace('_', ' ', $req->change_type)) }]) }}
                                     </span>
                                 </div>
@@ -56,7 +56,7 @@
                             {{-- Approve & Reject Actions --}}
                             <div class="tw:flex tw:items-center tw:gap-2">
                                 @if($canApproveDirectly)
-                                    <form method="POST" action="{{ route('finance.vendor-change-requests.approve', $req) }}" onsubmit="event.preventDefault(); window.AdasiAlert.confirm({title: {{ json_encode(__('local_procurement.vendor_ui.approve_title'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) }}, text: {{ json_encode(__('local_procurement.vendor_ui.approve_help'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) }}, confirmText: {{ json_encode(__('local_procurement.vendor_ui.approve_yes'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) }}, cancelText: {{ json_encode(__('local_invoice.actions.cancel'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) }}}).then(r => { if (r.isConfirmed) this.submit(); });">
+                                    <form method="POST" action="{{ route('finance.vendor-change-requests.approve', $req) }}" onsubmit="event.preventDefault(); window.AdasiAlert.confirm({title: {{ json_encode(__('local_procurement.vendor_ui.approve_title'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) }}, text: {{ json_encode(__('local_procurement.vendor_ui.approve_help'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) }}, confirmText: {{ json_encode(__('local_procurement.vendor_ui.approve_yes'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) }}, cancelText: {{ json_encode(__('local_invoice.actions.cancel'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) }}}).then(r => { if (r.isConfirmed) { window.AdasiButton?.submitForm ? window.AdasiButton.submitForm(this) : this.submit(); } });">
                                         @csrf
                                         <x-ui.button type="submit" variant="primary" size="sm">
                                             <x-ui.icon name="check" size="sm" />
@@ -110,7 +110,7 @@
                                     @csrf
                                     <div class="modal-content">
                                         <div class="modal-header">
-                                            <h5 id="approveReqModalTitle-{{ $req->id }}" class="modal-title tw:text-ui-sm tw:font-bold">{{ __('local_procurement.vendor_ui.approve_title') }}</h5>
+                                            <h5 id="approveReqModalTitle-{{ $req->id }}" class="modal-title tw:text-ui-lg tw:font-bold">{{ __('local_procurement.vendor_ui.approve_title') }}</h5>
                                             <button type="button" class="btn-close" data-ui-modal-close aria-label="{{ __('local_invoice.actions.close') }}"></button>
                                         </div>
                                         <div class="modal-body tw:space-y-3">
@@ -148,7 +148,7 @@
                                 @csrf
                                 <div class="modal-content">
                                     <div class="modal-header">
-                                        <h5 id="rejectReqModalTitle-{{ $req->id }}" class="modal-title tw:text-ui-sm tw:font-bold">{{ __('local_procurement.vendor_ui.reject_title') }}</h5>
+                                        <h5 id="rejectReqModalTitle-{{ $req->id }}" class="modal-title tw:text-ui-lg tw:font-bold">{{ __('local_procurement.vendor_ui.reject_title') }}</h5>
                                         <button type="button" class="btn-close" data-ui-modal-close aria-label="{{ __('local_invoice.actions.close') }}"></button>
                                     </div>
                                     <div class="modal-body">
@@ -175,16 +175,15 @@
         :title="__('local_procurement.labels.vendor_register_old')"
         :description="__('local_invoice.labels.company_data')"
     >
-        <div class="ui-table-responsive">
-            <table class="ui-table ui-table--hover tw:align-middle tw:m-0 tw:text-ui-sm tw:w-full">
+        <table class="ui-table ui-table--hover tw:align-middle tw:m-0 tw:text-ui-sm tw:w-full">
                 <thead>
                     <tr>
-                        <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('local_procurement.vendor_ui.company_vendor') }}</th>
-                        <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('common.fields.category') }}</th>
-                        <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('local_invoice.labels.tax_status') }}</th>
-                        <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('finance.drp.payee_account_active') }}</th>
-                        <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('local_procurement.change_details.payment_term') }}</th>
-                        <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-end">{{ __('common.table.action') }}</th>
+                        <th scope="col">{{ __('local_procurement.vendor_ui.company_vendor') }}</th>
+                        <th scope="col">{{ __('common.fields.category') }}</th>
+                        <th scope="col">{{ __('local_invoice.labels.tax_status') }}</th>
+                        <th scope="col">{{ __('finance.drp.payee_account_active') }}</th>
+                        <th scope="col">{{ __('local_procurement.change_details.payment_term') }}</th>
+                        <th scope="col" class="tw:text-end">{{ __('common.table.action') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -199,12 +198,12 @@
                                 <span class="tw:block tw:text-ui-xs tw:text-on-surface-variant">{{ $vendorUser->email }}</span>
                             </td>
                             <td>
-                                <span class="tw:inline-flex tw:px-2 tw:py-0.5 tw:rounded-sm tw:text-[11px] tw:font-semibold {{ $sup?->vendor_category === 'Barang' ? 'tw:bg-primary/10 tw:text-primary' : 'tw:bg-info/10 tw:text-info' }}">
+                                <span class="tw:inline-flex tw:px-2 tw:py-0.5 tw:rounded-sm tw:text-ui-xs tw:font-semibold {{ $sup?->vendor_category === 'Barang' ? 'tw:bg-primary/10 tw:text-primary' : 'tw:bg-info/10 tw:text-info' }}">
                                     {{ match($sup?->vendor_category ?? 'Barang') { 'Barang' => __('local_procurement.vendor_ui.goods'), 'Jasa' => __('local_procurement.vendor_ui.services'), 'Lainnya' => __('local_procurement.vendor_ui.other'), default => $sup?->vendor_category } }}
                                 </span>
                             </td>
                             <td>
-                                <span class="tw:inline-flex tw:px-2 tw:py-0.5 tw:rounded-sm tw:text-[11px] tw:font-semibold {{ $sup?->is_pkp ? 'tw:bg-success/10 tw:text-success' : 'tw:bg-surface-container tw:text-on-surface-variant' }}">
+                                <span class="tw:inline-flex tw:px-2 tw:py-0.5 tw:rounded-sm tw:text-ui-xs tw:font-semibold {{ $sup?->is_pkp ? 'tw:bg-success/10 tw:text-success' : 'tw:bg-surface-container tw:text-on-surface-variant' }}">
                                     {{ $sup?->is_pkp ? 'PKP' : 'Non-PKP' }}
                                 </span>
                             </td>
@@ -234,7 +233,6 @@
                     @endforelse
                 </tbody>
             </table>
-        </div>
 
         @if($vendors->hasPages())
             <x-slot:pagination>

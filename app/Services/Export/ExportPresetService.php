@@ -6,12 +6,14 @@ use App\Exports\Advanced\ExportDefinition;
 use App\Exports\InspectionsExport;
 use App\Exports\LocalInvoicesExport;
 use App\Exports\PurchaseOrdersExport;
+use App\Exports\PurchasingHistoricalPriceExport;
 use App\Exports\QuotationsExport;
 use App\Exports\RequisitionsExport;
 use App\Exports\ShipmentsExport;
 use App\Http\Requests\Export\Filters\InspectionExportFilters;
 use App\Http\Requests\Export\Filters\LocalInvoiceExportFilters;
 use App\Http\Requests\Export\Filters\PurchaseOrderExportFilters;
+use App\Http\Requests\Export\Filters\PurchasingPriceHistoryExportFilters;
 use App\Http\Requests\Export\Filters\QuotationExportFilters;
 use App\Http\Requests\Export\Filters\RequisitionExportFilters;
 use App\Http\Requests\Export\Filters\ShipmentExportFilters;
@@ -225,6 +227,7 @@ class ExportPresetService
             RequisitionsExport::class => RequisitionExportFilters::validated($request),
             ShipmentsExport::class => ShipmentExportFilters::validated($request),
             PurchaseOrdersExport::class => PurchaseOrderExportFilters::validated($request, supplier: str_starts_with($definition->key(), 'supplier.')),
+            PurchasingHistoricalPriceExport::class => PurchasingPriceHistoryExportFilters::validated($request),
             default => throw new InvalidArgumentException('Preset filters are not supported.'),
         };
         // Never persist the resolved integer supplier FK; resolve the hash again on dispatch.

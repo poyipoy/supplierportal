@@ -180,8 +180,15 @@ function clearActiveAnchors(doc, exceptMenu = null) {
     });
 }
 
+function ensureTriggerHasPopup(trigger) {
+    if (trigger && !trigger.hasAttribute?.('aria-haspopup')) {
+        trigger.setAttribute?.('aria-haspopup', 'menu');
+    }
+}
+
 function markOpenVisualState(trigger, menu, doc, win) {
     clearActiveAnchors(doc, menu);
+    ensureTriggerHasPopup(trigger);
     trigger?.setAttribute?.('data-ui-dropdown-open', 'true');
     menu?.setAttribute?.('data-ui-dropdown-open', 'true');
     dispatchDropdownEvent(trigger || menu, 'adasi:dropdown-show', { menu, trigger }, win);
@@ -305,6 +312,8 @@ export function bootAdasiDropdowns(root = typeof document !== 'undefined' ? docu
     if (!doc || typeof doc.addEventListener !== 'function') return;
     if (bootedDocuments.has(doc)) return;
     bootedDocuments.add(doc);
+
+    doc.querySelectorAll?.(TRIGGER_SELECTOR)?.forEach(ensureTriggerHasPopup);
 
     doc.addEventListener('beforetoggle', (event) => {
         const menu = event.target;

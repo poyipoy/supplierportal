@@ -63,7 +63,7 @@ BLADE);
 
         $this->assertStringContainsString('<div data-calendar-native class="tw:grid tw:gap-1.5">', $html);
         $this->assertStringContainsString('<div data-calendar-enhanced hidden class="tw:grid tw:gap-1.5">', $html);
-        $this->assertMatchesRegularExpression('/id="[^"]+-enhanced"[^>]*class="tw:block tw:text-ui-sm tw:font-medium tw:text-on-surface"/', $html);
+        $this->assertMatchesRegularExpression('/id="[^"]+-enhanced"[^>]*class="tw:block tw:text-ui-sm tw:font-semibold tw:text-on-surface"/', $html);
 
         $css = file_get_contents(resource_path('css/app.css'));
         $this->assertMatchesRegularExpression('/html\.js\s+\.ui-calendar\s+\[data-calendar-enhanced\]\[hidden\]\s*\{[^}]*display:\s*grid\s*!important;/', $css);
@@ -163,7 +163,8 @@ BLADE);
         $this->assertStringContainsString('column-gap: var(--ui-space-2);', $styles);
         $this->assertStringContainsString('margin-inline-end: var(--ui-space-2);', $styles);
         $this->assertStringContainsString('min-width: max-content;', $styles);
-        $this->assertStringContainsString('padding-inline-end: 2.25rem !important;', $styles);
+        $this->assertStringContainsString('padding-inline-end: 1.75rem;', $styles);
+        $this->assertStringContainsString('padding-inline-start: 1.75rem;', $styles);
         $this->assertStringContainsString('.dt-orderable-none', $styles);
         $this->assertMatchesRegularExpression('/\.dt-orderable-none\)\s*\{\s*min-width:\s*max-content;\s*position:\s*relative;\s*\}/', $styles);
         $this->assertStringContainsString('--q-col-weight: 145px;', $supplierQuotation);

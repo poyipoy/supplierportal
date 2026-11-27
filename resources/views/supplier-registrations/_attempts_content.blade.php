@@ -74,7 +74,7 @@
                     <tr>
                         <td>
                             <span class="ui-tabular-nums tw:font-semibold tw:text-ui-xs tw:text-primary">{{ $ref }}</span>
-                            <div class="tw:text-[11px] tw:text-on-surface-variant">{{ __('common.final_copy.attempt_number', ['number' => $attempt->attempt_number]) }}</div>
+                            <div class="tw:text-ui-xs tw:text-on-surface-variant">{{ __('common.final_copy.attempt_number', ['number' => $attempt->attempt_number]) }}</div>
                         </td>
                         <td>
                             <div class="tw:font-semibold tw:text-on-surface">
@@ -84,11 +84,11 @@
                         </td>
                         <td>
                             <div class="ui-tabular-nums tw:text-ui-xs">NIB: {{ $supplier?->nib ?? '-' }}</div>
-                            <div class="ui-tabular-nums tw:text-[11px] tw:text-on-surface-variant">NPWP: {{ $supplier?->npwp ?? '-' }}</div>
+                            <div class="ui-tabular-nums tw:text-ui-xs tw:text-on-surface-variant">NPWP: {{ $supplier?->npwp ?? '-' }}</div>
                         </td>
                         <td>
-                            <div class="tw:text-ui-xs tw:font-medium">{{ $supplier?->pic_name ?? '-' }}</div>
-                            <div class="tw:text-[11px] tw:text-on-surface-variant">{{ $supplier?->pic_phone ?? '-' }}</div>
+                            <div class="tw:text-ui-xs tw:font-semibold">{{ $supplier?->pic_name ?? '-' }}</div>
+                            <div class="tw:text-ui-xs tw:text-on-surface-variant">{{ $supplier?->pic_phone ?? '-' }}</div>
                         </td>
                         <td>
                             <span class="tw:text-ui-xs">{{ $attempt->submitted_at ? $regionalFormatter->timestamp($attempt->submitted_at, 'datetime_comma') : '-' }}</span>

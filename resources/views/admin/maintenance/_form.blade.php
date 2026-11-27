@@ -126,7 +126,7 @@
             </div>
         @else
             <div>
-                <p class="tw:m-0 tw:text-ui-sm tw:font-medium tw:text-on-surface">{{ __('maintenance.fields.start') }}</p>
+                <p class="tw:m-0 tw:text-ui-sm tw:font-semibold tw:text-on-surface">{{ __('maintenance.fields.start') }}</p>
                 <p class="tw:m-0 tw:mt-0.5 tw:font-semibold ui-tabular-nums">{{ BusinessTime::format($record->starts_at) }}</p>
                 <p class="tw:m-0 tw:mt-0.5 tw:text-ui-xs tw:text-on-surface-variant">{{ __('maintenance.form.start_locked', ['time' => BusinessTime::format($record->starts_at)]) }}</p>
             </div>
@@ -134,7 +134,7 @@
 
         @if($isCompleted)
             <div>
-                <p class="tw:m-0 tw:text-ui-sm tw:font-medium tw:text-on-surface">{{ __('maintenance.fields.estimated_end') }}</p>
+                <p class="tw:m-0 tw:text-ui-sm tw:font-semibold tw:text-on-surface">{{ __('maintenance.fields.estimated_end') }}</p>
                 <p class="tw:m-0 tw:mt-0.5 tw:font-semibold ui-tabular-nums">{{ BusinessTime::format($record->estimated_end_at) }}</p>
             </div>
         @else

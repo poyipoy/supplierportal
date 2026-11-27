@@ -1150,3 +1150,98 @@ test('server-tabs invokes onError when a 401 session-expired response aborts tab
         restoreNetwork();
     }
 });
+
+test('server-tabs preserves window scrollY on tab switches and applies valid token classes to active pill tabs', async () => {
+    const calls = stubNetwork();
+    const scrollCalls = [];
+    const origScrollY = Object.getOwnPropertyDescriptor(globalThis.window, 'scrollY');
+    const origScrollTo = globalThis.window.scrollTo;
+    globalThis.window.scrollY = 420;
+    globalThis.window.scrollTo = (arg1, arg2) => scrollCalls.push({ arg1, arg2 });
+
+    const badge = makeElement();
+    const tabA = makeTabLink('/page?tab=a', 'a');
+    tabA.querySelector = (sel) => (sel.includes('tw:rounded-full') ? badge : null);
+    const tabB = makeTabLink('/page?tab=b', 'b');
+    const badgeB = makeElement();
+    tabB.querySelector = (sel) => (sel.includes('tw:rounded-full') ? badgeB : null);
+
+    try {
+        const page = setup({ cacheTtlMs: 0 }, [tabA, tabB]);
+
+        page.click(tabB);
+        calls[0].respond({ html: '<p>tab b</p>', tab: 'b', url: '/page?tab=b' });
+        await settle();
+
+        assert.equal(scrollCalls.length, 1, 'tab switch must restore vertical scroll position');
+        assert.deepEqual(scrollCalls[0].arg1, { top: 420, behavior: 'instant' });
+        assert.equal(tabB.classList.contains('tw:shadow-xs'), true, 'active pill tab must use valid tw:shadow-xs utility');
+        assert.equal(tabB.classList.contains('tw-shadow-xs'), false, 'active pill tab must not use broken tw-shadow-xs typo');
+        assert.equal(badgeB.classList.contains('tw:text-primary-foreground'), true, 'active tab badge must use semantic primary-foreground text token');
+        assert.equal(badgeB.classList.contains('tw:text-white'), false, 'active tab badge must not hardcode tw:text-white');
+    } finally {
+        if (origScrollY) Object.defineProperty(globalThis.window, 'scrollY', origScrollY);
+        else delete globalThis.window.scrollY;
+        if (origScrollTo === undefined) delete globalThis.window.scrollTo;
+        else globalThis.window.scrollTo = origScrollTo;
+        restoreNetwork();
+    }
+});
+
+test('bootServerTabs honors data-server-tabs-prefetch="false", click aborts in-flight prefetch + dispatches loading event, and cache normalizes _embed=1', async () => {
+    const calls = stubNetwork();
+    const origQueryAll = globalThis.document.querySelectorAll;
+
+    try {
+        // 1. data-server-tabs-prefetch="false" disables speculative hover prefetch during bootServerTabs
+        const selector = `#prefetchOff${++nextId}`;
+        const listeners = {};
+        const content = makeElement();
+        const container = makeElement({
+            id: selector.slice(1),
+            dataset: { serverTabsPrefetch: 'false' },
+            addEventListener: (type, handler) => { (listeners[type] ??= []).push(handler); },
+            dispatchEvent: () => true,
+            querySelector: (q) => (q === '[data-server-tabs-content]' ? content : null),
+            querySelectorAll: () => [],
+        });
+        container.setAttribute('data-server-tabs-prefetch', 'false');
+        containers.set(selector, container);
+        globalThis.document.querySelectorAll = (q) => (q === '[data-server-tabs-container]' ? [container] : []);
+
+        window.AdasiServerTabs.boot();
+        const hoveredLink = makeTabLink('/page?tab=vs-best&_embed=1', 'vs-best');
+        listeners.pointerenter.forEach((handler) => handler({ target: hoveredLink }));
+        assert.equal(timers.filter((t) => t.ms === 60 && !t.cleared).length, 0, 'container opted out of hover prefetch');
+
+        // 2. Explicit click aborts active speculativePrefetch and emits adasi:server-tabs:loading before fetch
+        const dispatched = [];
+        const page = setup();
+        page.container.dispatchEvent = (event) => {
+            dispatched.push(event);
+            return true;
+        };
+
+        page.hover(makeTabLink('/page?tab=heavy', 'heavy'));
+        const debounce = timers.find((t) => t.ms === 60 && !t.cleared);
+        debounce.fn();
+        await settle();
+        assert.equal(calls.length, 1);
+        assert.equal(calls[0].options.headers['X-Adasi-Prefetch'], '1');
+
+        page.click(makeTabLink('/page?tab=target&_embed=1', 'target'));
+        assert.equal(calls[0].options.signal.aborted, true, 'explicit tab click aborts any in-flight speculative prefetch');
+        assert.equal(dispatched.some((evt) => evt.type === 'adasi:server-tabs:loading'), true, 'must announce loading start so pages can abort active XHRs');
+        assert.equal(calls.length, 2);
+
+        // 3. Cache normalized without _embed=1 hits when revisiting without _embed=1
+        calls[1].respond({ html: '<p>target</p>', tab: 'target', url: '/page?tab=target' });
+        await settle();
+        page.click(makeTabLink('/page?tab=target', 'target'));
+        await settle();
+        assert.equal(calls.length, 2, 'cached fragment for _embed=1 URL matches non-embed URL');
+    } finally {
+        globalThis.document.querySelectorAll = origQueryAll;
+        restoreNetwork();
+    }
+});

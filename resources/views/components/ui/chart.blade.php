@@ -12,6 +12,7 @@
     'plotClass' => 'tw:h-64',
     'summary' => null,
     'autoSummary' => true,
+    'summarySrOnly' => false,
     'hint' => true,
     'describedby' => null,
     'tableLabel' => null,
@@ -38,7 +39,7 @@
     @if($summaryMode || $hint)
         <figcaption class="tw:mt-2 tw:grid tw:gap-0.5 tw:text-ui-xs tw:text-on-surface-variant">
             @if($summaryMode)
-                <span id="{{ $id }}-summary" class="tw:text-on-surface" data-adasi-chart-summary="{{ $summaryMode }}">{{ $summary }}</span>
+                <span id="{{ $id }}-summary" class="{{ $summarySrOnly ? 'tw:sr-only' : 'tw:text-on-surface' }}" data-adasi-chart-summary="{{ $summaryMode }}">{{ $summary }}</span>
             @endif
             @if($hint)
                 <span id="{{ $id }}-hint">{{ __('charts.keyboard_hint') }}</span>

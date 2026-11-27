@@ -25,6 +25,6 @@
     >
         <x-ui.icon :name="$icon" size="sm" class="tw:shrink-0" />
         <span>{{ __('supplier_audit.queues.'.$key) }}</span>
-        <span class="ui-tabular-nums tw:inline-flex tw:min-w-5 tw:items-center tw:justify-center tw:rounded-full tw:px-1.5 tw:py-0.5 tw:text-[11px] tw:font-bold tw:leading-none {{ $badgeTone }} tw:group-aria-[current=page]:bg-primary-foreground tw:group-aria-[current=page]:text-primary" data-queue-count="{{ $key }}">{{ $count }}</span>
+        <span class="ui-tabular-nums tw:inline-flex tw:min-w-5 tw:items-center tw:justify-center tw:rounded-full tw:px-1.5 tw:py-0.5 tw:text-ui-xs tw:font-bold tw:leading-none {{ $badgeTone }} tw:group-aria-[current=page]:bg-primary-foreground tw:group-aria-[current=page]:text-primary" data-queue-count="{{ $key }}">{{ $count }}</span>
     </a>
 @endforeach

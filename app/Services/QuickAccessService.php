@@ -34,7 +34,10 @@ class QuickAccessService
         return $this->availableForContext($user, $this->contextFor($user));
     }
 
-    public function availableForContext(User $user, ?string $context): array
+    /**
+     * @param  list<string>|null  $onlyKeys
+     */
+    public function availableForContext(User $user, ?string $context, ?array $onlyKeys = null): array
     {
         $audiences = config('quick_access.audiences', []);
 
@@ -49,6 +52,10 @@ class QuickAccessService
             $items = $eligible ? ($audiences['supplier'][$context] ?? []) : [];
         } else {
             $items = $audiences[$user->role] ?? [];
+        }
+
+        if ($onlyKeys !== null) {
+            $items = array_intersect_key($items, array_flip($onlyKeys));
         }
 
         $available = [];
@@ -74,17 +81,25 @@ class QuickAccessService
 
     public function selectedFor(User $user, array $keys, ?string $context = null): array
     {
+        $requestedKeys = array_values(array_unique(array_filter($keys, 'is_string')));
+        if ($requestedKeys === []) {
+            return [];
+        }
+
         $available = $this->availableForContext(
             $user,
             $user->isSupplier() ? ($context ?? $this->contextFor($user)) : null,
+            $requestedKeys,
         );
 
-        return collect($keys)
-            ->filter(fn ($key) => is_string($key) && isset($available[$key]))
-            ->unique()
-            ->map(fn (string $key) => $available[$key])
-            ->values()
-            ->all();
+        $selected = [];
+        foreach ($requestedKeys as $key) {
+            if (isset($available[$key])) {
+                $selected[] = $available[$key];
+            }
+        }
+
+        return $selected;
     }
 
     public function isAvailableKey(User $user, string $key, ?string $context = null): bool
@@ -92,6 +107,7 @@ class QuickAccessService
         $available = $this->availableForContext(
             $user,
             $user->isSupplier() ? ($context ?? $this->contextFor($user)) : null,
+            [$key],
         );
 
         return isset($available[$key]);

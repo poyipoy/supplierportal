@@ -29,7 +29,8 @@
     $helperId = $helper ? $resolvedId . '-help' : null;
     $errorId = $resolvedId . '-error';
     $formatId = $resolvedId . '-format';
-    $descriptionIds = implode(' ', array_filter([$helperId, $formatId, $errorId]));
+    $baseDescriptionIds = implode(' ', array_filter([$helperId, $formatId]));
+    $descriptionIdsWithError = implode(' ', array_filter([$helperId, $formatId, $errorId]));
 
     $normalizedExistingFiles = $existingFiles;
     if (empty($normalizedExistingFiles) && !empty($existingFileName)) {
@@ -73,7 +74,7 @@
 
     {{-- Balanced Document Card Container --}}
     <div
-        class="tw:rounded-ui-md tw:border tw:border-outline-variant tw:bg-surface-container/25 tw:p-4 tw:flex tw:flex-col tw:h-full tw:transition-all tw:hover:border-outline"
+        class="tw:rounded-ui-md tw:border tw:border-outline-variant tw:bg-surface-container/25 tw:p-4 tw:flex tw:flex-col tw:h-full tw:transition-colors tw:hover:border-outline"
         :class="{ 'tw:border-error tw:bg-error-container/10': serverError || clientError }"
     >
         {{-- Card Header: Title, Status Badge, and Helper Note --}}
@@ -96,12 +97,12 @@
                 <div class="tw:shrink-0" aria-live="polite" aria-atomic="true">
                     <template x-if="{{ $showCount ? 'true' : 'hasFiles' }}">
                         @if($multiple || $showCount)
-                            <span class="tw:inline-flex tw:items-center tw:gap-1 tw:px-2 tw:py-0.5 tw:rounded-sm tw:text-[11px] tw:font-semibold tw:bg-primary/10 tw:text-primary">
+                            <span class="tw:inline-flex tw:items-center tw:gap-1 tw:px-2 tw:py-0.5 tw:rounded-ui-sm tw:text-ui-xs tw:font-semibold tw:bg-primary/10 tw:text-primary">
                                 <x-ui.icon name="files" size="sm" />
                                 <span><span x-text="totalFilesCount"></span>/{{ $maxFiles }} {{ __('common.upload.files') }}</span>
                             </span>
                         @else
-                            <span class="tw:inline-flex tw:items-center tw:gap-1 tw:px-2 tw:py-0.5 tw:rounded-sm tw:text-[11px] tw:font-semibold tw:bg-success/15 tw:text-success">
+                            <span class="tw:inline-flex tw:items-center tw:gap-1 tw:px-2 tw:py-0.5 tw:rounded-ui-sm tw:text-ui-xs tw:font-semibold tw:bg-success/15 tw:text-success">
                                 <x-ui.icon name="check" size="sm" />
                                 <span x-text="isExisting ? @js(__('common.upload.saved')) : @js(__('common.upload.ready'))"></span>
                             </span>
@@ -109,14 +110,14 @@
                     </template>
                     <template x-if="{{ $showCount ? 'false' : '!hasFiles' }}">
                         @if($requiredWhen !== null)
-                            <span x-show="{{ $requiredWhen }}" @if(!$required) style="display: none" @endif class="tw:inline-flex tw:items-center tw:px-2 tw:py-0.5 tw:rounded-sm tw:text-[11px] tw:font-semibold tw:bg-error/10 tw:text-error">{{ __('common.upload.required') }}</span>
-                            <span x-show="!({{ $requiredWhen }})" @if($required) style="display: none" @endif class="tw:inline-flex tw:items-center tw:px-2 tw:py-0.5 tw:rounded-sm tw:text-[11px] tw:font-medium tw:bg-surface-high tw:text-on-surface-variant">{{ __('common.fields.optional') }}</span>
+                            <span x-show="{{ $requiredWhen }}" @if(!$required) style="display: none" @endif class="tw:inline-flex tw:items-center tw:px-2 tw:py-0.5 tw:rounded-ui-sm tw:text-ui-xs tw:font-semibold tw:bg-error/10 tw:text-error">{{ __('common.upload.required') }}</span>
+                            <span x-show="!({{ $requiredWhen }})" @if($required) style="display: none" @endif class="tw:inline-flex tw:items-center tw:px-2 tw:py-0.5 tw:rounded-ui-sm tw:text-ui-xs tw:font-semibold tw:bg-surface-high tw:text-on-surface-variant">{{ __('common.fields.optional') }}</span>
                         @elseif($required)
-                            <span class="tw:inline-flex tw:items-center tw:px-2 tw:py-0.5 tw:rounded-sm tw:text-[11px] tw:font-semibold tw:bg-error/10 tw:text-error">
+                            <span class="tw:inline-flex tw:items-center tw:px-2 tw:py-0.5 tw:rounded-ui-sm tw:text-ui-xs tw:font-semibold tw:bg-error/10 tw:text-error">
                                 {{ __('common.upload.required') }}
                             </span>
                         @else
-                            <span class="tw:inline-flex tw:items-center tw:px-2 tw:py-0.5 tw:rounded-sm tw:text-[11px] tw:font-medium tw:bg-surface-high tw:text-on-surface-variant">
+                            <span class="tw:inline-flex tw:items-center tw:px-2 tw:py-0.5 tw:rounded-ui-sm tw:text-ui-xs tw:font-semibold tw:bg-surface-high tw:text-on-surface-variant">
                                 {{ __('common.fields.optional') }}
                             </span>
                         @endif
@@ -125,7 +126,7 @@
             </div>
 
             @if($helper)
-                <p id="{{ $helperId }}" class="tw:text-[11px] tw:text-on-surface-variant tw:mt-1 tw:mb-0 tw:leading-normal">
+                <p id="{{ $helperId }}" class="tw:text-ui-xs tw:text-on-surface-variant tw:mt-1 tw:mb-0 tw:leading-normal">
                     {{ $helper }}
                 </p>
             @endif
@@ -143,14 +144,14 @@
                 tabindex="0"
                 @keydown.enter.prevent="$refs.fileInput.click()"
                 @keydown.space.prevent="$refs.fileInput.click()"
-                class="group tw:relative tw:flex tw:flex-col tw:items-center tw:justify-center tw:text-center tw:rounded-ui-sm tw:border tw:border-dashed tw:border-outline-variant tw:bg-surface tw:p-4 tw:flex-1 tw:min-h-[110px] tw:transition-all tw:cursor-pointer tw:hover:border-primary tw:hover:bg-primary/5 tw:focus:outline-hidden tw:focus:ring-2 tw:focus:ring-primary tw:focus:border-primary"
+                class="group tw:relative tw:flex tw:flex-col tw:items-center tw:justify-center tw:text-center tw:rounded-ui-sm tw:border tw:border-dashed tw:border-outline-variant tw:bg-surface tw:p-4 tw:flex-1 tw:min-h-[110px] tw:transition-colors tw:cursor-pointer tw:hover:border-primary tw:hover:bg-primary/5 tw:focus:outline-hidden tw:focus:ring-2 tw:focus:ring-primary tw:focus:border-primary"
                 :class="{
                     'tw:border-primary tw:bg-primary-container/20': isDragging,
                     'tw:border-error tw:bg-error-container/20': serverError || clientError
                 }"
                 role="button"
                 aria-label="{{ __('common.upload.label', ['label' => $label ?: __('common.upload.file')]) }}"
-                aria-describedby="{{ $descriptionIds }}"
+                :aria-describedby="(clientError || serverError) ? @js($descriptionIdsWithError) : @js($baseDescriptionIds)"
                 :aria-invalid="(clientError || serverError) ? 'true' : 'false'"
             >
                 <div class="tw:w-9 tw:h-9 tw:rounded-full tw:bg-primary/10 tw:text-primary tw:flex tw:items-center tw:justify-center tw:mb-1.5 tw:group-hover:bg-primary tw:group-hover:text-primary-foreground tw:transition-colors">
@@ -160,7 +161,7 @@
                 <div class="tw:text-ui-xs tw:font-semibold tw:text-primary tw:group-hover:underline">
                     {{ __('common.upload.choose') }} <span class="tw:text-on-surface-variant tw:font-normal">{{ __('common.upload.drag') }}</span>
                 </div>
-                <div class="tw:text-[11px] tw:text-on-surface-variant tw:mt-1">
+                <div class="tw:text-ui-xs tw:text-on-surface-variant tw:mt-1">
                     {{ $formatText }} @if($multiple) · {{ __('common.review.upload_maximum', ['count' => $maxFiles]) }} @endif
                 </div>
             </div>
@@ -177,21 +178,21 @@
                     >
                         {{-- 2.1 Existing Saved Files --}}
                         <template x-for="(file, idx) in existingFiles" :key="'exist-' + idx">
-                            <div class="tw:flex tw:items-center tw:justify-between tw:gap-2 tw:rounded-ui-sm tw:border tw:border-success/30 tw:bg-surface tw:px-2.5 tw:py-2 tw:transition-all tw:hover:border-success/50">
+                            <div class="tw:flex tw:items-center tw:justify-between tw:gap-2 tw:rounded-ui-sm tw:border tw:border-success/30 tw:bg-surface tw:px-2.5 tw:py-2 tw:transition-colors tw:hover:border-success/50">
                                 <div class="tw:flex tw:items-center tw:gap-2 tw:min-w-0 tw:flex-1">
                                     <div class="tw:w-7 tw:h-7 tw:rounded-full tw:bg-success/10 tw:text-success tw:flex tw:items-center tw:justify-center tw:shrink-0">
                                         <x-ui.icon name="file-check" size="sm" />
                                     </div>
                                     <div class="tw:min-w-0 tw:flex-1">
                                         <div class="tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:truncate" x-text="file.name" :title="file.name"></div>
-                                        <div class="tw:text-[10px] tw:text-on-surface-variant tw:flex tw:items-center tw:gap-1.5 tw:mt-0.5">
+                                        <div class="tw:text-ui-xs tw:text-on-surface-variant tw:flex tw:items-center tw:gap-1.5 tw:mt-0.5">
                                             <template x-if="file.size">
                                                 <span class="ui-tabular-nums" x-text="file.size"></span>
                                             </template>
                                             <template x-if="file.size">
                                                 <span>·</span>
                                             </template>
-                                            <span class="tw:text-success tw:font-medium tw:inline-flex tw:items-center tw:gap-0.5">
+                                            <span class="tw:text-success tw:font-semibold tw:inline-flex tw:items-center tw:gap-0.5">
                                                 <x-ui.icon name="check" size="sm" />
                                                 <span>{{ __('common.upload.saved') }}</span>
                                             </span>
@@ -205,7 +206,7 @@
                                 </div>
                                 <button
                                     type="button"
-                                    class="ui-motion ui-focus-ring tw:inline-flex tw:items-center tw:justify-center tw:rounded-ui-sm tw:border tw:border-transparent tw:bg-error-container/30 tw:text-error tw:p-1 tw:text-[10px] tw:font-semibold tw:hover:bg-error-container tw:hover:text-on-error-container"
+                                    class="ui-motion ui-focus-ring tw:inline-flex tw:min-h-7 tw:min-w-7 tw:items-center tw:justify-center tw:rounded-ui-sm tw:border tw:border-transparent tw:bg-error-container/30 tw:text-error tw:p-1 tw:text-ui-xs tw:font-semibold tw:hover:bg-error-container tw:hover:text-on-error-container"
                                     @click.stop="removeExistingFile(idx)"
                                     title="{{ __('common.upload.remove_saved') }}"
                                     aria-label="{{ __('common.upload.remove_saved') }}"
@@ -217,17 +218,17 @@
 
                         {{-- 2.2 Newly Staged Files (Ready to upload) --}}
                         <template x-for="(file, idx) in stagedFiles" :key="'staged-' + idx">
-                            <div class="tw:flex tw:items-center tw:justify-between tw:gap-2 tw:rounded-ui-sm tw:border tw:border-primary/30 tw:bg-surface tw:px-2.5 tw:py-2 tw:transition-all tw:hover:border-primary/50">
+                            <div class="tw:flex tw:items-center tw:justify-between tw:gap-2 tw:rounded-ui-sm tw:border tw:border-primary/30 tw:bg-surface tw:px-2.5 tw:py-2 tw:transition-colors tw:hover:border-primary/50">
                                 <div class="tw:flex tw:items-center tw:gap-2 tw:min-w-0 tw:flex-1">
                                     <div class="tw:w-7 tw:h-7 tw:rounded-full tw:bg-primary/10 tw:text-primary tw:flex tw:items-center tw:justify-center tw:shrink-0">
                                         <x-ui.icon name="file-up" size="sm" />
                                     </div>
                                     <div class="tw:min-w-0 tw:flex-1">
                                         <div class="tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:truncate" x-text="file.name" :title="file.name"></div>
-                                        <div class="tw:text-[10px] tw:text-on-surface-variant tw:flex tw:items-center tw:gap-1.5 tw:mt-0.5">
+                                        <div class="tw:text-ui-xs tw:text-on-surface-variant tw:flex tw:items-center tw:gap-1.5 tw:mt-0.5">
                                             <span class="ui-tabular-nums" x-text="formatBytes(file.size)"></span>
                                             <span>·</span>
-                                            <span class="tw:text-primary tw:font-medium tw:inline-flex tw:items-center tw:gap-0.5">
+                                            <span class="tw:text-primary tw:font-semibold tw:inline-flex tw:items-center tw:gap-0.5">
                                                 <x-ui.icon name="upload-cloud" size="sm" />
                                                 <span>{{ __('common.upload.ready') }}</span>
                                             </span>
@@ -236,7 +237,7 @@
                                 </div>
                                 <button
                                     type="button"
-                                    class="ui-motion ui-focus-ring tw:inline-flex tw:items-center tw:justify-center tw:rounded-ui-sm tw:border tw:border-transparent tw:bg-error-container/30 tw:text-error tw:p-1 tw:text-[10px] tw:font-semibold tw:hover:bg-error-container tw:hover:text-on-error-container"
+                                    class="ui-motion ui-focus-ring tw:inline-flex tw:min-h-7 tw:min-w-7 tw:items-center tw:justify-center tw:rounded-ui-sm tw:border tw:border-transparent tw:bg-error-container/30 tw:text-error tw:p-1 tw:text-ui-xs tw:font-semibold tw:hover:bg-error-container tw:hover:text-on-error-container"
                                     @click.stop="removeStagedFile(idx)"
                                     title="{{ __('common.upload.cancel_file') }}"
                                     aria-label="{{ __('common.upload.cancel_file') }}"
@@ -262,7 +263,7 @@
                                 @keydown.space.prevent="$refs.fileInput.click()"
                                 role="button"
                                 aria-label="{{ __('common.upload.label', ['label' => $label ?: __('common.upload.file')]) }}"
-                                aria-describedby="{{ $descriptionIds }}"
+                                :aria-describedby="(clientError || serverError) ? @js($descriptionIdsWithError) : @js($baseDescriptionIds)"
                                 :aria-invalid="(clientError || serverError) ? 'true' : 'false'"
                                 class="ui-focus-ring tw:flex tw:items-center tw:justify-center tw:gap-1.5 tw:py-1.5 tw:px-3 tw:rounded-ui-sm tw:border tw:border-dashed tw:border-outline-variant tw:hover:border-primary tw:hover:bg-primary/5 tw:text-ui-xs tw:font-semibold tw:text-primary tw:cursor-pointer tw:transition-colors"
                                 :class="{ 'tw:border-primary tw:bg-primary/10': isDragging }"
@@ -274,7 +275,7 @@
                             {{-- Multi-upload: Max files limit reached notice --}}
                             <div
                                 x-show="!canAddMore"
-                                class="tw:text-center tw:py-1.5 tw:px-2.5 tw:rounded-ui-sm tw:bg-surface-container-high/60 tw:border tw:border-outline-variant/60 tw:text-[11px] tw:font-medium tw:text-on-surface-variant"
+                                class="tw:text-center tw:py-1.5 tw:px-2.5 tw:rounded-ui-sm tw:bg-surface-container-high/60 tw:border tw:border-outline-variant/60 tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant"
                             >
                                 <x-ui.icon name="check-circle" size="sm" class="tw:inline tw:text-success tw:me-1" />
                                 <span>{{ __('common.review.upload_limit_reached', ['count' => $maxFiles]) }}</span>
@@ -291,7 +292,7 @@
                                 @keydown.space.prevent="$refs.fileInput.click()"
                                 role="button"
                                 aria-label="{{ __('common.upload.label', ['label' => $label ?: __('common.upload.file')]) }}"
-                                aria-describedby="{{ $descriptionIds }}"
+                                :aria-describedby="(clientError || serverError) ? @js($descriptionIdsWithError) : @js($baseDescriptionIds)"
                                 :aria-invalid="(clientError || serverError) ? 'true' : 'false'"
                                 class="ui-focus-ring tw:flex tw:items-center tw:justify-center tw:gap-1.5 tw:py-1.5 tw:px-3 tw:rounded-ui-sm tw:border tw:border-dashed tw:border-outline-variant tw:hover:border-primary tw:hover:bg-primary/5 tw:text-ui-xs tw:font-semibold tw:text-primary tw:cursor-pointer tw:transition-colors"
                                 :class="{ 'tw:border-primary tw:bg-primary/10': isDragging }"
@@ -321,12 +322,12 @@
             @disabled($disabled)
             @if($multiple) multiple @endif
             @if($accept) accept="{{ $accept }}" @endif
-            aria-describedby="{{ $descriptionIds }}"
+            :aria-describedby="(clientError || serverError) ? @js($descriptionIdsWithError) : @js($baseDescriptionIds)"
             :aria-invalid="(clientError || serverError) ? 'true' : 'false'"
             {{ $attributes->except(['class', 'accept', 'id', 'name', 'type', 'layout']) }}
         >
 
         {{-- Error Alert / Message --}}
-        <p id="{{ $errorId }}" x-show="clientError || serverError" x-text="clientError || serverError" class="tw:m-0 tw:text-ui-xs tw:font-medium tw:text-error tw:mt-2.5" role="alert">{{ $message }}</p>
+        <p id="{{ $errorId }}" x-show="clientError || serverError" x-text="clientError || serverError" class="tw:m-0 tw:text-ui-xs tw:font-semibold tw:text-error tw:mt-2.5" role="alert">{{ $message }}</p>
     </div>
 </div>

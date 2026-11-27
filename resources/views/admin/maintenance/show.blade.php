@@ -81,12 +81,12 @@
 
     <div class="tw:grid tw:gap-6 tw:lg:grid-cols-3">
         <section aria-labelledby="maintenanceNoticeTitle" class="tw:grid tw:content-start tw:gap-3 tw:lg:col-span-2">
-            <h2 id="maintenanceNoticeTitle" class="tw:m-0 tw:text-ui-xs tw:font-bold tw:uppercase tw:tracking-wider tw:text-on-surface">{{ __('maintenance.detail.notice') }}</h2>
+            <h2 id="maintenanceNoticeTitle" class="tw:m-0 tw:text-ui-sm tw:font-bold tw:uppercase tw:tracking-wider tw:text-on-surface">{{ __('maintenance.detail.notice') }}</h2>
             @include('maintenance._notices', ['notices' => $preview, 'headingTag' => 'h3'])
         </section>
 
         <section aria-labelledby="maintenanceLifecycleTitle" class="tw:grid tw:content-start tw:gap-3">
-            <h2 id="maintenanceLifecycleTitle" class="tw:m-0 tw:text-ui-xs tw:font-bold tw:uppercase tw:tracking-wider tw:text-on-surface">{{ __('maintenance.detail.lifecycle') }}</h2>
+            <h2 id="maintenanceLifecycleTitle" class="tw:m-0 tw:text-ui-sm tw:font-bold tw:uppercase tw:tracking-wider tw:text-on-surface">{{ __('maintenance.detail.lifecycle') }}</h2>
             <dl class="tw:m-0 tw:grid tw:gap-3 tw:rounded-ui-md tw:border tw:border-outline tw:bg-surface tw:p-4">
                 @foreach($lifecycle as [$lifecycleLabel, $lifecycleValue])
                     <div class="tw:flex tw:flex-wrap tw:items-baseline tw:justify-between tw:gap-x-3">
@@ -99,7 +99,7 @@
     </div>
 
     <section aria-labelledby="maintenanceModulesTitle" class="tw:grid tw:gap-3">
-        <h2 id="maintenanceModulesTitle" class="tw:m-0 tw:text-ui-xs tw:font-bold tw:uppercase tw:tracking-wider tw:text-on-surface">{{ __('maintenance.detail.modules') }}</h2>
+        <h2 id="maintenanceModulesTitle" class="tw:m-0 tw:text-ui-sm tw:font-bold tw:uppercase tw:tracking-wider tw:text-on-surface">{{ __('maintenance.detail.modules') }}</h2>
         @if($record->isGlobal())
             <p class="tw:m-0 tw:rounded-ui-md tw:border tw:border-outline tw:bg-surface tw:p-4 tw:text-ui-sm tw:text-on-surface">{{ __('maintenance.detail.global_coverage') }}</p>
         @else

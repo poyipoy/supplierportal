@@ -66,6 +66,24 @@ class FinanceDrpCandidatesTest extends TestCase
             $this->actingAs($this->finance)->get(route('finance.drp.supplier', $query))
                 ->assertOk()->assertViewHas('eligibleInvoices', fn ($rows) => $rows->pluck('id')->all() === $expected);
         }
+
+        $defaultHtml = $this->actingAs($this->finance)->get(route('finance.drp.supplier'))
+            ->assertOk()
+            ->assertSee('id="drpCandidatesSortStatus"', false)
+            ->assertSee('aria-sort="ascending"', false)
+            ->assertSee('data-drp-sort-link="due_date"', false)
+            ->assertSee('data-drp-sort-link="verification_date"', false)
+            ->assertDontSee('aria-sort="none"', false)
+            ->getContent();
+        $this->assertMatchesRegularExpression('/<th scope="col"\s+aria-sort="ascending"\s*>\s*<a[^>]*class="ui-table-sort-btn"[^>]*data-drp-sort-link="due_date"/', $defaultHtml);
+        $this->assertMatchesRegularExpression('/<th scope="col"\s*>\s*<a[^>]*class="ui-table-sort-btn"[^>]*data-drp-sort-link="verification_date"/', $defaultHtml);
+
+        $verificationDescHtml = $this->actingAs($this->finance)->get(route('finance.drp.supplier', [
+            'sort' => 'verification_date',
+            'direction' => 'desc',
+        ]))->assertOk()->assertDontSee('aria-sort="none"', false)->getContent();
+        $this->assertMatchesRegularExpression('/<th scope="col"\s*>\s*<a[^>]*class="ui-table-sort-btn"[^>]*data-drp-sort-link="due_date"/', $verificationDescHtml);
+        $this->assertMatchesRegularExpression('/<th scope="col"\s+aria-sort="descending"\s*>\s*<a[^>]*class="ui-table-sort-btn"[^>]*data-drp-sort-link="verification_date"/', $verificationDescHtml);
     }
 
     public function test_supplier_date_ranges_use_business_day_boundaries_and_and_semantics(): void

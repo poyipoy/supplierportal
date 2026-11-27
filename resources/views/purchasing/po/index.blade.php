@@ -27,6 +27,11 @@
         reset-id="resetFilter"
         :reset-label="__('purchasing.copy.reset')"
     >
+        <x-slot:hidden>
+            <input type="hidden" id="filter_start_date" value="{{ request('start_date') }}">
+            <input type="hidden" id="filter_end_date" value="{{ request('end_date') }}">
+        </x-slot:hidden>
+
         <x-slot:search>
             <label for="filter_po_number" class="tw:sr-only">{{ __('purchasing.copy.search_po_supplier_or_pr') }}</label>
             <x-ui.icon name="search" size="sm" class="ui-filter-bar__search-icon" aria-hidden="true" />
@@ -116,8 +121,8 @@
                 data: function (d) {
                     d.status = document.getElementById('filter_status')?.value ?? '';
                     d.supplier_id = document.getElementById('filter_supplier')?.value ?? '';
-                    d.start_date = new URL(window.location.href).searchParams.get('start_date');
-                    d.end_date = new URL(window.location.href).searchParams.get('end_date');
+                    d.start_date = document.getElementById('filter_start_date')?.value || null;
+                    d.end_date = document.getElementById('filter_end_date')?.value || null;
                 }
             },
             columns: [
@@ -146,8 +151,19 @@
                 { key: 'search', label: @json(__('purchasing.copy.search')), selector: '#filter_po_number', type: 'search' },
                 { key: 'status', label: @json(__('purchasing.copy.status')), selector: '#filter_status', type: 'select' },
                 { key: 'supplier_id', label: @json(__('purchasing.copy.supplier')), selector: '#filter_supplier', type: 'select' },
+                { key: 'date_range', label: @json(__('purchasing.copy.date_created')), type: 'date-range', start: '#filter_start_date', end: '#filter_end_date' },
             ],
-            onFilterChange: () => table.search(document.getElementById('filter_po_number')?.value || '').draw(),
+            onFilterChange: () => {
+                const startVal = document.getElementById('filter_start_date')?.value || '';
+                const endVal = document.getElementById('filter_end_date')?.value || '';
+                if (window.history?.replaceState) {
+                    const nextUrl = new URL(window.location.href);
+                    if (startVal) nextUrl.searchParams.set('start_date', startVal); else nextUrl.searchParams.delete('start_date');
+                    if (endVal) nextUrl.searchParams.set('end_date', endVal); else nextUrl.searchParams.delete('end_date');
+                    window.history.replaceState(window.history.state, '', nextUrl.toString());
+                }
+                table.search(document.getElementById('filter_po_number')?.value || '').draw();
+            },
         });
     };
 

@@ -118,7 +118,7 @@
             ajax: '{{ route("qc.inspections.data-waiting") }}',
             columns: [
                 { data: 'po_number_display', name: 'po_number', className: 'tw:font-bold tw:text-on-surface' },
-                { data: 'supplier_name', name: 'supplier_name', orderable: false, className: 'tw:text-on-surface tw:font-medium' },
+                { data: 'supplier_name', name: 'supplier_name', orderable: false, className: 'tw:text-on-surface tw:font-semibold' },
                 { data: 'arrival_date', name: 'actual_arrival', className: 'ui-tabular-nums tw:text-on-surface-variant' },
                 { data: 'item_count', name: 'item_count', orderable: false, searchable: false, className: 'tw:text-center tw:font-semibold ui-tabular-nums' },
                 { data: 'action', name: 'action', orderable: false, searchable: false, className: 'tw:text-end' }
@@ -152,7 +152,7 @@
                     },
                     columns: [
                         { data: 'po_number', name: 'po_number', className: 'tw:font-bold tw:text-on-surface', orderable: false },
-                        { data: 'supplier_name', name: 'supplier_name', orderable: false, className: 'tw:text-on-surface tw:font-medium' },
+                        { data: 'supplier_name', name: 'supplier_name', orderable: false, className: 'tw:text-on-surface tw:font-semibold' },
                         { data: 'inspected_date', name: 'inspected_at', className: 'ui-tabular-nums tw:text-on-surface-variant' },
                         { data: 'status_badge', name: 'status', className: 'tw:text-center' },
                         { data: 'inspector_name', name: 'inspector_name', orderable: false, className: 'tw:text-on-surface-variant' },

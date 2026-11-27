@@ -79,7 +79,7 @@ function focusField(element) {
 
     // Wait for wizards / dialogs to finish opening before scrolling/focusing.
     window.requestAnimationFrame(() => window.requestAnimationFrame(() => {
-        const comboboxTrigger = element.closest?.('[x-data^="searchableSelect"]')?.querySelector?.('[role="combobox"]');
+        const comboboxTrigger = element.closest?.('[x-data^="searchableSelect"], [data-adasi-select]')?.querySelector?.('[role="combobox"]');
         const focusTarget = comboboxTrigger || element;
         const scrollTarget = focusTarget.type === 'file' || focusTarget.type === 'hidden'
             ? (focusTarget.closest?.('[x-data]') || focusTarget.parentElement || focusTarget)
@@ -152,7 +152,7 @@ function renderInlineError(field, message) {
     const descriptions = (field.getAttribute('aria-describedby') || '').split(/\s+/).filter(Boolean);
     field.setAttribute('aria-describedby', [...new Set([...descriptions, note.id])].join(' '));
     field.setAttribute('data-async-error-id', note.id);
-    note.className = 'tw:m-0 tw:mt-1 tw:text-ui-xs tw:font-medium tw:text-error';
+    note.className = 'tw:m-0 tw:mt-1 tw:text-ui-xs tw:font-semibold tw:text-error';
     note.setAttribute('data-async-error', '');
     note.textContent = message;
     anchor.insertAdjacentElement('afterend', note);
@@ -179,7 +179,7 @@ function renderSummary(form, items) {
         const li = document.createElement('li');
         const link = document.createElement('button');
         link.type = 'button';
-        link.className = 'ui-focus-ring tw:border-0 tw:bg-transparent tw:p-0 tw:text-start tw:font-medium tw:text-on-error-container tw:underline tw:underline-offset-2';
+        link.className = 'ui-focus-ring tw:border-0 tw:bg-transparent tw:p-0 tw:text-start tw:font-semibold tw:text-on-error-container tw:underline tw:underline-offset-2';
         link.setAttribute('data-error-field', key);
         link.textContent = message;
         li.append(link);

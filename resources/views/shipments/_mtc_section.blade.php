@@ -49,7 +49,7 @@
                         @endphp
                         <tr>
                             <td class="ui-col-data-name">
-                                <a href="{{ route('attachments.show', $file) }}" target="_blank" rel="noopener" class="tw:text-primary tw:no-underline tw:inline-flex tw:items-center tw:gap-1 tw:font-medium">
+                                <a href="{{ route('attachments.show', $file) }}" target="_blank" rel="noopener" class="tw:text-primary tw:no-underline tw:inline-flex tw:items-center tw:gap-1 tw:font-semibold">
                                     <x-ui.icon name="file-text" size="sm" />
                                     <span class="tw:truncate" style="max-width: 16rem;" title="{{ $file->file_name }}">{{ $file->file_name }}</span>
                                 </a>

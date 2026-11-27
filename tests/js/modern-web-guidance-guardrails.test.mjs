@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { dirname, resolve } from 'node:path';
+import { readFileSync, readdirSync } from 'node:fs';
+import { dirname, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import {
@@ -47,11 +47,7 @@ test('source and compiled CSS respect OS text scale with zero literal px font-si
     assert.equal(/tw:text-\[\d+px\]/.test(scorecardBlade), false, 'supplier-scorecard.blade.php must use rem token text classes');
 
     const compiledCss = readCompiledAppCss();
-    // Strip the two legacy Tailwind arbitrary classes scanned from untouched feature views so any new custom px font-size is caught.
-    const compiledWithoutLegacyArbitrary = compiledCss
-        .replace(/\.tw\\:text-\\\[10px\\\][^{]*\{[^}]*\}/g, '')
-        .replace(/\.tw\\:text-\\\[11px\\\][^{]*\{[^}]*\}/g, '');
-    const compiledPxFonts = [...compiledWithoutLegacyArbitrary.matchAll(/font-size\s*:\s*\d+(?:\.\d+)?px\b/g)];
+    const compiledPxFonts = [...compiledCss.matchAll(/font-size\s*:\s*\d+(?:\.\d+)?px\b/g)];
     assert.equal(
         compiledPxFonts.length,
         0,
@@ -524,6 +520,67 @@ test('shared layouts, auth forms, toast announcers, progress bars, lightbox, and
 
     const drpSupplier = readRepo('resources/views/finance/drp/supplier.blade.php');
     assert.equal(drpSupplier.includes('aria-sort="none"') || drpSupplier.includes(": 'none'"), false, 'sortable headers must omit aria-sort on unsorted columns');
+
+    // Form control components must gate $errorId in aria-describedby on actual error presence (never point at hidden empty error nodes).
+    for (const controlBlade of [
+        'resources/views/components/ui/date-picker.blade.php',
+        'resources/views/components/ui/date-range-picker.blade.php',
+        'resources/views/components/ui/time-picker.blade.php',
+    ]) {
+        const html = readRepo(controlBlade);
+        assert.match(html, /\$message\s*\?\s*\$errorId\s*:\s*null/, `${controlBlade} must gate $errorId in aria-describedby on $message`);
+    }
+    const fileUploadBlade = readRepo('resources/views/components/ui/file-upload.blade.php');
+    assert.match(fileUploadBlade, /\$baseDescriptionIds/, 'file-upload.blade.php must separate non-error aria-describedby IDs from $errorId');
+    assert.match(fileUploadBlade, /\$descriptionIdsWithError/, 'file-upload.blade.php must bind $errorId in aria-describedby only when an error is present');
+});
+
+test('Blade views satisfy Phase 4 UI calibration guardrails (no slot footers on data-table, no nested responsive scroll, no broken utilities or unbundled weights)', () => {
+    const walkBlades = (dir) => {
+        let out = [];
+        for (const entry of readdirSync(dir, { withFileTypes: true })) {
+            const full = resolve(dir, entry.name);
+            if (entry.isDirectory()) out = out.concat(walkBlades(full));
+            else if (entry.name.endsWith('.blade.php')) out.push(full);
+        }
+        return out;
+    };
+
+    const viewsRoot = resolve(root, 'resources/views');
+    const blades = walkBlades(viewsRoot).filter((full) => {
+        const rel = relative(root, full).split(sep).join('/');
+        return rel !== 'resources/views/welcome.blade.php' && !rel.startsWith('resources/views/pdf/');
+    });
+
+    const violations = [];
+    for (const full of blades) {
+        const rel = relative(root, full).split(sep).join('/');
+        const src = readFileSync(full, 'utf8');
+
+        if (src.includes('tw-shadow-')) violations.push(`${rel}: broken tw-shadow-* utility`);
+        if (src.includes('tw:text-ui-md')) violations.push(`${rel}: broken tw:text-ui-md utility`);
+        if (src.includes('tw:bg-surface-variant')) violations.push(`${rel}: nonexistent tw:bg-surface-variant utility`);
+        if (src.includes('tw:dark:')) violations.push(`${rel}: raw tw:dark:* override instead of semantic token`);
+        if (/\btw:(?:[a-z0-9-]+:)*text-\[1[01]px\]/.test(src)) violations.push(`${rel}: micro pixel font-size tw:text-[10px|11px]`);
+        if (/\btw:(?:[a-z0-9-]+:)*font-medium\b/.test(src)) violations.push(`${rel}: unbundled Source Sans Pro weight tw:font-medium`);
+
+        const dataTables = src.match(/<x-ui\.data-table[\s\S]*?<\/x-ui\.data-table>/g) ?? [];
+        for (const block of dataTables) {
+            if (block.includes('<x-slot:footer')) violations.push(`${rel}: <x-slot:footer> inside <x-ui.data-table> (use <x-slot:pagination>)`);
+            if (block.includes('ui-table-responsive')) violations.push(`${rel}: nested .ui-table-responsive inside <x-ui.data-table>`);
+        }
+
+        if (src.includes('grid-cols-12')) {
+            for (const match of src.matchAll(/<(div|section|aside|article|main|form|ul|dl|dd)\b[^>]*\bclass="([^"]*)"[^>]*>/g)) {
+                const cls = match[2];
+                if (/\btw:(?:[a-z]+:)?col-span-(?:[1-9]|1[0-2])\b/.test(cls) && !/\btw:min-w-0\b/.test(cls)) {
+                    violations.push(`${rel}: grid-cols-12 col-span-* missing tw:min-w-0`);
+                }
+            }
+        }
+    }
+
+    assert.deepEqual(violations, [], `UI calibration Blade guardrail violations:\n${violations.join('\n')}`);
 });
 
 test('dialog and drawer components bind AdasiOverlayModality to $root, expose data-ui-* markers, and release on destroy', () => {
@@ -693,4 +750,65 @@ test('overlay-modality exempts #adasiLoader, resolves descendant release targets
     assert.equal(sessionModal.inert, false, 'session-expired modal must stay interactive when lower overlay acquires');
     assert.equal(swapContainer.inert, true, 'container holding lower overlay must stay inert behind active session-expired modal');
     resetOverlayModality(doc);
+});
+
+test('heading, modal title, table header, and shell heading typography hierarchy stays readable and never clips', () => {
+    const appCss = readRepo('resources/css/app.css');
+    const authCss = readRepo('resources/css/auth.css');
+    const workspaceCss = readRepo('resources/css/workspace-shell.css');
+
+    for (const [label, css] of [['app.css', appCss], ['auth.css', authCss]]) {
+        assert.match(css, /h5,\s*h6\s*\{\s*font-size:\s*var\(--ui-font-size-sm\);/, `${label} must set h5/h6 baseline to at least sm`);
+    }
+
+    assert.match(appCss, /\.modal-title\s*\{[^}]*font-size:\s*var\(--ui-font-size-lg\);/s);
+    assert.match(appCss, /\.ui-section__title,\s*\.ui-form-section__title\s*\{[^}]*font-size:\s*0\.9375rem;/s);
+    assert.match(appCss, /\.ui-table\s*>\s*thead\s*>\s*tr\s*>\s*th\s*\{[^}]*font-size:\s*0\.8125rem;[^}]*min-height:\s*var\(--ui-density-table-head-min/s);
+    assert.match(appCss, /\.ui-data-table table thead th\s*\{[^}]*font-size:\s*0\.8125rem;[^}]*min-height:\s*var\(--ui-density-table-head-min/s);
+    assert.match(appCss, /\.ui-table--sm\s*>\s*thead\s*>\s*tr\s*>\s*th\s*\{[^}]*font-size:\s*0\.8125rem;/s);
+    assert.match(appCss, /\.sidebar-heading\s*\{[^}]*font-size:\s*0\.8125rem;/s);
+    assert.match(appCss, /\.notification-menu-heading\s*\{[^}]*font-size:\s*0\.8125rem;/s);
+    assert.match(workspaceCss, /\.workspace-session-menu__heading\s*\{[^}]*font-size:\s*0\.8125rem;/s);
+
+    const formSection = readRepo('resources/views/components/ui/form-section.blade.php');
+    assert.equal(formSection.includes('tw:text-xs'), false, 'x-ui.form-section title must not override .ui-form-section__title down to xs');
+
+    const walkBlades = (dir) => {
+        let out = [];
+        for (const entry of readdirSync(dir, { withFileTypes: true })) {
+            const full = resolve(dir, entry.name);
+            if (entry.isDirectory()) out = out.concat(walkBlades(full));
+            else if (entry.name.endsWith('.blade.php')) out.push(full);
+        }
+        return out;
+    };
+
+    const viewsRoot = resolve(root, 'resources/views');
+    const blades = walkBlades(viewsRoot).filter((full) => {
+        const rel = relative(root, full).split(sep).join('/');
+        return rel !== 'resources/views/welcome.blade.php' && !rel.startsWith('resources/views/pdf/');
+    });
+
+    const violations = [];
+    for (const full of blades) {
+        const rel = relative(root, full).split(sep).join('/');
+        const src = readFileSync(full, 'utf8');
+
+        for (const m of src.matchAll(/<h[1-6]\b(?:[^>"']|"[^"]*"|'[^']*'|->|=>)*>/g)) {
+            if (/\btw:(?:[a-z0-9-]+:)*text-(?:ui-)?2?xs\b/.test(m[0])) {
+                violations.push(`${rel}: undersized heading ${m[0].slice(0, 80)}`);
+            }
+            if (/\bmodal-title\b/.test(m[0]) && !/\btw:(?:[a-z0-9-]+:)*text-(?:ui-)?(?:base|lg|xl|2xl)\b/.test(m[0])) {
+                violations.push(`${rel}: modal-title must declare base/lg/xl text utility (${m[0].slice(0, 80)})`);
+            }
+        }
+
+        for (const m of src.matchAll(/<th\b(?:[^>"']|"[^"]*"|'[^']*'|->|=>)*>/g)) {
+            if (/\btw:(?:[a-z0-9-]+:)*text-(?:ui-)?2?xs\b/.test(m[0]) && !/\bcol-supplier-cell\b/.test(m[0])) {
+                violations.push(`${rel}: standard <th> overrides size down to xs (${m[0].slice(0, 80)})`);
+            }
+        }
+    }
+
+    assert.deepEqual(violations, [], `Typography hierarchy violations:\n${violations.join('\n')}`);
 });

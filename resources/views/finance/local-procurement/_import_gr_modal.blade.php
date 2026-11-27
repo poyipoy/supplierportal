@@ -3,9 +3,9 @@
         <div class="modal-content">
             <div class="modal-header tw:border-b tw:border-outline-variant tw:flex-wrap tw:gap-2">
                 <div class="tw:min-w-0 tw:flex-1">
-                    <h6 class="modal-title tw:font-bold tw:text-on-surface" id="localGrImportModalLabel">
+                    <h2 class="modal-title tw:text-ui-lg tw:font-bold tw:text-on-surface" id="localGrImportModalLabel">
                         {{ __('local_procurement.import.gr_title') }}
-                    </h6>
+                    </h2>
                     <div class="tw:text-on-surface-variant tw:text-ui-xs tw:mt-0.5">
                         {{ __('local_procurement.import.gr_help') }}
                     </div>
@@ -38,7 +38,7 @@
                             </x-ui.button>
                         </div>
                         <details class="tw:text-ui-xs tw:text-on-surface-variant tw:leading-relaxed">
-                            <summary class="tw:cursor-pointer tw:font-medium tw:text-on-surface">{{ __('local_procurement.import.mapping_guide') }}</summary>
+                            <summary class="tw:cursor-pointer tw:font-semibold tw:text-on-surface">{{ __('local_procurement.import.mapping_guide') }}</summary>
                             <p class="tw:mb-1.5 tw:font-semibold tw:text-on-surface">{{ __('finance.review.gr_mapping') }}</p>
                             <ul class="tw:list-disc tw:ps-3.5 tw:space-y-1 tw:mb-0">
                                 <li>{{ __('finance.review.column_j_gr') }}</li>
@@ -56,12 +56,12 @@
                 <div id="localGrImportResult" class="tw:hidden tw:space-y-4">
                     @include('finance.local-procurement._import_review_banner', ['importName' => 'Gr'])
                     {{-- Panel Error Terstruktur --}}
-                    <div id="localGrImportErrorsPanel" class="tw:hidden tw:rounded-ui-md tw:border-s-4 tw:border-error tw:bg-error-container tw:p-3.5 tw:text-ui-xs tw:text-error-container-foreground" role="region" aria-labelledby="localGrImportErrorsTitle">
+                    <div id="localGrImportErrorsPanel" class="ui-alert tw:hidden tw:rounded-ui-md tw:border tw:border-error/40 tw:bg-error-container tw:p-3.5 tw:text-ui-xs tw:text-error-container-foreground" role="region" aria-labelledby="localGrImportErrorsTitle">
                         <div class="tw:font-bold tw:mb-1.5 tw:flex tw:items-center tw:gap-1.5 tw:text-ui-sm">
-                            <x-ui.icon name="circle-x" size="sm" />
+                            <x-ui.icon name="circle-x" size="sm" class="tw:shrink-0 tw:text-error" />
                             <span id="localGrImportErrorsTitle">{{ __('local_procurement.import.gr_error') }}</span>
                         </div>
-                        <p class="tw:mb-1.5 tw:text-[11px]">
+                        <p class="tw:mb-1.5 tw:text-ui-xs">
                             {{ __('local_procurement.import.errors_help') }}:
                         </p>
                         <ul id="localGrImportErrorsList" class="tw:mb-0 tw:ps-4 tw:space-y-0.5"></ul>
@@ -70,27 +70,27 @@
                     {{-- KPI Summary Pills --}}
                     <div data-import-metrics class="local-import-preview-metrics tw:grid tw:grid-cols-2 tw:sm:grid-cols-6 tw:gap-1 tw:border tw:border-outline-variant tw:rounded-ui-sm tw:p-2">
                         <div class="tw:min-w-0 tw:py-1 tw:px-2">
-                            <div class="tw:text-[11px] tw:text-on-surface-variant tw:font-medium">{{ __('local_procurement.import.source_rows') }}</div>
+                            <div class="tw:text-ui-xs tw:text-on-surface-variant tw:font-semibold">{{ __('local_procurement.import.source_rows') }}</div>
                             <div class="tw:text-ui-sm tw:tabular-nums tw:font-bold tw:text-on-surface" id="kpiGrSourceRows">0</div>
                         </div>
                         <div class="tw:min-w-0 tw:py-1 tw:px-2">
-                            <div class="tw:text-[11px] tw:text-on-surface-variant tw:font-medium">{{ __('local_procurement.labels.gr_consolidated') }}</div>
+                            <div class="tw:text-ui-xs tw:text-on-surface-variant tw:font-semibold">{{ __('local_procurement.labels.gr_consolidated') }}</div>
                             <div class="tw:text-ui-sm tw:tabular-nums tw:font-bold tw:text-primary" id="kpiGrConsolidated">0</div>
                         </div>
                         <div class="tw:min-w-0 tw:py-1 tw:px-2">
-                            <div class="tw:text-[11px] tw:text-on-surface-variant tw:font-medium">{{ __('local_procurement.labels.gr_new') }}</div>
+                            <div class="tw:text-ui-xs tw:text-on-surface-variant tw:font-semibold">{{ __('local_procurement.labels.gr_new') }}</div>
                             <div class="tw:text-ui-sm tw:tabular-nums tw:font-bold tw:text-success" id="kpiGrNew">0</div>
                         </div>
                         <div class="tw:min-w-0 tw:py-1 tw:px-2">
-                            <div class="tw:text-[11px] tw:text-on-surface-variant tw:font-medium">{{ __('local_procurement.labels.gr_existing') }}</div>
+                            <div class="tw:text-ui-xs tw:text-on-surface-variant tw:font-semibold">{{ __('local_procurement.labels.gr_existing') }}</div>
                             <div class="tw:text-ui-sm tw:tabular-nums tw:font-bold tw:text-on-surface" id="kpiGrExisting">0</div>
                         </div>
                         <div class="tw:min-w-0 tw:py-1 tw:px-2">
-                            <div class="tw:text-[11px] tw:text-on-surface-variant tw:font-medium">{{ __('finance.review.po_unmatched') }}</div>
+                            <div class="tw:text-ui-xs tw:text-on-surface-variant tw:font-semibold">{{ __('finance.review.po_unmatched') }}</div>
                             <div class="tw:text-ui-sm tw:tabular-nums tw:font-bold tw:text-warning" id="kpiGrUnmatchedPo">0</div>
                         </div>
                         <div class="tw:min-w-0 tw:py-1 tw:px-2">
-                            <div class="tw:text-[11px] tw:text-on-surface-variant tw:font-medium">{{ __('local_procurement.import.error_rows') }}</div>
+                            <div class="tw:text-ui-xs tw:text-on-surface-variant tw:font-semibold">{{ __('local_procurement.import.error_rows') }}</div>
                             <div class="tw:text-ui-sm tw:tabular-nums tw:font-bold tw:text-error" id="kpiGrInvalidRows">0</div>
                         </div>
                     </div>
@@ -101,7 +101,7 @@
                             <div class="tw:font-bold tw:text-on-surface tw:text-ui-sm">
                                 {{ __('finance.review.gr_preview') }}
                             </div>
-                            <span class="tw:text-[11px] tw:text-on-surface-variant" id="localGrImportRowCount"></span>
+                            <span class="tw:text-ui-xs tw:text-on-surface-variant" id="localGrImportRowCount"></span>
                         </div>
                         <div class="local-po-import-preview-scroll ui-table-responsive tw:border tw:border-outline-variant tw:rounded-ui-md">
                             <table class="ui-table ui-table--sm ui-table--striped ui-table--hover tw:align-middle tw:mb-0 tw:text-ui-xs">

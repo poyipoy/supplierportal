@@ -5,7 +5,7 @@
         @foreach($audit->resultAttachments as $attachment)
             <li class="tw:flex tw:items-start tw:justify-between tw:gap-3 tw:rounded-ui-sm tw:border tw:border-outline-variant tw:px-3 tw:py-2">
                 <span class="tw:min-w-0">
-                    <a href="{{ route('attachments.show', $attachment) }}" target="_blank" rel="noopener" class="tw:block tw:truncate tw:text-ui-sm tw:font-medium">{{ $attachment->file_name }}</a>
+                    <a href="{{ route('attachments.show', $attachment) }}" target="_blank" rel="noopener" class="tw:block tw:truncate tw:text-ui-sm tw:font-semibold">{{ $attachment->file_name }}</a>
                     <span class="tw:block tw:text-ui-xs tw:text-on-surface-variant" style="font-variant-numeric: tabular-nums;">
                         {{ __('supplier_audit.labels.uploaded_by', ['name' => $attachment->uploader?->name ?? '-']) }} · {{ $regionalFormatter->timestamp($attachment->created_at) }}
                     </span>

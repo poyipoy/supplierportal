@@ -1,14 +1,16 @@
 @php
-    $invoiceRoute = $routePrefix === 'purchasing.local-procurement'
-        ? 'purchasing.local-invoices.show'
-        : 'finance.invoices.show';
+    $invoiceRoute = match ($routePrefix) {
+        'purchasing.local-procurement' => 'purchasing.local-invoices.show',
+        'local-supplier.purchase-orders' => 'local-supplier.invoices.show',
+        default => 'finance.invoices.show',
+    };
 @endphp
 
 @if($activeTab === 'goods-receipts')
     @if($goodsReceipts->isEmpty())
         <x-ui.empty-state icon="package-check" :title="__('local_procurement.mmt.empty.goods_receipts')" class="tw:py-6" />
     @else
-        <div class="ui-table-responsive">
+        <div class="ui-table-responsive ui-focus-ring" role="region" tabindex="0" aria-label="{{ __('local_procurement.mmt.table_regions.goods_receipts') }}">
             <table class="ui-table ui-table--hover tw:align-middle tw:m-0 tw:text-ui-xs tw:w-full">
                 <thead>
                     <tr>
@@ -41,7 +43,7 @@
     @if($invoices->isEmpty())
         <x-ui.empty-state icon="receipt" :title="__('local_procurement.mmt.empty.invoices')" class="tw:py-6" />
     @else
-        <div class="ui-table-responsive">
+        <div class="ui-table-responsive ui-focus-ring" role="region" tabindex="0" aria-label="{{ __('local_procurement.mmt.table_regions.invoices') }}">
             <table class="ui-table ui-table--hover tw:align-middle tw:m-0 tw:text-ui-xs tw:w-full">
                 <thead>
                     <tr>
@@ -85,7 +87,7 @@
     @if($documents->isEmpty())
         <x-ui.empty-state icon="file-text" :title="__('local_procurement.mmt.empty.documents')" class="tw:py-6" />
     @else
-        <div class="ui-table-responsive">
+        <div class="ui-table-responsive ui-focus-ring" role="region" tabindex="0" aria-label="{{ __('local_procurement.mmt.table_regions.documents') }}">
             <table class="ui-table ui-table--hover tw:align-middle tw:m-0 tw:text-ui-xs tw:w-full">
                 <thead>
                     <tr>

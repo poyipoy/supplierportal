@@ -4,7 +4,7 @@
 @section('page-title', __('supplier_contact.directory.title'))
 
 @section('content')
-<div id="importSupplierQueueContainer" class="tw:grid tw:gap-5 tw:pb-16" data-server-tabs-container>
+<div id="importSupplierQueueContainer" class="tw:grid tw:gap-5" data-server-tabs-container>
     <x-ui.page-header
         :title="__('supplier_contact.directory.title')"
         :description="__('supplier_contact.directory.description')"

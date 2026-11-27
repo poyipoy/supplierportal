@@ -64,7 +64,7 @@
         >
             <div class="tw:grid tw:gap-4">
                 <fieldset class="tw:m-0 tw:border-0 tw:p-0">
-                    <legend class="tw:mb-2 tw:text-ui-sm tw:font-medium tw:text-on-surface">
+                    <legend class="tw:mb-2 tw:text-ui-sm tw:font-semibold tw:text-on-surface">
                         {{ __('payment_voucher.fields.payee_type') }}
                         <span class="tw:text-error" aria-hidden="true">*</span>
                     </legend>
@@ -75,7 +75,7 @@
                             PaymentVoucher::PAYEE_MANUAL => __('payment_voucher.payee_types.manual'),
                         ] as $typeValue => $typeLabel)
                             <label
-                                class="ui-motion tw:flex tw:min-h-11 tw:cursor-pointer tw:items-center tw:gap-2.5 tw:rounded-ui-sm tw:border tw:px-3.5 tw:py-2.5 tw:text-ui-sm tw:font-medium"
+                                class="ui-motion tw:flex tw:min-h-11 tw:cursor-pointer tw:items-center tw:gap-2.5 tw:rounded-ui-sm tw:border tw:px-3.5 tw:py-2.5 tw:text-ui-sm tw:font-semibold"
                                 :class="payeeType === @js($typeValue) ? 'tw:border-primary tw:bg-primary-container tw:text-primary-container-foreground' : 'tw:border-outline-strong tw:bg-surface tw:text-on-surface'"
                             >
                                 <input
@@ -90,7 +90,7 @@
                         @endforeach
                     </div>
                     @error('payee_type')
-                        <p class="tw:m-0 tw:mt-1.5 tw:text-ui-xs tw:font-medium tw:text-error" role="alert">{{ $message }}</p>
+                        <p class="tw:m-0 tw:mt-1.5 tw:text-ui-xs tw:font-semibold tw:text-error" role="alert">{{ $message }}</p>
                     @enderror
                 </fieldset>
 
@@ -113,18 +113,18 @@
                                 <div class="tw:flex tw:flex-wrap tw:items-center tw:justify-between tw:gap-2">
                                     <span class="tw:font-semibold tw:text-on-surface" x-text="selectedSupplier.name"></span>
                                     <span class="tw:text-on-surface-variant">
-                                        NPWP: <span class="ui-tabular-nums tw:font-medium tw:text-on-surface" x-text="selectedSupplier.npwp"></span>
+                                        NPWP: <span class="ui-tabular-nums tw:font-semibold tw:text-on-surface" x-text="selectedSupplier.npwp"></span>
                                     </span>
                                 </div>
                                 <template x-if="selectedSupplier.has_verified_bank">
                                     <div class="tw:text-on-surface-variant">
-                                        <span class="tw:font-medium tw:text-on-surface" x-text="selectedSupplier.bank_name"></span>
+                                        <span class="tw:font-semibold tw:text-on-surface" x-text="selectedSupplier.bank_name"></span>
                                         · <span class="ui-tabular-nums" x-text="selectedSupplier.account_number"></span>
                                         (<span x-text="selectedSupplier.account_holder_name"></span>)
                                     </div>
                                 </template>
                                 <template x-if="!selectedSupplier.has_verified_bank">
-                                    <div class="tw:text-error tw:font-medium" x-show="needsBankFields">
+                                    <div class="tw:text-error tw:font-semibold" x-show="needsBankFields">
                                         {{ __('payment_voucher.labels.bank_preview_missing') }}
                                     </div>
                                 </template>
@@ -153,7 +153,7 @@
                                     <span x-text="selectedEmployee.name"></span> · <span x-text="selectedEmployee.department"></span>
                                 </div>
                                 <div class="tw:text-on-surface-variant">
-                                    <span class="tw:font-medium tw:text-on-surface" x-text="selectedEmployee.bank_name"></span>
+                                    <span class="tw:font-semibold tw:text-on-surface" x-text="selectedEmployee.bank_name"></span>
                                     · <span class="ui-tabular-nums" x-text="selectedEmployee.account_number"></span>
                                     (<span x-text="selectedEmployee.account_holder_name"></span>)
                                 </div>
@@ -210,7 +210,7 @@
                 {{-- Payment Method Radio & Date --}}
                 <div class="tw:grid tw:grid-cols-1 tw:md:grid-cols-2 tw:gap-4 tw:border-t tw:border-outline-variant tw:pt-4">
                     <fieldset class="tw:m-0 tw:border-0 tw:p-0">
-                        <legend class="tw:mb-2 tw:text-ui-sm tw:font-medium tw:text-on-surface">
+                        <legend class="tw:mb-2 tw:text-ui-sm tw:font-semibold tw:text-on-surface">
                             {{ __('payment_voucher.fields.payment_method') }}
                             <span class="tw:text-error" aria-hidden="true">*</span>
                         </legend>
@@ -220,7 +220,7 @@
                                 PaymentVoucher::METHOD_KAS => __('payment_voucher.methods.kas'),
                             ] as $methodValue => $methodLabel)
                                 <label
-                                    class="ui-motion tw:flex tw:min-h-11 tw:cursor-pointer tw:items-center tw:gap-2 tw:rounded-ui-sm tw:border tw:px-3 tw:py-2 tw:text-ui-sm tw:font-medium"
+                                    class="ui-motion tw:flex tw:min-h-11 tw:cursor-pointer tw:items-center tw:gap-2 tw:rounded-ui-sm tw:border tw:px-3 tw:py-2 tw:text-ui-sm tw:font-semibold"
                                     :class="paymentMethod === @js($methodValue) ? 'tw:border-primary tw:bg-primary-container tw:text-primary-container-foreground' : 'tw:border-outline-strong tw:bg-surface tw:text-on-surface'"
                                 >
                                     <input
@@ -238,7 +238,7 @@
                             {{ __('payment_voucher.labels.kas_no_bank_notice') }}
                         </p>
                         @error('payment_method')
-                            <p class="tw:m-0 tw:mt-1.5 tw:text-ui-xs tw:font-medium tw:text-error" role="alert">{{ $message }}</p>
+                            <p class="tw:m-0 tw:mt-1.5 tw:text-ui-xs tw:font-semibold tw:text-error" role="alert">{{ $message }}</p>
                         @enderror
                     </fieldset>
 
@@ -319,7 +319,7 @@
                     />
 
                     <div class="tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface-container tw:p-3.5 tw:flex tw:flex-col tw:justify-center" aria-live="polite" aria-atomic="true">
-                        <span class="tw:text-ui-xs tw:font-medium tw:text-on-surface-variant">
+                        <span class="tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant">
                             {{ __('payment_voucher.fields.net_amount') }}
                         </span>
                         <span class="ui-tabular-nums tw:mt-0.5 tw:text-lg tw:font-bold" :class="totals.isPositive ? 'tw:text-on-surface' : 'tw:text-error'">

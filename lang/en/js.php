@@ -16,6 +16,10 @@ return [
 
     'tables.loading' => 'Loading data...',
     'tables.scroll_region' => 'Scrollable data table',
+    'tables.sort_asc' => 'ascending',
+    'tables.sort_desc' => 'descending',
+    'tables.sorted_status' => 'Sorted by :column, :direction, :count results.',
+    'tables.sort_cleared' => 'Column sorting cleared, :count results.',
     'loader.loading' => 'Loading',
     'loader.slow' => 'Processing is taking longer. You can wait or dismiss this message.',
     'loader.dismiss' => 'Close',
@@ -203,6 +207,10 @@ return [
     'actions.input' => 'Input',
     'actions.send' => 'Send',
     'select.date' => 'Date: :date',
+    'select.search_placeholder' => 'Search options...',
+    'select.empty' => 'No matching options',
+    'select.clear_search' => 'Clear search',
+    'select.placeholder' => 'Select an option',
     'chat.read' => 'Read',
     'chat.read_at' => 'Read :time',
     'chat.sent_unread' => 'Sent, unread',
@@ -311,4 +319,6 @@ return [
     'local_import.cancel_text' => ':file will be discarded and its import slot released. No PO or GR records are changed.',
     'local_import.cancel_confirm' => 'Cancel import process',
     'local_import.cancel_keep' => 'Keep import',
+    'locale.switched' => 'Language switched to :language.',
+    'locale.switch_failed' => 'Could not switch language. Please try again.',
 ];

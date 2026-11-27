@@ -3,7 +3,7 @@
 @section('page-title', __('ga.labels.claim_details'))
 
 @section('content')
-<div class="tw:grid tw:gap-6 tw:pb-16">
+<div class="tw:grid tw:gap-6">
     <x-ui.page-header
         :title="__('ga.detail.title', ['number' => $claim->claim_number])"
         :description="__('ga.detail.description', ['name' => $claim->employee?->name, 'department' => $claim->employee?->department, 'type' => \App\Models\GaClaim::claimTypeLabel($claim->claim_type)])"
@@ -25,7 +25,7 @@
 
     <div class="tw:grid tw:grid-cols-1 tw:lg:grid-cols-12 tw:gap-6">
         {{-- Left: Information & Documents --}}
-        <div class="tw:lg:col-span-8 ui-density-stack-list">
+        <div class="tw:min-w-0 tw:lg:col-span-8 ui-density-stack-list">
             <x-ui.card :title="__('ga.labels.details')">
                 <div class="tw:grid tw:grid-cols-2 tw:sm:grid-cols-3 tw:gap-4 tw:text-ui-xs">
                     <div>
@@ -52,7 +52,7 @@
                     </div>
                     <div>
                         <span class="tw:text-on-surface-variant tw:block">{{ __('ga.labels.claim_type') }}:</span>
-                        <span class="tw:inline-flex tw:px-2 tw:py-0.5 tw:rounded-sm tw:text-[11px] tw:font-semibold tw:bg-primary/10 tw:text-primary">
+                        <span class="tw:inline-flex tw:px-2 tw:py-0.5 tw:rounded-sm tw:text-ui-xs tw:font-semibold tw:bg-primary/10 tw:text-primary">
                             {{ \App\Models\GaClaim::claimTypeLabel($claim->claim_type) }}
                         </span>
                     </div>
@@ -80,7 +80,7 @@
                                 <x-ui.icon name="file-text" size="md" class="tw:text-primary" />
                                 <div>
                                     <span class="tw:font-semibold tw:text-ui-xs tw:text-on-surface tw:block">{{ $doc->original_filename }}</span>
-                                    <span class="tw:text-[11px] tw:text-on-surface-variant">{{ $doc->document_type === 'supporting' ? __('ga.claims.document_supporting') : $doc->document_type }} · {{ __('local_invoice.labels.revision') }} {{ $doc->revision_number }}</span>
+                                    <span class="tw:text-ui-xs tw:text-on-surface-variant">{{ $doc->document_type === 'supporting' ? __('ga.claims.document_supporting') : $doc->document_type }} · {{ __('local_invoice.labels.revision') }} {{ $doc->revision_number }}</span>
                                 </div>
                             </div>
                             <x-ui.button :href="route('ga-claim-documents.show', $doc)" target="_blank" variant="outline-primary" size="sm">
@@ -97,7 +97,7 @@
         </div>
 
         {{-- Right: Destination Bank & Actions --}}
-        <div class="tw:lg:col-span-4 ui-density-stack-list">
+        <div class="tw:min-w-0 tw:lg:col-span-4 ui-density-stack-list">
             {{-- Rekening Tujuan --}}
             <x-ui.card :title="__('ga.labels.bank_account')">
                 <div class="tw:space-y-2 tw:text-ui-xs">
@@ -165,7 +165,7 @@
                             </div>
                             <div class="tw:text-on-surface-variant">{{ __('ga.detail.actor', ['name' => $hist->actor?->name ?? __('ga.detail.system')]) }}</div>
                             @if($hist->notes)
-                                <div class="tw:mt-1 tw:text-[11px] tw:italic">{{ $hist->notes }}</div>
+                                <div class="tw:mt-1 tw:text-ui-xs tw:italic">{{ $hist->notes }}</div>
                             @endif
                         </div>
                     @empty

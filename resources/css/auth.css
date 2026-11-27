@@ -5,6 +5,7 @@
 @import "@fontsource/source-sans-pro/latin-700.css";
 @config "../../tailwind.config.js";
 @custom-variant hover (&:hover);
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 @source "../views/layouts/auth.blade.php";
 @source "../views/auth";
 @source "../views/errors";
@@ -50,7 +51,7 @@
     --md-secondary-rgb: 71, 85, 105;
     --md-on-secondary: #FFFFFF;
     --md-on-secondary-rgb: 255, 255, 255;
-    --md-secondary-container: #F1F5F9;
+    --md-secondary-container: #F3F5F8;
     --md-on-secondary-container: #1E293B;
     --md-error: #B12B21;
     --md-error-rgb: 177, 43, 33;
@@ -58,8 +59,8 @@
     --md-on-error-rgb: 255, 255, 255;
     --md-error-container: #FDF0ED;
     --md-on-error-container: #6B110B;
-    --md-success: #198754;
-    --md-success-rgb: 25, 135, 84;
+    --md-success: #146C43;
+    --md-success-rgb: 20, 108, 67;
     --md-on-success: #FFFFFF;
     --md-on-success-rgb: 255, 255, 255;
     --md-success-container: #EDF7F1;
@@ -79,25 +80,31 @@
 
     --md-surface: #FFFFFF;
     --md-surface-rgb: 255, 255, 255;
-    --md-surface-container-low: #F8FAFC;
-    --md-surface-container-low-rgb: 248, 250, 252;
-    --md-surface-container: #F1F5F9;
-    --md-surface-container-rgb: 241, 245, 249;
-    --md-surface-container-high: #E2E8F0;
-    --md-surface-container-highest: #E2E8F0;
-    --md-background: #F8FAFC;
-    --md-background-rgb: 248, 250, 252;
-    --md-outline: #CBD5E1;
-    --md-outline-strong: #76859A;
-    --md-outline-variant: #E2E8F0;
+    --md-surface-container-low: #FAFBFD;
+    --md-surface-container-low-rgb: 250, 251, 253;
+    --md-surface-container: #F3F5F8;
+    --md-surface-container-rgb: 243, 245, 248;
+    --md-surface-container-high: #E7EBF0;
+    --md-surface-container-highest: #DCE1E8;
+    --md-background: #EEF0F3;
+    --md-background-rgb: 238, 240, 243;
+    --md-outline: #C8D0DA;
+    --md-outline-strong: #5F6C7D;
+    --md-outline-variant: #E2E6EC;
     --md-on-surface: #0F172A;
     --md-on-surface-rgb: 15, 23, 42;
-    --md-on-surface-variant: #566579;
-    --md-on-surface-variant-rgb: 86, 101, 121;
+    --md-on-surface-variant: #526071;
+    --md-on-surface-variant-rgb: 82, 96, 113;
     --md-scrim: #0F172A;
     --md-scrim-rgb: 15, 23, 42;
     --md-scrim-opacity: .4;
+    --auth-media-on-dark: #FFFFFF;
+    --auth-media-on-dark-rgb: 255, 255, 255;
+    --ui-primary-hover: #184A85;
+    --ui-success-hover: #0F5434;
+    --ui-error-hover: #8F211B;
 
+    --ui-shadow-surface: 0 1px 2px 0 rgba(15, 23, 42, 0.05);
     --ui-shadow-1: 0 1px 3px 0 rgba(15, 23, 42, 0.08), 0 1px 2px -1px rgba(15, 23, 42, 0.06);
     --ui-shadow-2: 0 4px 6px -1px rgba(15, 23, 42, 0.1), 0 2px 4px -2px rgba(15, 23, 42, 0.06);
     --md-shape-xs: 2px;
@@ -146,8 +153,8 @@
     --ui-dialog-bg: var(--md-surface);
     --ui-menu-bg: var(--md-surface);
     --ui-dialog-scrim: rgba(var(--md-scrim-rgb), var(--md-scrim-opacity));
-    --ui-workspace-bg: #E9EEF4;
-    --ui-workspace-bg-rgb: 233, 238, 244;
+    --ui-workspace-bg: #EEF0F3;
+    --ui-workspace-bg-rgb: 238, 240, 243;
     --ui-z-dropdown: 1000;
     --ui-z-sticky: 1020;
     --ui-z-drawer: 1040;
@@ -158,9 +165,13 @@
 
 :root[data-theme="dark"] {
     color-scheme: dark;
+    --md-primary: #8FB9EA;
+    --md-primary-rgb: 143, 185, 234;
+    --md-on-primary: #0B192C;
+    --md-on-primary-rgb: 11, 25, 44;
     --md-primary-container: #1B3654;
-    --ui-primary-text: #A8C9F0;
-    --ui-primary-text-rgb: 168, 201, 240;
+    --ui-primary-text: #8FB9EA;
+    --ui-primary-text-rgb: 143, 185, 234;
     --md-on-primary-container: #D9E9FF;
     --md-secondary: #AEBBD0;
     --md-secondary-rgb: 174, 187, 208;
@@ -172,29 +183,35 @@
     --md-on-error: #690005;
     --md-error-container: #93000A;
     --md-on-error-container: #FFDAD6;
-    --md-success: #198754;
-    --md-success-rgb: 25, 135, 84;
-    --md-on-success: #FFFFFF;
+    --md-success: #5AD094;
+    --md-success-rgb: 90, 208, 148;
+    --md-on-success: #042818;
+    --md-on-success-rgb: 4, 40, 24;
     --md-success-container: #123D2D;
     --md-on-success-container: #B9F2D2;
-    --md-warning: #865500;
-    --md-warning-rgb: 134, 85, 0;
-    --md-on-warning: #FFFFFF;
+    --md-warning: #F5B841;
+    --md-warning-rgb: 245, 184, 65;
+    --md-on-warning: #261600;
+    --md-on-warning-rgb: 38, 22, 0;
     --md-warning-container: #4B340A;
     --md-on-warning-container: #FFE0A6;
-    --md-surface: #171F2C;
-    --md-surface-rgb: 23, 31, 44;
-    --md-surface-container-low: #121A27;
-    --md-surface-container-low-rgb: 18, 26, 39;
-    --md-surface-container: #202A39;
-    --md-surface-container-rgb: 32, 42, 57;
-    --md-surface-container-high: #2A3648;
-    --md-surface-container-highest: #354258;
-    --md-background: #101725;
-    --md-background-rgb: 16, 23, 37;
-    --md-outline: #4C5B70;
-    --md-outline-strong: #71819A;
-    --md-outline-variant: #354258;
+    --md-info: #7CB3EE;
+    --md-info-rgb: 124, 179, 238;
+    --md-on-info: #081A30;
+    --md-on-info-rgb: 8, 26, 48;
+    --md-surface: #171E29;
+    --md-surface-rgb: 23, 30, 41;
+    --md-surface-container-low: #1C2431;
+    --md-surface-container-low-rgb: 28, 36, 49;
+    --md-surface-container: #222B3A;
+    --md-surface-container-rgb: 34, 43, 58;
+    --md-surface-container-high: #2A3546;
+    --md-surface-container-highest: #334054;
+    --md-background: #0E131B;
+    --md-background-rgb: 14, 19, 27;
+    --md-outline: #3E4C63;
+    --md-outline-strong: #8999B0;
+    --md-outline-variant: #2E3A4D;
     --md-on-surface: #E7EDF6;
     --md-on-surface-rgb: 231, 237, 246;
     --md-on-surface-variant: #B4C0D2;
@@ -202,23 +219,27 @@
     --md-scrim: #000000;
     --md-scrim-rgb: 0, 0, 0;
     --md-scrim-opacity: .62;
-    --ui-workspace-bg: #0B1220;
-    --ui-workspace-bg-rgb: 11, 18, 32;
+    --ui-workspace-bg: #0E131B;
+    --ui-workspace-bg-rgb: 14, 19, 27;
     --ui-dialog-bg: var(--md-surface-container-high);
     --ui-menu-bg: var(--md-surface-container);
+    --ui-shadow-surface: none;
     --ui-shadow-1: 0 1px 2px 0 rgba(0, 0, 0, 0.4);
     --ui-shadow-2: 0 6px 16px -2px rgba(0, 0, 0, 0.5), 0 2px 4px -2px rgba(0, 0, 0, 0.4);
     --ui-input-border: var(--md-outline-strong);
     --ui-input-focus: #8FB9EA;
+    --ui-primary-hover: #A6C8F0;
+    --ui-success-hover: #7CE0AC;
+    --ui-error-hover: #FFC7C0;
 }
 
 :root[data-theme="dark"] .tw\:text-primary,
 :root[data-theme="dark"] .tw\:hover\:text-primary:hover {
     color: var(--ui-primary-text) !important;
 }
-:root[data-theme="dark"] .tw\:text-success { color: #8BDFB1 !important; }
-:root[data-theme="dark"] .tw\:text-error { color: #FFB4AB !important; }
-:root[data-theme="dark"] .tw\:text-warning { color: #FFD28A !important; }
+:root[data-theme="dark"] .tw\:text-success { color: var(--md-success) !important; }
+:root[data-theme="dark"] .tw\:text-error { color: var(--md-error) !important; }
+:root[data-theme="dark"] .tw\:text-warning { color: var(--md-warning) !important; }
 
 /* Minimal document foundation without Bootstrap Reboot overhead */
 *, *::before, *::after {
@@ -242,6 +263,11 @@ h1, h2, h3, h4, h5, h6 {
     font-weight: 600;
     line-height: 1.25;
 }
+h1 { font-size: var(--ui-font-size-2xl); }
+h2 { font-size: var(--ui-font-size-xl); }
+h3 { font-size: var(--ui-font-size-lg); }
+h4 { font-size: var(--ui-font-size-base); }
+h5, h6 { font-size: var(--ui-font-size-sm); }
 p {
     margin-top: 0;
     margin-bottom: 1rem;
@@ -260,6 +286,15 @@ button, input, optgroup, select, textarea {
     font-family: inherit;
     font-size: inherit;
     line-height: inherit;
+}
+:where(button) {
+    background-color: transparent;
+    border: 0;
+    padding: 0;
+    color: inherit;
+}
+:where(dd) {
+    margin-inline-start: 0;
 }
 button:not(:disabled),
 [type="button"]:not(:disabled),
@@ -298,9 +333,15 @@ button:not(:disabled),
     border-block-style: solid;
     border-block-color: var(--md-outline);
 }
+:where([class*="tw:border"], [class*="tw:divide-"] > :not([hidden]) ~ :not([hidden])) {
+    border-color: var(--md-outline);
+}
 
 /* Standalone token-styled form primitives in auth views */
 .ui-check {
+    position: relative;
+    display: inline-grid;
+    place-items: center;
     width: 1em;
     height: 1em;
     margin-top: 0.25em;
@@ -309,13 +350,10 @@ button:not(:disabled),
     -webkit-appearance: none;
     background-color: var(--md-surface);
     border: 1px solid var(--ui-input-border);
-    background-repeat: no-repeat;
-    background-position: center;
-    background-size: contain;
     print-color-adjust: exact;
     cursor: pointer;
     flex-shrink: 0;
-    transition: background-color 0.15s ease-in-out, border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+    transition: background-color 0.15s ease-in-out, border-color 0.15s ease-in-out;
 }
 .ui-check[type="checkbox"] {
     border-radius: 0.25em;
@@ -327,16 +365,30 @@ button:not(:disabled),
     background-color: var(--md-primary);
     border-color: var(--md-primary);
 }
-.ui-check[type="checkbox"]:checked {
-    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3e%3cpath fill='none' stroke='%23fff' stroke-linecap='round' stroke-linejoin='round' stroke-width='3' d='m6 10 3 3 6-6'/%3e%3c/svg%3e");
+.ui-check:checked::after {
+    content: "";
+    width: 100%;
+    height: 100%;
+    background-color: var(--md-on-primary);
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    mask-position: center;
+    -webkit-mask-size: contain;
+    mask-size: contain;
 }
-.ui-check[type="radio"]:checked {
-    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='2' fill='%23fff'/%3e%3c/svg%3e");
+.ui-check[type="checkbox"]:checked::after {
+    -webkit-mask-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3e%3cpath fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='3' d='m6 10 3 3 6-6'/%3e%3c/svg%3e");
+    mask-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3e%3cpath fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='3' d='m6 10 3 3 6-6'/%3e%3c/svg%3e");
+}
+.ui-check[type="radio"]:checked::after {
+    -webkit-mask-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='2' fill='%23000'/%3e%3c/svg%3e");
+    mask-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='2' fill='%23000'/%3e%3c/svg%3e");
 }
 .ui-check:focus-visible {
     border-color: var(--ui-input-focus);
-    outline: 0;
-    box-shadow: 0 0 0 0.2rem rgba(var(--md-primary-rgb), 0.25);
+    outline: var(--ui-focus-ring-width) solid var(--md-focus-ring);
+    outline-offset: var(--ui-focus-ring-offset);
 }
 .ui-check:disabled {
     pointer-events: none;
@@ -356,12 +408,12 @@ button:not(:disabled),
     background-clip: padding-box;
     border: 1px solid var(--ui-input-border);
     border-radius: var(--md-shape-sm);
-    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+    transition: border-color 0.15s ease-in-out;
 }
 .ui-input:focus {
     border-color: var(--ui-input-focus);
-    outline: 0;
-    box-shadow: 0 0 0 0.2rem rgba(var(--md-primary-rgb), 0.2);
+    outline: var(--ui-focus-ring-width) solid var(--md-focus-ring);
+    outline-offset: var(--ui-focus-ring-offset);
 }
 
 /* Auth shell layout & brand panel */
@@ -450,15 +502,15 @@ button:not(:disabled),
     font-size: var(--ui-font-size-sm);
     font-weight: 700;
     letter-spacing: 0.04em;
-    color: rgba(var(--md-on-primary-rgb), 0.92);
+    color: rgba(var(--auth-media-on-dark-rgb), 0.94);
     line-height: 1.3;
 }
 .auth-brand-logo__sub {
     display: block;
     font-size: var(--ui-font-size-xs);
-    font-weight: 500;
+    font-weight: 600;
     letter-spacing: 0.06em;
-    color: rgba(var(--md-on-primary-rgb), 0.55);
+    color: rgba(var(--auth-media-on-dark-rgb), 0.85);
     margin-top: 0.125rem;
 }
 
@@ -473,13 +525,13 @@ button:not(:disabled),
     font-weight: 700;
     line-height: 1.28;
     letter-spacing: -0.01em;
-    color: var(--md-on-primary);
+    color: var(--auth-media-on-dark);
 }
 .auth-brand-headline p {
     margin: 0.875rem 0 0;
     font-size: var(--ui-font-size-sm);
     line-height: 1.6;
-    color: rgba(var(--md-on-primary-rgb), 0.65);
+    color: rgba(var(--auth-media-on-dark-rgb), 0.90);
     max-width: 22rem;
 }
 
@@ -488,20 +540,20 @@ button:not(:disabled),
     font-weight: 600;
     letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: rgba(var(--md-on-primary-rgb), 0.38);
+    color: rgba(var(--auth-media-on-dark-rgb), 0.80);
 }
 
 .auth-shell[data-login-screen] .auth-brand-panel__image img {
     object-position: 60% center;
 }
 .auth-shell[data-login-screen] .auth-brand-panel__overlay {
-    background: rgba(var(--md-scrim-rgb), 0.58);
+    background: rgba(var(--md-scrim-rgb), 0.76);
 }
 .auth-shell[data-login-screen] .auth-brand-headline > p {
-    color: rgba(var(--md-on-primary-rgb), 0.90);
+    color: rgba(var(--auth-media-on-dark-rgb), 0.90);
 }
 .auth-shell[data-login-screen] .auth-brand-logo__sub {
-    color: rgba(var(--md-on-primary-rgb), 0.85);
+    color: rgba(var(--auth-media-on-dark-rgb), 0.85);
 }
 .auth-registration-actions {
     margin-top: 1.25rem;
@@ -690,7 +742,8 @@ button:not(:disabled),
 .lang-pill-btn:focus:not(:focus-visible) {
     outline: none;
 }
-.lang-pill-btn.is-active {
+.lang-pill-btn.is-active,
+.lang-pill-btn[aria-pressed="true"] {
     background: var(--md-surface) !important;
     color: var(--md-primary) !important;
     font-weight: 700;
@@ -698,12 +751,16 @@ button:not(:disabled),
     box-shadow: 0 1px 2px 0 rgba(15, 23, 42, 0.05) !important;
     cursor: default;
 }
-.lang-pill-btn:not(.is-active):hover {
+.lang-pill-btn:disabled,
+.lang-pill-btn[aria-disabled="true"] {
+    cursor: default;
+}
+.lang-pill-btn:not(.is-active):not(:disabled):not([aria-disabled="true"]):not([aria-pressed="true"]):hover {
     color: var(--md-on-surface);
     background: rgba(var(--md-on-surface-rgb), 0.05);
     border-color: transparent;
 }
-.lang-pill-btn:active {
+.lang-pill-btn:not(:disabled):not([aria-disabled="true"]):active {
     background: rgba(var(--md-on-surface-rgb), 0.08);
 }
 .lang-pill-btn:focus-visible {
@@ -1172,4 +1229,5 @@ html[data-auth-splash-wait="1"] .ui-page-fade {
     }
 }
 
+@import "./adasi-select.css";
 @import "tailwindcss/utilities.css" prefix(tw) source(none);

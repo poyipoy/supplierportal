@@ -47,14 +47,13 @@
                             $notifCategoryKey = \App\Support\NotificationCategory::key($notif);
                             $notifCategory = $notificationCategories[$notifCategoryKey] ?? $notificationCategories[\App\Support\NotificationCategory::OTHER];
                         @endphp
-                        <div role="button"
-                            class="notification-item {{ $notif->read_at ? '' : 'tw:bg-primary-container' }}"
+                        <button type="button"
+                            class="notification-item ui-focus-ring tw:block tw:w-full tw:text-start {{ $notif->read_at ? '' : 'tw:bg-primary-container' }}"
                             data-notification-item
                             data-notification-category="{{ $notifCategoryKey }}"
                             data-notification-unread="{{ $notif->read_at ? '0' : '1' }}"
                             data-notification-read-url="{{ route('notifications.read', $notif->id) }}"
-                            data-notification-id="{{ $notif->id }}"
-                            style="cursor: pointer;">
+                            data-notification-id="{{ $notif->id }}">
                             <div class="tw:flex tw:gap-3">
                                 <x-ui.icon :name="$notif->data['icon'] ?? $notifCategory['icon']" size="lg" class="tw:text-primary tw:shrink-0 tw:mt-1" />
                                 <div class="tw:min-w-0 tw:flex-1">
@@ -73,7 +72,7 @@
                                     </div>
                                 </div>
                             </div>
-                        </div>
+                        </button>
                     @empty
                         <div class="tw:text-center tw:text-on-surface-variant tw:py-12 tw:px-3" data-notification-empty>
                             <x-ui.icon :name="$category['icon']" size="lg" class="tw:opacity-60" />

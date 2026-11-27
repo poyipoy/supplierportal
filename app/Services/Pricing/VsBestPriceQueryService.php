@@ -75,8 +75,21 @@ class VsBestPriceQueryService
                 'current_quotes.currency as current_currency',
                 'current_quotes.submitted_at as current_submitted_at',
                 'current_pr_items.material_name',
+                'current_pr_items.shape',
+                'current_pr_items.thickness',
+                'current_pr_items.width',
+                'current_pr_items.length',
+                'current_pr_items.d_outer',
+                'current_pr_items.d_inner',
                 'current_pr_items.quantity',
                 'current_pr_items.weight_needed',
+                'current_items.available_thickness',
+                'current_items.available_width',
+                'current_items.available_length',
+                'current_items.available_length_min',
+                'current_items.available_length_max',
+                'current_items.available_d_outer',
+                'current_items.available_d_inner',
                 'current_pr.id as current_pr_id',
                 'current_pr.pr_number as current_pr_number',
                 'best_items.id as best_item_id',
@@ -148,6 +161,12 @@ class VsBestPriceQueryService
 
         return $query->where(function ($q) use ($like) {
             $q->where('current_pr_items.material_name', 'like', $like)
+                ->orWhere('current_pr_items.shape', 'like', $like)
+                ->orWhereRaw('CAST(current_pr_items.thickness AS CHAR) like ?', [$like])
+                ->orWhereRaw('CAST(current_pr_items.width AS CHAR) like ?', [$like])
+                ->orWhereRaw('CAST(current_pr_items.length AS CHAR) like ?', [$like])
+                ->orWhereRaw('CAST(current_pr_items.d_outer AS CHAR) like ?', [$like])
+                ->orWhereRaw('CAST(current_pr_items.d_inner AS CHAR) like ?', [$like])
                 ->orWhere('current_pr.pr_number', 'like', $like)
                 ->orWhereRaw(self::supplierNameSql('current_supplier', 'current_supplier_profile').' like ?', [$like])
                 ->orWhereRaw(self::supplierNameSql('best_supplier', 'best_supplier_profile').' like ?', [$like])

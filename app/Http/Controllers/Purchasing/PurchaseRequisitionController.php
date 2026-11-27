@@ -155,7 +155,7 @@ class PurchaseRequisitionController extends Controller
                     }
 
                     return '<div class="tw:inline-flex tw:items-center tw:justify-end tw:gap-1">'.$primaryAction
-                        .'<div class="dropdown"><button type="button" class="ui-data-action ui-focus-ring dropdown-toggle" data-ui-dropdown-trigger popovertarget="dd-pr-'.e($pr->hash).'" aria-controls="dd-pr-'.e($pr->hash).'" aria-expanded="false" aria-label="'.e(__('purchasing.action_names.more_actions_for', ['name' => $pr->pr_number])).'">'.e(__('purchasing.copy.more')).'</button>'
+                        .'<div class="dropdown"><button type="button" class="ui-data-action ui-focus-ring dropdown-toggle" data-ui-dropdown-trigger popovertarget="dd-pr-'.e($pr->hash).'" aria-controls="dd-pr-'.e($pr->hash).'" aria-haspopup="menu" aria-expanded="false" aria-label="'.e(__('purchasing.action_names.more_actions_for', ['name' => $pr->pr_number])).'">'.e(__('purchasing.copy.more')).'</button>'
                         .'<ul id="dd-pr-'.e($pr->hash).'" popover="auto" data-ui-dropdown-menu class="dropdown-menu dropdown-menu-end">'.implode('', $secondaryActions).'</ul></div></div>';
                 })
                 ->rawColumns(['status_badge', 'action'])

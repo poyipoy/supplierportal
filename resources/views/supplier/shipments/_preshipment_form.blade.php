@@ -117,7 +117,7 @@
         <fieldset class="tw:m-0 tw:border tw:border-outline-variant tw:rounded-ui-md tw:p-4 tw:bg-surface tw:grid tw:gap-3 tw:content-start">
             <legend class="tw:sr-only">{{ __('shipments.preshipment.exporter_title') }}</legend>
             <div class="tw:grid tw:gap-0.5 tw:border-b tw:border-outline-variant tw:pb-2.5">
-                <h3 class="tw:m-0 tw:text-ui-xs tw:font-bold tw:uppercase tw:tracking-wider tw:text-on-surface">
+                <h3 class="tw:m-0 tw:text-ui-sm tw:font-bold tw:uppercase tw:tracking-wider tw:text-on-surface">
                     {{ __('shipments.preshipment.exporter_short_title') }}
                 </h3>
                 <p class="tw:m-0 tw:text-ui-xs tw:text-on-surface-variant">
@@ -378,7 +378,7 @@
         <fieldset class="tw:m-0 tw:border tw:border-outline-variant tw:rounded-ui-md tw:p-4 tw:bg-surface tw:grid tw:gap-3 tw:content-start">
             <legend class="tw:sr-only">{{ __('shipments.preshipment.supplier_title') }}</legend>
             <div class="tw:grid tw:gap-0.5 tw:border-b tw:border-outline-variant tw:pb-2.5">
-                <h3 class="tw:m-0 tw:text-ui-xs tw:font-bold tw:uppercase tw:tracking-wider tw:text-on-surface">
+                <h3 class="tw:m-0 tw:text-ui-sm tw:font-bold tw:uppercase tw:tracking-wider tw:text-on-surface">
                     {{ __('shipments.preshipment.supplier_short_title') }}
                 </h3>
                 <p class="tw:m-0 tw:text-ui-xs tw:text-on-surface-variant">
@@ -688,7 +688,7 @@
                     <p x-show="locationAction === 'update' || locationAction === 'create'" x-cloak class="tw:m-0 tw:text-ui-xs tw:text-on-surface-variant">
                         {{ __('shipments.preshipment.location_master_required_hint') }}
                     </p>
-                    @error('preshipment.location_action')<div class="tw:text-ui-xs tw:font-medium tw:text-error" role="alert">{{ $message }}</div>@enderror
+                    @error('preshipment.location_action')<div class="tw:text-ui-xs tw:font-semibold tw:text-error" role="alert">{{ $message }}</div>@enderror
                     <div class="ui-check-group tw:mb-0 tw:mt-1" x-show="locationAction === 'update' || locationAction === 'create'" x-cloak>
                         <input type="checkbox" class="ui-check" name="preshipment[set_location_default]" id="{{ $idPrefix }}_set_location_default" value="1" x-model="setLocationDefault">
                         <label class="tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:cursor-pointer" for="{{ $idPrefix }}_set_location_default">
@@ -779,7 +779,7 @@
 
         {{-- List Step --}}
         <div x-show="manageStep === 'list'" class="tw:grid tw:gap-3">
-            <p x-show="!canCreateLocation" x-cloak class="tw:m-0 tw:text-ui-xs tw:font-medium tw:text-warning">
+            <p x-show="!canCreateLocation" x-cloak class="tw:m-0 tw:text-ui-xs tw:font-semibold tw:text-warning">
                 {{ __('shipments.preshipment.location_limit_reached', ['max' => $maxLocations]) }}
             </p>
 
@@ -860,7 +860,7 @@
                                         {{ __('shipments.preshipment.location_in_use_tag') }}
                                     </span>
                                 </div>
-                                <div class="tw:text-ui-xs tw:text-on-surface tw:font-medium" x-text="[loc.city, loc.country_label].filter(Boolean).join(', ')"></div>
+                                <div class="tw:text-ui-xs tw:text-on-surface tw:font-semibold" x-text="[loc.city, loc.country_label].filter(Boolean).join(', ')"></div>
                                 <div class="tw:text-ui-xs tw:text-on-surface-variant tw:break-words" x-text="loc.address"></div>
                                 <div class="tw:text-ui-xs tw:text-on-surface-variant" x-show="loc.contact || loc.telephone || loc.email" x-text="[loc.contact, loc.telephone, loc.email].filter(Boolean).join(' · ')"></div>
                             </div>
@@ -1042,7 +1042,7 @@
                     />
                     <p x-show="manageForm.fields.country_unmapped" x-cloak class="tw:m-0 tw:mt-1 tw:text-ui-xs tw:text-warning"
                        x-text="@js(__('shipments.preshipment.legacy_country_notice', ['value' => ':val'])).replace(':val', manageForm.fields.country_unmapped)"></p>
-                    <div x-show="manageFieldErrors.country" x-cloak class="tw:mt-1 tw:text-ui-xs tw:font-medium tw:text-error" role="alert" x-text="manageFieldErrors.country"></div>
+                    <div x-show="manageFieldErrors.country" x-cloak class="tw:mt-1 tw:text-ui-xs tw:font-semibold tw:text-error" role="alert" x-text="manageFieldErrors.country"></div>
                 </div>
 
                 <div>

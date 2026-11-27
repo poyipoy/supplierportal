@@ -702,14 +702,14 @@ function renderMobileMaterialCards() {
                 <div class="tw:flex tw:items-start tw:justify-between tw:gap-2 tw:mb-2">
                     <div class="tw:min-w-0">
                         <div class="tw:flex tw:items-center tw:gap-1.5 tw:mb-0.5">
-                            <span class="tw:inline-flex tw:items-center tw:justify-center tw:w-5 tw:h-5 tw:rounded-full tw:bg-surface-container-high tw:text-on-surface tw:text-[11px] tw:font-bold ui-tabular-nums">
+                            <span class="tw:inline-flex tw:items-center tw:justify-center tw:w-5 tw:h-5 tw:rounded-full tw:bg-surface-container-high tw:text-on-surface tw:text-ui-xs tw:font-bold ui-tabular-nums">
                                 ${index + 1}
                             </span>
                             <span class="tw:text-ui-sm tw:font-bold tw:text-on-surface tw:truncate ${isUnconfigured ? 'tw:italic tw:text-on-surface-variant' : ''}">
                                 ${escapePrHtml(displayName)}
                             </span>
                         </div>
-                        <div class="tw:text-[11px] tw:text-on-surface-variant tw:flex tw:items-center tw:gap-1.5">
+                        <div class="tw:text-ui-xs tw:text-on-surface-variant tw:flex tw:items-center tw:gap-1.5">
                             ${grade ? `<span>${escapePrHtml(grade)}</span>` : ''}
                             ${shape ? `<span>&bull; ${escapePrHtml(shape)}</span>` : ''}
                             ${isUnconfigured ? `<span class="tw:text-warning-dark tw:font-semibold">&bull; Belum Lengkap</span>` : ''}
@@ -724,20 +724,20 @@ function renderMobileMaterialCards() {
 
                 <div class="tw:grid tw:grid-cols-2 tw:gap-2 tw:py-2 tw:my-2 tw:border-y tw:border-outline-variant tw:text-ui-xs">
                     <div>
-                        <div class="tw:text-on-surface-variant tw:text-[11px]">Dimensi</div>
-                        <div class="tw:font-medium tw:text-on-surface tw:truncate">${escapePrHtml(dimSummary)}</div>
+                        <div class="tw:text-on-surface-variant tw:text-ui-xs">Dimensi</div>
+                        <div class="tw:font-semibold tw:text-on-surface tw:truncate">${escapePrHtml(dimSummary)}</div>
                     </div>
                     <div>
-                        <div class="tw:text-on-surface-variant tw:text-[11px]">Total Bobot</div>
+                        <div class="tw:text-on-surface-variant tw:text-ui-xs">Total Bobot</div>
                         <div class="tw:font-bold tw:text-on-surface ui-tabular-nums">${escapePrHtml(rowTotalKg)}</div>
                     </div>
                     <div>
-                        <div class="tw:text-on-surface-variant tw:text-[11px]">HS Code</div>
+                        <div class="tw:text-on-surface-variant tw:text-ui-xs">HS Code</div>
                         <div class="tw:font-mono tw:text-on-surface tw:truncate">${escapePrHtml(hsCode || '—')}</div>
                     </div>
                     <div>
-                        <div class="tw:text-on-surface-variant tw:text-[11px]">Bobot Satuan</div>
-                        <div class="tw:font-medium tw:text-on-surface ui-tabular-nums">${unitKg.toFixed(4)} kg</div>
+                        <div class="tw:text-on-surface-variant tw:text-ui-xs">Bobot Satuan</div>
+                        <div class="tw:font-semibold tw:text-on-surface ui-tabular-nums">${unitKg.toFixed(4)} kg</div>
                     </div>
                 </div>
 

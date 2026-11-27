@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { AdasiTooltip, bootAdasiTooltips } from '../../resources/js/adasi-tooltip.js';
 
 function makeNode(tagName, { id = null, attrs = {}, parentElement = null } = {}) {
@@ -165,4 +166,44 @@ test('AdasiTooltip gates sidebar tooltips strictly on data-sidebar-collapsed="tr
     docEl.dataset.sidebarCollapsed = 'false';
     AdasiTooltip.syncSidebarState(false, doc);
     assert.equal(tip.hidden, true);
+});
+
+test('AdasiTooltip aligns CSS anchor attribute, skips touch hover, deduplicates identical aria-label, and supports 4 placements', () => {
+    const css = readFileSync(new URL('../../resources/css/app.css', import.meta.url), 'utf8');
+    assert.match(css, /\[data-ui-tooltip-open="true"\]\s*\{\s*anchor-name:\s*--adasi-active-tooltip-anchor;/s);
+    assert.doesNotMatch(css, /\[data-ui-tooltip-active="true"\]/);
+    assert.match(css, /\[data-ui-placement="bottom"\]:popover-open/);
+    assert.match(css, /\[data-ui-placement="right"\]:popover-open/);
+    assert.match(css, /\[data-ui-placement="left"\]:popover-open/);
+
+    // Prevent vertical letter-wrapping regression (ensures width: max-content, span-all row, and anchor-center)
+    assert.match(css, /\.ui-tooltip\[popover\]\s*\{[^}]*width:\s*max-content;/s);
+    assert.match(css, /\.ui-tooltip\[popover\]\s*\{[^}]*max-width:\s*min\(18rem,\s*calc\(100vw\s*-\s*1rem\)\);/s);
+    assert.match(css, /\.ui-tooltip\[popover\]\s*\{[^}]*overflow-wrap:\s*break-word;/s);
+    assert.doesNotMatch(css, /\.ui-tooltip\[popover\]\s*\{[^}]*overflow-wrap:\s*anywhere;/s);
+    assert.match(css, /position-area:\s*block-start;/);
+    assert.match(css, /justify-self:\s*anchor-center;/);
+    assert.match(css, /align-self:\s*anchor-center;/);
+    assert.doesNotMatch(css, /position-area:\s*block-start\s+center;/);
+    assert.doesNotMatch(css, /position-area:\s*block-end\s+center;/);
+
+    const { doc, body } = makeDoc();
+    bootAdasiTooltips(doc);
+
+    const iconBtn = makeNode('BUTTON', {
+        attrs: { 'data-ui-tooltip': 'Close dialog', 'aria-label': 'Close dialog' },
+        parentElement: body,
+    });
+    iconBtn.ownerDocument = doc;
+
+    // Touch pointerover must not open tooltip.
+    doc.dispatchEvent({ type: 'pointerover', pointerType: 'touch', target: iconBtn });
+    assert.equal(AdasiTooltip.getElement(doc), null);
+
+    // Focus opens synchronously without duplicating identical aria-label into aria-describedby.
+    doc.dispatchEvent({ type: 'focusin', target: iconBtn });
+    const tip = AdasiTooltip.getElement(doc);
+    assert.equal(tip.hidden, false);
+    assert.equal(iconBtn.getAttribute('data-ui-tooltip-open'), 'true');
+    assert.equal(iconBtn.getAttribute('aria-describedby'), null);
 });

@@ -3,7 +3,7 @@
 @section('page-title', __('local_procurement.closure.po_title'))
 
 @section('content')
-<div class="tw:grid tw:gap-6 tw:pb-16">
+<div class="tw:grid tw:grid-cols-[minmax(0,1fr)] tw:gap-6 tw:min-w-0">
     <x-ui.page-header
         :title="__('local_procurement.list.title')"
         :description="__('local_procurement.review.po_help')"
@@ -127,30 +127,46 @@
         </x-slot:chips>
     </x-ui.filter-bar>
 
-    {{-- PO Data Table --}}
-    <x-ui.data-table
-        :title="__('local_procurement.review.registered')"
-        :description="__('local_procurement.review.po_count', ['count' => $purchaseOrders->total()])"
+    {{-- Multi Main Table Workspace (Master + Satellite Preview) --}}
+    <p id="supplier-local-po-mmt-hint" class="tw:sr-only">{{ __('local_procurement.mmt.row_hint') }}</p>
+    <x-ui.mmt-workspace
+        id="supplierLocalPoMmtWorkspace"
+        satellite-id="supplier-local-po-mmt-satellite"
+        :master-label="__('local_procurement.mmt.master_label')"
+        :satellite-title="__('local_procurement.mmt.satellite_title')"
+        :satellite-empty-title="__('local_procurement.mmt.satellite_empty_title')"
+        :satellite-empty="__('local_procurement.mmt.satellite_empty')"
+        :master-frameless="true"
     >
-        <div class="ui-table-responsive">
-            <table class="ui-table ui-table--hover tw:align-middle tw:m-0 tw:text-ui-xs">
+        <x-ui.data-table
+            :title="__('local_procurement.review.registered')"
+            :description="__('local_procurement.review.po_count', ['count' => $purchaseOrders->total()])"
+        >
+        <table class="ui-table ui-table--hover tw:align-middle tw:m-0 tw:text-ui-xs tw:w-full">
                 <thead>
                     <tr>
-                        <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('local_invoice.receipt.po_number') }}</th>
-                        <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('local_procurement.pr.label') }}</th>
-                        <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('local_procurement.labels.po_date') }}</th>
-                        <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-end">{{ __('local_procurement.review.ceiling') }}</th>
-                        <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-end">{{ __('local_procurement.review.gr_actual') }}</th>
-                        <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-center">{{ __('local_invoice.labels.status') }}</th>
-                        <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-center">{{ __('local_procurement.labels.po_document') }}</th>
-                        <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-end">{{ __('common.table.action') }}</th>
+                        <th scope="col">{{ __('local_invoice.receipt.po_number') }}</th>
+                        <th scope="col">{{ __('local_procurement.pr.label') }}</th>
+                        <th scope="col">{{ __('local_procurement.labels.po_date') }}</th>
+                        <th scope="col" class="tw:text-end">{{ __('local_procurement.review.ceiling') }}</th>
+                        <th scope="col" class="tw:text-end">{{ __('local_procurement.review.gr_actual') }}</th>
+                        <th scope="col" class="tw:text-center">{{ __('local_invoice.labels.status') }}</th>
+                        <th scope="col" class="tw:text-center">{{ __('local_procurement.labels.po_document') }}</th>
+                        <th scope="col" class="tw:text-end">{{ __('common.table.action') }}</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse($purchaseOrders as $po)
-                        <tr>
+                        <tr
+                            data-mmt-row-url="{{ \App\Support\PortalPath::routePath('local-supplier.purchase-orders.satellite', $po) }}"
+                            data-mmt-row-ref="{{ $po->po_number }}"
+                            tabindex="0"
+                            aria-selected="false"
+                            aria-controls="supplier-local-po-mmt-satellite"
+                            aria-describedby="supplier-local-po-mmt-hint"
+                        >
                             <td>
-                                <a href="{{ route('local-supplier.purchase-orders.show', $po) }}" class="ui-tabular-nums tw:font-bold tw:text-primary tw:hover:text-primary tw:no-underline tw:hover:underline">
+                                <a href="{{ route('local-supplier.purchase-orders.show', $po) }}" class="ui-focus-ring tw:inline-flex tw:items-center tw:min-h-6 tw:rounded-ui-xs ui-tabular-nums tw:font-bold tw:text-primary tw:hover:text-primary tw:no-underline tw:hover:underline">
                                     {{ $po->po_number }}
                                 </a>
                             </td>
@@ -171,7 +187,7 @@
                                 <div class="ui-tabular-nums tw:font-semibold tw:text-on-surface">
                                     {{ $po->active_gr_count }} GR
                                 </div>
-                                <div class="tw:text-[11px] tw:text-on-surface-variant">
+                                <div class="tw:text-ui-xs tw:text-on-surface-variant">
                                     {{ __('local_procurement.review.gr_count', ['count' => $po->active_gr_count]) }}
                                 </div>
                             </td>
@@ -182,12 +198,19 @@
                             </td>
                             <td class="tw:text-center">
                                 @if($po->latestPoDocument())
-                                    <x-ui.button :href="route('attachments.show', $po->latestPoDocument())" target="_blank" size="sm" variant="outline">
+                                    <x-ui.button
+                                        :href="route('attachments.show', $po->latestPoDocument())"
+                                        target="_blank"
+                                        rel="noopener"
+                                        size="sm"
+                                        variant="outline"
+                                        :title="__('local_procurement.actions.view_po').' — '.$po->po_number"
+                                    >
                                         <x-ui.icon name="file-text" size="xs" />
-                                        <span>PDF</span>
+                                        <span>PDF<span class="tw:sr-only"> {{ __('local_procurement.actions.view_po') }} — {{ $po->po_number }}</span></span>
                                     </x-ui.button>
                                 @else
-                                    <span class="tw:text-on-surface-variant tw:text-[11px] tw:italic">{{ __('local_invoice.empty.not_uploaded') }}</span>
+                                    <span class="tw:text-on-surface-variant tw:text-ui-xs tw:italic">{{ __('local_invoice.empty.not_uploaded') }}</span>
                                 @endif
                             </td>
                             <td class="tw:text-end">
@@ -200,19 +223,19 @@
                     @empty
                         <tr>
                             <td colspan="8" class="tw:py-8 tw:text-center tw:text-on-surface-variant tw:text-ui-sm">
-                                {{ __('local_procurement.empty.po') }}
+                                {{ count($supplierPoChips) > 0 ? __('local_procurement.empty.po_filtered') : __('local_procurement.empty.po') }}
                             </td>
                         </tr>
                     @endforelse
                 </tbody>
             </table>
-        </div>
 
         @if($purchaseOrders->hasPages())
             <x-slot:pagination>
                 {{ $purchaseOrders->links() }}
             </x-slot:pagination>
         @endif
-    </x-ui.data-table>
+        </x-ui.data-table>
+    </x-ui.mmt-workspace>
 </div>
 @endsection

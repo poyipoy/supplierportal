@@ -56,6 +56,13 @@ function createPicker(wrapper) {
     const showError = (message) => {
         errorText.textContent = message;
         errorBox.classList.toggle('tw:hidden', !message);
+        const errorId = errorBox?.id;
+        if (errorId) {
+            const tokens = (input.getAttribute('aria-describedby') || '').trim().split(/\s+/).filter(Boolean).filter((t) => t !== errorId);
+            if (message) tokens.push(errorId);
+            if (tokens.length) input.setAttribute('aria-describedby', tokens.join(' '));
+            else input.removeAttribute('aria-describedby');
+        }
         if (message) input.setAttribute('aria-invalid', 'true');
         else input.removeAttribute('aria-invalid');
     };
@@ -90,12 +97,16 @@ function createPicker(wrapper) {
 
     const position = () => {
         const rect = input.getBoundingClientRect();
+        const maxWidth = Math.max(0, window.innerWidth - 16);
+        if (maxWidth > 0) panel.style.maxWidth = `${Math.round(maxWidth)}px`;
         const height = panel.offsetHeight;
         const width = panel.offsetWidth;
         const fitsBelow = window.innerHeight - rect.bottom >= height + 8;
-        const top = fitsBelow || rect.top < height + 8 ? rect.bottom + 4 : rect.top - height - 4;
-        panel.style.top = `${Math.max(8, top)}px`;
-        panel.style.left = `${Math.max(8, Math.min(rect.left, window.innerWidth - width - 8))}px`;
+        const preferredTop = fitsBelow || rect.top < height + 8 ? rect.bottom + 4 : rect.top - height - 4;
+        const maxTop = Math.max(8, window.innerHeight - height - 8);
+        const maxLeft = Math.max(8, window.innerWidth - width - 8);
+        panel.style.top = `${Math.max(8, Math.min(preferredTop, maxTop))}px`;
+        panel.style.left = `${Math.max(8, Math.min(rect.left, maxLeft))}px`;
     };
 
     const onOutside = (event) => {

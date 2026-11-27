@@ -39,3 +39,12 @@ test('the component is a typed combobox, never a native time input', () => {
     assert.doesNotMatch(view, /type="time"/);
     assert.match(view, /ui-time-picker__icon" aria-hidden="true"/);
 });
+
+test('time picker panel and viewport positioning clamp to narrow viewports', () => {
+    const js = readFileSync(new URL('../../resources/js/time-picker.js', import.meta.url), 'utf8');
+    const css = readFileSync(new URL('../../resources/css/app.css', import.meta.url), 'utf8');
+    assert.match(js, /panel\.style\.maxWidth\s*=/);
+    assert.match(js, /const maxTop\s*=\s*Math\.max\(8,\s*window\.innerHeight\s*-\s*height\s*-\s*8\)/);
+    assert.match(js, /const maxLeft\s*=\s*Math\.max\(8,\s*window\.innerWidth\s*-\s*width\s*-\s*8\)/);
+    assert.match(css, /\.ui-time-panel\s*\{[^}]*width:\s*min\(13\.5rem,\s*calc\(100vw\s*-\s*1rem\)\)/s);
+});

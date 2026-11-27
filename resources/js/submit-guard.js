@@ -240,11 +240,43 @@
         });
     }
 
+    /**
+     * Lock a form against double submission, activate loading state on its submit button, and submit natively.
+     * Used by confirmed action forms so they do not bypass submit-guard with a bare `this.submit()`.
+     * @param {HTMLFormElement} form
+     * @param {HTMLElement} [trigger]
+     * @returns {boolean}
+     */
+    function submitForm(form, trigger = null) {
+        if (!form || !(form instanceof HTMLFormElement)) return false;
+        if (form.dataset.submitting === 'true') return false;
+
+        form.dataset.submitting = 'true';
+
+        const activeBtn = trigger
+            || form._lastClickedButton
+            || form.querySelector('button[type="submit"], input[type="submit"], button:not([type])');
+
+        if (activeBtn) {
+            startLoading(activeBtn);
+            disableSiblingButtons(form, activeBtn);
+        }
+
+        if (form._submitGuardTimeout) {
+            clearTimeout(form._submitGuardTimeout);
+        }
+        form._submitGuardTimeout = setTimeout(() => resetForm(form), TIMEOUT_MS);
+
+        HTMLFormElement.prototype.submit.call(form);
+        return true;
+    }
+
     // Expose public API
     window.AdasiButton = {
         TIMEOUT_MS,
         startLoading,
         stopLoading,
+        submitForm,
         resetForm,
         resetAll,
         disableSiblingButtons,

@@ -74,7 +74,7 @@
             @csrf
             <input type="hidden" name="form_mode" value="create">
             <div class="modal-header">
-                <h5 class="modal-title" id="addCatModalLabel">{{ __($rp.'.rules.add_category') }}</h5>
+                <h2 class="modal-title tw:text-ui-lg tw:font-bold" id="addCatModalLabel">{{ __($rp.'.rules.add_category') }}</h2>
                 <button type="button" class="btn-close" data-ui-modal-close aria-label="Close"></button>
             </div>
             <div class="modal-body tw:grid tw:gap-3">
@@ -104,7 +104,7 @@
             <input type="hidden" name="form_mode" value="edit">
             <input type="hidden" name="rule_id" id="editRuleId" value="{{ old('form_mode') === 'edit' ? old('rule_id') : '' }}">
             <div class="modal-header">
-                <h5 class="modal-title" id="editCatModalLabel">{{ __($rp.'.rules.edit_category') }}</h5>
+                <h2 class="modal-title tw:text-ui-lg tw:font-bold" id="editCatModalLabel">{{ __($rp.'.rules.edit_category') }}</h2>
                 <button type="button" class="btn-close" data-ui-modal-close aria-label="Close"></button>
             </div>
             <div class="modal-body tw:grid tw:gap-3">
@@ -132,7 +132,7 @@
         <form method="POST" action="{{ route($prefix.'.store') }}" class="modal-content">
             @csrf
             <div class="modal-header">
-                <h2 class="modal-title tw:text-ui-md tw:font-bold" id="referencePriceCreateTitle">{{ __($rp.'.add') }}</h2>
+                <h2 class="modal-title tw:text-ui-base tw:font-bold" id="referencePriceCreateTitle">{{ __($rp.'.add') }}</h2>
                 <button type="button" class="btn-close" data-ui-modal-close aria-label="{{ __($rp.'.cancel') }}"></button>
             </div>
             <div class="modal-body tw:grid tw:gap-3">
@@ -170,7 +170,7 @@
         <form method="POST" action="" class="modal-content" data-reference-price-form>
             @csrf
             <div class="modal-header">
-                <h2 class="modal-title tw:text-ui-md tw:font-bold" id="referencePriceSupersedeTitle" data-title-template="{{ __($rp.'.supersede_title', ['material' => '__MATERIAL__']) }}">{{ __($rp.'.supersede') }}</h2>
+                <h2 class="modal-title tw:text-ui-base tw:font-bold" id="referencePriceSupersedeTitle" data-title-template="{{ __($rp.'.supersede_title', ['material' => '__MATERIAL__']) }}">{{ __($rp.'.supersede') }}</h2>
                 <button type="button" class="btn-close" data-ui-modal-close aria-label="{{ __($rp.'.cancel') }}"></button>
             </div>
             <div class="modal-body tw:grid tw:gap-3">
@@ -193,7 +193,7 @@
         <form method="POST" action="" class="modal-content" data-reference-price-form>
             @csrf
             <div class="modal-header">
-                <h2 class="modal-title tw:text-ui-md tw:font-bold" id="referencePriceVoidTitle" data-title-template="{{ __($rp.'.void_title', ['material' => '__MATERIAL__']) }}">{{ __($rp.'.void') }}</h2>
+                <h2 class="modal-title tw:text-ui-base tw:font-bold" id="referencePriceVoidTitle" data-title-template="{{ __($rp.'.void_title', ['material' => '__MATERIAL__']) }}">{{ __($rp.'.void') }}</h2>
                 <button type="button" class="btn-close" data-ui-modal-close aria-label="{{ __($rp.'.cancel') }}"></button>
             </div>
             <div class="modal-body">
@@ -213,7 +213,7 @@
             @csrf
             @method('PATCH')
             <div class="modal-header">
-                <h2 class="modal-title tw:text-ui-md tw:font-bold" id="referencePriceNotesTitle">{{ __($rp.'.edit_notes') }}</h2>
+                <h2 class="modal-title tw:text-ui-base tw:font-bold" id="referencePriceNotesTitle">{{ __($rp.'.edit_notes') }}</h2>
                 <button type="button" class="btn-close" data-ui-modal-close aria-label="{{ __($rp.'.cancel') }}"></button>
             </div>
             <div class="modal-body">
@@ -319,6 +319,52 @@
                 });
             } else if (window.confirm(title + '\n\n' + text)) {
                 submitToggleForm();
+            }
+        });
+
+        // Event delegation for Delete Category trigger
+        document.addEventListener('click', function (event) {
+            const trigger = event.target.closest('[data-delete-category-trigger]');
+            if (!trigger) return;
+            event.preventDefault();
+
+            const form = trigger.closest('form[data-delete-category-form]');
+            if (!form) return;
+
+            const key = form.dataset.categoryKey || '';
+            const name = form.dataset.categoryName || key;
+            const title = @js(__('materials.reference_prices.rules.delete_confirm_title', ['key' => '__KEY__'])).replace('__KEY__', key);
+            const text = @js(__('materials.reference_prices.rules.delete_confirm_text', ['key' => '__KEY__', 'name' => '__NAME__']))
+                .replace('__KEY__', key)
+                .replace('__NAME__', name);
+            const confirmText = @js(__('purchasing.audit_ui.confirm_delete'));
+            const cancelText = @js(__('common.actions.cancel'));
+
+            const submitDeleteForm = function () {
+                if (window.AdasiButton && typeof window.AdasiButton.startLoading === 'function') {
+                    window.AdasiButton.startLoading(trigger);
+                }
+                try {
+                    if (window.parent !== window && window.parent?.location?.origin === window.location.origin) {
+                        window.parent.AdasiWorkspaceShell?.notifyMutation?.(window);
+                    }
+                } catch {}
+                HTMLFormElement.prototype.submit.call(form);
+            };
+
+            if (window.AdasiAlert && typeof window.AdasiAlert.confirmDanger === 'function') {
+                window.AdasiAlert.confirmDanger({
+                    title: title,
+                    text: text,
+                    confirmText: confirmText,
+                    cancelText: cancelText,
+                }).then(function (result) {
+                    if (result && result.isConfirmed) {
+                        submitDeleteForm();
+                    }
+                });
+            } else if (window.confirm(title + '\n\n' + text)) {
+                submitDeleteForm();
             }
         });
 

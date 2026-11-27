@@ -39,7 +39,7 @@
     >
         <span class="tw:inline-flex tw:items-center tw:gap-2">
             <x-ui.icon name="users" size="sm" class="tw:text-on-surface-variant" />
-            <span class="tw:text-on-surface tw:font-medium">{{ __('purchasing.copy.select_invited_suppliers') }}</span>
+            <span class="tw:text-on-surface tw:font-semibold">{{ __('purchasing.copy.select_invited_suppliers') }}</span>
         </span>
         <span class="supplier-selected-count ui-status-chip ui-status-chip--info ui-tabular-nums">
             {{ $selectedSupplierCount > 0 ? $selectedSupplierCount : __('purchasing.copy.all') }}
@@ -56,7 +56,7 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <div>
-                        <h6 class="modal-title tw:font-bold" id="{{ $modalId }}Label">{{ __('purchasing.copy.select_invited_suppliers') }}</h6>
+                        <h2 class="modal-title tw:text-ui-lg tw:font-bold" id="{{ $modalId }}Label">{{ __('purchasing.copy.select_invited_suppliers') }}</h2>
                         <div class="tw:text-on-surface-variant tw:text-ui-xs tw:mt-0.5">{{ __('purchasing.copy.check_specific_suppliers_to_invite_for_this_pr_or_leave_empty_to_open_to_all_registered_suppliers') }}</div>
                     </div>
                     <button type="button" class="btn-close" data-ui-modal-close aria-label="{{ __('purchasing.copy.close') }}"></button>

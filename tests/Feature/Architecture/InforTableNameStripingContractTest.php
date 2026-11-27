@@ -73,6 +73,7 @@ class InforTableNameStripingContractTest extends TestCase
             'resources/views/qc/dashboard.blade.php',
             'resources/views/supplier-registrations/_attempts_content.blade.php',
             'resources/views/exports/index.blade.php',
+            'resources/views/local-supplier/purchase-orders/index.blade.php',
         ];
 
         foreach ($indexFiles as $relativePath) {

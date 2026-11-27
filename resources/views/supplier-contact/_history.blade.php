@@ -11,11 +11,11 @@
                 <caption class="tw:sr-only">{{ __('supplier_contact.common.history_title') }}</caption>
                 <thead>
                     <tr>
-                        <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('supplier_contact.common.submitted_at') }}</th>
-                        <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('supplier_contact.common.proposed') }}</th>
-                        <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('supplier_contact.common.status') }}</th>
-                        <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('supplier_contact.common.reviewed') }}</th>
-                        <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('supplier_contact.common.notes') }}</th>
+                        <th scope="col">{{ __('supplier_contact.common.submitted_at') }}</th>
+                        <th scope="col">{{ __('supplier_contact.common.proposed') }}</th>
+                        <th scope="col">{{ __('supplier_contact.common.status') }}</th>
+                        <th scope="col">{{ __('supplier_contact.common.reviewed') }}</th>
+                        <th scope="col">{{ __('supplier_contact.common.notes') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -24,7 +24,7 @@
                         <tr>
                             <td class="ui-tabular-nums tw:whitespace-nowrap">{{ $regionalFormatter->timestamp($item->requested_at ?? $item->created_at, 'datetime') }}</td>
                             <td class="ui-col-data-name">
-                                <span class="tw:block tw:font-medium tw:text-on-surface tw:wrap-break-word">{{ $proposed['pic_name'] ?? '' }}</span>
+                                <span class="tw:block tw:font-semibold tw:text-on-surface tw:wrap-break-word">{{ $proposed['pic_name'] ?? '' }}</span>
                                 <span class="tw:block tw:text-ui-xs tw:text-on-surface-variant tw:break-all">{{ $proposed['pic_email'] ?? '' }}</span>
                                 <span class="tw:block tw:text-ui-xs tw:text-on-surface-variant">{{ $proposed['pic_phone'] ?? '' }}</span>
                                 @foreach(\App\Models\SupplierChangeRequest::COMPANY_FIELDS as $companyField)

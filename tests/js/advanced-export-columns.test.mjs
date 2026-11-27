@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createAdvancedExport } from '../../resources/js/advanced-export.js';
-import { createColumnState, transitionColumns, serializeColumns } from '../../resources/js/export-column-designer.js';
+import { createColumnDesigner, createColumnState, transitionColumns, serializeColumns } from '../../resources/js/export-column-designer.js';
 
 const catalog = [
     { key: 'po_number', label: 'PO Number', default: true, required: true },
@@ -414,4 +414,103 @@ test('export submit marks form managed, renders a single spinner preserving butt
     assert.equal(submit.querySelectorAll('.ui-spinner').length, 0);
     assert.equal(submit.attributes.has('aria-busy'), false);
     assert.equal(submit.disabled, false);
+});
+
+test('column designer aligns Column Menu directly below trigger button and flips above when bottom space overflows', () => {
+    const docListeners = new Map();
+    const winListeners = new Map();
+    const doc = {
+        activeElement: null,
+        addEventListener: (name, fn) => docListeners.set(name, fn),
+        removeEventListener: (name) => docListeners.delete(name),
+        createElement: () => new Element(doc),
+    };
+    const win = {
+        innerWidth: 1366,
+        innerHeight: 768,
+        visualViewport: { offsetLeft: 0, offsetTop: 0, width: 1366, height: 768, addEventListener() {}, removeEventListener() {} },
+        addEventListener: (name, fn) => winListeners.set(name, fn),
+        removeEventListener: (name) => winListeners.delete(name),
+        clearTimeout() {},
+        setTimeout: () => 1,
+    };
+    doc.defaultView = win;
+
+    const makeNode = (overrides = {}) => {
+        const node = new Element(doc);
+        node.style = { setProperty() {}, removeProperty() {} };
+        node.getAttribute = (k) => node.attributes.get(k) ?? null;
+        node.closest = () => null;
+        node.contains = (target) => target === node;
+        node.insertBefore = (child) => { if (!node.children.includes(child)) node.children.push(child); return child; };
+        node.cloneNode = () => {
+            const copy = makeNode();
+            const letter = makeNode();
+            const label = makeNode();
+            const req = makeNode();
+            copy.nodes.set('[data-column-letter]', letter);
+            copy.nodes.set('[data-column-label]', label);
+            copy.nodes.set('[data-column-required]', req);
+            return copy;
+        };
+        return Object.assign(node, overrides);
+    };
+
+    const root = makeNode();
+    const host = makeNode();
+    host.querySelectorAll = (sel) => (sel === '[data-export-column]' ? host.children : []);
+    const scroll = makeNode();
+    const emptyRows = makeNode();
+    const template = { content: { firstElementChild: makeNode() } };
+    const fieldset = makeNode();
+    const menuItem = makeNode({ disabled: false });
+    const menu = makeNode({
+        hidden: true,
+        getBoundingClientRect: () => ({ width: 200, height: 180, left: 0, top: 0, right: 200, bottom: 180 }),
+    });
+    menu.nodes.set('[role="menuitem"]:not(:disabled)', menuItem);
+    const unhide = makeNode({
+        hidden: true,
+        getBoundingClientRect: () => ({ width: 336, height: 160, left: 0, top: 0, right: 336, bottom: 160 }),
+    });
+    const hiddenSelect = makeNode();
+    const modal = makeNode();
+
+    const menuTrigger = makeNode({
+        dataset: { columnCommand: 'menu' },
+        getBoundingClientRect: () => ({ left: 684, top: 210, right: 806, bottom: 244, width: 122, height: 34 }),
+    });
+    menuTrigger.closest = (sel) => (sel === '[data-column-command]' ? menuTrigger : null);
+
+    root.contains = (target) => target === root || target === menuTrigger || target === menu;
+    root.nodes.set('[data-export-columns]', host);
+    root.nodes.set('[data-column-scroll]', scroll);
+    root.nodes.set('[data-column-empty-rows]', emptyRows);
+    root.nodes.set('[data-export-column-template]', template);
+    root.nodes.set('[data-column-designer]', fieldset);
+    root.nodes.set('[data-column-menu]', menu);
+    root.nodes.set('[data-column-unhide]', unhide);
+    root.nodes.set('[data-column-hidden-select]', hiddenSelect);
+    root.nodes.set('dialog.ui-native-dialog, .ui-export-designer-modal', modal);
+    root.lists.set('[data-column-command]', [menuTrigger]);
+    root.lists.set('[data-column-command="menu"], [data-column-command="unhide"]', [menuTrigger]);
+    root.lists.set('[data-column-command="menu"]', [menuTrigger]);
+
+    const designer = createColumnDesigner(root, { text: (key) => key });
+    designer.configure(catalog);
+    designer.setEnabled(true);
+
+    // 1. Standard position: aligned flush with trigger's left edge and 4px below trigger bottom
+    root.emit('click', { target: menuTrigger });
+    assert.equal(menu.hidden, false);
+    assert.equal(menu.style.left, '684px');
+    assert.equal(menu.style.top, '248px');
+
+    // 2. Near bottom of viewport: flips cleanly above trigger (top - menuHeight - 4)
+    menuTrigger.getBoundingClientRect = () => ({ left: 684, top: 650, right: 806, bottom: 684, width: 122, height: 34 });
+    root.emit('click', { target: menuTrigger });
+    assert.equal(menu.style.left, '684px');
+    assert.equal(menu.style.top, '466px');
+
+    designer.destroy();
 });

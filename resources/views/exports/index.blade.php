@@ -18,15 +18,15 @@
         </x-slot:meta>
     </x-ui.page-header>
 
-    <section class="tw:border tw:border-outline tw:bg-surface" aria-labelledby="export-table-title">
-        <header class="tw:flex tw:flex-wrap tw:items-end tw:justify-between tw:gap-3 tw:border-b tw:border-outline-variant tw:bg-surface-container tw:px-5 tw:py-3">
+    <section class="tw:overflow-hidden tw:rounded-ui-md tw:border tw:border-outline tw:bg-surface tw:shadow-ui-surface" aria-labelledby="export-table-title">
+        <header class="tw:flex tw:flex-wrap tw:items-end tw:justify-between tw:gap-3 tw:border-b tw:border-outline-variant tw:px-5 tw:py-3">
             <div>
                 <h2 id="export-table-title" class="tw:m-0 tw:text-ui-sm tw:font-semibold">{{ __('common.export_history.generated') }}</h2>
                 <p class="tw:m-0 tw:mt-0.5 tw:text-ui-xs tw:text-on-surface-variant">{{ __('common.export_history.status_help') }}</p>
             </div>
             <form method="GET" action="{{ route('exports.index') }}" class="tw:flex tw:flex-wrap tw:items-end tw:gap-2" aria-label="{{ __('common.filters.controls') }}">
                 <div>
-                    <label for="export-filter-status" class="tw:block tw:text-ui-xs tw:font-medium tw:text-on-surface-variant">{{ __('common.export_history.filter_status') }}</label>
+                    <label for="export-filter-status" class="tw:block tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant">{{ __('common.export_history.filter_status') }}</label>
                     <select id="export-filter-status" name="status" class="ui-select ui-select--sm">
                         <option value="">{{ __('common.export_history.filter_all_statuses') }}</option>
                         @foreach(['queued', 'processing', 'completed', 'failed', 'cancelled'] as $statusOption)
@@ -35,7 +35,7 @@
                     </select>
                 </div>
                 <div>
-                    <label for="export-filter-format" class="tw:block tw:text-ui-xs tw:font-medium tw:text-on-surface-variant">{{ __('common.export_history.filter_format') }}</label>
+                    <label for="export-filter-format" class="tw:block tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant">{{ __('common.export_history.filter_format') }}</label>
                     <select id="export-filter-format" name="format" class="ui-select ui-select--sm">
                         <option value="">{{ __('common.export_history.filter_all_formats') }}</option>
                         <option value="xlsx" @selected(($formatFilter ?? null) === 'xlsx')>XLSX</option>
@@ -45,7 +45,7 @@
                 <div class="tw:flex tw:items-center tw:gap-1.5">
                     <x-ui.button type="submit" size="sm" variant="primary">{{ __('common.filters.apply') }}</x-ui.button>
                     @if(($statusFilter ?? null) !== null || ($formatFilter ?? null) !== null)
-                        <a href="{{ route('exports.index') }}" class="ui-focus-ring tw:inline-flex tw:h-8 tw:items-center tw:rounded-ui-sm tw:border tw:border-outline tw:bg-surface tw:px-2.5 tw:text-ui-xs tw:font-medium tw:text-on-surface tw:no-underline tw:hover:bg-surface-container-high">{{ __('common.filters.reset') }}</a>
+                        <a href="{{ route('exports.index') }}" class="ui-focus-ring tw:inline-flex tw:h-8 tw:items-center tw:rounded-ui-sm tw:border tw:border-outline tw:bg-surface tw:px-2.5 tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:no-underline tw:hover:bg-surface-container-high">{{ __('common.filters.reset') }}</a>
                     @endif
                 </div>
             </form>
@@ -119,14 +119,14 @@
                             <td class="tw:text-end">
                                 <div class="tw:inline-flex tw:flex-wrap tw:items-center tw:justify-end tw:gap-1.5">
                                     @if($item['download_url'])
-                                        <a href="{{ $item['download_url'] }}" class="ui-focus-ring tw:inline-flex tw:h-8 tw:items-center tw:gap-1.5 tw:rounded-ui-sm tw:border tw:border-success/60 tw:bg-transparent tw:px-2.5 tw:text-ui-xs tw:font-medium tw:text-success tw:no-underline tw:hover:bg-success/5">
+                                        <a href="{{ $item['download_url'] }}" class="ui-focus-ring tw:inline-flex tw:h-8 tw:items-center tw:gap-1.5 tw:rounded-ui-sm tw:border tw:border-success/60 tw:bg-transparent tw:px-2.5 tw:text-ui-xs tw:font-semibold tw:text-success tw:no-underline tw:hover:bg-success/5">
                                             <x-ui.icon name="download" />{{ __('common.actions.download') }}
                                         </a>
                                     @endif
                                     @if(!empty($item['cancel_url']))
                                         <form method="POST" action="{{ $item['cancel_url'] }}" class="tw:inline" data-export-action-form="cancel">
                                             @csrf
-                                            <button type="submit" data-export-action="cancel" data-action-url="{{ $item['cancel_url'] }}" class="ui-focus-ring tw:inline-flex tw:h-8 tw:cursor-pointer tw:items-center tw:gap-1.5 tw:rounded-ui-sm tw:border tw:border-error/60 tw:bg-transparent tw:px-2.5 tw:text-ui-xs tw:font-medium tw:text-error tw:hover:bg-error/5 tw:disabled:cursor-not-allowed tw:disabled:opacity-60">
+                                            <button type="submit" data-export-action="cancel" data-action-url="{{ $item['cancel_url'] }}" class="ui-focus-ring tw:inline-flex tw:h-8 tw:cursor-pointer tw:items-center tw:gap-1.5 tw:rounded-ui-sm tw:border tw:border-error/60 tw:bg-transparent tw:px-2.5 tw:text-ui-xs tw:font-semibold tw:text-error tw:hover:bg-error/5 tw:disabled:cursor-not-allowed tw:disabled:opacity-60">
                                                 <x-ui.icon name="x" size="sm" />{{ __('common.export_history.cancel') }}
                                             </button>
                                         </form>
@@ -134,7 +134,7 @@
                                     @if(!empty($item['rerun_url']))
                                         <form method="POST" action="{{ $item['rerun_url'] }}" class="tw:inline" data-export-action-form="rerun">
                                             @csrf
-                                            <button type="submit" data-export-action="rerun" data-action-url="{{ $item['rerun_url'] }}" class="ui-focus-ring tw:inline-flex tw:h-8 tw:cursor-pointer tw:items-center tw:gap-1.5 tw:rounded-ui-sm tw:border tw:border-outline tw:bg-surface tw:px-2.5 tw:text-ui-xs tw:font-medium tw:text-on-surface tw:hover:bg-surface-container-high tw:disabled:cursor-not-allowed tw:disabled:opacity-60">
+                                            <button type="submit" data-export-action="rerun" data-action-url="{{ $item['rerun_url'] }}" class="ui-focus-ring tw:inline-flex tw:h-8 tw:cursor-pointer tw:items-center tw:gap-1.5 tw:rounded-ui-sm tw:border tw:border-outline tw:bg-surface tw:px-2.5 tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:hover:bg-surface-container-high tw:disabled:cursor-not-allowed tw:disabled:opacity-60">
                                                 <x-ui.icon name="rotate-cw" size="sm" />{{ __('common.export_history.rerun') }}
                                             </button>
                                         </form>
@@ -267,13 +267,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const renderActions = (item) => {
         const parts = [];
         if (item.download_url) {
-            parts.push(`<a href="${escapeHtml(item.download_url)}" class="ui-focus-ring tw:inline-flex tw:h-8 tw:items-center tw:gap-1.5 tw:rounded-ui-sm tw:border tw:border-success/60 tw:bg-transparent tw:px-2.5 tw:text-ui-xs tw:font-medium tw:text-success tw:no-underline tw:hover:bg-success/5"><x-ui.icon name="download" />${escapeHtml(copy.download)}</a>`);
+            parts.push(`<a href="${escapeHtml(item.download_url)}" class="ui-focus-ring tw:inline-flex tw:h-8 tw:items-center tw:gap-1.5 tw:rounded-ui-sm tw:border tw:border-success/60 tw:bg-transparent tw:px-2.5 tw:text-ui-xs tw:font-semibold tw:text-success tw:no-underline tw:hover:bg-success/5"><x-ui.icon name="download" />${escapeHtml(copy.download)}</a>`);
         }
         if (item.cancel_url) {
-            parts.push(`<button type="button" data-export-action="cancel" data-action-url="${escapeHtml(item.cancel_url)}" class="ui-focus-ring tw:inline-flex tw:h-8 tw:cursor-pointer tw:items-center tw:gap-1.5 tw:rounded-ui-sm tw:border tw:border-error/60 tw:bg-transparent tw:px-2.5 tw:text-ui-xs tw:font-medium tw:text-error tw:hover:bg-error/5 tw:disabled:cursor-not-allowed tw:disabled:opacity-60"><x-ui.icon name="x" size="sm" />${escapeHtml(copy.cancel)}</button>`);
+            parts.push(`<button type="button" data-export-action="cancel" data-action-url="${escapeHtml(item.cancel_url)}" class="ui-focus-ring tw:inline-flex tw:h-8 tw:cursor-pointer tw:items-center tw:gap-1.5 tw:rounded-ui-sm tw:border tw:border-error/60 tw:bg-transparent tw:px-2.5 tw:text-ui-xs tw:font-semibold tw:text-error tw:hover:bg-error/5 tw:disabled:cursor-not-allowed tw:disabled:opacity-60"><x-ui.icon name="x" size="sm" />${escapeHtml(copy.cancel)}</button>`);
         }
         if (item.rerun_url) {
-            parts.push(`<button type="button" data-export-action="rerun" data-action-url="${escapeHtml(item.rerun_url)}" class="ui-focus-ring tw:inline-flex tw:h-8 tw:cursor-pointer tw:items-center tw:gap-1.5 tw:rounded-ui-sm tw:border tw:border-outline tw:bg-surface tw:px-2.5 tw:text-ui-xs tw:font-medium tw:text-on-surface tw:hover:bg-surface-container-high tw:disabled:cursor-not-allowed tw:disabled:opacity-60"><x-ui.icon name="rotate-cw" size="sm" />${escapeHtml(copy.rerun)}</button>`);
+            parts.push(`<button type="button" data-export-action="rerun" data-action-url="${escapeHtml(item.rerun_url)}" class="ui-focus-ring tw:inline-flex tw:h-8 tw:cursor-pointer tw:items-center tw:gap-1.5 tw:rounded-ui-sm tw:border tw:border-outline tw:bg-surface tw:px-2.5 tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:hover:bg-surface-container-high tw:disabled:cursor-not-allowed tw:disabled:opacity-60"><x-ui.icon name="rotate-cw" size="sm" />${escapeHtml(copy.rerun)}</button>`);
         }
         if (!parts.length) {
             return '<span class="tw:text-ui-xs tw:text-on-surface-variant">-</span>';
@@ -284,7 +284,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const renderRows = (items) => {
         if (!items.length) {
-            body.innerHTML = `<tr><td colspan="5" class="tw:py-12 tw:text-center"><div class="tw:text-on-surface-variant"><x-ui.icon name="inbox" class="tw:mb-2" /><div class="tw:text-ui-sm tw:font-medium">${escapeHtml(copy.empty)}</div></div></td></tr>`;
+            body.innerHTML = `<tr><td colspan="5" class="tw:py-12 tw:text-center"><div class="tw:text-on-surface-variant"><x-ui.icon name="inbox" class="tw:mb-2" /><div class="tw:text-ui-sm tw:font-semibold">${escapeHtml(copy.empty)}</div></div></td></tr>`;
             return;
         }
 

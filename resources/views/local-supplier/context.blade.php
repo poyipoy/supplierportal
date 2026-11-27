@@ -12,7 +12,7 @@
             $icon = $isImport ? 'boxes' : 'receipt';
             $isActive = isset($currentContext) && $currentContext === $scope;
         @endphp
-        <div class="tw:col-span-12 tw:md:col-span-6 tw:lg:col-span-5">
+        <div class="tw:min-w-0 tw:col-span-12 tw:md:col-span-6 tw:lg:col-span-5">
             <x-ui.card class="tw:h-full {{ $isActive ? 'tw:border-primary tw:ring-1 tw:ring-primary' : '' }}">
                 <div class="tw:flex tw:flex-col tw:h-full tw:justify-between tw:gap-4">
                     <div>
@@ -24,7 +24,7 @@
                                 <h3 class="tw:text-ui-base tw:font-semibold tw:text-on-surface tw:m-0">{{ $label }}</h3>
                             </div>
                             @if($isActive)
-                                <span class="tw:inline-flex tw:items-center tw:gap-1 tw:rounded-full tw:text-[11px] tw:font-semibold tw:bg-primary-container tw:text-on-primary-container tw:px-2 tw:py-1">
+                                <span class="tw:inline-flex tw:items-center tw:gap-1 tw:rounded-full tw:text-ui-xs tw:font-semibold tw:bg-primary-container tw:text-on-primary-container tw:px-2 tw:py-1">
                                     <x-ui.icon name="check" size="xs" /> {{ __('local_invoice.labels.active') }}
                                 </span>
                             @endif
@@ -42,7 +42,7 @@
             </x-ui.card>
         </div>
     @empty
-        <div class="tw:col-span-12">
+        <div class="tw:min-w-0 tw:col-span-12">
             <x-ui.card>
                 <p class="tw:text-on-surface-variant tw:m-0">{{ __('navigation.context.unconfigured') }}</p>
             </x-ui.card>

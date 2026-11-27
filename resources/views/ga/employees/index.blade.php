@@ -3,7 +3,7 @@
 @section('page-title', __('navigation.employee_master'))
 
 @section('content')
-<div class="tw:grid tw:gap-6 tw:pb-16">
+<div class="tw:grid tw:gap-6">
     <x-ui.page-header
         :title="__('ga.labels.master')"
         :description="__('ga.review.employee_help')"
@@ -116,9 +116,9 @@
                     @forelse($employees as $emp)
                         <tr>
                             <td><strong class="tw:text-ui-sm tw:text-on-surface">{{ $emp->name }}</strong></td>
-                            <td><span class="tw:font-medium">{{ $emp->department }}</span></td>
+                            <td><span class="tw:font-semibold">{{ $emp->department }}</span></td>
                             <td>
-                                <span class="tw:inline-flex tw:px-2 tw:py-0.5 tw:rounded-sm tw:text-[11px] tw:font-bold {{ $emp->isBca() ? 'tw:bg-primary/10 tw:text-primary' : 'tw:bg-surface-container tw:text-on-surface' }}">
+                                <span class="tw:inline-flex tw:px-2 tw:py-0.5 tw:rounded-sm tw:text-ui-xs tw:font-bold {{ $emp->isBca() ? 'tw:bg-primary/10 tw:text-primary' : 'tw:bg-surface-container tw:text-on-surface' }}">
                                     {{ $emp->bank_name }}
                                 </span>
                             </td>
@@ -149,7 +149,7 @@
                                             text: @js(__($emp->is_active ? 'ga.closure.deactivate_help' : 'ga.closure.activate_help', ['name' => $emp->name])),
                                             confirmText: @js(__($emp->is_active ? 'ga.closure.deactivate_confirm' : 'ga.closure.activate_confirm')),
                                             cancelText: @js(__('common.actions.cancel'))
-                                        }).then(r => { if (r.isConfirmed) this.submit(); });"
+                                        }).then(r => { if (r.isConfirmed) { window.AdasiButton?.submitForm ? window.AdasiButton.submitForm(this) : this.submit(); } });"
                                     >
                                         @csrf
                                         <button
@@ -191,7 +191,7 @@
                 @method('PUT')
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 id="editEmployeeModalTitle-{{ $emp->id }}" class="modal-title tw:text-ui-sm tw:font-bold">{{ __('ga.actions.edit_employee') }}</h5>
+                        <h5 id="editEmployeeModalTitle-{{ $emp->id }}" class="modal-title tw:text-ui-lg tw:font-bold">{{ __('ga.actions.edit_employee') }}</h5>
                         <button type="button" class="btn-close" data-ui-modal-close aria-label="{{ __('local_invoice.actions.close') }}"></button>
                     </div>
                     <div class="modal-body tw:space-y-3 tw:text-ui-xs">
@@ -252,7 +252,7 @@
             @csrf
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 id="addEmployeeModalTitle" class="modal-title tw:text-ui-sm tw:font-bold">{{ __('ga.actions.add_employee_full') }}</h5>
+                    <h5 id="addEmployeeModalTitle" class="modal-title tw:text-ui-lg tw:font-bold">{{ __('ga.actions.add_employee_full') }}</h5>
                     <button type="button" class="btn-close" data-ui-modal-close aria-label="{{ __('local_invoice.actions.close') }}"></button>
                 </div>
                 <div class="modal-body tw:space-y-3 tw:text-ui-xs">

@@ -11,7 +11,7 @@
         \App\Models\LocalInvoice::STATUS_CANCELLED,
     ], true));
 @endphp
-<div class="tw:grid tw:gap-6 tw:pb-16">
+<div class="tw:grid tw:gap-6">
     <x-ui.page-header
         :title="__('terms.invoice').' '.$invoice->invoice_number"
         :description="__('finance.invoice_ui.reference', ['number' => $invoice->submission_number, 'supplier' => $invoice->supplier->supplier?->company_name ?: $invoice->supplier->name])"
@@ -51,7 +51,7 @@
 
     <div class="tw:grid tw:grid-cols-1 tw:lg:grid-cols-12 tw:gap-6">
         {{-- Left Column: Details, Documents, Verification Sections --}}
-        <div class="tw:lg:col-span-8 ui-density-stack-list">
+        <div class="tw:min-w-0 tw:lg:col-span-8 ui-density-stack-list">
             {{-- Overview Card --}}
             <x-ui.card :title="__('local_invoice.labels.billing_information')">
                 <div class="tw:grid tw:grid-cols-2 tw:sm:grid-cols-3 tw:gap-4 tw:text-ui-xs">
@@ -255,7 +255,7 @@
                     </x-slot:actions>
 
                     @if($isLocked)
-                        <div class="tw:mb-4 tw:p-3 tw:rounded-lg tw:bg-surface-container tw:border tw:border-outline-variant tw:flex tw:items-center tw:gap-2.5 tw:text-ui-xs tw:text-on-surface-variant">
+                        <div class="tw:mb-4 tw:p-3 tw:rounded-ui-md tw:bg-surface-container tw:border tw:border-outline-variant tw:flex tw:items-center tw:gap-2.5 tw:text-ui-xs tw:text-on-surface-variant">
                             <x-ui.icon name="lock" size="sm" class="tw:text-primary tw:shrink-0" />
                             <span>
                                 {{ __('finance.invoice_ui.section_a_locked') }}
@@ -268,15 +268,15 @@
                         @csrf
                         <fieldset @disabled($isLocked) class="tw:m-0 tw:p-0 tw:border-0 tw:space-y-4">
                             {{-- 1. Invoice Check --}}
-                            <div class="tw:p-3 tw:rounded-sm tw:bg-surface-container tw:border tw:border-outline-variant">
+                            <div class="tw:p-3 tw:rounded-ui-sm tw:bg-surface-container tw:border tw:border-outline-variant">
                                 <div class="tw:flex tw:items-center tw:justify-between tw:mb-2">
                                     <span class="tw:font-semibold tw:text-ui-xs">{{ __('finance.labels.doc_invoice_stamp') }}</span>
                                     <div class="tw:flex tw:gap-3">
-                                        <label class="tw:inline-flex tw:items-center tw:gap-1 tw:text-ui-xs">
-                                            <input type="radio" name="invoice_check" value="OK" @checked(($verification->invoice_check ?? '') === 'OK') required> OK
+                                        <label class="tw:inline-flex tw:items-center tw:gap-1.5 tw:text-ui-xs">
+                                            <input type="radio" class="ui-check tw:mt-0" name="invoice_check" value="OK" @checked(($verification->invoice_check ?? '') === 'OK') required> OK
                                         </label>
-                                        <label class="tw:inline-flex tw:items-center tw:gap-1 tw:text-ui-xs">
-                                            <input type="radio" name="invoice_check" value="NOT_OK" @checked(($verification->invoice_check ?? '') === 'NOT_OK')> {{ __('finance.invoice_ui.not_ok') }}
+                                        <label class="tw:inline-flex tw:items-center tw:gap-1.5 tw:text-ui-xs">
+                                            <input type="radio" class="ui-check tw:mt-0" name="invoice_check" value="NOT_OK" @checked(($verification->invoice_check ?? '') === 'NOT_OK')> {{ __('finance.invoice_ui.not_ok') }}
                                         </label>
                                     </div>
                                 </div>
@@ -284,25 +284,25 @@
                             </div>
 
                             {{-- 2. Faktur Pajak Check --}}
-                            <div class="tw:p-3 tw:rounded-sm tw:bg-surface-container tw:border tw:border-outline-variant">
+                            <div class="tw:p-3 tw:rounded-ui-sm tw:bg-surface-container tw:border tw:border-outline-variant">
                                 <div class="tw:flex tw:items-center tw:justify-between tw:mb-2">
                                     <div>
                                         <span class="tw:font-semibold tw:text-ui-xs tw:block">{{ __('finance.labels.doc_tax_required') }}</span>
                                         @if($invoice->tax_invoice_number)
-                                            <span class="tw:text-[11px] ui-tabular-nums tw:text-primary tw:block tw:mt-0.5">
+                                            <span class="tw:text-ui-xs ui-tabular-nums tw:text-primary tw:block tw:mt-0.5">
                                                 NSFP: {{ $invoice->tax_invoice_number }}
                                             </span>
                                         @endif
                                     </div>
                                     <div class="tw:flex tw:gap-3">
-                                        <label class="tw:inline-flex tw:items-center tw:gap-1 tw:text-ui-xs">
-                                            <input type="radio" name="tax_invoice_check" value="OK" @checked(($verification->tax_invoice_check ?? '') === 'OK') required> OK
+                                        <label class="tw:inline-flex tw:items-center tw:gap-1.5 tw:text-ui-xs">
+                                            <input type="radio" class="ui-check tw:mt-0" name="tax_invoice_check" value="OK" @checked(($verification->tax_invoice_check ?? '') === 'OK') required> OK
                                         </label>
-                                        <label class="tw:inline-flex tw:items-center tw:gap-1 tw:text-ui-xs">
-                                            <input type="radio" name="tax_invoice_check" value="NOT_OK" @checked(($verification->tax_invoice_check ?? '') === 'NOT_OK')> {{ __('finance.invoice_ui.not_ok') }}
+                                        <label class="tw:inline-flex tw:items-center tw:gap-1.5 tw:text-ui-xs">
+                                            <input type="radio" class="ui-check tw:mt-0" name="tax_invoice_check" value="NOT_OK" @checked(($verification->tax_invoice_check ?? '') === 'NOT_OK')> {{ __('finance.invoice_ui.not_ok') }}
                                         </label>
-                                        <label class="tw:inline-flex tw:items-center tw:gap-1 tw:text-ui-xs">
-                                            <input type="radio" name="tax_invoice_check" value="NOT_APPLICABLE" @checked(($verification->tax_invoice_check ?? '') === 'NOT_APPLICABLE' || !$invoice->supplier->supplier?->is_pkp)> {{ __('finance.invoice_ui.not_applicable_pkp') }}
+                                        <label class="tw:inline-flex tw:items-center tw:gap-1.5 tw:text-ui-xs">
+                                            <input type="radio" class="ui-check tw:mt-0" name="tax_invoice_check" value="NOT_APPLICABLE" @checked(($verification->tax_invoice_check ?? '') === 'NOT_APPLICABLE' || !$invoice->supplier->supplier?->is_pkp)> {{ __('finance.invoice_ui.not_applicable_pkp') }}
                                         </label>
                                     </div>
                                 </div>
@@ -310,15 +310,15 @@
                             </div>
 
                             {{-- 3. PO Check --}}
-                            <div class="tw:p-3 tw:rounded-sm tw:bg-surface-container tw:border tw:border-outline-variant">
+                            <div class="tw:p-3 tw:rounded-ui-sm tw:bg-surface-container tw:border tw:border-outline-variant">
                                 <div class="tw:flex tw:items-center tw:justify-between tw:mb-2">
                                     <span class="tw:font-semibold tw:text-ui-xs">{{ __('finance.labels.doc_po_match') }}</span>
                                     <div class="tw:flex tw:gap-3">
-                                        <label class="tw:inline-flex tw:items-center tw:gap-1 tw:text-ui-xs">
-                                            <input type="radio" name="po_check" value="OK" @checked(($verification->po_check ?? '') === 'OK') required> OK
+                                        <label class="tw:inline-flex tw:items-center tw:gap-1.5 tw:text-ui-xs">
+                                            <input type="radio" class="ui-check tw:mt-0" name="po_check" value="OK" @checked(($verification->po_check ?? '') === 'OK') required> OK
                                         </label>
-                                        <label class="tw:inline-flex tw:items-center tw:gap-1 tw:text-ui-xs">
-                                            <input type="radio" name="po_check" value="NOT_OK" @checked(($verification->po_check ?? '') === 'NOT_OK')> {{ __('finance.invoice_ui.not_ok') }}
+                                        <label class="tw:inline-flex tw:items-center tw:gap-1.5 tw:text-ui-xs">
+                                            <input type="radio" class="ui-check tw:mt-0" name="po_check" value="NOT_OK" @checked(($verification->po_check ?? '') === 'NOT_OK')> {{ __('finance.invoice_ui.not_ok') }}
                                         </label>
                                     </div>
                                 </div>
@@ -326,18 +326,18 @@
                             </div>
 
                             {{-- 4. Surat Jalan Check --}}
-                            <div class="tw:p-3 tw:rounded-sm tw:bg-surface-container tw:border tw:border-outline-variant">
+                            <div class="tw:p-3 tw:rounded-ui-sm tw:bg-surface-container tw:border tw:border-outline-variant">
                                 <div class="tw:flex tw:items-center tw:justify-between tw:mb-2">
                                     <span class="tw:font-semibold tw:text-ui-xs">{{ __('finance.labels.doc_dn_required') }}</span>
                                     <div class="tw:flex tw:gap-3">
-                                        <label class="tw:inline-flex tw:items-center tw:gap-1 tw:text-ui-xs">
-                                            <input type="radio" name="delivery_note_check" value="OK" @checked(($verification->delivery_note_check ?? '') === 'OK') required> OK
+                                        <label class="tw:inline-flex tw:items-center tw:gap-1.5 tw:text-ui-xs">
+                                            <input type="radio" class="ui-check tw:mt-0" name="delivery_note_check" value="OK" @checked(($verification->delivery_note_check ?? '') === 'OK') required> OK
                                         </label>
-                                        <label class="tw:inline-flex tw:items-center tw:gap-1 tw:text-ui-xs">
-                                            <input type="radio" name="delivery_note_check" value="NOT_OK" @checked(($verification->delivery_note_check ?? '') === 'NOT_OK')> {{ __('finance.invoice_ui.not_ok') }}
+                                        <label class="tw:inline-flex tw:items-center tw:gap-1.5 tw:text-ui-xs">
+                                            <input type="radio" class="ui-check tw:mt-0" name="delivery_note_check" value="NOT_OK" @checked(($verification->delivery_note_check ?? '') === 'NOT_OK')> {{ __('finance.invoice_ui.not_ok') }}
                                         </label>
-                                        <label class="tw:inline-flex tw:items-center tw:gap-1 tw:text-ui-xs">
-                                            <input type="radio" name="delivery_note_check" value="NOT_APPLICABLE" @checked(($verification->delivery_note_check ?? '') === 'NOT_APPLICABLE' || $invoice->supplier->supplier?->vendor_category === 'Jasa')> {{ __('finance.invoice_ui.not_applicable_services') }}
+                                        <label class="tw:inline-flex tw:items-center tw:gap-1.5 tw:text-ui-xs">
+                                            <input type="radio" class="ui-check tw:mt-0" name="delivery_note_check" value="NOT_APPLICABLE" @checked(($verification->delivery_note_check ?? '') === 'NOT_APPLICABLE' || $invoice->supplier->supplier?->vendor_category === 'Jasa')> {{ __('finance.invoice_ui.not_applicable_services') }}
                                         </label>
                                     </div>
                                 </div>
@@ -345,15 +345,15 @@
                             </div>
 
                             {{-- 5. GR Check --}}
-                            <div class="tw:p-3 tw:rounded-sm tw:bg-surface-container tw:border tw:border-outline-variant">
+                            <div class="tw:p-3 tw:rounded-ui-sm tw:bg-surface-container tw:border tw:border-outline-variant">
                                 <div class="tw:flex tw:items-center tw:justify-between tw:mb-2">
                                     <span class="tw:font-semibold tw:text-ui-xs">{{ __('finance.labels.doc_gr_confirm') }}</span>
                                     <div class="tw:flex tw:gap-3">
-                                        <label class="tw:inline-flex tw:items-center tw:gap-1 tw:text-ui-xs">
-                                            <input type="radio" name="gr_check" value="OK" @checked(($verification->gr_check ?? '') === 'OK') required> OK
+                                        <label class="tw:inline-flex tw:items-center tw:gap-1.5 tw:text-ui-xs">
+                                            <input type="radio" class="ui-check tw:mt-0" name="gr_check" value="OK" @checked(($verification->gr_check ?? '') === 'OK') required> OK
                                         </label>
-                                        <label class="tw:inline-flex tw:items-center tw:gap-1 tw:text-ui-xs">
-                                            <input type="radio" name="gr_check" value="NOT_OK" @checked(($verification->gr_check ?? '') === 'NOT_OK')> {{ __('finance.invoice_ui.not_ok') }}
+                                        <label class="tw:inline-flex tw:items-center tw:gap-1.5 tw:text-ui-xs">
+                                            <input type="radio" class="ui-check tw:mt-0" name="gr_check" value="NOT_OK" @checked(($verification->gr_check ?? '') === 'NOT_OK')> {{ __('finance.invoice_ui.not_ok') }}
                                         </label>
                                     </div>
                                 </div>
@@ -397,7 +397,7 @@
                     </x-slot:actions>
 
                     @if($isLocked)
-                        <div class="tw:mb-4 tw:p-3 tw:rounded-lg tw:bg-surface-container tw:border tw:border-outline-variant tw:flex tw:items-center tw:gap-2.5 tw:text-ui-xs tw:text-on-surface-variant">
+                        <div class="tw:mb-4 tw:p-3 tw:rounded-ui-md tw:bg-surface-container tw:border tw:border-outline-variant tw:flex tw:items-center tw:gap-2.5 tw:text-ui-xs tw:text-on-surface-variant">
                             <x-ui.icon name="lock" size="sm" class="tw:text-primary tw:shrink-0" />
                             <span>
                                 {{ __('finance.labels.tax_locked') }}
@@ -409,7 +409,7 @@
                         @csrf
                         <fieldset @disabled($isLocked) class="tw:m-0 tw:p-0 tw:border-0 tw:space-y-4">
                             @if($invoice->tax_invoice_number)
-                                <div class="tw:p-2.5 tw:rounded-sm tw:bg-surface-container tw:border tw:border-outline-variant tw:flex tw:items-center tw:justify-between">
+                                <div class="tw:p-2.5 tw:rounded-ui-sm tw:bg-surface-container tw:border tw:border-outline-variant tw:flex tw:items-center tw:justify-between">
                                     <span class="tw:text-ui-xs tw:text-on-surface-variant">{{ __('local_invoice.detail.tax_number') }}:</span>
                                     <span class="ui-tabular-nums tw:font-bold tw:text-ui-xs tw:text-primary">{{ $invoice->tax_invoice_number }}</span>
                                 </div>
@@ -432,21 +432,21 @@
                                 <span class="tw:text-ui-xs tw:font-bold tw:text-on-surface tw:block tw:mb-2">{{ __('finance.invoice_ui.pph23') }}</span>
                                 <div class="tw:grid tw:grid-cols-1 tw:sm:grid-cols-4 tw:gap-3">
                                     <div class="tw:flex tw:items-center tw:gap-2">
-                                        <input type="checkbox" name="pph_23_applicable" id="pph23-app" value="1" @checked($verification->pph_23_applicable ?? false)>
+                                        <input type="checkbox" class="ui-check tw:mt-0" name="pph_23_applicable" id="pph23-app" value="1" @checked($verification->pph_23_applicable ?? false)>
                                         <label for="pph23-app" class="tw:text-ui-xs">{{ __('finance.invoice_ui.deduct_pph23') }}</label>
                                     </div>
                                     <div>
-                                        <label for="pph23-base" class="ui-label tw:text-[11px]">DPP PPh 23</label>
+                                        <label for="pph23-base" class="ui-label tw:text-ui-xs">DPP PPh 23</label>
                                         <input type="number" step="0.01" id="pph23-base" name="pph_23_base" class="ui-input ui-input--sm" value="{{ $verification->pph_23_base ?? $invoice->invoice_amount }}">
                                     </div>
                                     <div>
-                                        <label for="pph23-rate" class="ui-label tw:text-[11px]">{{ __('finance.invoice_ui.pph23_rate') }}</label>
+                                        <label for="pph23-rate" class="ui-label tw:text-ui-xs">{{ __('finance.invoice_ui.pph23_rate') }}</label>
                                         <input type="number" step="0.01" id="pph23-rate" name="pph_23_rate" class="ui-input ui-input--sm" value="{{ $verification->pph_23_rate ?? 2 }}">
                                     </div>
                                     <div>
-                                        <label for="pph23-amount" class="ui-label tw:text-[11px]">{{ __('finance.invoice_ui.pph23_amount') }}</label>
+                                        <label for="pph23-amount" class="ui-label tw:text-ui-xs">{{ __('finance.invoice_ui.pph23_amount') }}</label>
                                         <input type="number" step="0.01" id="pph23-amount" name="pph_23_amount" class="ui-input ui-input--sm" value="{{ $verification->pph_23_amount ?? 0 }}">
-                                        <span id="pph23-calc-hint" class="tw:text-[11px] tw:text-primary ui-tabular-nums tw:mt-1 tw:block"></span>
+                                        <span id="pph23-calc-hint" class="tw:text-ui-xs tw:text-primary ui-tabular-nums tw:mt-1 tw:block"></span>
                                     </div>
                                 </div>
                             </div>
@@ -455,12 +455,12 @@
                                 <span class="tw:text-ui-xs tw:font-bold tw:text-on-surface tw:block tw:mb-2">{{ __('finance.invoice_ui.other_pph') }}</span>
                                 <div class="tw:grid tw:grid-cols-1 tw:sm:grid-cols-2 tw:gap-4">
                                     <div class="tw:flex tw:items-center tw:gap-3">
-                                        <input type="checkbox" name="pph_4_2_applicable" id="pph42-app" value="1" @checked($verification->pph_4_2_applicable ?? false)>
+                                        <input type="checkbox" class="ui-check tw:mt-0" name="pph_4_2_applicable" id="pph42-app" value="1" @checked($verification->pph_4_2_applicable ?? false)>
                                         <label for="pph42-app" class="tw:text-ui-xs tw:shrink-0">PPh 4(2)</label>
                                         <input type="number" step="0.01" name="pph_4_2_amount" class="ui-input ui-input--sm" placeholder="{{ __('finance.invoice_ui.amount_rp') }}" value="{{ $verification->pph_4_2_amount ?? 0 }}">
                                     </div>
                                     <div class="tw:flex tw:items-center tw:gap-3">
-                                        <input type="checkbox" name="pph_21_applicable" id="pph21-app" value="1" @checked($verification->pph_21_applicable ?? false)>
+                                        <input type="checkbox" class="ui-check tw:mt-0" name="pph_21_applicable" id="pph21-app" value="1" @checked($verification->pph_21_applicable ?? false)>
                                         <label for="pph21-app" class="tw:text-ui-xs tw:shrink-0">PPh 21</label>
                                         <input type="number" step="0.01" name="pph_21_amount" class="ui-input ui-input--sm" placeholder="{{ __('finance.invoice_ui.amount_rp') }}" value="{{ $verification->pph_21_amount ?? 0 }}">
                                     </div>
@@ -487,7 +487,7 @@
         </div>
 
         {{-- Right Column: Payment, Status Timeline & Final Actions --}}
-        <div class="tw:lg:col-span-4 ui-density-stack-list">
+        <div class="tw:min-w-0 tw:lg:col-span-4 ui-density-stack-list">
             {{-- Payment Schedule & Term Card --}}
             <x-ui.card :title="__('finance.copy_review.cashier_schedule')">
                 <div class="ui-density-list tw:text-ui-xs">
@@ -506,7 +506,7 @@
                         </strong>
                     </div>
                     @if($invoice->due_date)
-                        <div class="tw:p-2 tw:rounded-sm tw:text-center {{ $invoice->isOverdue() ? 'tw:bg-error/10 tw:text-error' : 'tw:bg-success/10 tw:text-success' }}">
+                        <div class="tw:p-2 tw:rounded-ui-sm tw:text-center {{ $invoice->isOverdue() ? 'tw:bg-error-container tw:text-error-container-foreground' : 'tw:bg-success-container tw:text-success-container-foreground' }}">
                             <strong>{{ $invoice->remainingDays() < 0 ? trans_choice('local_invoice.table.overdue_days', abs($invoice->remainingDays())) : trans_choice('local_invoice.table.remaining_days', $invoice->remainingDays()) }}</strong>
                         </div>
                     @endif
@@ -596,14 +596,14 @@
             <x-ui.card :title="__('local_invoice.labels.timeline')">
                 <div class="ui-density-list tw:text-ui-xs">
                     @forelse($invoice->statusHistories as $hist)
-                        <div class="tw:p-2 tw:rounded-sm tw:bg-surface-container">
+                        <div class="tw:p-2 tw:rounded-ui-sm tw:bg-surface-container">
                             <div class="tw:flex tw:justify-between">
                                 <strong>{{ \App\Models\LocalInvoice::eventLabel($hist->event) }}</strong>
                                 <span class="tw:text-on-surface-variant">{{ $regionalFormatter->timestamp($hist->created_at, 'short_datetime') }}</span>
                             </div>
                             <div class="tw:text-on-surface-variant">{{ __('ga.detail.actor', ['name' => $hist->actor?->name ?? __('ga.detail.system')]) }}</div>
                             @if($hist->notes)
-                                <div class="tw:mt-1 tw:text-[11px] tw:italic">{{ $hist->notes }}</div>
+                                <div class="tw:mt-1 tw:text-ui-xs tw:italic">{{ $hist->notes }}</div>
                             @endif
                         </div>
                     @empty
@@ -622,7 +622,7 @@
             @csrf
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title tw:text-ui-sm tw:font-bold" id="revisionModalLabel">{{ __('finance.invoice_ui.revision_title') }}</h5>
+                    <h5 class="modal-title tw:text-ui-lg tw:font-bold" id="revisionModalLabel">{{ __('finance.invoice_ui.revision_title') }}</h5>
                     <button type="button" class="btn-close" data-ui-modal-close aria-label="{{ __('local_invoice.actions.close') }}"></button>
                 </div>
                 <div class="modal-body">
@@ -649,7 +649,7 @@
         <form method="POST" action="{{ route('finance.invoices.reject', $invoice) }}">
             @csrf
             <div class="modal-content">
-                <div class="modal-header"><h5 class="modal-title tw:text-ui-sm tw:font-bold" id="rejectModalLabel">{{ __('finance.actions.reject_invoice') }}</h5><button type="button" class="btn-close" data-ui-modal-close aria-label="{{ __('local_invoice.actions.close') }}"></button></div>
+                <div class="modal-header"><h5 class="modal-title tw:text-ui-lg tw:font-bold" id="rejectModalLabel">{{ __('finance.actions.reject_invoice') }}</h5><button type="button" class="btn-close" data-ui-modal-close aria-label="{{ __('local_invoice.actions.close') }}"></button></div>
                 <div class="modal-body"><label for="reject-notes" class="ui-label tw:text-ui-xs tw:font-semibold">{{ __('finance.labels.rejection_reason') }} <span class="tw:text-error">*</span></label><textarea name="notes" id="reject-notes" class="ui-textarea tw:text-ui-xs tw:px-2 tw:py-1" rows="3" maxlength="2000" required></textarea></div>
                 <div class="modal-footer"><x-ui.button type="button" variant="ghost" size="sm" data-ui-modal-close>{{ __('local_invoice.actions.cancel') }}</x-ui.button><x-ui.button type="submit" variant="danger" size="sm">{{ __('finance.actions.reject_release') }}</x-ui.button></div>
             </div>

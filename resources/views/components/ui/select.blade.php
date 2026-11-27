@@ -7,6 +7,7 @@
     'value' => null,
     'options' => [],
     'placeholder' => null,
+    'searchable' => null,
     'required' => false,
     'disabled' => false,
 ])
@@ -23,7 +24,7 @@
 
 <div {{ $attributes->only('class')->class(['tw:grid tw:content-start tw:gap-1.5']) }}>
     @if($label)
-        <label for="{{ $resolvedId }}" class="tw:text-ui-sm tw:font-medium tw:text-on-surface">
+        <label for="{{ $resolvedId }}" class="tw:text-ui-sm tw:font-semibold tw:text-on-surface">
             {{ $label }}
             @if($required)<span class="tw:text-error" aria-hidden="true">*</span><span class="tw:sr-only"> {{ __('common.required') }}</span>@endif
         </label>
@@ -36,8 +37,9 @@
         @disabled($disabled)
         @if($describedBy) aria-describedby="{{ $describedBy }}" @endif
         @if($message) aria-invalid="true" @endif
+        @if($searchable !== null) data-select-search="{{ filter_var($searchable, FILTER_VALIDATE_BOOLEAN) ? 'true' : 'false' }}" @endif
         {{ $attributes->except('class')->class([
-            'ui-motion tw:min-h-[var(--ui-control-height-md)] tw:w-full tw:rounded-ui-sm tw:border tw:bg-surface tw:px-3 tw:py-2 tw:text-ui-sm tw:text-on-surface tw:shadow-none tw:focus:border-primary tw:focus:ring-2 tw:focus:ring-primary tw:disabled:cursor-not-allowed tw:disabled:bg-surface-container tw:disabled:opacity-50',
+            'ui-select ui-motion tw:cursor-pointer tw:min-h-[var(--ui-control-height-md)] tw:w-full tw:rounded-ui-sm tw:border tw:bg-surface tw:px-3 tw:py-2 tw:text-ui-sm tw:text-on-surface tw:shadow-none tw:focus:border-primary tw:focus:ring-2 tw:focus:ring-primary tw:disabled:cursor-not-allowed tw:disabled:bg-surface-container tw:disabled:opacity-50',
             'tw:border-error' => $message,
             'tw:border-outline-strong' => !$message,
         ]) }}
@@ -53,7 +55,7 @@
 
     @if($helper)<p id="{{ $helperId }}" class="tw:m-0 tw:text-ui-xs tw:text-on-surface-variant">{{ $helper }}</p>@endif
     @if($message)
-        <p id="{{ $errorId }}" class="tw:m-0 tw:flex tw:items-start tw:gap-1.5 tw:text-ui-xs tw:font-medium tw:text-error" role="alert">
+        <p id="{{ $errorId }}" class="tw:m-0 tw:flex tw:items-start tw:gap-1.5 tw:text-ui-xs tw:font-semibold tw:text-error" role="alert">
             <x-ui.icon name="circle-alert" size="sm" class="tw:mt-0.5" /><span>{{ $message }}</span>
         </p>
     @endif

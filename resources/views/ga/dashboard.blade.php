@@ -3,7 +3,7 @@
 @section('page-title', __('ga.dashboard.title'))
 
 @section('content')
-<div class="tw:grid tw:gap-6 tw:pb-16">
+<div class="tw:grid tw:gap-6">
     <x-ui.page-header
         :title="__('ga.dashboard.title')"
         :description="__('ga.review.help')"
@@ -75,13 +75,13 @@
         <table class="ui-table ui-table--hover tw:align-middle tw:m-0 tw:text-ui-sm tw:w-full">
             <thead>
                 <tr>
-                    <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('ga.detail.number') }}</th>
-                    <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('ga.labels.employee') }}</th>
-                    <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('ga.labels.claim_type') }}</th>
-                    <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('local_invoice.labels.date') }}</th>
-                    <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-end">{{ __('ga.labels.claim_amount') }}</th>
-                    <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('local_invoice.labels.status') }}</th>
-                    <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-end">{{ __('common.table.action') }}</th>
+                    <th scope="col">{{ __('ga.detail.number') }}</th>
+                    <th scope="col">{{ __('ga.labels.employee') }}</th>
+                    <th scope="col">{{ __('ga.labels.claim_type') }}</th>
+                    <th scope="col">{{ __('local_invoice.labels.date') }}</th>
+                    <th scope="col" class="tw:text-end">{{ __('ga.labels.claim_amount') }}</th>
+                    <th scope="col">{{ __('local_invoice.labels.status') }}</th>
+                    <th scope="col" class="tw:text-end">{{ __('common.table.action') }}</th>
                 </tr>
             </thead>
             <tbody>
@@ -95,7 +95,7 @@
                             <span class="tw:block tw:text-ui-xs tw:text-on-surface-variant">{{ $c->employee?->department }}</span>
                         </td>
                         <td>
-                            <span class="tw:inline-flex tw:px-2 tw:py-0.5 tw:rounded-sm tw:text-[11px] tw:font-semibold tw:bg-primary/10 tw:text-primary">
+                            <span class="tw:inline-flex tw:px-2 tw:py-0.5 tw:rounded-sm tw:text-ui-xs tw:font-semibold tw:bg-primary/10 tw:text-primary">
                                 {{ \App\Models\GaClaim::claimTypeLabel($c->claim_type) }}
                             </span>
                         </td>

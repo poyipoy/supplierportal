@@ -1,6 +1,9 @@
 @props(['active'])
 
 @php
+    $shouldEmbedLinks = \App\Support\WorkspaceShell::enabled()
+        && auth()->check()
+        && \App\Support\WorkspaceShell::originatedFromEmbed(request());
     $tabs = [
         'inter-supplier' => [
             'label' => __('purchasing.copy.inter_supplier'),
@@ -22,8 +25,14 @@
 
 <nav {{ $attributes->class(['tw:flex tw:gap-2 tw:overflow-x-auto tw:rounded-ui-md tw:border tw:border-outline tw:bg-surface-container tw:p-2 tw:shadow-none']) }} aria-label="{{ __('purchasing.copy.price_comparison_views') }}">
     @foreach($tabs as $key => $tab)
+        @php
+            $tabHref = \App\Support\PurchasingNavigation::comparisonTabUrl($tab['route'], request()->query());
+            if ($shouldEmbedLinks) {
+                $tabHref = \App\Support\WorkspaceShell::appendEmbedParam($tabHref);
+            }
+        @endphp
         <a
-            href="{{ \App\Support\PurchasingNavigation::comparisonTabUrl($tab['route'], request()->query()) }}"
+            href="{{ $tabHref }}"
             @if($active === $key) aria-current="page" @endif
             @class([
                 'ui-focus-ring ui-motion tw:inline-flex tw:min-h-[var(--ui-control-height-sm)] tw:shrink-0 tw:items-center tw:gap-2 tw:rounded-ui-sm tw:px-3 tw:py-2 tw:text-ui-sm tw:font-semibold tw:no-underline',

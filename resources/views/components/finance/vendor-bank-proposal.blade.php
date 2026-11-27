@@ -15,12 +15,12 @@
                 <span>{{ __('finance_controls.bank_document_label') }}: {{ $bankDocument->original_filename }}</span>
             </a>
         @elseif($bankDocs->isNotEmpty())
-            <span class="tw:inline-flex tw:items-center tw:gap-1 tw:text-warning tw:font-medium tw:mt-0.5">
+            <span class="tw:inline-flex tw:items-center tw:gap-1 tw:text-warning tw:font-semibold tw:mt-0.5">
                 <x-ui.icon name="alert-triangle" size="xs" />
                 <span>{{ __('finance_controls.bank_document_select_for_approval') }}</span>
             </span>
         @else
-            <span class="tw:inline-flex tw:items-center tw:gap-1 tw:text-error tw:font-medium tw:mt-0.5">
+            <span class="tw:inline-flex tw:items-center tw:gap-1 tw:text-error tw:font-semibold tw:mt-0.5">
                 <x-ui.icon name="alert-circle" size="xs" />
                 <span>{{ __('finance_controls.bank_document_not_uploaded') }}</span>
             </span>

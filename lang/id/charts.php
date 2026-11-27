@@ -24,5 +24,8 @@ return [
         'summary_single' => ':series: :value (:label).',
         'summary_distribution' => 'Total :total. Terbesar: :label :value (:percent).',
         'summary_empty' => 'Tidak ada data untuk ditampilkan.',
+        'compact_million' => ':value jt',
+        'compact_billion' => ':value M',
+        'compact_trillion' => ':value T',
     ],
 ];

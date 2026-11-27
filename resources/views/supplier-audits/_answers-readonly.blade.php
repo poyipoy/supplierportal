@@ -35,7 +35,7 @@
         <div class="tw:flex tw:flex-wrap tw:gap-1" role="group" aria-label="{{ __('supplier_audit.answer_filters.label') }}">
             @foreach($filterLabels as $key => $label)
                 <button type="button" x-on:click="filter = '{{ $key }}'" :aria-pressed="filter === '{{ $key }}' ? 'true' : 'false'" aria-pressed="{{ $key === 'all' ? 'true' : 'false' }}"
-                    class="ui-focus-ring tw:inline-flex tw:min-h-8 tw:items-center tw:gap-1.5 tw:rounded-ui-sm tw:border tw:px-2.5 tw:text-ui-xs tw:font-medium"
+                    class="ui-focus-ring tw:inline-flex tw:min-h-8 tw:items-center tw:gap-1.5 tw:rounded-ui-sm tw:border tw:px-2.5 tw:text-ui-xs tw:font-semibold"
                     style="transition-property: background-color, border-color, color; transition-duration: 150ms;"
                     :class="filter === '{{ $key }}' ? 'tw:border-primary tw:bg-primary-container tw:text-on-surface' : 'tw:border-outline-variant tw:text-on-surface-variant tw:hover:bg-surface-container'"
                     data-answer-filter="{{ $key }}">
@@ -82,10 +82,10 @@
                 <table class="ui-table tw:align-top tw:m-0 tw:text-ui-sm">
                     <thead>
                         <tr>
-                            <th scope="col" class="tw:w-12 tw:text-ui-xs tw:font-semibold">{{ __('supplier_audit.fields.number') }}</th>
-                            <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('supplier_audit.fields.criterion') }}</th>
-                            <th scope="col" class="tw:w-28 tw:text-ui-xs tw:font-semibold">{{ __('supplier_audit.fields.answer') }}</th>
-                            <th scope="col" class="tw:w-20 tw:text-ui-xs tw:font-semibold tw:text-end">{{ __('supplier_audit.fields.score') }}</th>
+                            <th scope="col" class="tw:w-12">{{ __('supplier_audit.fields.number') }}</th>
+                            <th scope="col">{{ __('supplier_audit.fields.criterion') }}</th>
+                            <th scope="col" class="tw:w-28">{{ __('supplier_audit.fields.answer') }}</th>
+                            <th scope="col" class="tw:w-20 tw:text-end">{{ __('supplier_audit.fields.score') }}</th>
                         </tr>
                     </thead>
                     <tbody>

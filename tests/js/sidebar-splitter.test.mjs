@@ -266,4 +266,17 @@ test('bindSidebarSplitter releases drag cleanly on window blur/pointerup and CSS
         false,
         'Never toggle pointer-events: none directly on iframe during sidebar resize (breaks Chromium wheel scrolling until clicked)',
     );
+
+    const wsCss = readFileSync(new URL('../../resources/css/workspace-shell.css', import.meta.url), 'utf8');
+    const numberJs = readFileSync(new URL('../../resources/js/number-input-helper.js', import.meta.url), 'utf8');
+    assert.match(appCss, /@container topbar \(max-width: 36rem\)/);
+    assert.match(appCss, /@container filter-bar \(min-width: 36rem\)/);
+    assert.match(appCss, /@container export-designer \(min-width: 46rem\)/);
+    assert.match(appCss, /\.ui-export-designer-modal\s+\[data-advanced-export-form\]\s*\{[^}]*container-name:\s*export-designer;\s*container-type:\s*inline-size;/);
+    assert.doesNotMatch(appCss, /\.ui-export-designer-modal\s+\.modal-body\s*\{[^}]*container-name:\s*export-designer/);
+    assert.match(appCss, /@container notif-panel \(max-width: 30rem\)/);
+    assert.match(appCss, /\[data-ui-dropdown-menu\]\[popover\]\s*\{[^}]*min-width:\s*min\(11rem,\s*calc\(100vw\s*-\s*1rem\)\)/s);
+    assert.match(wsCss, /@container sessionbar \(max-width: 24rem\)/);
+    assert.match(wsCss, /\.workspace-session-menu\s*\{[^}]*min-width:\s*min\(13rem,\s*calc\(100vw\s*-\s*1rem\)\)/s);
+    assert.match(numberJs, /window\.scrollX\s*\+\s*window\.innerWidth\s*-\s*badgeWidth\s*-\s*12/);
 });

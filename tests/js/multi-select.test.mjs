@@ -46,6 +46,7 @@ function extractMultiSelectState({ selectedValues = [], options = [], disabled =
                 this.bubbles = Boolean(init.bubbles);
             }
         },
+        matchMedia: () => ({ matches: globalThis.__reduceMotionForTest === true }),
         Number,
         String,
         Boolean,
@@ -128,4 +129,39 @@ test('multiSelect close restores focus to trigger only when requested and handle
     ctx.state.close(true);
     assert.equal(ctx.state.open, false);
     assert.equal(ctx.triggerFocused, 1);
+});
+
+test('multiSelect toggle scrolls the opened popover into view without a second focus-induced scroll', () => {
+    const ctx = extractMultiSelectState({
+        options: [{ value: '1', label: 'P20', searchKeywords: 'p20' }],
+    });
+    const calls = [];
+    const focusOptions = [];
+    ctx.state.$refs.popover = { scrollIntoView(opts) { calls.push(opts); } };
+    ctx.state.$refs.searchInput = { focus(opts) { focusOptions.push(opts); } };
+
+    ctx.state.toggle();
+    assert.equal(ctx.state.open, true);
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0].block, 'nearest');
+    assert.equal(calls[0].behavior, 'smooth');
+    assert.equal(focusOptions.length, 1);
+    assert.equal(focusOptions[0].preventScroll, true);
+
+    ctx.state.toggle();
+    assert.equal(ctx.state.open, false);
+    assert.equal(calls.length, 1);
+});
+
+test('multiSelect skips smooth scrolling when reduced motion is requested', () => {
+    const ctx = extractMultiSelectState({ options: [{ value: '1', label: 'P20', searchKeywords: 'p20' }] });
+    const calls = [];
+    ctx.state.$refs.popover = { scrollIntoView(opts) { calls.push(opts); } };
+    globalThis.__reduceMotionForTest = true;
+    try {
+        ctx.state.revealPopover();
+    } finally {
+        delete globalThis.__reduceMotionForTest;
+    }
+    assert.equal(calls[0].behavior, 'auto');
 });

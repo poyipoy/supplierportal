@@ -3,7 +3,7 @@
 @section('page-title', __('local_procurement.labels.vendor_master_detail'))
 
 @section('content')
-<div class="tw:grid tw:gap-6 tw:pb-16">
+<div class="tw:grid tw:gap-6">
     <x-ui.page-header
         :title="$vendor->supplier?->company_name ?: $vendor->name"
         :description="__('common.closure.email_tax', ['email' => $vendor->email, 'tax' => $vendor->supplier?->npwp ?? '—'])"
@@ -23,7 +23,7 @@
 
     <div class="tw:grid tw:grid-cols-1 tw:lg:grid-cols-12 tw:gap-6">
         {{-- Left: Supplier Profile & Bank Accounts --}}
-        <div class="tw:lg:col-span-8 tw:space-y-6">
+        <div class="tw:min-w-0 tw:lg:col-span-8 tw:space-y-6">
             {{-- Profile Card --}}
             <x-ui.card :title="__('local_invoice.labels.company_profile')">
                 <div class="tw:grid tw:grid-cols-2 tw:sm:grid-cols-3 tw:gap-4 tw:text-ui-xs">
@@ -117,7 +117,7 @@
                                     </td>
                                     <td>
                                         @if($b->status === 'VERIFIED')
-                                            <span class="tw:inline-flex tw:px-2 tw:py-0.5 tw:rounded-sm tw:text-[10px] tw:bg-primary/10 tw:text-primary tw:font-bold">{{ __('local_invoice.labels.active') }}</span>
+                                            <span class="tw:inline-flex tw:px-2 tw:py-0.5 tw:rounded-sm tw:text-ui-xs tw:bg-primary/10 tw:text-primary tw:font-bold">{{ __('local_invoice.labels.active') }}</span>
                                         @else
                                             <span class="tw:text-on-surface-variant">{{ __('local_procurement.vendor_ui.inactive') }}</span>
                                         @endif
@@ -150,7 +150,7 @@
                             </div>
                             <span class="tw:text-on-surface-variant tw:block">{{ __('local_procurement.vendor_ui.submitted_at', ['date' => $cr->created_at->format('d M Y H:i')]) }}</span>
                             @if($cr->review_notes)
-                                <div class="tw:mt-1 tw:text-[11px] tw:italic">{{ __('local_procurement.vendor_ui.reviewer_notes', ['notes' => $cr->review_notes]) }}</div>
+                                <div class="tw:mt-1 tw:text-ui-xs tw:italic">{{ __('local_procurement.vendor_ui.reviewer_notes', ['notes' => $cr->review_notes]) }}</div>
                             @endif
                         </div>
                     @empty
@@ -161,7 +161,7 @@
         </div>
 
         {{-- Right: Supplier Master Documents (Requirement 6) --}}
-        <div class="tw:lg:col-span-4 tw:space-y-6">
+        <div class="tw:min-w-0 tw:lg:col-span-4 tw:space-y-6">
             <x-ui.card
                 :title="__('local_invoice.labels.legal_master')"
                 :description="__('local_procurement.vendor_ui.legal_help')"
@@ -171,7 +171,7 @@
                         <div class="tw:p-3 tw:rounded-sm tw:border tw:border-outline-variant tw:bg-surface-container tw:flex tw:items-center tw:justify-between">
                             <div>
                                 <strong class="tw:text-ui-xs tw:text-on-surface tw:block">{{ __('local_procurement.vendor_ui.document_types.'.strtolower($md->document_type)) }}</strong>
-                                <span class="tw:text-[11px] tw:text-on-surface-variant tw:block">{{ $md->original_filename }}</span>
+                                <span class="tw:text-ui-xs tw:text-on-surface-variant tw:block">{{ $md->original_filename }}</span>
                             </div>
                             <x-ui.button :href="route('supplier-master-documents.show', $md)" target="_blank" variant="outline-primary" size="sm">{{ __('local_invoice.actions.download') }}</x-ui.button>
                         </div>

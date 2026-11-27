@@ -1,6 +1,6 @@
-<nav class="top-navbar tw:flex tw:items-center tw:justify-between">
+<nav class="top-navbar tw:flex tw:items-center tw:justify-between tw:gap-2">
     {{-- Left: Mobile drawer toggle + Page title --}}
-    <div class="tw:flex tw:items-center tw:gap-2.5 tw:min-w-0">
+    <div class="topbar-leading tw:flex tw:items-center tw:gap-2.5 tw:min-w-0 tw:flex-1">
         <x-ui.icon-button
             icon="panel-left"
             :label="__('navigation.toggle_sidebar')"
@@ -24,15 +24,15 @@
             </x-slot:visual>
         </x-ui.icon-button>
         <div class="topbar-divider tw:mx-1 tw:my-2 tw:h-[18px] tw:w-px tw:bg-outline-variant tw:hidden tw:sm:block tw:lg:hidden" aria-hidden="true"></div>
-        <p class="topbar-page-title tw:truncate tw:text-balance">@yield('page-title', __('navigation.dashboard'))</p>
+        <p class="topbar-page-title tw:truncate tw:min-w-0">@yield('page-title', __('navigation.dashboard'))</p>
     </div>
 
     {{-- Right: Global Utility + Activity Alerts + User Identity --}}
-    <div class="tw:flex tw:items-center tw:gap-1.5 tw:sm:gap-2">
+    <div class="topbar-actions tw:flex tw:items-center tw:gap-1.5 tw:sm:gap-2 tw:min-w-0 tw:shrink-0">
         <x-ui.environment-tag placement="navbar" />
 
-        {{-- 1. Global System Utility: Language Switcher (Desktop only in topbar; mobile accessed via sidebar drawer / user menu) --}}
-        <form action="{{ route('locale.switch') }}" method="POST" data-locale-switcher data-managed-submit data-track-unsaved="false" class="lang-toggle-track tw:hidden tw:lg:inline-flex tw:items-center tw:gap-0.5 tw:p-0.5 tw:rounded-ui-sm tw:bg-surface-container tw:border tw:border-outline tw:m-0" role="group" aria-label="{{ __('customization.language.label') }}">
+        {{-- 1. Global System Utility: Language Switcher (Desktop only in topbar; mobile/compact accessed via sidebar drawer / user menu) --}}
+        <form action="{{ route('locale.switch') }}" method="POST" data-locale-switcher data-managed-submit data-track-unsaved="false" class="lang-toggle-track topbar-lang-track tw:items-center tw:gap-0.5 tw:p-0.5 tw:rounded-ui-sm tw:bg-surface-container tw:border tw:border-outline tw:m-0" role="group" aria-label="{{ __('customization.language.label') }}">
             @csrf
             <input type="hidden" name="return_to" value="{{ request()->getRequestUri() }}">
             <button
@@ -41,7 +41,8 @@
                 value="id"
                 data-locale-option="id"
                 class="lang-pill-btn ui-focus-ring tw:flex tw:items-center tw:justify-center tw:px-2 tw:py-0 tw:min-h-[1.625rem] tw:rounded-ui-xs tw:text-ui-xs {{ app()->getLocale() === 'id' ? 'is-active tw:bg-surface tw:text-primary tw:font-bold tw:border tw:border-outline' : 'tw:border-transparent tw:text-on-surface-variant tw:font-semibold tw:hover:text-on-surface' }}"
-                {{ app()->getLocale() === 'id' ? 'disabled aria-pressed=true' : 'aria-pressed=false' }}
+                aria-pressed="{{ app()->getLocale() === 'id' ? 'true' : 'false' }}"
+                aria-disabled="{{ app()->getLocale() === 'id' ? 'true' : 'false' }}"
             >
                 <span class="tw:tracking-wider">ID</span>
                 <span class="tw:sr-only"> (Bahasa Indonesia)</span>
@@ -52,14 +53,15 @@
                 value="en"
                 data-locale-option="en"
                 class="lang-pill-btn ui-focus-ring tw:flex tw:items-center tw:justify-center tw:px-2 tw:py-0 tw:min-h-[1.625rem] tw:rounded-ui-xs tw:text-ui-xs {{ app()->getLocale() === 'en' ? 'is-active tw:bg-surface tw:text-primary tw:font-bold tw:border tw:border-outline' : 'tw:border-transparent tw:text-on-surface-variant tw:font-semibold tw:hover:text-on-surface' }}"
-                {{ app()->getLocale() === 'en' ? 'disabled aria-pressed=true' : 'aria-pressed=false' }}
+                aria-pressed="{{ app()->getLocale() === 'en' ? 'true' : 'false' }}"
+                aria-disabled="{{ app()->getLocale() === 'en' ? 'true' : 'false' }}"
             >
                 <span class="tw:tracking-wider">EN</span>
                 <span class="tw:sr-only"> (English)</span>
             </button>
         </form>
 
-        <div class="topbar-divider tw:h-4 tw:w-px tw:bg-outline-variant tw:shrink-0 tw:hidden tw:lg:block" aria-hidden="true"></div>
+        <div class="topbar-divider topbar-divider--desktop tw:h-4 tw:w-px tw:bg-outline-variant tw:shrink-0" aria-hidden="true"></div>
 
         {{-- 2. Operational Activity & Alerts: Chat + Notifications --}}
         <div class="tw:inline-flex tw:items-center tw:gap-1">
@@ -74,7 +76,7 @@
                     data-chat-drawer
                 >
                     <x-slot:badge>
-                        <span class="chat-badge topbar-counter {{ $initChatCount > 0 ? '' : 'tw:hidden' }}">{{ $initChatCount }}</span>
+                        <span class="chat-badge topbar-counter {{ $initChatCount > 0 ? '' : 'tw:hidden' }}" data-locale-ignore>{{ $initChatCount }}</span>
                     </x-slot:badge>
                 </x-ui.icon-button>
             @endif
@@ -96,12 +98,12 @@
                     aria-expanded="false"
                 >
                     <x-slot:badge>
-                        <span class="notif-badge topbar-counter {{ $initNotifCount > 0 ? '' : 'tw:hidden' }}" aria-hidden="true">{{ $initNotifCount }}</span>
+                        <span class="notif-badge topbar-counter {{ $initNotifCount > 0 ? '' : 'tw:hidden' }}" aria-hidden="true" data-locale-ignore>{{ $initNotifCount }}</span>
                     </x-slot:badge>
                 </x-ui.icon-button>
                 <div id="topbarNotificationPopover" popover="auto" data-ui-dropdown-menu data-ui-auto-close="outside" class="dropdown-menu dropdown-menu-end notification-dropdown tw:shadow-ui-1 tw:border tw:border-outline-variant">
                     <div
-                        class="tw:flex tw:min-h-48 tw:min-w-72 tw:items-center tw:justify-center tw:p-4 tw:text-ui-sm tw:text-on-surface-variant"
+                        class="tw:flex tw:min-h-48 tw:min-w-[min(18rem,calc(100vw-2rem))] tw:w-full tw:items-center tw:justify-center tw:p-4 tw:text-ui-sm tw:text-on-surface-variant"
                         data-notification-summary-container
                         data-notification-summary-state="idle"
                         aria-live="polite"
@@ -112,19 +114,19 @@
             </div>
         </div>
 
-        <div class="topbar-divider tw:h-4 tw:w-px tw:bg-outline-variant tw:shrink-0 tw:hidden tw:lg:block" aria-hidden="true"></div>
+        <div class="topbar-divider topbar-divider--desktop tw:h-4 tw:w-px tw:bg-outline-variant tw:shrink-0" aria-hidden="true"></div>
 
         {{-- 3. User Identity & Role Cluster --}}
-        <div class="tw:inline-flex tw:items-center tw:gap-1.5">
-            {{-- Role Badge (Desktop only; on mobile rendered inside user dropdown & drawer header) --}}
-            <span class="role-badge role-badge-{{ auth()->user()->role }} tw:hidden tw:lg:inline-flex">
+        <div class="tw:inline-flex tw:items-center tw:gap-1.5 tw:min-w-0">
+            {{-- Role Badge (Desktop inline; on mobile or compact topbar rendered inside user dropdown & drawer header) --}}
+            <span class="role-badge role-badge-{{ auth()->user()->role }} topbar-role-badge">
                 {{ __('navigation.roles.'.auth()->user()->role) }}
             </span>
 
             {{-- User Dropdown --}}
             <div class="dropdown">
                 <button class="topbar-user-trigger dropdown-toggle" type="button"
-                    data-ui-dropdown-trigger popovertarget="topbarUserMenuPopover" aria-controls="topbarUserMenuPopover" aria-expanded="false" title="{{ auth()->user()->name }} ({{ auth()->user()->email }})">
+                    data-ui-dropdown-trigger popovertarget="topbarUserMenuPopover" aria-controls="topbarUserMenuPopover" aria-haspopup="menu" aria-expanded="false" title="{{ auth()->user()->name }} ({{ auth()->user()->email }})">
                     <x-ui.user-chip :name="auth()->user()->name" class="topbar-user-chip" />
                     <span class="tw:sr-only">{{ __('navigation.open_user') }}</span>
                 </button>
@@ -132,12 +134,12 @@
                     <li>
                         <div class="dropdown-item-text tw:text-ui-xs tw:text-on-surface-variant tw:flex tw:items-center tw:justify-between tw:gap-2">
                             <span class="tw:truncate">{{ auth()->user()->email }}</span>
-                            <span class="role-badge role-badge-{{ auth()->user()->role }} tw:text-[10px] tw:lg:hidden">
+                            <span class="role-badge role-badge-{{ auth()->user()->role }} topbar-menu-role-badge tw:text-ui-xs">
                                 {{ __('navigation.roles.'.auth()->user()->role) }}
                             </span>
                         </div>
                     </li>
-                    <li class="tw:lg:hidden">
+                    <li class="topbar-menu-lang-row">
                         <div class="dropdown-item-text tw:py-1.5 tw:flex tw:items-center tw:justify-between tw:gap-2 tw:bg-surface-container-low tw:rounded-ui-xs tw:mx-1 tw:my-1">
                             <span class="tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant">{{ __('customization.language.label') }}</span>
                             <form action="{{ route('locale.switch') }}" method="POST" data-locale-switcher data-managed-submit data-track-unsaved="false" class="lang-toggle-track tw:inline-flex tw:items-center tw:gap-0.5 tw:p-0.5 tw:rounded-ui-sm tw:bg-surface tw:border tw:border-outline tw:m-0" role="group" aria-label="{{ __('customization.language.label') }}">
@@ -149,9 +151,11 @@
                                     value="id"
                                     data-locale-option="id"
                                     class="lang-pill-btn ui-focus-ring tw:flex tw:items-center tw:justify-center tw:px-2 tw:py-0.5 tw:min-h-7 tw:rounded-ui-xs tw:text-ui-xs {{ app()->getLocale() === 'id' ? 'is-active tw:bg-surface tw:text-primary tw:font-bold tw:border tw:border-outline' : 'tw:border-transparent tw:text-on-surface-variant tw:font-semibold tw:hover:text-on-surface' }}"
-                                    {{ app()->getLocale() === 'id' ? 'disabled aria-pressed=true' : 'aria-pressed=false' }}
+                                    aria-pressed="{{ app()->getLocale() === 'id' ? 'true' : 'false' }}"
+                                    aria-disabled="{{ app()->getLocale() === 'id' ? 'true' : 'false' }}"
                                 >
                                     <span class="tw:tracking-wider">ID</span>
+                                    <span class="tw:sr-only"> (Bahasa Indonesia)</span>
                                 </button>
                                 <button
                                     type="submit"
@@ -159,9 +163,11 @@
                                     value="en"
                                     data-locale-option="en"
                                     class="lang-pill-btn ui-focus-ring tw:flex tw:items-center tw:justify-center tw:px-2 tw:py-0.5 tw:min-h-7 tw:rounded-ui-xs tw:text-ui-xs {{ app()->getLocale() === 'en' ? 'is-active tw:bg-surface tw:text-primary tw:font-bold tw:border tw:border-outline' : 'tw:border-transparent tw:text-on-surface-variant tw:font-semibold tw:hover:text-on-surface' }}"
-                                    {{ app()->getLocale() === 'en' ? 'disabled aria-pressed=true' : 'aria-pressed=false' }}
+                                    aria-pressed="{{ app()->getLocale() === 'en' ? 'true' : 'false' }}"
+                                    aria-disabled="{{ app()->getLocale() === 'en' ? 'true' : 'false' }}"
                                 >
                                     <span class="tw:tracking-wider">EN</span>
+                                    <span class="tw:sr-only"> (English)</span>
                                 </button>
                             </form>
                         </div>

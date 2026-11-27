@@ -53,7 +53,7 @@
                             @php($rate = $latestRates[$currency] ?? null)
                             <tr>
                                 <td class="ui-tabular-nums tw:font-semibold tw:text-primary">{{ $currency }}</td>
-                                <td class="ui-tabular-nums tw:text-end tw:font-medium">{{ $rate ? 'Rp ' . $regionalFormatter->number(number_format($rate->rate_to_idr, 2, ',', '.'), 'indonesian') : '-' }}</td>
+                                <td class="ui-tabular-nums tw:text-end tw:font-semibold">{{ $rate ? 'Rp ' . $regionalFormatter->number(number_format($rate->rate_to_idr, 2, ',', '.'), 'indonesian') : '-' }}</td>
                                 <td>{{ $rate?->valid_from ? $regionalFormatter->date($rate->valid_from, 'human') : '-' }}</td>
                                 <td><x-ui.status-chip :tone="$rate ? 'success' : 'warning'">{{ $rate ? __('admin.dashboard.available') : __('admin.copy.rate_required') }}</x-ui.status-chip></td>
                             </tr>
@@ -70,9 +70,9 @@
         </x-slot:rates>
 
         <x-slot:shortcuts>
-            <section class="tw:border tw:border-outline tw:bg-surface" aria-labelledby="admin-shortcuts-title">
-                <header class="tw:border-b tw:border-outline-variant tw:bg-surface-container tw:px-4 tw:py-3">
-                    <h2 id="admin-shortcuts-title" class="tw:m-0 tw:text-ui-sm tw:font-semibold">{{ __('admin.copy.administration_shortcuts_220ef8') }}</h2>
+            <section class="tw:overflow-hidden tw:rounded-ui-md tw:border tw:border-outline tw:bg-surface tw:shadow-ui-surface" aria-labelledby="admin-shortcuts-title">
+                <header class="tw:border-b tw:border-outline-variant tw:px-4 tw:py-3">
+                    <h2 id="admin-shortcuts-title" class="tw:m-0 tw:text-ui-base tw:font-semibold">{{ __('admin.copy.administration_shortcuts_220ef8') }}</h2>
                     <p class="tw:m-0 tw:mt-1 tw:text-ui-xs tw:text-on-surface-variant">{{ __('admin.copy.open_a_maintenance_workspace_directly') }}</p>
                 </header>
                 <nav class="tw:divide-y tw:divide-outline-variant" aria-label="{{ __('admin.copy.administration_shortcuts') }}">

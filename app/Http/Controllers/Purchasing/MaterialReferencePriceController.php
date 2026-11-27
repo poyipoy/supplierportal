@@ -7,6 +7,7 @@ use App\Http\Requests\ReferencePrice\SaveMaterialReferencePriceRequest;
 use App\Http\Requests\ReferencePrice\SupersedeMaterialReferencePriceRequest;
 use App\Http\Requests\ReferencePrice\VoidMaterialReferencePriceRequest;
 use App\Models\ExchangeRate;
+use App\Models\MasterDataAuditLog;
 use App\Models\MaterialMaster;
 use App\Models\MaterialReferencePrice;
 use App\Models\PrItem;
@@ -382,7 +383,7 @@ class MaterialReferencePriceController extends Controller
             foreach ($allRules as $idx => $r) {
                 $sortOrder = $idx + 1;
                 if ($r['id'] === null) {
-                    ReferencePriceRule::create([
+                    $created = ReferencePriceRule::create([
                         'category_key' => $r['category_key'],
                         'category_name' => $r['category_name'],
                         'dimension_min' => $r['dimension_min'],
@@ -392,9 +393,11 @@ class MaterialReferencePriceController extends Controller
                         'created_by' => $userId,
                         'updated_by' => $userId,
                     ]);
+                    MasterDataAuditLog::record($created, MasterDataAuditLog::CREATED, null, $created->getAttributes(), $request->user());
                 } else {
                     $orderMap[$r['id']] = $sortOrder;
                     if ($targetRule instanceof ReferencePriceRule && $r['id'] === $targetRule->id) {
+                        $before = $targetRule->getAttributes();
                         $targetRule->update([
                             'category_key' => $categoryKey,
                             'category_name' => $categoryName,
@@ -404,6 +407,7 @@ class MaterialReferencePriceController extends Controller
                             'created_by' => $targetRule->created_by ?? $userId,
                             'updated_by' => $userId,
                         ]);
+                        MasterDataAuditLog::record($targetRule, MasterDataAuditLog::UPDATED, $before, $targetRule->getAttributes(), $request->user());
                     }
                 }
             }
@@ -479,10 +483,12 @@ class MaterialReferencePriceController extends Controller
                 }
             }
 
+            $before = $lockedRule->getAttributes();
             $lockedRule->update([
                 'status' => $targetStatus,
                 'updated_by' => $request->user()->id,
             ]);
+            MasterDataAuditLog::record($lockedRule, MasterDataAuditLog::STATUS_CHANGED, $before, $lockedRule->getAttributes(), $request->user());
 
             return null;
         });
@@ -496,6 +502,51 @@ class MaterialReferencePriceController extends Controller
 
         return redirect()->route($this->resolveIndexRouteName($request), ['tab' => 'rules'])
             ->with('success', __('materials.reference_prices.rules.toggle_success'));
+    }
+
+    public function destroyCategory(Request $request, ReferencePriceRule $rule): JsonResponse|RedirectResponse
+    {
+        Gate::authorize('delete', $rule);
+
+        DB::transaction(function () use ($request, $rule): void {
+            $lockedRules = ReferencePriceRule::query()
+                ->orderBy('dimension_min')
+                ->orderBy('id')
+                ->lockForUpdate()
+                ->get();
+
+            $lockedRule = $lockedRules->firstWhere('id', $rule->id);
+            if (! $lockedRule instanceof ReferencePriceRule) {
+                abort(404);
+            }
+
+            $before = $lockedRule->getAttributes();
+            $deletedId = $lockedRule->id;
+            $lockedRule->delete();
+
+            MasterDataAuditLog::record($lockedRule, MasterDataAuditLog::DELETED, $before, null, $request->user());
+
+            $remaining = $lockedRules->reject(fn (ReferencePriceRule $r): bool => $r->id === $deletedId)->values();
+            foreach ($remaining as $index => $existingRule) {
+                $expectedOrder = $index + 1;
+                if ((int) $existingRule->sort_order !== $expectedOrder) {
+                    $existingRule->timestamps = false;
+                    $existingRule->forceFill(['sort_order' => $expectedOrder])->saveQuietly();
+                    $existingRule->timestamps = true;
+                }
+            }
+        });
+
+        $this->resetRuleCaches();
+
+        $message = __('materials.reference_prices.rules.deleted_success');
+
+        if ($request->wantsJson()) {
+            return response()->json(['success' => true, 'message' => $message]);
+        }
+
+        return redirect()->route($this->resolveIndexRouteName($request), ['tab' => 'rules'])
+            ->with('success', $message);
     }
 
     private function resetRuleCaches(): void

@@ -44,7 +44,7 @@
                                 @foreach($row['invoice_references'] as $ref)
                                     <div class="tw:leading-tight">
                                         @if($ref['invoice_number'] !== '')
-                                            <div class="tw:font-medium">{{ $ref['invoice_number'] }}</div>
+                                            <div class="tw:font-semibold">{{ $ref['invoice_number'] }}</div>
                                         @endif
                                         @if($ref['supplier_reference'] !== '')
                                             <div class="tw:text-ui-xs tw:text-on-surface-variant">
@@ -59,7 +59,7 @@
                         @endif
                     </td>
                     <td class="tw:font-semibold">{{ $row['supplier_name'] }}</td>
-                    <td class="tw:font-medium">{{ $row['material_name'] }}</td>
+                    <td class="tw:font-semibold">{{ $row['material_name'] }}</td>
                     <td class="ui-tabular-nums tw:text-on-surface-variant">{{ $row['dimension'] ?: '-' }}</td>
                     <td class="tw:text-center">
                         <div class="tw:inline-flex tw:flex-wrap tw:items-center tw:justify-center tw:gap-1">
@@ -91,8 +91,8 @@
     </table>
 
     @if($rows->hasPages())
-        <x-slot:footer>
+        <x-slot:pagination>
             {{ $rows->links() }}
-        </x-slot:footer>
+        </x-slot:pagination>
     @endif
 </x-ui.data-table>

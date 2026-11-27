@@ -21,7 +21,7 @@
     x-show="visible"
     x-on:mouseenter="if (timer) clearTimeout(timer)"
     x-on:mouseleave="if (visible && {{ (int) $duration }} > 0) timer = setTimeout(() => close(), {{ (int) $duration }})"
-    x-transition:enter="tw:transition tw:duration-standard tw:ease-emphasized"
+    x-transition:enter="tw:transition tw:duration-standard tw:ease-standard"
     x-transition:enter-start="tw:translate-y-2 tw:opacity-0"
     x-transition:enter-end="tw:translate-y-0 tw:opacity-100"
     x-transition:leave="tw:transition tw:duration-fast tw:ease-standard"
@@ -35,7 +35,7 @@
         @if($title)<div class="tw:font-semibold">{{ $title }}</div>@endif
         <div class="tw:text-ui-sm">{{ $slot }}</div>
     </div>
-    <button type="button" class="ui-focus-ring tw:inline-flex tw:h-11 tw:w-11 tw:shrink-0 tw:items-center tw:justify-center tw:rounded-ui-full tw:hover:bg-surface" @click="close()" aria-label="{{ __('common.notification.dismiss') }}">
+    <button type="button" class="ui-focus-ring tw:inline-flex tw:h-11 tw:w-11 tw:shrink-0 tw:items-center tw:justify-center tw:rounded-ui-full tw:border-0 tw:bg-transparent tw:hover:bg-surface" @click="close()" aria-label="{{ __('common.notification.dismiss') }}">
         <x-ui.icon name="x" size="sm" />
     </button>
 </div>

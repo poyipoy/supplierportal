@@ -307,15 +307,49 @@ test('a server-written summary is never overwritten', async () => {
     }
 });
 
+test('perBarStops emits one keyboard reading stop per visible non-null bar in category order', async () => {
+    const i18n = { point: ':label: :values', series_value: ':series :value', no_value: 'no data' };
+    const { module, restore } = await loadTheme('per-bar-stops', { i18n });
+    try {
+        const { chart, canvas, figure, calls } = fakeChart({
+            labels: ['SKD11', 'P20'],
+            datasets: [
+                { label: '2025', data: [100, null] },
+                { label: '2026', data: [110, 80] },
+            ],
+            options: { plugins: { adasiA11y: { perBarStops: true } } },
+        });
+        module.attachChartA11y(chart);
+        const live = figure.querySelector('[data-adasi-chart-live]');
+        const press = (key) => canvas.dispatch('keydown', { key, preventDefault() {} });
+
+        press('ArrowRight');
+        assert.deepEqual(calls.active.at(-1), [{ datasetIndex: 0, index: 0 }]);
+        assert.equal(live.textContent, 'SKD11: 2025 100');
+
+        press('ArrowRight');
+        assert.deepEqual(calls.active.at(-1), [{ datasetIndex: 1, index: 0 }]);
+        assert.equal(live.textContent, 'SKD11: 2026 110');
+
+        press('ArrowRight');
+        assert.deepEqual(calls.active.at(-1), [{ datasetIndex: 1, index: 1 }], 'skips null bar in P20/2025');
+        assert.equal(live.textContent, 'P20: 2026 80');
+    } finally {
+        restore();
+    }
+});
+
 test('charts rendered by fetch use the same accessible frame as <x-ui.chart>', async () => {
     const scripts = await readFile(new URL('../../resources/views/purchasing/comparison/_scripts.blade.php', import.meta.url), 'utf8');
+    const historicalView = await readFile(new URL('../../resources/views/purchasing/comparison/_historical_content.blade.php', import.meta.url), 'utf8');
     const component = await readFile(new URL('../../resources/views/components/ui/chart.blade.php', import.meta.url), 'utf8');
-    const template = scripts.slice(scripts.indexOf('<figure class="ui-chart'), scripts.indexOf('</figure>', scripts.indexOf('<figure class="ui-chart')));
 
-    for (const marker of ['data-adasi-chart', 'tabindex="0"', 'aria-describedby="historicalChart-summary historicalChart-hint"', 'data-adasi-chart-live', 'data-adasi-chart-summary="auto"', "__('charts.keyboard_hint')"]) {
-        assert.ok(template.includes(marker), 'historical template keeps ' + marker);
+    assert.match(historicalView, /<x-ui\.chart\s+id="historicalChart"/, 'historical view mounts the real <x-ui.chart> frame permanently');
+    for (const marker of ['data-adasi-chart', 'tabindex="0"', 'aria-describedby', 'data-adasi-chart-live', 'data-adasi-chart-summary', "__('charts.keyboard_hint')"]) {
+        assert.ok(component.includes(marker), '<x-ui.chart> component keeps ' + marker);
     }
     assert.match(scripts, /@once\('adasi-chart-i18n'\)/, 'chart copy is on the page before the first fetch render');
     assert.match(component, /@once\('adasi-chart-i18n'\)/, 'the component shares the once-key, so the copy is printed once');
-    assert.doesNotMatch(scripts.slice(scripts.indexOf('function historicalChartConfig')), /yAxisID|y1:/, 'no dual-axis historical chart');
+    const histBuilder = scripts.slice(scripts.indexOf('// <historical-standalone-chart>'), scripts.indexOf('// </historical-standalone-chart>'));
+    assert.doesNotMatch(histBuilder, /yAxisID|y1:/, 'no dual-axis historical chart');
 });

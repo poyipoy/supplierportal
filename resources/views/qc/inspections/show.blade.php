@@ -230,7 +230,7 @@
             @if($inspection->attachments->count() > 0)
                 <div class="tw:grid tw:grid-cols-12 tw:gap-3">
                     @foreach($inspection->attachments as $att)
-                        <div class="tw:col-span-6 tw:md:col-span-4 tw:lg:col-span-3">
+                        <div class="tw:min-w-0 tw:col-span-6 tw:md:col-span-4 tw:lg:col-span-3">
                             <a
                                 href="{{ route('attachments.show', $att) }}"
                                 class="tw:relative tw:block tw:h-40 tw:overflow-hidden tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface-container tw:hover:opacity-95 image-preview-trigger"

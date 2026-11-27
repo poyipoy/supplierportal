@@ -408,8 +408,16 @@ export function createColumnDesigner(root, { text, onStateChange } = {}) {
         const anchorNode = origin && !origin.closest('[hidden]') ? origin : headerFor(state.activeKey);
         const anchor = anchorNode.getBoundingClientRect();
         const rect = layer.getBoundingClientRect();
-        layer.style.left = `${Math.max(left + 8, Math.min(point?.x ?? anchor.left, left + width - rect.width - 8))}px`;
-        layer.style.top = `${Math.max(top + 8, Math.min(point?.y ?? anchor.bottom, top + height - rect.height - 8))}px`;
+        const gap = point ? 0 : 4;
+        const preferredLeft = point?.x ?? anchor.left;
+        const maxLeft = Math.max(left + 8, left + width - rect.width - 8);
+        const maxTop = Math.max(top + 8, top + height - rect.height - 8);
+        let preferredTop = point?.y ?? (anchor.bottom + gap);
+        if (!point && preferredTop + rect.height > top + height - 8 && anchor.top - gap - rect.height >= top + 8) {
+            preferredTop = anchor.top - rect.height - gap;
+        }
+        layer.style.left = `${Math.max(left + 8, Math.min(preferredLeft, maxLeft))}px`;
+        layer.style.top = `${Math.max(top + 8, Math.min(preferredTop, maxTop))}px`;
         document.addEventListener('pointerdown', outsideLayer, true);
         document.addEventListener('scroll', layerMoved, { capture: true, passive: true });
         window.addEventListener('resize', layerMoved);

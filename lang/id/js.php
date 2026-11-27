@@ -16,6 +16,10 @@ return [
 
     'tables.loading' => 'Memuat data...',
     'tables.scroll_region' => 'Tabel data yang dapat digulir',
+    'tables.sort_asc' => 'menaik',
+    'tables.sort_desc' => 'menurun',
+    'tables.sorted_status' => 'Diurutkan berdasarkan :column, :direction, :count hasil.',
+    'tables.sort_cleared' => 'Pengurutan kolom dihapus, :count hasil.',
     'loader.loading' => 'Memuat',
     'loader.slow' => 'Proses lebih lama. Bisa menunggu atau menutup pesan ini.',
     'loader.dismiss' => 'Tutup',
@@ -203,6 +207,10 @@ return [
     'actions.input' => 'Masukan',
     'actions.send' => 'Kirim',
     'select.date' => 'Tanggal: :date',
+    'select.search_placeholder' => 'Cari pilihan...',
+    'select.empty' => 'Tidak ada pilihan yang cocok',
+    'select.clear_search' => 'Hapus pencarian',
+    'select.placeholder' => 'Pilih opsi',
     'chat.read' => 'Dibaca',
     'chat.read_at' => 'Dibaca :time',
     'chat.sent_unread' => 'Terkirim, belum dibaca',
@@ -311,4 +319,6 @@ return [
     'local_import.cancel_text' => ':file akan dibuang dan slot import-nya dilepas. Data PO dan GR tidak berubah.',
     'local_import.cancel_confirm' => 'Batalkan proses impor',
     'local_import.cancel_keep' => 'Jangan batalkan',
+    'locale.switched' => 'Bahasa diubah ke :language.',
+    'locale.switch_failed' => 'Gagal mengganti bahasa. Silakan coba lagi.',
 ];

@@ -5,6 +5,20 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="text-scale" content="scale">
         <meta name="color-scheme" content="light dark">
+        <script>
+            (() => {
+                const pref = @js($preferenceFrontendPayload['theme'] ?? 'system');
+                const mql = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)');
+                const apply = () => {
+                    const dark = pref === 'dark' || (pref === 'system' && Boolean(mql && mql.matches));
+                    document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+                };
+                apply();
+                if (pref === 'system' && mql && typeof mql.addEventListener === 'function') {
+                    mql.addEventListener('change', apply);
+                }
+            })();
+        </script>
         <meta name="csrf-token" content="{{ csrf_token() }}">
         @include('partials.auth-splash-bootstrap', ['authSplashLayout' => 'guest', 'authSplashReadiness' => 'native-document'])
         @include('partials.i18n-bootstrap')

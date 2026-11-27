@@ -13,7 +13,7 @@
     @csrf
 
     <div x-data="{ visible: false }" class="tw:grid tw:gap-1.5">
-        <label for="password" class="tw:text-ui-sm tw:font-medium tw:text-on-surface">{{ __('security.current_password') }}</label>
+        <label for="password" class="tw:text-ui-sm tw:font-semibold tw:text-on-surface">{{ __('security.current_password') }}</label>
         <div class="tw:relative">
             <div class="tw:absolute tw:inset-y-0 tw:start-0 tw:flex tw:items-center tw:pl-3 tw:pointer-events-none tw:text-on-surface-variant">
                 <x-ui.icon name="lock" />
@@ -34,7 +34,7 @@
                 <x-ui.icon name="eye" x-show="!visible" />
             </button>
         </div>
-        @error('password')<p class="tw:m-0 tw:text-ui-xs tw:font-medium tw:text-error" role="alert">{{ $message }}</p>@enderror
+        @error('password')<p class="tw:m-0 tw:text-ui-xs tw:font-semibold tw:text-error" role="alert">{{ $message }}</p>@enderror
     </div>
 
     <button type="submit" class="ui-focus-ring ui-motion tw:flex tw:h-11 tw:w-full tw:items-center tw:justify-center tw:gap-2 tw:rounded-ui-sm tw:border-0 tw:bg-primary tw:text-ui-sm tw:font-semibold tw:text-primary-foreground tw:hover:brightness-95 tw:active:brightness-90">

@@ -25,7 +25,7 @@
                             <td class="tw:font-semibold tw:text-on-surface ui-col-data-name">
                                 <div>{{ $item->prItem?->material_name ?? '-' }}</div>
                                 @if($item->prItem?->shape)
-                                    <div class="tw:text-[11px] tw:font-normal tw:text-on-surface-variant">{{ $item->available_dimension_label }}</div>
+                                    <div class="tw:text-ui-xs tw:font-normal tw:text-on-surface-variant">{{ $item->available_dimension_label }}</div>
                                 @endif
                             </td>
                             <td class="tw:text-center ui-tabular-nums">{{ $line->qty }} pcs</td>

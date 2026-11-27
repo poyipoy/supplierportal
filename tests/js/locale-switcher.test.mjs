@@ -150,14 +150,14 @@ test('adasi-i18n runtime supports hot-swapping dictionary payload without losing
     assert.equal(JSON.parse(scriptNode.textContent).locale, 'id');
 });
 
-test('applySegmentedButtonState switches active pill classes, aria-pressed, disabled, and aria-busy', () => {
+test('applySegmentedButtonState switches active pill classes, aria-pressed, aria-disabled, aria-busy, and keeps pills focusable', () => {
     const btnId = makeElement('button', {
-        attrs: { value: 'id', 'aria-pressed': 'false' },
+        attrs: { value: 'id', 'aria-pressed': 'false', 'aria-disabled': 'false' },
         classes: ['lang-pill-btn', 'tw:border-transparent', 'tw:text-on-surface-variant'],
         dataset: { localeOption: 'id' },
     });
     const btnEn = makeElement('button', {
-        attrs: { value: 'en', 'aria-pressed': 'true', disabled: 'disabled' },
+        attrs: { value: 'en', 'aria-pressed': 'true', 'aria-disabled': 'true', disabled: 'disabled' },
         classes: ['lang-pill-btn', 'is-active', 'tw:bg-surface', 'tw:text-primary', 'tw:font-bold', 'tw:border', 'tw:border-outline'],
         dataset: { localeOption: 'en' },
     });
@@ -171,15 +171,19 @@ test('applySegmentedButtonState switches active pill classes, aria-pressed, disa
     assert.equal(track.getAttribute('aria-busy'), 'true');
     assert.equal(btnId.classList.contains('is-active'), true);
     assert.equal(btnId.getAttribute('aria-pressed'), 'true');
-    assert.equal(btnId.disabled, true);
+    assert.equal(btnId.getAttribute('aria-disabled'), 'true');
+    assert.equal(btnId.disabled, false, 'active pill stays focusable (no native disabled)');
     assert.equal(btnEn.classList.contains('is-active'), false);
     assert.equal(btnEn.getAttribute('aria-pressed'), 'false');
-    assert.equal(btnEn.disabled, true, 'while busy, both buttons are disabled to prevent duplicate submits');
+    assert.equal(btnEn.getAttribute('aria-disabled'), 'false');
+    assert.equal(btnEn.disabled, false, 'inactive pill remains clickable during busy for rapid toggle cancellation');
 
     applySegmentedButtonState(root, 'id', false);
     assert.equal(track.getAttribute('aria-busy'), null);
-    assert.equal(btnId.disabled, true, 'active locale button stays disabled');
-    assert.equal(btnEn.disabled, false, 'inactive locale button becomes clickable when idle');
+    assert.equal(btnId.getAttribute('aria-disabled'), 'true');
+    assert.equal(btnEn.getAttribute('aria-disabled'), 'false');
+    assert.equal(btnId.disabled, false);
+    assert.equal(btnEn.disabled, false);
 });
 
 test('morphDomTree updates server text and translated attributes while preserving live input values and file selections', () => {
@@ -858,5 +862,381 @@ test('syncLocaleInPlace refreshes DataTables 3 chrome labels and re-syncs on dra
     assert.equal(lengthPrefix.nodeValue, 'Tampilkan ');
     assert.equal(lengthSuffix.nodeValue, ' baris');
     assert.equal(infoEl.textContent, 'Menampilkan 0 sampai 0 dari 0 hasil');
+});
+
+test('switchLocale and syncLocaleInPlace never reassign read-only browser HTMLElement.dataset getter', async () => {
+    const backingAttrs = new Map([['data-pagination-label', 'Pagination Navigation']]);
+    const backingDataset = { paginationLabel: 'Pagination Navigation' };
+    const docEl = {
+        lang: 'en',
+        setAttribute(name, val) {
+            backingAttrs.set(name, String(val));
+            if (name === 'data-pagination-label') backingDataset.paginationLabel = String(val);
+        },
+        getAttribute(name) {
+            return backingAttrs.has(name) ? backingAttrs.get(name) : null;
+        },
+    };
+    Object.defineProperty(docEl, 'dataset', {
+        get() {
+            return backingDataset;
+        },
+        configurable: true,
+    });
+
+    const toasts = [];
+    const doc = Object.assign(new EventTarget(), {
+        documentElement: docEl,
+        title: 'Dashboard',
+        querySelector: () => null,
+        querySelectorAll: () => [],
+    });
+    const win = Object.assign(new EventTarget(), {
+        CustomEvent: class { constructor(type, init) { this.type = type; this.detail = init?.detail; } },
+        DOMParser: class {
+            parseFromString() {
+                return {
+                    title: 'Dasbor',
+                    documentElement: {
+                        dataset: { paginationLabel: 'Navigasi Halaman' },
+                        getAttribute: (n) => (n === 'data-pagination-label' ? 'Navigasi Halaman' : null),
+                    },
+                    querySelector: () => null,
+                };
+            }
+        },
+        location: {
+            href: 'https://portal.example.test/purchasing/dashboard',
+            origin: 'https://portal.example.test',
+            pathname: '/purchasing/dashboard',
+            search: '',
+        },
+        AdasiToast: { error: (msg) => toasts.push(msg) },
+        fetch: async (_url, init) => {
+            if (init?.method === 'POST') {
+                return {
+                    ok: true,
+                    status: 200,
+                    json: async () => ({
+                        status: 'success',
+                        locale: 'id',
+                        pagination_label: 'Navigasi Halaman',
+                        i18n: { locale: 'id', messages: {} },
+                    }),
+                };
+            }
+            return {
+                ok: true,
+                status: 200,
+                url: 'https://portal.example.test/purchasing/dashboard',
+                text: async () => '<html data-pagination-label="Navigasi Halaman"></html>',
+            };
+        },
+    });
+    win.dispatchEvent = () => true;
+
+    const switcher = bootLocaleSwitcher(win, doc);
+    const ok = await switcher.switchLocale('id');
+
+    assert.equal(ok, true, 'must succeed without throwing TypeError on getter-only dataset');
+    assert.equal(toasts.length, 0, 'must never emit error toast on getter-only dataset');
+    assert.equal(docEl.getAttribute('data-pagination-label'), 'Navigasi Halaman');
+    assert.equal(docEl.dataset.paginationLabel, 'Navigasi Halaman');
+
+    const syncRes = await switcher.syncLocaleInPlace({
+        locale: 'en',
+        pagination_label: 'Pagination Navigation',
+    });
+    assert.equal(syncRes.ok, true);
+    assert.equal(docEl.getAttribute('data-pagination-label'), 'Pagination Navigation');
+});
+
+test('switchLocale uses single-RTT shell_html and workspace_config in Workspace Shell without second GET fetch', async () => {
+    const fetchCalls = [];
+    const liveSidebarLabel = makeElement('span', { children: [makeTextNode('Dashboard')] });
+    const liveSidebar = makeElement('aside', { attrs: { id: 'sidebar' }, children: [liveSidebarLabel] });
+    const serverSidebarLabel = makeElement('span', { children: [makeTextNode('Dasbor')] });
+    const serverSidebar = makeElement('aside', { attrs: { id: 'sidebar' }, children: [serverSidebarLabel] });
+
+    const docEl = {
+        lang: 'en',
+        dataset: { workspaceShell: 'true', paginationLabel: 'Pagination Navigation' },
+        setAttribute(name, val) {
+            if (name === 'data-pagination-label') this.dataset.paginationLabel = String(val);
+        },
+        getAttribute(name) {
+            if (name === 'data-workspace-shell') return 'true';
+            return null;
+        },
+    };
+    const doc = Object.assign(new EventTarget(), {
+        documentElement: docEl,
+        title: 'Purchase Orders - ADASI',
+        querySelector: (sel) => (sel === '#sidebar' ? liveSidebar : null),
+        querySelectorAll: () => [],
+    });
+    const events = [];
+    const win = Object.assign(new EventTarget(), {
+        CustomEvent: class { constructor(type, init) { this.type = type; this.detail = init?.detail; } },
+        DOMParser: class {
+            parseFromString(html) {
+                assert.equal(html, '<aside id="sidebar"><span>Dasbor</span></aside>');
+                return {
+                    title: '',
+                    documentElement: { dataset: {} },
+                    querySelector: (sel) => (sel === '#sidebar' ? serverSidebar : null),
+                };
+            }
+        },
+        location: {
+            href: 'https://portal.example.test/purchasing/orders',
+            origin: 'https://portal.example.test',
+            pathname: '/purchasing/orders',
+            search: '',
+        },
+        fetch: async (url, init) => {
+            fetchCalls.push({ url, method: init?.method || 'GET', body: init?.body ? JSON.parse(init.body) : null });
+            return {
+                ok: true,
+                status: 200,
+                json: async () => ({
+                    status: 'success',
+                    locale: 'id',
+                    pagination_label: 'Navigasi Halaman',
+                    shell_html: '<aside id="sidebar"><span>Dasbor</span></aside>',
+                    workspace_config: { i18n: { shortcuts: 'Pintasan' }, menuPathTitles: { '/purchasing/orders': 'Pesanan Pembelian' } },
+                    i18n: { locale: 'id', messages: {} },
+                }),
+            };
+        },
+    });
+    win.dispatchEvent = (evt) => events.push(evt);
+
+    const switcher = bootLocaleSwitcher(win, doc);
+    const ok = await switcher.switchLocale('id');
+
+    assert.equal(ok, true);
+    assert.equal(fetchCalls.length, 1, 'Workspace Shell must complete in a single POST round-trip');
+    assert.equal(fetchCalls[0].method, 'POST');
+    assert.equal(fetchCalls[0].body.include_shell, true);
+    assert.equal(liveSidebarLabel.textContent, 'Dasbor');
+    assert.equal(doc.title, 'Purchase Orders - ADASI', 'empty fragment title must not wipe active shell tab title');
+    assert.equal(events.length, 1);
+    assert.equal(events[0].detail.workspace_config?.i18n?.shortcuts, 'Pintasan');
+    assert.equal(events[0].detail.pagination_label, 'Navigasi Halaman');
+});
+
+test('switchLocale scopes focus restoration to active track, announces politely, aborts rapid toggles, and handles 401/419 vs 500 cleanly', async () => {
+    const desktopId = makeElement('button', { attrs: { value: 'id', 'aria-pressed': 'false', 'aria-disabled': 'false' }, classes: ['lang-pill-btn'], dataset: { localeOption: 'id' } });
+    const desktopEn = makeElement('button', { attrs: { value: 'en', 'aria-pressed': 'true', 'aria-disabled': 'true' }, classes: ['lang-pill-btn', 'is-active'], dataset: { localeOption: 'en' } });
+    const desktopTrack = makeElement('form', { classes: ['lang-toggle-track'], children: [desktopId, desktopEn] });
+
+    const mobileId = makeElement('button', { attrs: { value: 'id', 'aria-pressed': 'false', 'aria-disabled': 'false' }, classes: ['lang-pill-btn'], dataset: { localeOption: 'id' } });
+    const mobileEn = makeElement('button', { attrs: { value: 'en', 'aria-pressed': 'true', 'aria-disabled': 'true' }, classes: ['lang-pill-btn', 'is-active'], dataset: { localeOption: 'en' } });
+    const mobileTrack = makeElement('form', { classes: ['lang-toggle-track'], children: [mobileId, mobileEn] });
+    mobileTrack.querySelector = (sel) => (sel.includes('"id"') ? mobileId : mobileEn);
+    mobileId.closest = (sel) => (sel === '.lang-toggle-track' ? mobileTrack : null);
+    desktopTrack.querySelector = (sel) => (sel.includes('"id"') ? desktopId : desktopEn);
+    desktopId.closest = (sel) => (sel === '.lang-toggle-track' ? desktopTrack : null);
+
+    const announcements = [];
+    const toasts = [];
+    const doc = Object.assign(new EventTarget(), {
+        documentElement: { lang: 'en', dataset: {} },
+        title: 'Home',
+        ariaNotify: (msg, opts) => announcements.push({ msg, opts }),
+        querySelector: (sel) => {
+            if (sel.includes('.lang-pill-btn[data-locale-option="id"]')) return desktopId;
+            return null;
+        },
+        querySelectorAll: (sel) => {
+            if (sel === '.lang-toggle-track') return [desktopTrack, mobileTrack];
+            if (sel === '.lang-pill-btn') return [desktopId, desktopEn, mobileId, mobileEn];
+            return [];
+        },
+    });
+
+    const signals = [];
+    let fetchMode = 'ok';
+    const win = Object.assign(new EventTarget(), {
+        CustomEvent: class { constructor(type, init) { this.type = type; this.detail = init?.detail; } },
+        location: { href: 'https://portal.example.test/home', origin: 'https://portal.example.test', pathname: '/home', search: '' },
+        AdasiToast: { error: (msg) => toasts.push(msg) },
+        AdasiSessionSync: { isSessionExpired: () => false },
+        AdasiI18n: {
+            locale: 'en',
+            messages: {
+                'js.locale.switched': 'Bahasa diubah ke :language.',
+                'js.locale.switch_failed': 'Could not switch language. Please try again.',
+            },
+            t(key, rep = {}) {
+                let text = this.messages[key] ?? key;
+                for (const [k, v] of Object.entries(rep)) text = text.replace(`:${k}`, String(v));
+                return text;
+            },
+            setPayload(p) { this.locale = p.locale; },
+        },
+        fetch: async (_url, init) => {
+            signals.push(init?.signal);
+            if (fetchMode === 'hang') {
+                return new Promise((_resolve, reject) => {
+                    init.signal.addEventListener('abort', () => {
+                        const err = new Error('Aborted');
+                        err.name = 'AbortError';
+                        reject(err);
+                    });
+                });
+            }
+            if (fetchMode === '419') return { ok: false, status: 419 };
+            if (fetchMode === '500') return { ok: false, status: 500 };
+            return {
+                ok: true,
+                status: 200,
+                json: async () => ({ status: 'success', locale: JSON.parse(init.body).locale }),
+            };
+        },
+    });
+    win.dispatchEvent = () => true;
+
+    const prevWindow = globalThis.window;
+    globalThis.window = win;
+    try {
+        const switcher = bootLocaleSwitcher(win, doc);
+
+        // 1. Scoped focus + polite ariaNotify announcement
+        const ok = await switcher.switchLocale('id', { triggerElement: mobileId });
+        assert.equal(ok, true);
+        assert.equal(mobileId.focused, true, 'focus must stay in the activated mobile track');
+        assert.equal(desktopId.focused, false, 'focus must not jump to desktop track');
+        assert.equal(announcements.length, 1);
+        assert.equal(announcements[0].msg, 'Bahasa diubah ke Bahasa Indonesia.');
+        assert.equal(announcements[0].opts?.priority, 'normal');
+
+        // 2. Rapid toggle aborts prior in-flight request without error toast
+        fetchMode = 'hang';
+        const firstSwitch = switcher.switchLocale('en');
+        // Duplicate click on same in-flight target is deduplicated
+        const duplicateClick = await switcher.switchLocale('en');
+        assert.equal(duplicateClick, true);
+        assert.equal(signals[signals.length - 1].aborted, false);
+        fetchMode = 'ok';
+        const rapidBack = await switcher.switchLocale('id');
+        const firstOutcome = await firstSwitch;
+        assert.equal(firstOutcome, false);
+        assert.equal(rapidBack, true);
+        assert.equal(signals[1].aborted, true, 'rapid toggle to another locale must abort prior request');
+        assert.equal(toasts.length, 0);
+
+        // 3. 419 with AdasiSessionSync suppresses duplicate toast
+        fetchMode = '419';
+        const expiredOk = await switcher.switchLocale('en');
+        assert.equal(expiredOk, false);
+        assert.equal(toasts.length, 0, '401/419 must defer to AdasiSessionSync without duplicate toast');
+
+        // 4. 500 displays dedicated js.locale.switch_failed error copy
+        fetchMode = '500';
+        const errOk = await switcher.switchLocale('en');
+        assert.equal(errOk, false);
+        assert.equal(toasts.length, 1);
+        assert.equal(toasts[0], 'Could not switch language. Please try again.');
+    } finally {
+        globalThis.window = prevWindow;
+    }
+});
+
+test('morphDomTree syncs data-ui-stashed-title, extended translated attributes, and ignores live unread badges', () => {
+    const liveTip = makeElement('button', {
+        attrs: {
+            'data-ui-tooltip': 'Close',
+            'data-ui-stashed-title': 'Close',
+            'data-empty-text': 'No results',
+            'data-expand-label': 'Expand',
+        },
+        children: [makeTextNode('Close')],
+    });
+    const liveBadge = makeElement('span', {
+        attrs: { 'data-locale-ignore': '' },
+        classes: ['notif-badge'],
+        children: [makeTextNode('7')],
+    });
+    const liveWrap = makeElement('div', { children: [liveTip, liveBadge] });
+
+    const serverTip = makeElement('button', {
+        attrs: {
+            title: 'Tutup',
+            'data-empty-text': 'Tidak ada hasil',
+            'data-expand-label': 'Perluas',
+        },
+        children: [makeTextNode('Tutup')],
+    });
+    const serverBadge = makeElement('span', {
+        attrs: { 'data-locale-ignore': '' },
+        classes: ['notif-badge'],
+        children: [makeTextNode('0')],
+    });
+    const serverWrap = makeElement('div', { children: [serverTip, serverBadge] });
+
+    morphDomTree(liveWrap, serverWrap);
+
+    assert.equal(liveTip.getAttribute('data-ui-tooltip'), 'Tutup');
+    assert.equal(liveTip.getAttribute('data-ui-stashed-title'), 'Tutup');
+    assert.equal(liveTip.getAttribute('data-empty-text'), 'Tidak ada hasil');
+    assert.equal(liveTip.getAttribute('data-expand-label'), 'Perluas');
+    assert.equal(liveBadge.textContent, '7', 'data-locale-ignore badge count must not be overwritten by SSR 0');
+});
+
+test('toast-center resolves default toast titles dynamically after runtime locale switch', async () => {
+    const { registerToastCenter } = await import('../../resources/js/toast-center.js');
+    const prevWindow = globalThis.window;
+    const prevDocument = globalThis.document;
+
+    let currentMessages = {
+        'js.toast.completed': 'Completed',
+        'js.toast.failed': 'Action could not be completed',
+        'js.toast.attention': 'Attention required',
+        'js.toast.update': 'Update',
+        'js.toast.message': 'New message',
+        'js.processing': 'Processing',
+        'js.progress': 'Progress',
+    };
+    const fakeWindow = Object.assign(new EventTarget(), {
+        AdasiI18n: { t: (k) => currentMessages[k] ?? k },
+        setTimeout,
+        clearTimeout,
+        requestAnimationFrame: (cb) => cb(),
+    });
+    const fakeDoc = Object.assign(new EventTarget(), {
+        body: null,
+        querySelector: () => null,
+        getElementById: () => null,
+        createElement: () => makeElement('div'),
+    });
+    let registeredData = null;
+    const fakeAlpine = {
+        reactive: (obj) => obj,
+        data: (name, factory) => {
+            if (name === 'adasiToastCenter') registeredData = factory();
+        },
+    };
+
+    globalThis.window = fakeWindow;
+    globalThis.document = fakeDoc;
+    try {
+        registerToastCenter(fakeAlpine, { flushQueue: false });
+        fakeWindow.AdasiToast.error('First failure');
+        assert.equal(registeredData.state.visible[0].title, 'Action could not be completed');
+
+        // Switch runtime dictionary to Indonesian after boot
+        currentMessages = {
+            ...currentMessages,
+            'js.toast.failed': 'Tindakan tidak dapat diselesaikan',
+        };
+        fakeWindow.AdasiToast.error('Kegagalan kedua');
+        assert.equal(registeredData.state.visible[0].title, 'Tindakan tidak dapat diselesaikan');
+    } finally {
+        fakeWindow.AdasiToast?.clear?.();
+        globalThis.window = prevWindow;
+        globalThis.document = prevDocument;
+    }
 });
 

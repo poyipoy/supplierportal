@@ -21,6 +21,9 @@ class WorkspaceShell
     /** @var array<string, list<string>> */
     private static array $staticIndexPathsCache = [];
 
+    /** @var array<string, array<string, string>> */
+    private static array $menuRouteLabelMapCache = [];
+
     public const CLASS_SHELL_PAGE = 'shell_page';
 
     public const CLASS_TOP_LEVEL_SECURITY = 'top_level_security';
@@ -519,7 +522,12 @@ class WorkspaceShell
      */
     public static function menuRouteLabelMap(): array
     {
-        return [
+        $locale = app()->getLocale();
+        if (isset(self::$menuRouteLabelMapCache[$locale])) {
+            return self::$menuRouteLabelMapCache[$locale];
+        }
+
+        return self::$menuRouteLabelMapCache[$locale] = [
             'dashboard' => __('navigation.dashboard'),
             'accounting.dashboard' => __('navigation.dashboard'),
             'accounting.invoices.index' => __('navigation.invoice_register'),
@@ -648,7 +656,10 @@ class WorkspaceShell
         $hostKey = app()->runningInConsole() && ! app()->runningUnitTests()
             ? 'cli'
             : (string) ($request?->getSchemeAndHttpHost() ?? request()->getSchemeAndHttpHost());
+        $routes = RouteFacade::getRoutes();
         $memoKey = implode('|', [
+            (string) spl_object_id($routes),
+            (string) count($routes->getRoutes()),
             $locale,
             $httpBase,
             $rawPrefix,
@@ -669,6 +680,7 @@ class WorkspaceShell
         $pathMap = [];
         $menuPathTitles = [];
         $routeLabels = self::menuRouteLabelMap();
+        $mappedRoutes = [];
 
         if (is_array($registry)) {
             foreach ($registry as $uuid => $routeName) {
@@ -679,7 +691,7 @@ class WorkspaceShell
                     continue;
                 }
 
-                $routeObj = RouteFacade::getRoutes()->getByName($routeName);
+                $routeObj = $routes->getByName($routeName);
                 if ($routeName === 'dashboard') {
                     // Resolve generic dashboard UUID to the user's frameable role dashboard; skip top-level context picker.
                     $resolvedDash = PortalContext::dashboard($user, absolute: true);
@@ -711,10 +723,14 @@ class WorkspaceShell
                 if (isset($routeLabels[$routeName])) {
                     $menuPathTitles[$targetPath] = $routeLabels[$routeName];
                 }
+                $mappedRoutes[$routeName] = true;
             }
         }
 
         foreach ($routeLabels as $routeName => $label) {
+            if (isset($mappedRoutes[$routeName])) {
+                continue;
+            }
             if (! PortalSessionAuthorizer::canAccess($user, $routeName, $activeScope)) {
                 continue;
             }
@@ -749,6 +765,9 @@ class WorkspaceShell
     {
         self::$moduleMapsCache = [];
         self::$staticIndexPathsCache = [];
+        self::$menuRouteLabelMapCache = [];
+        PortalContextCodec::resetCaches();
+        PortalPath::resetCache();
     }
 
     /**
@@ -1102,83 +1121,143 @@ class WorkspaceShell
                 ],
                 'initialSession' => $initialSession,
                 'initialTab' => $initialSession,
-                'i18n' => [
-                    'sessionsLabel' => __('navigation.workspace_shell.sessions_label'),
-                    'tabsLabel' => __('navigation.workspace_shell.sessions_label'),
-                    'shortcuts' => __('navigation.workspace_shell.shortcuts'),
-                    'favorites' => __('navigation.workspace_shell.favorites'),
-                    'bookmarks' => __('navigation.workspace_shell.bookmarks'),
-                    'frequentlyUsed' => __('navigation.workspace_shell.frequently_used'),
-                    'addFavorite' => __('navigation.workspace_shell.add_favorite'),
-                    'removeFavorite' => __('navigation.workspace_shell.remove_favorite'),
-                    'addBookmark' => __('navigation.workspace_shell.add_bookmark'),
-                    'removeBookmark' => __('navigation.workspace_shell.remove_bookmark'),
-                    'removeFrequent' => __('navigation.workspace_shell.remove_frequent'),
-                    'minimizePane' => __('navigation.workspace_shell.minimize_pane'),
-                    'expandPane' => __('navigation.workspace_shell.expand_pane'),
-                    'resizeShortcutsPanes' => __('navigation.workspace_shell.resize_shortcuts_panes'),
-                    'resizePanePair' => __('navigation.workspace_shell.resize_pane_pair'),
-                    'minimizedPanels' => __('navigation.workspace_shell.minimized_panels'),
-                    'allModules' => __('navigation.workspace_shell.all_modules'),
-                    'searchShortcuts' => __('navigation.workspace_shell.search_shortcuts'),
-                    'clearSearch' => __('navigation.workspace_shell.clear_search'),
-                    'noShortcutsMatch' => __('navigation.workspace_shell.no_shortcuts_match'),
-                    'openInstancesCount' => __('navigation.workspace_shell.open_instances_count'),
-                    'refreshSession' => __('navigation.workspace_shell.refresh_session'),
-                    'refreshTab' => __('navigation.workspace_shell.refresh_session'),
-                    'closeSession' => __('navigation.workspace_shell.close_session'),
-                    'closeTab' => __('navigation.workspace_shell.close_session'),
-                    'duplicateSession' => __('navigation.workspace_shell.duplicate_session'),
-                    'duplicateTab' => __('navigation.workspace_shell.duplicate_session'),
-                    'closeOthers' => __('navigation.workspace_shell.close_others'),
-                    'closeRight' => __('navigation.workspace_shell.close_right'),
-                    'closeAll' => __('navigation.workspace_shell.close_all'),
-                    'closeGroup' => __('navigation.workspace_shell.close_group'),
-                    'sessionActions' => __('navigation.workspace_shell.session_actions'),
-                    'tabActions' => __('navigation.workspace_shell.session_actions'),
-                    'stackedPagesCount' => __('navigation.workspace_shell.stacked_pages_count'),
-                    'hibernatedBadge' => __('navigation.workspace_shell.hibernated_badge'),
-                    'confirmCloseDirtyBulk' => __('navigation.workspace_shell.confirm_close_dirty_bulk'),
-                    'staleBadge' => __('navigation.workspace_shell.stale_badge'),
-                    'staleHint' => __('navigation.workspace_shell.stale_hint'),
-                    'unsavedBadge' => __('navigation.workspace_shell.unsaved_badge'),
-                    'closeDirtyConfirm' => __('navigation.workspace_shell.close_dirty_confirm'),
-                    'evictionBlocked' => __('navigation.workspace_shell.eviction_blocked'),
-                    'loadingModule' => __('navigation.workspace_shell.loading_module'),
-                    'loadingModuleError' => __('navigation.workspace_shell.loading_module_error'),
-                    'loadingTimeoutError' => __('navigation.workspace_shell.loading_timeout_error'),
-                    'loadingNetworkError' => __('navigation.workspace_shell.loading_network_error'),
-                    'retryLoad' => __('navigation.workspace_shell.retry_load'),
-                    'scrollSessionsLeft' => __('navigation.workspace_shell.scroll_sessions_left'),
-                    'scrollTabsLeft' => __('navigation.workspace_shell.scroll_sessions_left'),
-                    'scrollSessionsRight' => __('navigation.workspace_shell.scroll_sessions_right'),
-                    'scrollTabsRight' => __('navigation.workspace_shell.scroll_sessions_right'),
-                    'openSessions' => __('navigation.workspace_shell.open_workspaces'),
-                    'openWorkspaces' => __('navigation.workspace_shell.open_workspaces'),
-                    'statusActive' => __('navigation.workspace_shell.status_active'),
-                    'statusUnsaved' => __('navigation.workspace_shell.status_unsaved'),
-                    'statusStale' => __('navigation.workspace_shell.status_stale'),
-                    'statusHibernated' => __('navigation.workspace_shell.status_hibernated'),
-                    'statusQueued' => __('navigation.workspace_shell.status_queued'),
-                    'queuedAnnouncement' => __('navigation.workspace_shell.queued_announcement'),
-                    'readyAnnouncement' => __('navigation.workspace_shell.ready_announcement'),
-                    'pinSession' => __('navigation.workspace_shell.pin_session'),
-                    'unpinSession' => __('navigation.workspace_shell.unpin_session'),
-                    'pinnedBadge' => __('navigation.workspace_shell.pinned_badge'),
-                    'maxPinnedReached' => __('navigation.workspace_shell.max_pinned_reached'),
-                    'pinnedCloseProtected' => __('navigation.workspace_shell.pinned_close_protected'),
-                    'moveSessionLeft' => __('navigation.workspace_shell.move_session_left'),
-                    'moveSessionRight' => __('navigation.workspace_shell.move_session_right'),
-                    'movedAnnouncement' => __('navigation.workspace_shell.moved_announcement'),
-                    'pinnedAnnouncement' => __('navigation.workspace_shell.pinned_announcement'),
-                    'unpinnedAnnouncement' => __('navigation.workspace_shell.unpinned_announcement'),
-                    'reopenClosedSession' => __('navigation.workspace_shell.reopen_closed_session'),
-                    'recentlyClosed' => __('navigation.workspace_shell.recently_closed'),
-                    'clearRecentlyClosed' => __('navigation.workspace_shell.clear_recently_closed'),
-                    'reopenedAnnouncement' => __('navigation.workspace_shell.reopened_announcement'),
-                    'closedAnnouncement' => __('navigation.workspace_shell.closed_announcement'),
-                ],
+                'i18n' => self::shellI18n(),
             ],
+        ];
+    }
+
+    /**
+     * Compact, locale-sensitive Workspace Shell config returned by POST /locale
+     * for single-round-trip outer shell translation without executing inner page controllers.
+     *
+     * @return array<string, mixed>
+     */
+    public static function localeShellConfig(User $user, Request $request): array
+    {
+        $activeScope = $user->isSupplier()
+            ? (PortalContext::current($user) ?? '__none__')
+            : null;
+        $maps = self::moduleLookupMaps($user, $activeScope, $request);
+        $indexPaths = self::staticIndexPaths($maps['pathMap'], $request);
+
+        $quickAccessPaths = [];
+        try {
+            $preferenceService = app(UserPreferenceService::class);
+            $preferences = $preferenceService->for($user);
+            $quickAccess = app(QuickAccessService::class);
+            $selected = $quickAccess->selectedFor(
+                $user,
+                $preferences['quick_access'] ?? [],
+                $quickAccess->contextFor($user),
+            );
+            foreach ($selected as $item) {
+                $resolvedItemUrl = ! empty($item['route']) && RouteFacade::has($item['route'])
+                    ? PortalPath::routePath($item['route'], [], $request)
+                    : (string) ($item['url'] ?? '');
+                $itemPath = rtrim((string) parse_url($resolvedItemUrl, PHP_URL_PATH), '/');
+                if ($itemPath !== '') {
+                    $quickAccessPaths[] = $itemPath;
+                }
+            }
+        } catch (\Throwable) {
+            $quickAccessPaths = [];
+        }
+
+        return [
+            'i18n' => self::shellI18n(),
+            'menuPathTitles' => $maps['menuPathTitles'],
+            'contextLinks' => self::contextLinksConfig($user, $activeScope, $request),
+            'quickAccessPaths' => $quickAccessPaths,
+            'indexPaths' => $indexPaths,
+            'shortcutsSession' => [
+                'key' => 'shortcuts',
+                'label' => __('navigation.workspace_shell.shortcuts'),
+                'pinned' => true,
+                'closable' => false,
+            ],
+        ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public static function shellI18n(): array
+    {
+        return [
+            'sessionsLabel' => __('navigation.workspace_shell.sessions_label'),
+            'tabsLabel' => __('navigation.workspace_shell.sessions_label'),
+            'shortcuts' => __('navigation.workspace_shell.shortcuts'),
+            'favorites' => __('navigation.workspace_shell.favorites'),
+            'bookmarks' => __('navigation.workspace_shell.bookmarks'),
+            'frequentlyUsed' => __('navigation.workspace_shell.frequently_used'),
+            'addFavorite' => __('navigation.workspace_shell.add_favorite'),
+            'removeFavorite' => __('navigation.workspace_shell.remove_favorite'),
+            'addBookmark' => __('navigation.workspace_shell.add_bookmark'),
+            'removeBookmark' => __('navigation.workspace_shell.remove_bookmark'),
+            'removeFrequent' => __('navigation.workspace_shell.remove_frequent'),
+            'minimizePane' => __('navigation.workspace_shell.minimize_pane'),
+            'expandPane' => __('navigation.workspace_shell.expand_pane'),
+            'resizeShortcutsPanes' => __('navigation.workspace_shell.resize_shortcuts_panes'),
+            'resizePanePair' => __('navigation.workspace_shell.resize_pane_pair'),
+            'minimizedPanels' => __('navigation.workspace_shell.minimized_panels'),
+            'allModules' => __('navigation.workspace_shell.all_modules'),
+            'searchShortcuts' => __('navigation.workspace_shell.search_shortcuts'),
+            'clearSearch' => __('navigation.workspace_shell.clear_search'),
+            'noShortcutsMatch' => __('navigation.workspace_shell.no_shortcuts_match'),
+            'openInstancesCount' => __('navigation.workspace_shell.open_instances_count'),
+            'refreshSession' => __('navigation.workspace_shell.refresh_session'),
+            'refreshTab' => __('navigation.workspace_shell.refresh_session'),
+            'closeSession' => __('navigation.workspace_shell.close_session'),
+            'closeTab' => __('navigation.workspace_shell.close_session'),
+            'duplicateSession' => __('navigation.workspace_shell.duplicate_session'),
+            'duplicateTab' => __('navigation.workspace_shell.duplicate_session'),
+            'closeOthers' => __('navigation.workspace_shell.close_others'),
+            'closeRight' => __('navigation.workspace_shell.close_right'),
+            'closeAll' => __('navigation.workspace_shell.close_all'),
+            'closeGroup' => __('navigation.workspace_shell.close_group'),
+            'sessionActions' => __('navigation.workspace_shell.session_actions'),
+            'tabActions' => __('navigation.workspace_shell.session_actions'),
+            'stackedPagesCount' => __('navigation.workspace_shell.stacked_pages_count'),
+            'hibernatedBadge' => __('navigation.workspace_shell.hibernated_badge'),
+            'confirmCloseDirtyBulk' => __('navigation.workspace_shell.confirm_close_dirty_bulk'),
+            'staleBadge' => __('navigation.workspace_shell.stale_badge'),
+            'staleHint' => __('navigation.workspace_shell.stale_hint'),
+            'unsavedBadge' => __('navigation.workspace_shell.unsaved_badge'),
+            'closeDirtyConfirm' => __('navigation.workspace_shell.close_dirty_confirm'),
+            'evictionBlocked' => __('navigation.workspace_shell.eviction_blocked'),
+            'loadingModule' => __('navigation.workspace_shell.loading_module'),
+            'loadingModuleError' => __('navigation.workspace_shell.loading_module_error'),
+            'loadingTimeoutError' => __('navigation.workspace_shell.loading_timeout_error'),
+            'loadingNetworkError' => __('navigation.workspace_shell.loading_network_error'),
+            'retryLoad' => __('navigation.workspace_shell.retry_load'),
+            'scrollSessionsLeft' => __('navigation.workspace_shell.scroll_sessions_left'),
+            'scrollTabsLeft' => __('navigation.workspace_shell.scroll_sessions_left'),
+            'scrollSessionsRight' => __('navigation.workspace_shell.scroll_sessions_right'),
+            'scrollTabsRight' => __('navigation.workspace_shell.scroll_sessions_right'),
+            'openSessions' => __('navigation.workspace_shell.open_workspaces'),
+            'openWorkspaces' => __('navigation.workspace_shell.open_workspaces'),
+            'statusActive' => __('navigation.workspace_shell.status_active'),
+            'statusUnsaved' => __('navigation.workspace_shell.status_unsaved'),
+            'statusStale' => __('navigation.workspace_shell.status_stale'),
+            'statusHibernated' => __('navigation.workspace_shell.status_hibernated'),
+            'statusQueued' => __('navigation.workspace_shell.status_queued'),
+            'queuedAnnouncement' => __('navigation.workspace_shell.queued_announcement'),
+            'readyAnnouncement' => __('navigation.workspace_shell.ready_announcement'),
+            'pinSession' => __('navigation.workspace_shell.pin_session'),
+            'unpinSession' => __('navigation.workspace_shell.unpin_session'),
+            'pinnedBadge' => __('navigation.workspace_shell.pinned_badge'),
+            'maxPinnedReached' => __('navigation.workspace_shell.max_pinned_reached'),
+            'pinnedCloseProtected' => __('navigation.workspace_shell.pinned_close_protected'),
+            'moveSessionLeft' => __('navigation.workspace_shell.move_session_left'),
+            'moveSessionRight' => __('navigation.workspace_shell.move_session_right'),
+            'movedAnnouncement' => __('navigation.workspace_shell.moved_announcement'),
+            'pinnedAnnouncement' => __('navigation.workspace_shell.pinned_announcement'),
+            'unpinnedAnnouncement' => __('navigation.workspace_shell.unpinned_announcement'),
+            'reopenClosedSession' => __('navigation.workspace_shell.reopen_closed_session'),
+            'recentlyClosed' => __('navigation.workspace_shell.recently_closed'),
+            'clearRecentlyClosed' => __('navigation.workspace_shell.clear_recently_closed'),
+            'reopenedAnnouncement' => __('navigation.workspace_shell.reopened_announcement'),
+            'closedAnnouncement' => __('navigation.workspace_shell.closed_announcement'),
         ];
     }
 

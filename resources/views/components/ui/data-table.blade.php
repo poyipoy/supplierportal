@@ -11,9 +11,9 @@
     'scrollLabel' => null,
 ])
 
-<section {{ $attributes->class(['ui-data-table tw:min-w-0 tw:max-w-full tw:overflow-hidden tw:rounded-ui-md tw:border tw:border-outline tw:bg-surface tw:shadow-none', 'ui-table--compact' => $density === 'compact']) }}>
+<section {{ $attributes->class(['ui-data-table tw:min-w-0 tw:max-w-full tw:overflow-hidden tw:rounded-ui-md tw:border tw:border-outline tw:bg-surface tw:shadow-ui-surface', 'ui-table--compact' => $density === 'compact']) }}>
     @if($title || $description || isset($toolbar) || isset($actions) || isset($filters))
-        <header class="ui-data-table__header tw:grid tw:border-b tw:border-outline-variant tw:bg-surface-container ">
+        <header class="ui-data-table__header tw:grid tw:border-b tw:border-outline-variant">
             <div class="tw:flex tw:flex-col tw:gap-2.5 tw:shell:flex-row tw:shell:items-center tw:shell:justify-between">
                 <div class="tw:min-w-0">
                     @if($title)<h2 class="tw:m-0 tw:text-base tw:font-bold tw:text-on-surface">{{ $title }}</h2>@endif
@@ -31,7 +31,7 @@
 
     @if($loading)
         <div class="ui-data-table__skeleton" role="status" aria-label="{{ __('common.states.loading') }}">
-            <div class="tw:grid tw:grid-cols-12 tw:gap-3 tw:px-4 tw:py-2.5 tw:bg-surface-container-low tw:border-b tw:border-outline-variant">
+            <div class="tw:grid tw:grid-cols-12 tw:gap-3 tw:px-4 tw:py-2.5 tw:bg-surface-container tw:border-b tw:border-outline-variant">
                 <x-ui.skeleton class="tw:col-span-3 tw:h-3.5" />
                 <x-ui.skeleton class="tw:col-span-4 tw:h-3.5" />
                 <x-ui.skeleton class="tw:col-span-3 tw:h-3.5" />
@@ -39,10 +39,10 @@
             </div>
             @foreach([['tw:w-4/5', 'tw:w-11/12', 'tw:w-3/4', 'tw:w-2/3'], ['tw:w-3/4', 'tw:w-4/5', 'tw:w-2/3', 'tw:w-3/4'], ['tw:w-11/12', 'tw:w-3/4', 'tw:w-4/5', 'tw:w-1/2'], ['tw:w-2/3', 'tw:w-11/12', 'tw:w-3/4', 'tw:w-2/3'], ['tw:w-4/5', 'tw:w-2/3', 'tw:w-11/12', 'tw:w-3/4']] as $widths)
                 <div class="tw:grid tw:grid-cols-12 tw:items-center tw:gap-3 tw:px-4 tw:py-3 tw:border-b tw:border-outline-variant tw:last:border-b-0">
-                    <div class="tw:col-span-3"><x-ui.skeleton class="tw:h-3.5 {{ $widths[0] }}" /></div>
-                    <div class="tw:col-span-4"><x-ui.skeleton class="tw:h-3.5 {{ $widths[1] }}" /></div>
-                    <div class="tw:col-span-3"><x-ui.skeleton class="tw:h-3.5 {{ $widths[2] }}" /></div>
-                    <div class="tw:col-span-2"><x-ui.skeleton class="tw:h-3.5 {{ $widths[3] }}" /></div>
+                    <div class="tw:min-w-0 tw:col-span-3"><x-ui.skeleton class="tw:h-3.5 {{ $widths[0] }}" /></div>
+                    <div class="tw:min-w-0 tw:col-span-4"><x-ui.skeleton class="tw:h-3.5 {{ $widths[1] }}" /></div>
+                    <div class="tw:min-w-0 tw:col-span-3"><x-ui.skeleton class="tw:h-3.5 {{ $widths[2] }}" /></div>
+                    <div class="tw:min-w-0 tw:col-span-2"><x-ui.skeleton class="tw:h-3.5 {{ $widths[3] }}" /></div>
                 </div>
             @endforeach
         </div>
@@ -82,5 +82,5 @@
         @endisset
     @endif
 
-    @isset($pagination)<footer class="ui-data-table__footer tw:border-t tw:border-outline-variant tw:bg-surface-low ">{{ $pagination }}</footer>@endisset
+    @isset($pagination)<footer class="ui-data-table__footer tw:border-t tw:border-outline-variant tw:bg-surface-low">{{ $pagination }}</footer>@endisset
 </section>

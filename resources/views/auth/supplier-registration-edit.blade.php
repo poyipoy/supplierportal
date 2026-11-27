@@ -6,7 +6,7 @@
 <style>
     .auth-form-surface { max-width: 46rem !important; }
     .form-section-title {
-        font-size: var(--ui-font-size-sm);
+        font-size: 0.9375rem;
         font-weight: 700;
         text-transform: uppercase;
         letter-spacing: 0.05em;
@@ -45,7 +45,7 @@
             <p class="tw:m-0 tw:text-ui-xs tw:font-semibold tw:uppercase tw:tracking-wider tw:text-primary">{{ __('registration.onboarding') }}</p>
             <h2 class="tw:m-0 tw:mt-1 tw:text-ui-xl tw:font-bold tw:tracking-tight tw:text-on-surface">{{ __('registration.revise') }}</h2>
         </div>
-        <a href="{{ route('supplier.registration.status') }}" class="ui-focus-ring tw:inline-flex tw:items-center tw:gap-1 tw:px-3 tw:py-1.5 tw:rounded-ui-xs tw:border tw:border-outline-variant tw:bg-surface tw:text-ui-xs tw:font-medium tw:text-on-surface tw:hover:bg-surface-container tw:no-underline">
+        <a href="{{ route('supplier.registration.status') }}" class="ui-focus-ring tw:inline-flex tw:items-center tw:gap-1 tw:px-3 tw:py-1.5 tw:rounded-ui-xs tw:border tw:border-outline-variant tw:bg-surface tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:hover:bg-surface-container tw:no-underline">
             <x-ui.icon name="arrow-left" size="xs" />
             <span>{{ __('registration.back_status') }}</span>
         </a>
@@ -81,7 +81,7 @@
         <ul class="tw:m-0 tw:mt-2 tw:ps-5 tw:text-ui-xs tw:space-y-1">
             @foreach ($errors->messages() as $field => $messages)
                 <li>
-                    <button type="button" class="ui-focus-ring tw:border-0 tw:bg-transparent tw:p-0 tw:text-start tw:font-medium tw:text-on-error-container tw:underline tw:underline-offset-2" data-error-field="{{ $field }}">
+                    <button type="button" class="ui-focus-ring tw:border-0 tw:bg-transparent tw:p-0 tw:text-start tw:font-semibold tw:text-on-error-container tw:underline tw:underline-offset-2" data-error-field="{{ $field }}">
                         {{ $messages[0] }}
                     </button>
                 </li>
@@ -105,7 +105,7 @@
 
         <div class="tw:grid tw:gap-4 tw:md:grid-cols-2 tw:items-start">
             <div class="tw:grid tw:content-start tw:gap-1.5">
-                <label for="company_title_select" class="tw:text-ui-sm tw:font-medium tw:text-on-surface">{{ __('registration.legal_form') }} <span class="tw:text-error">*</span></label>
+                <label for="company_title_select" class="tw:text-ui-sm tw:font-semibold tw:text-on-surface">{{ __('registration.legal_form') }} <span class="tw:text-error">*</span></label>
                 <select
                     id="company_title_select"
                     x-model="companyTitle"
@@ -127,7 +127,7 @@
             </div>
 
             <div class="tw:grid tw:content-start tw:gap-1.5" x-show="isOtherTitle" style="display: none;">
-                <label for="custom_company_title" class="tw:text-ui-sm tw:font-medium tw:text-on-surface">{{ __('registration.entity_title') }}</label>
+                <label for="custom_company_title" class="tw:text-ui-sm tw:font-semibold tw:text-on-surface">{{ __('registration.entity_title') }}</label>
                 <input
                     id="custom_company_title"
                     type="text"
@@ -140,7 +140,7 @@
             </div>
 
             <div class="tw:grid tw:content-start tw:gap-1.5" :class="isOtherTitle ? 'tw:md:col-span-2' : ''">
-                <label for="company_name" class="tw:text-ui-sm tw:font-medium tw:text-on-surface">{{ __('registration.company') }} <span class="tw:text-error">*</span></label>
+                <label for="company_name" class="tw:text-ui-sm tw:font-semibold tw:text-on-surface">{{ __('registration.company') }} <span class="tw:text-error">*</span></label>
                 <input
                     id="company_name"
                     type="text"
@@ -149,11 +149,11 @@
                     value="{{ old('company_name', $supplier?->company_name) }}"
                     required
                 >
-                @error('company_name')<p class="tw:m-0 tw:text-ui-xs tw:font-medium tw:text-error">{{ $message }}</p>@enderror
+                @error('company_name')<p class="tw:m-0 tw:text-ui-xs tw:font-semibold tw:text-error">{{ $message }}</p>@enderror
             </div>
 
             <div class="tw:grid tw:content-start tw:gap-1.5 tw:md:col-span-2">
-                <label for="address" class="tw:text-ui-sm tw:font-medium tw:text-on-surface">{{ __('registration.address') }} <span class="tw:text-error">*</span></label>
+                <label for="address" class="tw:text-ui-sm tw:font-semibold tw:text-on-surface">{{ __('registration.address') }} <span class="tw:text-error">*</span></label>
                 <textarea
                     id="address"
                     name="address"
@@ -161,11 +161,11 @@
                     class="ui-motion tw:w-full tw:rounded-ui-sm tw:border tw:bg-surface tw:p-3 tw:text-ui-sm tw:text-on-surface tw:focus:border-primary tw:focus:ring-2 tw:focus:ring-primary {{ $errors->has('address') ? 'tw:border-error' : 'tw:border-outline-variant' }}"
                     required
                 >{{ old('address', $supplier?->address) }}</textarea>
-                @error('address')<p class="tw:m-0 tw:text-ui-xs tw:font-medium tw:text-error">{{ $message }}</p>@enderror
+                @error('address')<p class="tw:m-0 tw:text-ui-xs tw:font-semibold tw:text-error">{{ $message }}</p>@enderror
             </div>
 
             <div class="tw:grid tw:content-start tw:gap-1.5">
-                <label for="phone" class="tw:text-ui-sm tw:font-medium tw:text-on-surface">{{ __('registration.phone') }} <span class="tw:text-error">*</span></label>
+                <label for="phone" class="tw:text-ui-sm tw:font-semibold tw:text-on-surface">{{ __('registration.phone') }} <span class="tw:text-error">*</span></label>
                 <input
                     id="phone"
                     type="text"
@@ -174,11 +174,11 @@
                     value="{{ old('phone', $supplier?->phone) }}"
                     required
                 >
-                @error('phone')<p class="tw:m-0 tw:text-ui-xs tw:font-medium tw:text-error">{{ $message }}</p>@enderror
+                @error('phone')<p class="tw:m-0 tw:text-ui-xs tw:font-semibold tw:text-error">{{ $message }}</p>@enderror
             </div>
 
             <div class="tw:grid tw:content-start tw:gap-1.5">
-                <label for="category" class="tw:text-ui-sm tw:font-medium tw:text-on-surface">{{ __('registration.category') }}</label>
+                <label for="category" class="tw:text-ui-sm tw:font-semibold tw:text-on-surface">{{ __('registration.category') }}</label>
                 <input
                     id="category"
                     type="text"
@@ -191,7 +191,7 @@
             <div class="tw:grid tw:content-start tw:gap-1.5 tw:md:col-span-2">
                 <label class="tw:flex tw:items-center tw:gap-2.5 tw:cursor-pointer" for="is_pkp">
                     <input type="checkbox" name="is_pkp" id="is_pkp" value="1" x-model="isPkp" class="ui-check tw:mt-0" {{ old('is_pkp', $supplier?->is_pkp) ? 'checked' : '' }}>
-                    <span class="tw:text-ui-sm tw:font-medium tw:text-on-surface">{{ __('registration.pkp_edit') }}</span>
+                    <span class="tw:text-ui-sm tw:font-semibold tw:text-on-surface">{{ __('registration.pkp_edit') }}</span>
                 </label>
             </div>
         </div>
@@ -208,7 +208,7 @@
         <div class="tw:grid tw:gap-3">
             @foreach ($questionnaireKeys as $index => $questionKey)
                 <fieldset class="tw:m-0 tw:min-w-0 tw:rounded-ui-sm tw:border tw:bg-surface tw:px-4 tw:py-3 {{ $errors->has('questionnaire.'.$questionKey) ? 'tw:border-error' : 'tw:border-outline-variant' }}">
-                    <legend class="tw:float-left tw:m-0 tw:w-full tw:p-0 tw:text-ui-sm tw:font-medium tw:text-on-surface tw:text-pretty">
+                    <legend class="tw:float-left tw:m-0 tw:w-full tw:p-0 tw:text-ui-sm tw:font-semibold tw:text-on-surface tw:text-pretty">
                         <span class="tw:tabular-nums tw:text-on-surface-variant">{{ $index + 1 }}.</span>
                         {{ __('registration.questionnaire.questions.'.$questionKey) }}
                         <span class="tw:text-error">*</span>
@@ -228,7 +228,7 @@
                             </label>
                         @endforeach
                     </div>
-                    @error('questionnaire.'.$questionKey)<p class="tw:m-0 tw:mt-1.5 tw:text-ui-xs tw:font-medium tw:text-error">{{ $message }}</p>@enderror
+                    @error('questionnaire.'.$questionKey)<p class="tw:m-0 tw:mt-1.5 tw:text-ui-xs tw:font-semibold tw:text-error">{{ $message }}</p>@enderror
                 </fieldset>
             @endforeach
         </div>
@@ -244,7 +244,7 @@
         <div class="reg-tax-grid tw:grid tw:gap-4 tw:md:grid-cols-2 tw:items-start">
             <div class="reg-tax-col tw:grid tw:content-start tw:gap-1.5">
                 <div class="tw:flex tw:items-start tw:justify-between tw:gap-2 reg-tax-header-sync" style="min-height: 48px;">
-                    <label for="nib" class="tw:text-ui-sm tw:font-medium tw:text-on-surface" style="text-wrap: balance;">{{ __('registration.nib') }} <span class="tw:text-error">*</span></label>
+                    <label for="nib" class="tw:text-ui-sm tw:font-semibold tw:text-on-surface" style="text-wrap: balance;">{{ __('registration.nib') }} <span class="tw:text-error">*</span></label>
                 </div>
                 <input
                     id="nib"
@@ -255,13 +255,13 @@
                     required
                 >
                 <div class="tw:min-h-0">
-                    @error('nib')<p class="tw:m-0 tw:text-ui-xs tw:font-medium tw:text-error">{{ $message }}</p>@enderror
+                    @error('nib')<p class="tw:m-0 tw:text-ui-xs tw:font-semibold tw:text-error">{{ $message }}</p>@enderror
                 </div>
             </div>
 
             <div class="reg-tax-col tw:grid tw:content-start tw:gap-1.5">
                 <div class="tw:flex tw:items-start tw:justify-between tw:gap-2 reg-tax-header-sync" style="min-height: 48px;">
-                    <label for="npwp" class="tw:text-ui-sm tw:font-medium tw:text-on-surface" style="text-wrap: balance;">{{ __('registration.npwp') }} <span class="tw:text-error">*</span></label>
+                    <label for="npwp" class="tw:text-ui-sm tw:font-semibold tw:text-on-surface" style="text-wrap: balance;">{{ __('registration.npwp') }} <span class="tw:text-error">*</span></label>
                 </div>
                 <input
                     id="npwp"
@@ -272,7 +272,7 @@
                     required
                 >
                 <div class="tw:min-h-0">
-                    @error('npwp')<p class="tw:m-0 tw:text-ui-xs tw:font-medium tw:text-error">{{ $message }}</p>@enderror
+                    @error('npwp')<p class="tw:m-0 tw:text-ui-xs tw:font-semibold tw:text-error">{{ $message }}</p>@enderror
                 </div>
             </div>
         </div>
@@ -287,7 +287,7 @@
 
         <div class="tw:grid tw:gap-4 tw:md:grid-cols-3 tw:items-start">
             <div class="tw:grid tw:content-start tw:gap-1.5">
-                <label for="pic_name" class="tw:text-ui-sm tw:font-medium tw:text-on-surface">{{ __('registration.pic') }} <span class="tw:text-error">*</span></label>
+                <label for="pic_name" class="tw:text-ui-sm tw:font-semibold tw:text-on-surface">{{ __('registration.pic') }} <span class="tw:text-error">*</span></label>
                 <input
                     id="pic_name"
                     type="text"
@@ -296,11 +296,11 @@
                     value="{{ old('pic_name', $supplier?->pic_name) }}"
                     required
                 >
-                @error('pic_name')<p class="tw:m-0 tw:text-ui-xs tw:font-medium tw:text-error">{{ $message }}</p>@enderror
+                @error('pic_name')<p class="tw:m-0 tw:text-ui-xs tw:font-semibold tw:text-error">{{ $message }}</p>@enderror
             </div>
 
             <div class="tw:grid tw:content-start tw:gap-1.5">
-                <label for="pic_email" class="tw:text-ui-sm tw:font-medium tw:text-on-surface">{{ __('registration.pic_email') }} <span class="tw:text-error">*</span></label>
+                <label for="pic_email" class="tw:text-ui-sm tw:font-semibold tw:text-on-surface">{{ __('registration.pic_email') }} <span class="tw:text-error">*</span></label>
                 <input
                     id="pic_email"
                     type="email"
@@ -309,11 +309,11 @@
                     value="{{ old('pic_email', $supplier?->pic_email) }}"
                     required
                 >
-                @error('pic_email')<p class="tw:m-0 tw:text-ui-xs tw:font-medium tw:text-error">{{ $message }}</p>@enderror
+                @error('pic_email')<p class="tw:m-0 tw:text-ui-xs tw:font-semibold tw:text-error">{{ $message }}</p>@enderror
             </div>
 
             <div class="tw:grid tw:content-start tw:gap-1.5">
-                <label for="pic_phone" class="tw:text-ui-sm tw:font-medium tw:text-on-surface">{{ __('registration.pic_phone') }} <span class="tw:text-error">*</span></label>
+                <label for="pic_phone" class="tw:text-ui-sm tw:font-semibold tw:text-on-surface">{{ __('registration.pic_phone') }} <span class="tw:text-error">*</span></label>
                 <input
                     id="pic_phone"
                     type="text"
@@ -322,9 +322,9 @@
                     value="{{ old('pic_phone', $supplier?->pic_phone) }}"
                     required
                 >
-                @error('pic_phone')<p class="tw:m-0 tw:text-ui-xs tw:font-medium tw:text-error">{{ $message }}</p>@enderror
+                @error('pic_phone')<p class="tw:m-0 tw:text-ui-xs tw:font-semibold tw:text-error">{{ $message }}</p>@enderror
             </div>
-                @error('pic_phone')<p class="tw:m-0 tw:text-ui-xs tw:font-medium tw:text-error">{{ $message }}</p>@enderror
+                @error('pic_phone')<p class="tw:m-0 tw:text-ui-xs tw:font-semibold tw:text-error">{{ $message }}</p>@enderror
             </div>
         </div>
     </div>
@@ -390,7 +390,7 @@
             </div>
 
             <div class="tw:grid tw:content-start tw:gap-1.5">
-                <label for="account_number" class="tw:text-ui-sm tw:font-medium tw:text-on-surface">{{ __('registration.account_number') }} <span class="tw:text-error">*</span></label>
+                <label for="account_number" class="tw:text-ui-sm tw:font-semibold tw:text-on-surface">{{ __('registration.account_number') }} <span class="tw:text-error">*</span></label>
                 <input
                     id="account_number"
                     type="text"
@@ -399,11 +399,11 @@
                     value="{{ old('account_number', $bankAccount?->account_number) }}"
                     required
                 >
-                @error('account_number')<p class="tw:m-0 tw:text-ui-xs tw:font-medium tw:text-error">{{ $message }}</p>@enderror
+                @error('account_number')<p class="tw:m-0 tw:text-ui-xs tw:font-semibold tw:text-error">{{ $message }}</p>@enderror
             </div>
 
             <div class="tw:grid tw:content-start tw:gap-1.5">
-                <label for="account_holder_name" class="tw:text-ui-sm tw:font-medium tw:text-on-surface">{{ __('registration.account_holder') }} <span class="tw:text-error">*</span></label>
+                <label for="account_holder_name" class="tw:text-ui-sm tw:font-semibold tw:text-on-surface">{{ __('registration.account_holder') }} <span class="tw:text-error">*</span></label>
                 <input
                     id="account_holder_name"
                     type="text"
@@ -412,7 +412,7 @@
                     value="{{ old('account_holder_name', $bankAccount?->account_holder_name) }}"
                     required
                 >
-                @error('account_holder_name')<p class="tw:m-0 tw:text-ui-xs tw:font-medium tw:text-error">{{ $message }}</p>@enderror
+                @error('account_holder_name')<p class="tw:m-0 tw:text-ui-xs tw:font-semibold tw:text-error">{{ $message }}</p>@enderror
             </div>
 
             {{-- Expandable Custom Bank Input with smooth transition --}}
@@ -441,7 +441,7 @@
                     placeholder="{{ __('registration.bank_example_edit') }}"
                     :required="bankSelect === 'OTHER'"
                 >
-                <p class="tw:m-0 tw:text-[11px] tw:text-on-surface-variant">
+                <p class="tw:m-0 tw:text-ui-xs tw:text-on-surface-variant">
                     {{ __('registration.other_bank_edit_help') }}
                 </p>
             </div>
@@ -462,75 +462,75 @@
             {{-- NIB File --}}
             <div class="tw:grid tw:content-start tw:gap-1.5">
                 <div class="tw:flex tw:items-center tw:justify-between">
-                    <label for="nib_file" class="tw:text-ui-sm tw:font-medium tw:text-on-surface">{{ __('registration.nib_file') }}</label>
+                    <label for="nib_file" class="tw:text-ui-sm tw:font-semibold tw:text-on-surface">{{ __('registration.nib_file') }}</label>
                     @if (isset($documents['NIB']))
-                        <span class="tw:text-[11px] tw:text-success tw:font-semibold">{{ __('common.review.current_file') }} {{ $documents['NIB']->original_filename }}</span>
+                        <span class="tw:text-ui-xs tw:text-success tw:font-semibold">{{ __('common.review.current_file') }} {{ $documents['NIB']->original_filename }}</span>
                     @endif
                 </div>
                 <input id="nib_file" type="file" name="nib_file" accept=".pdf,.jpg,.jpeg,.png" class="ui-motion tw:block tw:w-full tw:text-ui-xs tw:text-on-surface-variant tw:file:mr-3 tw:file:py-2 tw:file:px-3 tw:file:rounded-ui-xs tw:file:border-0 tw:file:text-ui-xs tw:file:font-semibold tw:file:bg-primary/10 tw:file:text-primary tw:hover:file:bg-primary/20">
-                @error('nib_file')<p class="tw:m-0 tw:text-ui-xs tw:font-medium tw:text-error">{{ $message }}</p>@enderror
+                @error('nib_file')<p class="tw:m-0 tw:text-ui-xs tw:font-semibold tw:text-error">{{ $message }}</p>@enderror
             </div>
 
             {{-- NPWP File --}}
             <div class="tw:grid tw:content-start tw:gap-1.5">
                 <div class="tw:flex tw:items-center tw:justify-between">
-                    <label for="npwp_file" class="tw:text-ui-sm tw:font-medium tw:text-on-surface">{{ __('registration.npwp_file') }}</label>
+                    <label for="npwp_file" class="tw:text-ui-sm tw:font-semibold tw:text-on-surface">{{ __('registration.npwp_file') }}</label>
                     @if (isset($documents['NPWP']))
-                        <span class="tw:text-[11px] tw:text-success tw:font-semibold">{{ __('common.review.current_file') }} {{ $documents['NPWP']->original_filename }}</span>
+                        <span class="tw:text-ui-xs tw:text-success tw:font-semibold">{{ __('common.review.current_file') }} {{ $documents['NPWP']->original_filename }}</span>
                     @endif
                 </div>
                 <input id="npwp_file" type="file" name="npwp_file" accept=".pdf,.jpg,.jpeg,.png" class="ui-motion tw:block tw:w-full tw:text-ui-xs tw:text-on-surface-variant tw:file:mr-3 tw:file:py-2 tw:file:px-3 tw:file:rounded-ui-xs tw:file:border-0 tw:file:text-ui-xs tw:file:font-semibold tw:file:bg-primary/10 tw:file:text-primary tw:hover:file:bg-primary/20">
-                @error('npwp_file')<p class="tw:m-0 tw:text-ui-xs tw:font-medium tw:text-error">{{ $message }}</p>@enderror
+                @error('npwp_file')<p class="tw:m-0 tw:text-ui-xs tw:font-semibold tw:text-error">{{ $message }}</p>@enderror
             </div>
 
             {{-- SKNR File --}}
             <div class="tw:grid tw:content-start tw:gap-1.5 tw:md:col-span-2">
                 <div class="tw:flex tw:items-center tw:justify-between">
-                    <label for="sknr_file" class="tw:text-ui-sm tw:font-medium tw:text-on-surface">{{ __('registration.sknr_file') }}</label>
+                    <label for="sknr_file" class="tw:text-ui-sm tw:font-semibold tw:text-on-surface">{{ __('registration.sknr_file') }}</label>
                     @if (isset($documents['SURAT_PERNYATAAN_REKENING']))
-                        <span class="tw:text-[11px] tw:text-success tw:font-semibold">{{ __('common.review.current_file') }} {{ $documents['SURAT_PERNYATAAN_REKENING']->original_filename }}</span>
+                        <span class="tw:text-ui-xs tw:text-success tw:font-semibold">{{ __('common.review.current_file') }} {{ $documents['SURAT_PERNYATAAN_REKENING']->original_filename }}</span>
                     @endif
                 </div>
                 <input id="sknr_file" type="file" name="sknr_file" accept=".pdf,.jpg,.jpeg,.png" class="ui-motion tw:block tw:w-full tw:text-ui-xs tw:text-on-surface-variant tw:file:mr-3 tw:file:py-2 tw:file:px-3 tw:file:rounded-ui-xs tw:file:border-0 tw:file:text-ui-xs tw:file:font-semibold tw:file:bg-primary/10 tw:file:text-primary tw:hover:file:bg-primary/20">
-                @error('sknr_file')<p class="tw:m-0 tw:text-ui-xs tw:font-medium tw:text-error">{{ $message }}</p>@enderror
+                @error('sknr_file')<p class="tw:m-0 tw:text-ui-xs tw:font-semibold tw:text-error">{{ $message }}</p>@enderror
             </div>
 
             {{-- SPPKP File --}}
             <div class="tw:grid tw:content-start tw:gap-1.5">
                 <div class="tw:flex tw:items-center tw:justify-between">
-                    <label for="sppkp_file" class="tw:text-ui-sm tw:font-medium tw:text-on-surface">{{ __('registration.sppkp') }} <span x-text="isPkp ? @js(__('common.upload.required')) : @js(__('common.fields.optional'))"></span></label>
+                    <label for="sppkp_file" class="tw:text-ui-sm tw:font-semibold tw:text-on-surface">{{ __('registration.sppkp') }} <span x-text="isPkp ? @js(__('common.upload.required')) : @js(__('common.fields.optional'))"></span></label>
                     @if ($hasReusableSppkp)
-                        <span class="tw:text-[11px] tw:text-success tw:font-semibold">{{ __('common.review.current_file') }} {{ $documents['SPPKP']->original_filename }}</span>
+                        <span class="tw:text-ui-xs tw:text-success tw:font-semibold">{{ __('common.review.current_file') }} {{ $documents['SPPKP']->original_filename }}</span>
                     @endif
                 </div>
                 <input id="sppkp_file" type="file" name="sppkp_file" accept=".pdf,.jpg,.jpeg,.png" :required="isPkp && !@js($hasReusableSppkp)" :aria-required="isPkp" @required(old('is_pkp', $supplier?->is_pkp) && !$hasReusableSppkp) class="ui-motion tw:block tw:w-full tw:text-ui-xs tw:text-on-surface-variant tw:file:mr-3 tw:file:py-2 tw:file:px-3 tw:file:rounded-ui-xs tw:file:border-0 tw:file:text-ui-xs tw:file:font-semibold tw:file:bg-surface-container-high tw:file:text-on-surface tw:hover:file:bg-surface-container-highest">
                 <p class="tw:m-0 tw:text-ui-xs tw:text-on-surface-variant">{{ __('registration.sppkp_help') }}</p>
-                @error('sppkp_file')<p class="tw:m-0 tw:text-ui-xs tw:font-medium tw:text-error">{{ $message }}</p>@enderror
+                @error('sppkp_file')<p class="tw:m-0 tw:text-ui-xs tw:font-semibold tw:text-error">{{ $message }}</p>@enderror
             </div>
 
             {{-- SKD File --}}
             <div class="tw:grid tw:content-start tw:gap-1.5">
                 <div class="tw:flex tw:items-center tw:justify-between">
-                    <label for="skd_file" class="tw:text-ui-sm tw:font-medium tw:text-on-surface">{{ __('registration.skd_optional') }}</label>
+                    <label for="skd_file" class="tw:text-ui-sm tw:font-semibold tw:text-on-surface">{{ __('registration.skd_optional') }}</label>
                     @if (isset($documents['SKD']))
-                        <span class="tw:text-[11px] tw:text-success tw:font-semibold">{{ __('common.review.current_file') }} {{ $documents['SKD']->original_filename }}</span>
+                        <span class="tw:text-ui-xs tw:text-success tw:font-semibold">{{ __('common.review.current_file') }} {{ $documents['SKD']->original_filename }}</span>
                     @endif
                 </div>
                 <input id="skd_file" type="file" name="skd_file" accept=".pdf,.jpg,.jpeg,.png" class="ui-motion tw:block tw:w-full tw:text-ui-xs tw:text-on-surface-variant tw:file:mr-3 tw:file:py-2 tw:file:px-3 tw:file:rounded-ui-xs tw:file:border-0 tw:file:text-ui-xs tw:file:font-semibold tw:file:bg-surface-container-high tw:file:text-on-surface tw:hover:file:bg-surface-container-highest">
-                @error('skd_file')<p class="tw:m-0 tw:text-ui-xs tw:font-medium tw:text-error">{{ $message }}</p>@enderror
+                @error('skd_file')<p class="tw:m-0 tw:text-ui-xs tw:font-semibold tw:text-error">{{ $message }}</p>@enderror
             </div>
 
             {{-- Company Profile File (optional, max 10 MB) --}}
             <div class="tw:grid tw:content-start tw:gap-1.5 tw:md:col-span-2">
                 <div class="tw:flex tw:items-center tw:justify-between tw:gap-2">
-                    <label for="company_profile_file" class="tw:text-ui-sm tw:font-medium tw:text-on-surface">{{ __('registration.company_profile_optional') }}</label>
+                    <label for="company_profile_file" class="tw:text-ui-sm tw:font-semibold tw:text-on-surface">{{ __('registration.company_profile_optional') }}</label>
                     @if (isset($documents['COMPANY_PROFILE']))
-                        <span class="tw:min-w-0 tw:truncate tw:text-[11px] tw:text-success tw:font-semibold">{{ __('common.review.current_file') }} {{ $documents['COMPANY_PROFILE']->original_filename }}</span>
+                        <span class="tw:min-w-0 tw:truncate tw:text-ui-xs tw:text-success tw:font-semibold">{{ __('common.review.current_file') }} {{ $documents['COMPANY_PROFILE']->original_filename }}</span>
                     @endif
                 </div>
                 <input id="company_profile_file" type="file" name="company_profile_file" accept=".pdf,.jpg,.jpeg,.png" aria-describedby="company_profile_file_help" class="ui-motion tw:block tw:w-full tw:text-ui-xs tw:text-on-surface-variant tw:file:mr-3 tw:file:py-2 tw:file:px-3 tw:file:rounded-ui-xs tw:file:border-0 tw:file:text-ui-xs tw:file:font-semibold tw:file:bg-surface-container-high tw:file:text-on-surface tw:hover:file:bg-surface-container-highest">
-                <p id="company_profile_file_help" class="tw:m-0 tw:text-[11px] tw:text-on-surface-variant">{{ __('registration.company_profile_help') }}</p>
-                @error('company_profile_file')<p class="tw:m-0 tw:text-ui-xs tw:font-medium tw:text-error">{{ $message }}</p>@enderror
+                <p id="company_profile_file_help" class="tw:m-0 tw:text-ui-xs tw:text-on-surface-variant">{{ __('registration.company_profile_help') }}</p>
+                @error('company_profile_file')<p class="tw:m-0 tw:text-ui-xs tw:font-semibold tw:text-error">{{ $message }}</p>@enderror
             </div>
         </div>
     </div>

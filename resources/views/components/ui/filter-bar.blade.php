@@ -165,7 +165,7 @@
                     @if($advancedTitle)
                         <div class="ui-filter-bar__tray-header">
                             <div>
-                                <h4 class="tw:m-0 tw:text-ui-xs tw:font-bold tw:uppercase tw:tracking-wider tw:text-on-surface-variant">{{ $advancedTitle }}</h4>
+                                <h4 class="tw:m-0 tw:text-ui-sm tw:font-bold tw:uppercase tw:tracking-wider tw:text-on-surface-variant">{{ $advancedTitle }}</h4>
                                 @if($advancedDescription)
                                     <p class="tw:m-0 tw:mt-0.5 tw:text-ui-xs tw:text-on-surface-variant">{{ $advancedDescription }}</p>
                                 @endif

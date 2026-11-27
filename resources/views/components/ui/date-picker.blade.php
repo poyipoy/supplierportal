@@ -24,7 +24,7 @@
     $errorId = $resolvedId . '-error';
     $labelId = $resolvedId . '-label';
     $panelId = $resolvedId . '-calendar-panel';
-    $describedBy = collect([$helperId, $errorId])->filter()->implode(' ');
+    $describedBy = collect([$helperId, $message ? $errorId : null])->filter()->implode(' ');
     $dateDisplay = __('common.calendar.choose_date');
     if ($resolvedValue && preg_match('/^\d{4}-\d{2}-\d{2}$/', (string) $resolvedValue)) {
         [$year, $month, $day] = explode('-', (string) $resolvedValue);
@@ -45,7 +45,7 @@
 >
     <div data-calendar-native class="tw:grid tw:gap-1.5">
         @if($label)
-            <label id="{{ $labelId }}" for="{{ $resolvedId }}" class="tw:text-ui-sm tw:font-medium tw:text-on-surface">
+            <label id="{{ $labelId }}" for="{{ $resolvedId }}" class="tw:text-ui-sm tw:font-semibold tw:text-on-surface">
                 {{ $label }}
                 @if($required)<span class="tw:text-error" aria-hidden="true">*</span><span class="tw:sr-only"> {{ __('common.required') }}</span>@endif
             </label>
@@ -76,7 +76,7 @@
 
     <div data-calendar-enhanced hidden class="tw:grid tw:gap-1.5">
         @if($label)
-            <span id="{{ $labelId }}-enhanced" class="tw:block tw:text-ui-sm tw:font-medium tw:text-on-surface">
+            <span id="{{ $labelId }}-enhanced" class="tw:block tw:text-ui-sm tw:font-semibold tw:text-on-surface">
                 {{ $label }}
                 @if($required)<span class="tw:text-error" aria-hidden="true">*</span><span class="tw:sr-only"> {{ __('common.required') }}</span>@endif
             </span>
@@ -101,7 +101,7 @@
     @if($helper)
         <p id="{{ $helperId }}" class="tw:m-0 tw:text-ui-xs tw:text-on-surface-variant">{{ $helper }}</p>
     @endif
-    <p id="{{ $errorId }}" data-calendar-error class="tw:m-0 tw:flex tw:items-start tw:gap-1.5 tw:text-ui-xs tw:font-medium tw:text-error {{ $message ? '' : 'tw:hidden' }}" role="alert">
+    <p id="{{ $errorId }}" data-calendar-error class="tw:m-0 tw:flex tw:items-start tw:gap-1.5 tw:text-ui-xs tw:font-semibold tw:text-error {{ $message ? '' : 'tw:hidden' }}" role="alert">
         <x-ui.icon name="circle-alert" size="sm" class="tw:mt-0.5" />
         <span data-calendar-error-message>{{ $message }}</span>
     </p>

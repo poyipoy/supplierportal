@@ -22,8 +22,8 @@ return [
         ]],
         'finance' => ['route' => 'finance.dashboard', 'roles' => ['finance', 'admin'], 'context' => null, 'widgets' => [
             'finance.statuses' => ['slot' => 'statuses', 'label' => 'dashboard.widgets.invoice_status_actions', 'required' => true, 'span' => 12, 'kind' => 'metrics'],
-            'finance.forecast' => ['slot' => 'forecast', 'label' => 'dashboard.widgets.payment_forecast', 'required' => true, 'span' => 12, 'kind' => 'chart'],
             'finance.three_way_exceptions' => ['slot' => 'three_way_exceptions', 'label' => 'dashboard.widgets.three_way_match_exceptions', 'required' => false, 'span' => 12, 'kind' => 'table'],
+            'finance.forecast' => ['slot' => 'forecast', 'label' => 'dashboard.widgets.payment_forecast', 'required' => true, 'span' => 12, 'kind' => 'chart'],
             'finance.batches' => ['slot' => 'batches', 'label' => 'dashboard.widgets.recent_payment_batches', 'required' => false, 'span' => 12, 'kind' => 'table'],
             'finance.invoices' => ['slot' => 'invoices', 'label' => 'dashboard.widgets.recent_invoice_submissions', 'required' => false, 'span' => 12, 'kind' => 'table'],
         ]],

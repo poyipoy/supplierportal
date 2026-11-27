@@ -175,7 +175,7 @@
                 <x-ui.status-chip :tone="$isPkp ? 'success' : 'neutral'">
                     {{ $isPkp ? 'PKP' : 'Non-PKP' }}
                 </x-ui.status-chip>
-                <span class="tw:inline-flex tw:items-center tw:gap-1.5 tw:px-2.5 tw:py-1 tw:rounded-full tw:text-ui-xs tw:font-medium tw:bg-surface-high tw:text-on-surface">
+                <span class="tw:inline-flex tw:items-center tw:gap-1.5 tw:px-2.5 tw:py-1 tw:rounded-full tw:text-ui-xs tw:font-semibold tw:bg-surface-high tw:text-on-surface">
                     <x-ui.icon name="tag" size="sm" class="tw:text-on-surface-variant" />
                     <span>{{ $vendorCategory }}</span>
                 </span>
@@ -196,7 +196,7 @@
             class="tw:w-full tw:flex tw:items-center tw:justify-between tw:gap-3 tw:p-3.5 tw:rounded-ui-sm tw:text-start tw:border tw:transition-all tw:duration-200 tw:active:scale-[0.99] ui-focus-ring"
             :class="step === 1
                 ? 'tw:bg-surface tw:border-primary/30 tw:shadow-xs tw:ring-1 tw:ring-primary/10'
-                : 'tw:border-transparent tw:hover:bg-surface/80 tw:hover:border-outline-variant/60 hover:tw-shadow-xs'"
+                : 'tw:border-transparent tw:hover:bg-surface/80 tw:hover:border-outline-variant/60 tw:hover:shadow-xs'"
             role="tab"
             :aria-selected="step === 1"
             aria-label="{{ __('local_invoice.form.documents_step') }}"
@@ -205,8 +205,8 @@
                 <div
                     class="tw:w-8 tw:h-8 tw:rounded-full tw:flex tw:items-center tw:justify-center tw:shrink-0 tw:text-ui-xs tw:font-bold tw:transition-all tw:duration-200"
                     :class="{
-                        'tw:bg-primary tw:text-white tw-shadow-xs tw:ring-4 tw:ring-primary/15': step === 1,
-                        'tw:bg-emerald-600 tw:text-white tw-shadow-xs': isStep1Complete && step !== 1,
+                        'tw:bg-primary tw:text-on-primary tw:shadow-ui-1 tw:ring-4 tw:ring-primary/15': step === 1,
+                        'tw:bg-success tw:text-on-success tw:shadow-ui-1': isStep1Complete && step !== 1,
                         'tw:bg-surface-high tw:text-on-surface-variant': !isStep1Complete && step !== 1
                     }"
                 >
@@ -224,7 +224,7 @@
                     >
                         {{ __('local_invoice.form.documents_step') }}
                     </div>
-                    <div class="tw:text-[11px] tw:text-on-surface-variant tw:truncate tw:mt-0.5">
+                    <div class="tw:text-ui-xs tw:text-on-surface-variant tw:truncate tw:mt-0.5">
                         {{ __('local_invoice.form.documents_hint') }}
                     </div>
                 </div>
@@ -233,19 +233,19 @@
             {{-- Contextual Status Badge --}}
             <div class="tw:shrink-0 tw:flex tw:items-center">
                 <template x-if="step === 1 && !isStep1Complete">
-                    <span class="tw:inline-flex tw:items-center tw:gap-1.5 tw:px-2.5 tw:py-0.5 tw:rounded-full tw:text-[10px] tw:font-semibold tw:bg-primary/10 tw:text-primary">
+                    <span class="tw:inline-flex tw:items-center tw:gap-1.5 tw:px-2.5 tw:py-0.5 tw:rounded-full tw:text-ui-xs tw:font-semibold tw:bg-primary/10 tw:text-primary">
                         <span class="tw:w-1.5 tw:h-1.5 tw:rounded-full tw:bg-primary tw:animate-pulse"></span>
                         <span>{{ __('local_invoice.form.in_progress') }}</span>
                     </span>
                 </template>
                 <template x-if="isStep1Complete">
-                    <span class="tw:inline-flex tw:items-center tw:gap-1 tw:px-2.5 tw:py-0.5 tw:rounded-full tw:text-[10px] tw:font-semibold tw:bg-emerald-500/15 tw:text-emerald-700 tw:dark:text-emerald-300">
+                    <span class="tw:inline-flex tw:items-center tw:gap-1 tw:px-2.5 tw:py-0.5 tw:rounded-full tw:text-ui-xs tw:font-semibold tw:bg-success-container tw:text-success-container-foreground">
                         <x-ui.icon name="check" size="xs" class="tw:w-3 tw:h-3 tw:stroke-[2.5]" />
                         <span>{{ __('local_invoice.form.complete') }}</span>
                     </span>
                 </template>
                 <template x-if="step !== 1 && !isStep1Complete">
-                    <span class="tw:inline-flex tw:items-center tw:gap-1 tw:px-2.5 tw:py-0.5 tw:rounded-full tw:text-[10px] tw:font-medium tw:bg-warning/15 tw:text-warning">
+                    <span class="tw:inline-flex tw:items-center tw:gap-1 tw:px-2.5 tw:py-0.5 tw:rounded-full tw:text-ui-xs tw:font-semibold tw:bg-warning/15 tw:text-warning">
                         <x-ui.icon name="alert-circle" size="xs" class="tw:w-3 tw:h-3" />
                         <span>{{ __('local_invoice.form.incomplete') }}</span>
                     </span>
@@ -259,8 +259,8 @@
             @click="goToStep(2)"
             class="tw:w-full tw:flex tw:items-center tw:justify-between tw:gap-3 tw:p-3.5 tw:rounded-ui-sm tw:text-start tw:border tw:transition-all tw:duration-200 tw:active:scale-[0.99] ui-focus-ring"
             :class="{
-                'tw:bg-surface tw:border-primary/30 tw:shadow-xs tw:ring-1 tw:ring-primary/10': step === 2,
-                'tw:border-transparent tw:hover:bg-surface/80 tw:hover:border-outline-variant/60 hover:tw-shadow-xs': step !== 2 && isStep1Complete,
+                'tw:bg-surface tw:border-primary/30 tw:shadow-ui-1 tw:ring-1 tw:ring-primary/10': step === 2,
+                'tw:border-transparent tw:hover:bg-surface/80 tw:hover:border-outline-variant/60 tw:hover:shadow-ui-1': step !== 2 && isStep1Complete,
                 'tw:border-transparent tw:opacity-80 tw:hover:bg-surface/50 tw:hover:border-outline-variant/40': step !== 2 && !isStep1Complete
             }"
             role="tab"
@@ -269,9 +269,9 @@
         >
             <div class="tw:flex tw:items-center tw:gap-3.5 tw:min-w-0 tw:flex-1">
                 <div
-                    class="tw:w-8 tw:h-8 tw:rounded-full tw:flex tw:items-center tw:justify-center tw:shrink-0 tw:text-ui-xs tw:font-bold tw:transition-all tw:duration-200"
+                    class="tw:w-8 tw:h-8 tw:rounded-full tw:flex tw:items-center tw:justify-center tw:shrink-0 tw:text-ui-xs tw:font-bold tw:transition-colors tw:duration-200"
                     :class="{
-                        'tw:bg-primary tw:text-white tw-shadow-xs tw:ring-4 tw:ring-primary/15': step === 2,
+                        'tw:bg-primary tw:text-on-primary tw:shadow-ui-1 tw:ring-4 tw:ring-primary/15': step === 2,
                         'tw:bg-primary/15 tw:text-primary tw:border tw:border-primary/30': isStep1Complete && step !== 2,
                         'tw:bg-surface-high tw:text-on-surface-variant': !isStep1Complete && step !== 2
                     }"
@@ -285,7 +285,7 @@
                     >
                         {{ __('local_invoice.form.invoice_step') }}
                     </div>
-                    <div class="tw:text-[11px] tw:text-on-surface-variant tw:truncate tw:mt-0.5">
+                    <div class="tw:text-ui-xs tw:text-on-surface-variant tw:truncate tw:mt-0.5">
                         {{ __('local_invoice.form.invoice_hint') }}
                     </div>
                 </div>
@@ -294,19 +294,19 @@
             {{-- Contextual Status Badge --}}
             <div class="tw:shrink-0 tw:flex tw:items-center">
                 <template x-if="step === 2">
-                    <span class="tw:inline-flex tw:items-center tw:gap-1.5 tw:px-2.5 tw:py-0.5 tw:rounded-full tw:text-[10px] tw:font-semibold tw:bg-primary/10 tw:text-primary">
+                    <span class="tw:inline-flex tw:items-center tw:gap-1.5 tw:px-2.5 tw:py-0.5 tw:rounded-full tw:text-ui-xs tw:font-semibold tw:bg-primary/10 tw:text-primary">
                         <span class="tw:w-1.5 tw:h-1.5 tw:rounded-full tw:bg-primary tw:animate-pulse"></span>
                         <span>{{ __('local_invoice.form.in_progress') }}</span>
                     </span>
                 </template>
                 <template x-if="step !== 2 && isStep1Complete">
-                    <span class="tw:inline-flex tw:items-center tw:gap-1 tw:px-2.5 tw:py-0.5 tw:rounded-full tw:text-[10px] tw:font-semibold tw:bg-primary/10 tw:text-primary">
+                    <span class="tw:inline-flex tw:items-center tw:gap-1 tw:px-2.5 tw:py-0.5 tw:rounded-full tw:text-ui-xs tw:font-semibold tw:bg-primary/10 tw:text-primary">
                         <x-ui.icon name="arrow-right" size="xs" class="tw:w-3 tw:h-3" />
                         <span>{{ __('local_invoice.form.ready') }}</span>
                     </span>
                 </template>
                 <template x-if="step !== 2 && !isStep1Complete">
-                    <span class="tw:inline-flex tw:items-center tw:gap-1 tw:px-2.5 tw:py-0.5 tw:rounded-full tw:text-[10px] tw:font-medium tw:bg-surface-high tw:text-on-surface-variant">
+                    <span class="tw:inline-flex tw:items-center tw:gap-1 tw:px-2.5 tw:py-0.5 tw:rounded-full tw:text-ui-xs tw:font-semibold tw:bg-surface-high tw:text-on-surface-variant">
                         <x-ui.icon name="lock" size="xs" class="tw:w-3 tw:h-3" />
                         <span>{{ __('local_invoice.form.await_first_step') }}</span>
                     </span>
@@ -411,7 +411,7 @@
                 {{-- Tips Ekstraksi Otomatis --}}
                 <div class="tw:mt-4 tw:p-3.5 tw:rounded-ui-sm tw:bg-primary/5 tw:border tw:border-primary/20 tw:flex tw:items-start tw:gap-2.5">
                     <x-ui.icon name="lightbulb" size="sm" class="tw:text-primary tw:mt-0.5 tw:shrink-0" />
-                    <div class="tw:text-[11px] tw:text-on-surface-variant tw:leading-relaxed">
+                    <div class="tw:text-ui-xs tw:text-on-surface-variant tw:leading-relaxed">
                         <strong class="tw:text-on-surface tw:font-semibold">{{ __('local_invoice.form.extraction_title') }}</strong> {{ __('local_invoice.form.extraction_help', ['filename' => 'INV-2026-001.pdf']) }}
                     </div>
                 </div>
@@ -419,7 +419,7 @@
         </div>
 
         {{-- Sidebar Tahap 1: Checklist Kelengkapan Berkas & Tombol Lanjut --}}
-        <div class="tw:lg:col-span-4 tw:sticky" style="top: calc(var(--topbar-height, 56px) + 1.25rem)">
+        <div class="tw:min-w-0 tw:lg:col-span-4 tw:sticky" style="top: calc(var(--topbar-height, 56px) + 1.25rem)">
             <x-ui.card :title="__('common.final_review.document_completeness')">
                 <div class="tw:space-y-4">
                     <p class="tw:text-ui-xs tw:text-on-surface-variant tw:m-0">
@@ -430,62 +430,62 @@
                         {{-- Item Invoice Fisik --}}
                         <div class="tw:flex tw:items-center tw:justify-between tw:p-2.5 tw:rounded-ui-sm tw:border ui-motion" :class="hasInvoice ? 'tw:border-success/30 tw:bg-success/5' : 'tw:border-outline-variant tw:bg-surface-container'">
                             <div class="tw:flex tw:items-center tw:gap-2.5 tw:min-w-0">
-                                <div class="tw:w-5 tw:h-5 tw:rounded-full tw:flex tw:items-center tw:justify-center tw:shrink-0 ui-motion" :class="hasInvoice ? 'tw:bg-success tw:text-white' : 'tw:bg-error/20 tw:text-error'">
+                                <div class="tw:w-5 tw:h-5 tw:rounded-full tw:flex tw:items-center tw:justify-center tw:shrink-0 ui-motion" :class="hasInvoice ? 'tw:bg-success tw:text-on-success' : 'tw:bg-error/20 tw:text-error'">
                                     <template x-if="hasInvoice"><x-ui.icon name="check" size="sm" class="tw:w-3 tw:h-3" /></template>
                                     <template x-if="!hasInvoice"><x-ui.icon name="x" size="sm" class="tw:w-3 tw:h-3" /></template>
                                 </div>
-                                <span class="tw:font-medium tw:text-on-surface tw:truncate">{{ __('local_invoice.labels.physical_invoice') }}</span>
+                                <span class="tw:font-semibold tw:text-on-surface tw:truncate">{{ __('local_invoice.labels.physical_invoice') }}</span>
                             </div>
-                            <span class="tw:text-[10px] tw:font-bold tw:uppercase" :class="hasInvoice ? 'tw:text-success' : 'tw:text-error'" x-text="hasInvoice ? readyLabel : requiredLabel"></span>
+                            <span class="tw:text-ui-xs tw:font-bold tw:uppercase" :class="hasInvoice ? 'tw:text-success' : 'tw:text-error'" x-text="hasInvoice ? readyLabel : requiredLabel"></span>
                         </div>
 
                         {{-- Item Faktur Pajak --}}
                         <div class="tw:flex tw:items-center tw:justify-between tw:p-2.5 tw:rounded-ui-sm tw:border ui-motion" :class="isPkp && hasTax ? 'tw:border-success/30 tw:bg-success/5' : 'tw:border-outline-variant tw:bg-surface-container'">
                             <div class="tw:flex tw:items-center tw:gap-2.5 tw:min-w-0">
-                                <div class="tw:w-5 tw:h-5 tw:rounded-full tw:flex tw:items-center tw:justify-center tw:shrink-0 ui-motion" :class="isPkp && hasTax ? 'tw:bg-success tw:text-white' : (isPkp ? 'tw:bg-error/20 tw:text-error' : 'tw:bg-surface-high tw:text-on-surface-variant')">
+                                <div class="tw:w-5 tw:h-5 tw:rounded-full tw:flex tw:items-center tw:justify-center tw:shrink-0 ui-motion" :class="isPkp && hasTax ? 'tw:bg-success tw:text-on-success' : (isPkp ? 'tw:bg-error/20 tw:text-error' : 'tw:bg-surface-high tw:text-on-surface-variant')">
                                     <template x-if="isPkp && hasTax"><x-ui.icon name="check" size="sm" class="tw:w-3 tw:h-3" /></template>
                                     <template x-if="!isPkp || !hasTax"><x-ui.icon name="minus" size="sm" class="tw:w-3 tw:h-3" /></template>
                                 </div>
-                                <span class="tw:font-medium tw:text-on-surface tw:truncate">{{ __('local_invoice.labels.tax_invoice') }}</span>
+                                <span class="tw:font-semibold tw:text-on-surface tw:truncate">{{ __('local_invoice.labels.tax_invoice') }}</span>
                             </div>
-                            <span class="tw:text-[10px] tw:font-bold tw:uppercase" :class="isPkp ? (hasTax ? 'tw:text-success' : 'tw:text-error') : 'tw:text-on-surface-variant'" x-text="isPkp ? (hasTax ? readyLabel : requiredLabel) : notRequiredLabel"></span>
+                            <span class="tw:text-ui-xs tw:font-bold tw:uppercase" :class="isPkp ? (hasTax ? 'tw:text-success' : 'tw:text-error') : 'tw:text-on-surface-variant'" x-text="isPkp ? (hasTax ? readyLabel : requiredLabel) : notRequiredLabel"></span>
                         </div>
 
                         @foreach(['purchase_order' => 'hasPo', 'goods_receipt' => 'hasGr'] as $documentType => $state)
                             <div class="tw:flex tw:items-center tw:justify-between tw:gap-2 tw:p-2.5 tw:rounded-ui-sm tw:border ui-motion" :class="{{ $state }} ? 'tw:border-success/30 tw:bg-success/5' : 'tw:border-outline-variant tw:bg-surface-container'">
                                 <div class="tw:flex tw:items-center tw:gap-2.5 tw:min-w-0">
-                                    <div class="tw:w-5 tw:h-5 tw:rounded-full tw:flex tw:items-center tw:justify-center tw:shrink-0 ui-motion" :class="{{ $state }} ? 'tw:bg-success tw:text-white' : 'tw:bg-error/20 tw:text-error'">
+                                    <div class="tw:w-5 tw:h-5 tw:rounded-full tw:flex tw:items-center tw:justify-center tw:shrink-0 ui-motion" :class="{{ $state }} ? 'tw:bg-success tw:text-on-success' : 'tw:bg-error/20 tw:text-error'">
                                         <template x-if="{{ $state }}"><x-ui.icon name="check" size="sm" class="tw:w-3 tw:h-3" /></template>
                                         <template x-if="!{{ $state }}"><x-ui.icon name="minus" size="sm" class="tw:w-3 tw:h-3" /></template>
                                     </div>
-                                    <span class="tw:font-medium tw:text-on-surface tw:wrap-break-word">{{ __('local_invoice.labels.'.$documentType) }}</span>
+                                    <span class="tw:font-semibold tw:text-on-surface tw:wrap-break-word">{{ __('local_invoice.labels.'.$documentType) }}</span>
                                 </div>
-                                <span class="tw:text-[10px] tw:font-bold tw:uppercase tw:shrink-0" :class="{{ $state }} ? 'tw:text-success' : 'tw:text-error'" x-text="{{ $state }} ? readyLabel : requiredLabel"></span>
+                                <span class="tw:text-ui-xs tw:font-bold tw:uppercase tw:shrink-0" :class="{{ $state }} ? 'tw:text-success' : 'tw:text-error'" x-text="{{ $state }} ? readyLabel : requiredLabel"></span>
                             </div>
                         @endforeach
 
                         {{-- Item Surat Jalan --}}
                         <div class="tw:flex tw:items-center tw:justify-between tw:p-2.5 tw:rounded-ui-sm tw:border ui-motion" :class="hasDn ? 'tw:border-success/30 tw:bg-success/5' : 'tw:border-outline-variant tw:bg-surface-container'">
                             <div class="tw:flex tw:items-center tw:gap-2.5 tw:min-w-0">
-                                <div class="tw:w-5 tw:h-5 tw:rounded-full tw:flex tw:items-center tw:justify-center tw:shrink-0 ui-motion" :class="hasDn ? 'tw:bg-success tw:text-white' : (requiresDeliveryNote ? 'tw:bg-error/20 tw:text-error' : 'tw:bg-surface-high tw:text-on-surface-variant')">
+                                <div class="tw:w-5 tw:h-5 tw:rounded-full tw:flex tw:items-center tw:justify-center tw:shrink-0 ui-motion" :class="hasDn ? 'tw:bg-success tw:text-on-success' : (requiresDeliveryNote ? 'tw:bg-error/20 tw:text-error' : 'tw:bg-surface-high tw:text-on-surface-variant')">
                                     <template x-if="hasDn"><x-ui.icon name="check" size="sm" class="tw:w-3 tw:h-3" /></template>
                                     <template x-if="!hasDn"><x-ui.icon name="minus" size="sm" class="tw:w-3 tw:h-3" /></template>
                                 </div>
-                                <span class="tw:font-medium tw:text-on-surface tw:truncate">{{ __('local_invoice.labels.delivery_note') }} (DN)</span>
+                                <span class="tw:font-semibold tw:text-on-surface tw:truncate">{{ __('local_invoice.labels.delivery_note') }} (DN)</span>
                             </div>
-                            <span class="tw:text-[10px] tw:font-bold tw:uppercase" :class="hasDn ? 'tw:text-success' : (requiresDeliveryNote ? 'tw:text-error' : 'tw:text-on-surface-variant')" x-text="hasDn ? readyLabel : (requiresDeliveryNote ? requiredLabel : optionalLabel)"></span>
+                            <span class="tw:text-ui-xs tw:font-bold tw:uppercase" :class="hasDn ? 'tw:text-success' : (requiresDeliveryNote ? 'tw:text-error' : 'tw:text-on-surface-variant')" x-text="hasDn ? readyLabel : (requiresDeliveryNote ? requiredLabel : optionalLabel)"></span>
                         </div>
 
                         {{-- Item Dokumen Pendukung --}}
                         <div class="tw:flex tw:items-center tw:justify-between tw:p-2.5 tw:rounded-ui-sm tw:border ui-motion" :class="hasSupporting ? 'tw:border-success/30 tw:bg-success/5' : 'tw:border-outline-variant tw:bg-surface-container'">
                             <div class="tw:flex tw:items-center tw:gap-2.5 tw:min-w-0">
-                                <div class="tw:w-5 tw:h-5 tw:rounded-full tw:flex tw:items-center tw:justify-center tw:shrink-0 ui-motion" :class="hasSupporting ? 'tw:bg-success tw:text-white' : 'tw:bg-surface-high tw:text-on-surface-variant'">
+                                <div class="tw:w-5 tw:h-5 tw:rounded-full tw:flex tw:items-center tw:justify-center tw:shrink-0 ui-motion" :class="hasSupporting ? 'tw:bg-success tw:text-on-success' : 'tw:bg-surface-high tw:text-on-surface-variant'">
                                     <template x-if="hasSupporting"><x-ui.icon name="check" size="sm" class="tw:w-3 tw:h-3" /></template>
                                     <template x-if="!hasSupporting"><x-ui.icon name="minus" size="sm" class="tw:w-3 tw:h-3" /></template>
                                 </div>
-                                <span class="tw:font-medium tw:text-on-surface tw:truncate">{{ __('local_invoice.labels.supporting_documents') }}</span>
+                                <span class="tw:font-semibold tw:text-on-surface tw:truncate">{{ __('local_invoice.labels.supporting_documents') }}</span>
                             </div>
-                            <span class="tw:text-[10px] tw:font-medium tw:text-on-surface-variant" x-text="hasSupporting ? uploadedLabel : optionalLabel"></span>
+                            <span class="tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant" x-text="hasSupporting ? uploadedLabel : optionalLabel"></span>
                         </div>
                     </div>
 
@@ -517,7 +517,7 @@
                             <label for="invoice-number" class="ui-label tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:mb-0">
                                 {{ __('local_invoice.receipt.invoice_number') }} <span class="tw:text-error">*</span>
                             </label>
-                            <span id="invoice-autofill-badge" class="tw:hidden tw:items-center tw:gap-1 tw:text-[11px] tw:text-primary tw:font-semibold tw:bg-primary/10 tw:px-2 tw:py-0.5 tw:rounded-sm">
+                            <span id="invoice-autofill-badge" class="tw:hidden tw:items-center tw:gap-1 tw:text-ui-xs tw:text-primary tw:font-semibold tw:bg-primary/10 tw:px-2 tw:py-0.5 tw:rounded-sm">
                                 <x-ui.icon name="lightbulb" size="sm" class="tw:w-3 tw:h-3" />
                                 <span>{{ __('local_invoice.form.from_filename') }}</span>
                             </span>
@@ -531,7 +531,7 @@
                             @readonly(isset($invoice))
                             required
                         >
-                        <div id="invoice-autofill-filename" class="tw:text-[11px] tw:text-on-surface-variant tw:mt-1 tw:hidden">
+                        <div id="invoice-autofill-filename" class="tw:text-ui-xs tw:text-on-surface-variant tw:mt-1 tw:hidden">
                             {{ __('local_invoice.form.detected_number') }} <strong class="ui-tabular-nums tw:text-primary"></strong>
                         </div>
                     </div>
@@ -580,7 +580,7 @@
                     </div>
 
                     {{-- Baris Finansial 3 Kolom Berjajar: DPP, Skema PPN, dan Estimasi Nilai PPN --}}
-                    <div class="tw:sm:col-span-2 tw:grid tw:grid-cols-1 tw:md:grid-cols-3 tw:gap-3 tw:rounded-ui-md tw:border tw:border-outline-variant tw:bg-surface-container tw:p-3.5">
+                    <div class="tw:min-w-0 tw:sm:col-span-2 tw:grid tw:grid-cols-1 tw:md:grid-cols-3 tw:gap-3 tw:rounded-ui-md tw:border tw:border-outline-variant tw:bg-surface-container tw:p-3.5">
                         <div>
                             <label for="invoice-amount" class="ui-label tw:text-ui-xs tw:font-semibold tw:text-on-surface">
                                 {{ __('local_invoice.form.dpp_idr') }} <span class="tw:text-error">*</span>
@@ -598,8 +598,8 @@
                                     required
                                 >
                             </div>
-                            <div id="dpp-ceiling-error" class="tw:hidden tw:text-[11px] tw:text-error tw:font-medium tw:mt-1" role="alert"></div>
-                            <div class="tw:text-[11px] tw:text-on-surface-variant tw:mt-1">
+                            <div id="dpp-ceiling-error" class="tw:hidden tw:text-ui-xs tw:text-error tw:font-semibold tw:mt-1" role="alert"></div>
+                            <div class="tw:text-ui-xs tw:text-on-surface-variant tw:mt-1">
                                 {{ __('local_invoice.form.dpp_help') }}
                             </div>
                         </div>
@@ -615,7 +615,7 @@
                                 @endif
                                 <option value="0%" @selected($selectedPpnScheme === '0%')>{{ __('local_invoice.closure.ppn_exempt') }}</option>
                             </select>
-                            <div class="tw:text-[11px] tw:text-on-surface-variant tw:mt-1">
+                            <div class="tw:text-ui-xs tw:text-on-surface-variant tw:mt-1">
                                 {{ $isPkp ? __('local_invoice.form.ppn_scheme_help') : __('local_invoice.validation.non_pkp_no_ppn') }}
                             </div>
                         </div>
@@ -635,7 +635,7 @@
                                 @readonly(!$isPkp)
                                 placeholder="0.00"
                             >
-                            <div class="tw:text-[11px] tw:text-on-surface-variant tw:mt-1">
+                            <div class="tw:text-ui-xs tw:text-on-surface-variant tw:mt-1">
                                 {{ __('local_invoice.form.tax_calculation_help') }}
                             </div>
                         </div>
@@ -643,7 +643,7 @@
 
                     {{-- Form Auto-Format Nomor Faktur Pajak (Coretax 17 Digit / e-Faktur 16 Digit) --}}
                     <div
-                        class="tw:sm:col-span-2"
+                        class="tw:min-w-0 tw:sm:col-span-2"
                         x-data="{
                             value: @js(old('tax_invoice_number', $invoice->tax_invoice_number ?? '')),
                             rawDigits: '',
@@ -718,7 +718,7 @@
                                 <label for="tax_invoice_number" class="ui-label tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:mb-0">
                                     {{ __('local_invoice.form.tax_number') }} @if($isPkp) <span class="tw:text-error">*</span> @else <span class="tw:text-on-surface-variant tw:font-normal">{{ __('local_invoice.form.non_pkp_optional') }}</span> @endif
                                 </label>
-                                <span id="tax-autofill-badge" class="tw:hidden tw:items-center tw:gap-1 tw:text-[11px] tw:text-primary tw:font-semibold tw:bg-primary/10 tw:px-2 tw:py-0.5 tw:rounded-sm">
+                                <span id="tax-autofill-badge" class="tw:hidden tw:items-center tw:gap-1 tw:text-ui-xs tw:text-primary tw:font-semibold tw:bg-primary/10 tw:px-2 tw:py-0.5 tw:rounded-sm">
                                     <x-ui.icon name="lightbulb" size="sm" class="tw:w-3 tw:h-3" />
                                     <span>{{ __('local_invoice.form.from_filename') }}</span>
                                 </span>
@@ -774,7 +774,7 @@
                     </div>
 
                     {{-- Jadwal Penyerahan Dokumen Fisik (Wajib Hari Rabu) --}}
-                    <div class="tw:sm:col-span-2">
+                    <div class="tw:min-w-0 tw:sm:col-span-2">
                         <x-ui.date-picker
                             id="local_invoice_delivery_date"
                             name="scheduled_physical_delivery_date"
@@ -787,7 +787,7 @@
                         />
                     </div>
                     @if($isCancelledRecovery)
-                        <div class="tw:sm:col-span-2 tw:rounded-ui-md tw:border tw:border-outline-variant tw:bg-surface-container tw:p-4 ui-density-list">
+                        <div class="tw:min-w-0 tw:sm:col-span-2 tw:rounded-ui-md tw:border tw:border-outline-variant tw:bg-surface-container tw:p-4 ui-density-list">
                             <div data-async-error-anchor>
                                 <label for="invoiceRecoveryReason" class="ui-label tw:text-ui-xs tw:font-semibold">{{ __('local_invoice.recovery.reason') }} <span class="tw:text-error" aria-hidden="true">*</span></label>
                                 <textarea id="invoiceRecoveryReason" name="recovery_reason" maxlength="1000" rows="3" required class="ui-textarea @error('recovery_reason') is-invalid @enderror" aria-describedby="invoiceRecoveryReasonHint{{ $errors->has('recovery_reason') ? ' invoiceRecoveryReasonError' : '' }}" @error('recovery_reason') aria-invalid="true" @enderror>{{ old('recovery_reason') }}</textarea>
@@ -808,7 +808,7 @@
         </div>
 
         {{-- Sidebar Tahap 2: Ringkasan Finansial & Tombol Submit --}}
-        <div class="tw:lg:col-span-4 tw:sticky" style="top: calc(var(--topbar-height, 56px) + 1.25rem)">
+        <div class="tw:min-w-0 tw:lg:col-span-4 tw:sticky" style="top: calc(var(--topbar-height, 56px) + 1.25rem)">
             <x-ui.card :title="__('ga.labels.claim_summary')">
                 <div class="tw:space-y-4">
                     {{-- Financial Breakdown --}}
@@ -835,7 +835,7 @@
                     <div class="tw:rounded-ui-md tw:border tw:border-outline-variant tw:bg-surface-container tw:p-3.5 tw:space-y-2.5">
                         <div class="tw:flex tw:items-center tw:justify-between tw:text-ui-xs">
                             <span class="tw:text-on-surface-variant">{{ __('terms.goods_receipt') }}:</span>
-                            <span id="summary-gr-count" class="tw:font-medium tw:text-on-surface">{{ __('local_invoice.interaction.document_count', ['count' => 0]) }}</span>
+                            <span id="summary-gr-count" class="tw:font-semibold tw:text-on-surface">{{ __('local_invoice.interaction.document_count', ['count' => 0]) }}</span>
                         </div>
                         <div class="tw:flex tw:items-center tw:justify-between tw:text-ui-xs">
                             <span class="tw:text-on-surface-variant">{{ __('local_procurement.labels.qty_by_uom') }}:</span>
@@ -852,12 +852,12 @@
                         <div class="tw:flex tw:items-center tw:justify-between tw:text-ui-xs tw:border-t tw:border-outline-variant tw:pt-2">
                             <span class="tw:text-on-surface-variant">{{ __('local_procurement.labels.ceiling_status') }}:</span>
                             <span id="summary-match-chip">
-                                <span class="tw:inline-flex tw:items-center tw:gap-1 tw:px-2 tw:py-0.5 tw:rounded-sm tw:text-[11px] tw:font-medium tw:bg-surface-high tw:text-on-surface-variant">
+                                <span class="tw:inline-flex tw:items-center tw:gap-1 tw:px-2 tw:py-0.5 tw:rounded-sm tw:text-ui-xs tw:font-semibold tw:bg-surface-high tw:text-on-surface-variant">
                                     {{ __('local_invoice.form.await_po') }}
                                 </span>
                             </span>
                         </div>
-                        <div id="summary-diff-container" class="tw:hidden tw:text-[11px] tw:text-error tw:pt-1.5 tw:border-t tw:border-outline-variant">
+                        <div id="summary-diff-container" class="tw:hidden tw:text-ui-xs tw:text-error tw:pt-1.5 tw:border-t tw:border-outline-variant">
                             <div class="tw:flex tw:items-center tw:justify-between">
                                 <span>{{ __('local_invoice.interaction.ceiling_exceeded') }}:</span>
                                 <strong id="summary-diff-amount" class="ui-tabular-nums">Rp 0</strong>
@@ -867,7 +867,7 @@
 
                     {{-- Petunjuk Pengajuan --}}
                     <div class="tw:text-ui-xs tw:text-on-surface-variant tw:pt-1">
-                        <p class="tw:text-[11px] tw:text-on-surface-variant tw:m-0 tw:leading-relaxed">
+                        <p class="tw:text-ui-xs tw:text-on-surface-variant tw:m-0 tw:leading-relaxed">
                             {{ __('local_invoice.form.ceiling_help') }}
                         </p>
                     </div>
@@ -1087,7 +1087,7 @@ function updateValidation() {
         const exceededMsg = @js(__('local_invoice.interaction.dpp_exceeded')).replace(':amount', () => rupiah(dpp)).replace(':ceiling', () => rupiah(poCeiling));
 
         if (summaryMatchChip) {
-            summaryMatchChip.innerHTML = '<span class="tw:inline-flex tw:items-center tw:gap-1 tw:px-2 tw:py-0.5 tw:rounded-sm tw:text-[11px] tw:font-semibold tw:bg-error/10 tw:text-error"><svg class="tw:w-3 tw:h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path></svg></span>';
+            summaryMatchChip.innerHTML = '<span class="tw:inline-flex tw:items-center tw:gap-1 tw:px-2 tw:py-0.5 tw:rounded-sm tw:text-ui-xs tw:font-semibold tw:bg-error/10 tw:text-error"><svg class="tw:w-3 tw:h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path></svg></span>';
             summaryMatchChip.firstElementChild.append(document.createTextNode(@js(__('local_invoice.interaction.ceiling_exceeded'))));
         }
         if (summaryDiffContainer) {
@@ -1127,13 +1127,13 @@ function updateValidation() {
 
         if (summaryMatchChip) {
             if (!poVal) {
-                summaryMatchChip.innerHTML = '<span class="tw:inline-flex tw:items-center tw:gap-1 tw:px-2 tw:py-0.5 tw:rounded-sm tw:text-[11px] tw:font-medium tw:bg-surface-high tw:text-on-surface-variant"></span>';
+                summaryMatchChip.innerHTML = '<span class="tw:inline-flex tw:items-center tw:gap-1 tw:px-2 tw:py-0.5 tw:rounded-sm tw:text-ui-xs tw:font-semibold tw:bg-surface-high tw:text-on-surface-variant"></span>';
                 summaryMatchChip.firstElementChild.textContent = @js(__('local_invoice.interaction.select_po'));
             } else if (dpp <= 0) {
-                summaryMatchChip.innerHTML = '<span class="tw:inline-flex tw:items-center tw:gap-1 tw:px-2 tw:py-0.5 tw:rounded-sm tw:text-[11px] tw:font-medium tw:bg-surface-high tw:text-on-surface-variant"></span>';
+                summaryMatchChip.innerHTML = '<span class="tw:inline-flex tw:items-center tw:gap-1 tw:px-2 tw:py-0.5 tw:rounded-sm tw:text-ui-xs tw:font-semibold tw:bg-surface-high tw:text-on-surface-variant"></span>';
                 summaryMatchChip.firstElementChild.textContent = @js(__('local_invoice.interaction.input_dpp'));
             } else {
-                summaryMatchChip.innerHTML = '<span class="tw:inline-flex tw:items-center tw:gap-1 tw:px-2 tw:py-0.5 tw:rounded-sm tw:text-[11px] tw:font-semibold tw:bg-success/10 tw:text-success"><svg class="tw:w-3 tw:h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg></span>';
+                summaryMatchChip.innerHTML = '<span class="tw:inline-flex tw:items-center tw:gap-1 tw:px-2 tw:py-0.5 tw:rounded-sm tw:text-ui-xs tw:font-semibold tw:bg-success/10 tw:text-success"><svg class="tw:w-3 tw:h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg></span>';
                 summaryMatchChip.firstElementChild.append(document.createTextNode(@js(__('local_invoice.interaction.ceiling_valid'))));
             }
         }

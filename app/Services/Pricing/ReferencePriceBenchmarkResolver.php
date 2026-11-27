@@ -27,6 +27,8 @@ class ReferencePriceBenchmarkResolver
         ?int $benchmarkYear = null,
         DateTimeInterface|string|null $historyAsOfAt = null,
         array $excludePoIds = [],
+        ?int $benchmarkMonth = null,
+        bool $allYears = false,
     ): ReferencePriceBenchmarkResult {
         $targetCurrency = strtoupper(trim($targetCurrency));
 
@@ -37,6 +39,8 @@ class ReferencePriceBenchmarkResolver
             benchmarkYear: $benchmarkYear,
             historyAsOfAt: $historyAsOfAt,
             excludePoIds: $excludePoIds,
+            benchmarkMonth: $benchmarkMonth,
+            allYears: $allYears,
         );
 
         // 2. Optional Supplier Alternative benchmark
@@ -54,6 +58,8 @@ class ReferencePriceBenchmarkResolver
                     benchmarkYear: $benchmarkYear,
                     historyAsOfAt: $historyAsOfAt,
                     excludePoIds: $excludePoIds,
+                    benchmarkMonth: $benchmarkMonth,
+                    allYears: $allYears,
                 );
             }
         }

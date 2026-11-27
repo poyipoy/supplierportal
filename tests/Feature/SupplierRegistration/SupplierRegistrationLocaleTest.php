@@ -148,4 +148,97 @@ class SupplierRegistrationLocaleTest extends TestCase
         $response->assertSessionHas('locale', 'id');
         $this->assertSame('id', $user->fresh()->preference?->locale);
     }
+
+    public function test_authenticated_json_locale_switch_with_include_shell_returns_script_free_chrome_and_workspace_config(): void
+    {
+        config()->set('ui.workspace_shell.enabled', true);
+
+        $user = User::factory()->create([
+            'role' => 'purchasing',
+            'account_status' => User::ACCOUNT_STATUS_ACTIVE,
+            'is_active' => true,
+        ]);
+
+        $response = $this->actingAs($user)->postJson(route('locale.switch'), [
+            'locale' => 'id',
+            'include_shell' => true,
+        ]);
+
+        $response->assertOk()
+            ->assertJsonPath('status', 'success')
+            ->assertJsonPath('locale', 'id')
+            ->assertJsonPath('pagination_label', __('pagination.navigation', [], 'id'))
+            ->assertJsonStructure([
+                'shell_html',
+                'workspace_config' => [
+                    'i18n',
+                    'menuPathTitles',
+                    'contextLinks',
+                    'quickAccessPaths',
+                    'indexPaths',
+                    'shortcutsSession',
+                ],
+            ]);
+
+        $cacheControl = strtolower((string) $response->headers->get('Cache-Control'));
+        $this->assertStringContainsString('no-store', $cacheControl);
+        $this->assertStringContainsString('private', $cacheControl);
+
+        $shellHtml = (string) $response->json('shell_html');
+        $this->assertStringContainsString('id="sidebar"', $shellHtml);
+        $this->assertStringContainsString('top-navbar', $shellHtml);
+        $this->assertStringContainsString('workspace-sessionbar', $shellHtml);
+        $this->assertStringContainsString('workspace-panel-shortcuts', $shellHtml);
+        $this->assertStringNotContainsString('<script', strtolower($shellHtml));
+        $this->assertStringNotContainsString('<style', strtolower($shellHtml));
+        $this->assertSame(__('navigation.workspace_shell.shortcuts', [], 'id'), $response->json('workspace_config.i18n.shortcuts'));
+
+        config()->set('ui.workspace_shell.enabled', false);
+        $disabledResponse = $this->actingAs($user)->postJson(route('locale.switch'), [
+            'locale' => 'en',
+            'include_shell' => true,
+        ]);
+        $disabledResponse->assertOk()
+            ->assertJsonMissingPath('shell_html')
+            ->assertJsonMissingPath('workspace_config');
+    }
+
+    public function test_guest_json_locale_switch_never_receives_shell_html_or_workspace_config(): void
+    {
+        $response = $this->postJson(route('locale.switch'), [
+            'locale' => 'id',
+            'include_shell' => true,
+        ]);
+
+        $response->assertOk()
+            ->assertJsonPath('status', 'success')
+            ->assertJsonPath('locale', 'id')
+            ->assertJsonPath('pagination_label', __('pagination.navigation', [], 'id'))
+            ->assertJsonMissingPath('shell_html')
+            ->assertJsonMissingPath('workspace_config');
+
+        $cacheControl = strtolower((string) $response->headers->get('Cache-Control'));
+        $this->assertStringContainsString('no-store', $cacheControl);
+        $this->assertStringContainsString('private', $cacheControl);
+    }
+
+    public function test_locale_switch_route_is_throttled_and_same_locale_post_is_idempotent(): void
+    {
+        $route = app('router')->getRoutes()->getByName('locale.switch');
+        $this->assertNotNull($route);
+        $this->assertContains('throttle:60,1', $route->gatherMiddleware());
+
+        $user = User::factory()->create([
+            'role' => 'purchasing',
+            'account_status' => User::ACCOUNT_STATUS_ACTIVE,
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($user)->postJson(route('locale.switch'), ['locale' => 'id'])->assertOk();
+        $revisionAfterFirst = (int) $user->fresh()->preference?->revision;
+        $this->assertGreaterThan(0, $revisionAfterFirst);
+
+        $this->actingAs($user)->postJson(route('locale.switch'), ['locale' => 'id'])->assertOk();
+        $this->assertSame($revisionAfterFirst, (int) $user->fresh()->preference?->revision);
+    }
 }

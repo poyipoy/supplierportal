@@ -47,11 +47,11 @@
         data-login-error-alert
         role="alert"
         hidden
-        class="tw:rounded-ui-sm tw:border tw:border-error/30 tw:bg-error/10 tw:px-3.5 tw:py-2.5 tw:text-ui-sm tw:font-medium tw:text-error"
+        class="tw:rounded-ui-sm tw:border tw:border-error/30 tw:bg-error/10 tw:px-3.5 tw:py-2.5 tw:text-ui-sm tw:font-semibold tw:text-error"
     ></div>
 
     <div class="tw:grid tw:gap-1.5">
-        <label for="email" class="tw:text-ui-sm tw:font-medium tw:text-on-surface">{{ __('auth.login.email') }}</label>
+        <label for="email" class="tw:text-ui-sm tw:font-semibold tw:text-on-surface">{{ __('auth.login.email') }}</label>
         <div class="tw:relative">
             <div class="tw:absolute tw:inset-y-0 tw:start-0 tw:flex tw:items-center tw:pl-3 tw:pointer-events-none tw:text-on-surface-variant">
                 <x-ui.icon name="mail" />
@@ -78,7 +78,7 @@
         </div>
         <p
             id="email-error"
-            class="tw:m-0 tw:text-ui-xs tw:font-medium tw:text-error"
+            class="tw:m-0 tw:text-ui-xs tw:font-semibold tw:text-error"
             :role="(emailError || {{ $errors->has('email') ? 'true' : 'false' }}) ? 'alert' : null"
             x-show="emailError || {{ $errors->has('email') ? 'true' : 'false' }}"
             {{ $errors->has('email') ? '' : 'x-cloak style="display: none;"' }}
@@ -91,7 +91,7 @@
 
     <div class="tw:grid tw:gap-1.5">
         <div class="tw:flex tw:items-center tw:justify-between tw:gap-3">
-            <label for="password" class="tw:text-ui-sm tw:font-medium tw:text-on-surface">{{ __('auth.login.password') }}</label>
+            <label for="password" class="tw:text-ui-sm tw:font-semibold tw:text-on-surface">{{ __('auth.login.password') }}</label>
             <a href="{{ route('password.request') }}" class="ui-focus-ring tw:rounded-ui-xs tw:text-ui-xs tw:font-semibold tw:text-primary tw:no-underline tw:hover:underline">{{ __('auth.login.reset') }}</a>
         </div>
         <div class="tw:relative">
@@ -123,7 +123,7 @@
         </div>
         <p
             id="password-error"
-            class="tw:m-0 tw:text-ui-xs tw:font-medium tw:text-error"
+            class="tw:m-0 tw:text-ui-xs tw:font-semibold tw:text-error"
             :role="(passwordError || {{ $errors->has('password') ? 'true' : 'false' }}) ? 'alert' : null"
             x-show="passwordError || {{ $errors->has('password') ? 'true' : 'false' }}"
             {{ $errors->has('password') ? '' : 'x-cloak style="display: none;"' }}
@@ -136,13 +136,13 @@
 
     <label class="tw:flex tw:items-center tw:gap-2 tw:text-ui-sm tw:cursor-pointer" for="remember">
         <input type="checkbox" name="remember" value="1" class="ui-check tw:mt-0" id="remember" {{ old('remember') ? 'checked' : '' }}>
-        <span class="tw:font-medium tw:text-on-surface">{{ __('auth.login.remember_device') }}</span>
+        <span class="tw:font-semibold tw:text-on-surface">{{ __('auth.login.remember_device') }}</span>
     </label>
 
     @if (isset($turnstileRequired) && $turnstileRequired && isset($turnstileSiteKey) && $turnstileSiteKey)
         <div>
             <div class="cf-turnstile" data-sitekey="{{ $turnstileSiteKey }}"></div>
-            @error('cf-turnstile-response')<p class="tw:m-0 tw:mt-1 tw:text-ui-xs tw:font-medium tw:text-error" role="alert">{{ $message }}</p>@enderror
+            @error('cf-turnstile-response')<p class="tw:m-0 tw:mt-1 tw:text-ui-xs tw:font-semibold tw:text-error" role="alert">{{ $message }}</p>@enderror
         </div>
     @endif
 

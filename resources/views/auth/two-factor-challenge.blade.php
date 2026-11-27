@@ -15,7 +15,7 @@
         data-login-error-alert
         role="alert"
         hidden
-        class="tw:rounded-ui-sm tw:border tw:border-error/30 tw:bg-error/10 tw:px-3.5 tw:py-2.5 tw:text-ui-sm tw:font-medium tw:text-error"
+        class="tw:rounded-ui-sm tw:border tw:border-error/30 tw:bg-error/10 tw:px-3.5 tw:py-2.5 tw:text-ui-sm tw:font-semibold tw:text-error"
     ></div>
     <x-ui.input name="code" id="code" type="text" :label="__('security.authentication_code')" inputmode="text" autocomplete="one-time-code" maxlength="32" class="tw:[&_input]:text-center tw:[&_input]:font-mono tw:[&_input]:text-ui-lg tw:[&_input]:tracking-[0.25em]" required autofocus />
 

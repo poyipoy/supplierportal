@@ -3,7 +3,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <div>
-                    <h6 class="modal-title tw:font-bold" id="prImportModalLabel">{{ __('purchasing.copy.import_pr_materials_from_spreadsheet') }}</h6>
+                    <h2 class="modal-title tw:text-ui-lg tw:font-bold" id="prImportModalLabel">{{ __('purchasing.copy.import_pr_materials_from_spreadsheet') }}</h2>
                     <div class="tw:text-on-surface-variant tw:text-ui-xs tw:mt-0.5">{{ __('purchasing.copy.validate_your_excel_spreadsheet_xlsx_xls_csv_before_inserting_into_the_requisition') }}</div>
                 </div>
                 <button type="button" class="btn-close" data-ui-modal-close aria-label="{{ __('purchasing.copy.close') }}"></button>
@@ -29,13 +29,13 @@
                 <div id="prImportResult" class="tw:hidden tw:mt-4">
                     <div id="prImportSummary" class="tw:mb-3 tw:rounded-ui-sm tw:border tw:border-outline tw:bg-surface-container tw:px-3 tw:py-2 tw:text-ui-xs tw:font-semibold tw:text-on-surface" role="status"></div>
 
-                    <div id="prImportWarningsPanel" class="tw:hidden tw:rounded-ui-sm tw:border-s-4 tw:border-warning tw:bg-warning-container tw:px-3 tw:py-2.5 tw:text-ui-xs tw:text-warning-container-foreground" role="status">
-                        <div class="tw:font-bold tw:mb-1 tw:flex tw:items-center tw:gap-1.5"><x-ui.icon name="triangle-alert" size="sm" /> {{ __('purchasing.copy.warnings') }}</div>
+                    <div id="prImportWarningsPanel" class="ui-alert tw:hidden tw:rounded-ui-md tw:border tw:border-warning/40 tw:bg-warning-container tw:px-3 tw:py-2.5 tw:text-ui-xs tw:text-warning-container-foreground" role="status">
+                        <div class="tw:font-bold tw:mb-1 tw:flex tw:items-center tw:gap-1.5"><x-ui.icon name="triangle-alert" size="sm" class="tw:shrink-0 tw:text-warning" /> {{ __('purchasing.copy.warnings') }}</div>
                         <ul id="prImportWarnings" class="tw:mb-0 tw:ps-3"></ul>
                     </div>
 
-                    <div id="prImportErrorsPanel" class="tw:hidden tw:rounded-ui-sm tw:border-s-4 tw:border-error tw:bg-error-container tw:px-3 tw:py-2.5 tw:text-ui-xs tw:text-error-container-foreground" role="alert">
-                        <div class="tw:font-bold tw:mb-1 tw:flex tw:items-center tw:gap-1.5"><x-ui.icon name="circle-x" size="sm" /> {{ __('purchasing.copy.import_errors') }}</div>
+                    <div id="prImportErrorsPanel" class="ui-alert tw:hidden tw:rounded-ui-md tw:border tw:border-error/40 tw:bg-error-container tw:px-3 tw:py-2.5 tw:text-ui-xs tw:text-error-container-foreground" role="alert">
+                        <div class="tw:font-bold tw:mb-1 tw:flex tw:items-center tw:gap-1.5"><x-ui.icon name="circle-x" size="sm" class="tw:shrink-0 tw:text-error" /> {{ __('purchasing.copy.import_errors') }}</div>
                         <ul id="prImportErrors" class="tw:mb-0 tw:ps-3"></ul>
                     </div>
 

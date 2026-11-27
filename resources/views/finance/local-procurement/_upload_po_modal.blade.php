@@ -3,9 +3,9 @@
         <div class="modal-content">
             <div class="modal-header tw:border-b tw:border-outline-variant">
                 <div>
-                    <h6 class="modal-title tw:font-bold tw:text-on-surface" id="uploadPoDocumentModalLabel">
+                    <h2 class="modal-title tw:text-ui-lg tw:font-bold tw:text-on-surface" id="uploadPoDocumentModalLabel">
                         {{ __('local_procurement.actions.upload_po_full') }}
-                    </h6>
+                    </h2>
                     <div class="tw:text-on-surface-variant tw:text-ui-xs tw:mt-0.5">
                         {{ __('local_procurement.documents.upload_help') }}
                     </div>
@@ -36,7 +36,7 @@
                             @endforeach
                         </select>
                         @error('supplier_id')
-                            <div class="ui-field-error tw:text-[11px]">{{ $message }}</div>
+                            <div class="ui-field-error tw:text-ui-xs">{{ $message }}</div>
                         @enderror
                     </div>
 
@@ -54,7 +54,7 @@
                     </div>
 
                     {{-- Information Box --}}
-                    <div class="tw:rounded-ui-md tw:border tw:border-outline-variant tw:bg-surface-container tw:p-3 tw:text-[11px] tw:text-on-surface-variant tw:leading-relaxed">
+                    <div class="tw:rounded-ui-md tw:border tw:border-outline-variant tw:bg-surface-container tw:p-3 tw:text-ui-xs tw:text-on-surface-variant tw:leading-relaxed">
                         <div class="tw:font-bold tw:text-on-surface tw:mb-1 tw:flex tw:items-center tw:gap-1.5">
                             <x-ui.icon name="info" size="xs" />
                             <span>{{ __('local_procurement.surface.naming') }}</span>

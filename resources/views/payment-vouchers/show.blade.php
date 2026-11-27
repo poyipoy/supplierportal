@@ -70,40 +70,40 @@
             <x-ui.card :title="$voucher->payee_name_snapshot" :description="PaymentVoucher::payeeTypeLabel($voucher->payee_type)">
                 <dl class="tw:m-0 tw:grid tw:grid-cols-1 tw:sm:grid-cols-2 tw:gap-x-6 tw:gap-y-4 tw:text-ui-sm">
                     <div>
-                        <dt class="tw:text-ui-xs tw:font-medium tw:text-on-surface-variant">{{ __('payment_voucher.labels.department') }}</dt>
+                        <dt class="tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant">{{ __('payment_voucher.labels.department') }}</dt>
                         <dd class="tw:m-0 tw:mt-0.5 tw:font-semibold tw:text-on-surface">{{ PaymentVoucher::departmentLabel($voucher->source_department) }}</dd>
                     </div>
                     <div>
-                        <dt class="tw:text-ui-xs tw:font-medium tw:text-on-surface-variant">{{ __('payment_voucher.labels.voucher_date') }}</dt>
+                        <dt class="tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant">{{ __('payment_voucher.labels.voucher_date') }}</dt>
                         <dd class="tw:m-0 tw:mt-0.5 tw:font-semibold tw:text-on-surface">{{ $regionalFormatter->date($voucher->voucher_date, 'human') ?? '-' }}</dd>
                     </div>
                     <div>
-                        <dt class="tw:text-ui-xs tw:font-medium tw:text-on-surface-variant">{{ __('payment_voucher.labels.payment_method') }}</dt>
+                        <dt class="tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant">{{ __('payment_voucher.labels.payment_method') }}</dt>
                         <dd class="tw:m-0 tw:mt-0.5 tw:font-semibold tw:text-on-surface">
                             {{ $voucher->isBankMethod() ? __('payment_voucher.methods.bank') : __('payment_voucher.methods.kas') }}
                         </dd>
                     </div>
                     <div>
-                        <dt class="tw:text-ui-xs tw:font-medium tw:text-on-surface-variant">{{ __('payment_voucher.fields.reference_number') }}</dt>
-                        <dd class="tw:m-0 tw:mt-0.5 ui-tabular-nums tw:font-medium tw:text-on-surface">{{ $voucher->reference_number ?: '-' }}</dd>
+                        <dt class="tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant">{{ __('payment_voucher.fields.reference_number') }}</dt>
+                        <dd class="tw:m-0 tw:mt-0.5 ui-tabular-nums tw:font-semibold tw:text-on-surface">{{ $voucher->reference_number ?: '-' }}</dd>
                     </div>
                     <div>
-                        <dt class="tw:text-ui-xs tw:font-medium tw:text-on-surface-variant">NPWP</dt>
+                        <dt class="tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant">NPWP</dt>
                         <dd class="tw:m-0 tw:mt-0.5 ui-tabular-nums tw:text-on-surface">{{ $voucher->npwp_snapshot ?: '-' }}</dd>
                     </div>
                     @if($voucher->payee_department_snapshot)
                         <div>
-                            <dt class="tw:text-ui-xs tw:font-medium tw:text-on-surface-variant">{{ __('payment_voucher.labels.department') }} ({{ __('payment_voucher.payee_types.employee') }})</dt>
+                            <dt class="tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant">{{ __('payment_voucher.labels.department') }} ({{ __('payment_voucher.payee_types.employee') }})</dt>
                             <dd class="tw:m-0 tw:mt-0.5 tw:text-on-surface">{{ $voucher->payee_department_snapshot }}</dd>
                         </div>
                     @endif
                     <div class="tw:sm:col-span-2 tw:border-t tw:border-outline-variant tw:pt-3">
-                        <dt class="tw:text-ui-xs tw:font-medium tw:text-on-surface-variant">{{ __('payment_voucher.fields.description') }}</dt>
+                        <dt class="tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant">{{ __('payment_voucher.fields.description') }}</dt>
                         <dd class="tw:m-0 tw:mt-1 tw:text-on-surface tw:whitespace-pre-line">{{ $voucher->description }}</dd>
                     </div>
                     @if($voucher->notes)
                         <div class="tw:sm:col-span-2">
-                            <dt class="tw:text-ui-xs tw:font-medium tw:text-on-surface-variant">{{ __('payment_voucher.fields.notes') }}</dt>
+                            <dt class="tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant">{{ __('payment_voucher.fields.notes') }}</dt>
                             <dd class="tw:m-0 tw:mt-1 tw:text-ui-xs tw:text-on-surface-variant tw:whitespace-pre-line">{{ $voucher->notes }}</dd>
                         </div>
                     @endif
@@ -145,7 +145,7 @@
                     </div>
 
                     <div class="tw:rounded-ui-sm tw:bg-surface-container tw:p-3 tw:text-ui-xs">
-                        <span class="tw:font-medium tw:text-on-surface-variant">{{ __('payment_voucher.labels.amount_words') }}:</span>
+                        <span class="tw:font-semibold tw:text-on-surface-variant">{{ __('payment_voucher.labels.amount_words') }}:</span>
                         <span class="tw:font-semibold tw:text-on-surface">{{ $voucher->terbilang_snapshot }}</span>
                     </div>
                 </div>
@@ -167,7 +167,7 @@
                         </div>
                         <div>
                             <dt class="tw:text-ui-xs tw:text-on-surface-variant">{{ __('payment_voucher.fields.account_holder') }}</dt>
-                            <dd class="tw:m-0 tw:mt-0.5 tw:font-medium tw:text-on-surface">{{ $voucher->bank_account_holder_snapshot }}</dd>
+                            <dd class="tw:m-0 tw:mt-0.5 tw:font-semibold tw:text-on-surface">{{ $voucher->bank_account_holder_snapshot }}</dd>
                         </div>
                     </dl>
                 @else
@@ -189,7 +189,7 @@
                                     <div class="tw:truncate tw:text-ui-xs tw:font-semibold tw:text-on-surface">
                                         {{ $document->original_filename ?: basename($document->file_path) }}
                                     </div>
-                                    <div class="tw:text-[11px] tw:text-on-surface-variant">
+                                    <div class="tw:text-ui-xs tw:text-on-surface-variant">
                                         {{ number_format(((int) $document->file_size) / 1024, 1) }} KB
                                     </div>
                                 </div>

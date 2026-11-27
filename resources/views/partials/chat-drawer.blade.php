@@ -8,7 +8,7 @@
                         <x-ui.icon name="arrow-left" />
                     </button>
                     <div class="tw:flex-1 tw:min-w-0 tw:overflow-hidden">
-                        <h6 class="offcanvas-title tw:m-0 tw:truncate tw:text-ui-sm tw:font-semibold" id="chatDrawerTitle">{{ __('common.chat.title') }}</h6>
+                        <h2 class="offcanvas-title tw:m-0 tw:truncate tw:text-ui-base tw:font-semibold tw:text-on-surface" id="chatDrawerTitle">{{ __('common.chat.title') }}</h2>
                         <span class="tw:block tw:truncate tw:text-ui-xs tw:text-on-surface-variant" id="chatDrawerSubtitle">{{ __('common.chat.list') }}</span>
                     </div>
                 </div>
@@ -60,7 +60,7 @@
                         <form id="chatDrawerForm" data-managed-submit>
                             <div class="chat-composer-tools tw:flex tw:items-center tw:justify-between tw:gap-2 tw:mb-2">
                                 <div class="dropdown tw:hidden" id="chatDrawerTemplates">
-                                    <button class="ui-focus-ring tw:inline-flex tw:h-7 tw:items-center tw:gap-1 tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-transparent tw:px-2.5 tw:text-ui-xs tw:font-medium tw:text-on-surface tw:hover:bg-surface-low" type="button" data-ui-dropdown-trigger popovertarget="chatDrawerTemplateMenu" aria-controls="chatDrawerTemplateMenu" aria-expanded="false">
+                                    <button class="ui-focus-ring tw:inline-flex tw:h-7 tw:items-center tw:gap-1 tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-transparent tw:px-2.5 tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:hover:bg-surface-low" type="button" data-ui-dropdown-trigger popovertarget="chatDrawerTemplateMenu" aria-controls="chatDrawerTemplateMenu" aria-expanded="false">
                                         <x-ui.icon name="zap" /> {{ __('common.chat.template') }}
                                     </button>
                                     <div class="dropdown-menu tw:p-2 chat-template-menu" id="chatDrawerTemplateMenu" popover="auto" data-ui-dropdown-menu></div>
@@ -388,7 +388,7 @@
                             listEl.innerHTML = `
                                 <div class="tw:text-center tw:text-on-surface-variant tw:py-12 tw:px-4">
                                     <x-ui.icon name="message-square-text" size="lg" />
-                                    <div class="tw:font-medium tw:mt-2">{{ __('common.chat.empty_chats') }}</div>
+                                    <div class="tw:font-semibold tw:mt-2">{{ __('common.chat.empty_chats') }}</div>
                                     <div class="tw:text-ui-xs">{{ __('common.chat.empty') }}</div>
                                 </div>
                             `;
@@ -445,8 +445,9 @@
                             })
                             .catch(() => {
                                 listEl.innerHTML = `
-                                    <div class="tw:m-3 tw:rounded-ui-sm tw:border-s-4 tw:border-error tw:bg-error-container tw:p-3 tw:text-ui-sm tw:text-error-container-foreground" role="alert">
-                                        {{ __('common.chat.failed_list') }}
+                                    <div class="ui-alert tw:m-3 tw:flex tw:items-start tw:gap-2.5 tw:rounded-ui-md tw:border tw:border-error/40 tw:bg-error-container tw:p-3 tw:text-ui-sm tw:text-error-container-foreground tw:text-pretty" role="alert">
+                                        ${@json(\App\View\Components\Ui\Icon::html(new \Illuminate\View\ComponentAttributeBag(['name' => 'circle-x', 'size' => 'sm', 'class' => 'tw:mt-0.5 tw:shrink-0 tw:text-error'])))}
+                                        <span class="tw:min-w-0 tw:flex-1">{{ __('common.chat.failed_list') }}</span>
                                     </div>
                                 `;
                             });
@@ -616,7 +617,7 @@
                     // by id (keyset) and inserted above, keeping the scroll position.
                     const olderControlHtml = () => `
                         <div class="tw:flex tw:justify-center tw:py-2" data-chat-older>
-                            <button type="button" class="ui-focus-ring tw:inline-flex tw:h-7 tw:items-center tw:gap-1 tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-transparent tw:px-2.5 tw:text-ui-xs tw:font-medium tw:text-on-surface tw:hover:bg-surface-low" data-chat-load-older>
+                            <button type="button" class="ui-focus-ring tw:inline-flex tw:h-7 tw:items-center tw:gap-1 tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-transparent tw:px-2.5 tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:hover:bg-surface-low" data-chat-load-older>
                                 {{ __('common.chat.load_older') }}
                             </button>
                         </div>
@@ -696,7 +697,7 @@
                                     messagesEl.innerHTML = `
                                         <div class="tw:text-center tw:text-on-surface-variant tw:py-12" id="chatDrawerEmpty">
                                             <x-ui.icon name="message-circle-more" size="lg" />
-                                            <div class="tw:font-medium tw:mt-2">{{ __('common.chat.empty_messages') }}</div>
+                                            <div class="tw:font-semibold tw:mt-2">{{ __('common.chat.empty_messages') }}</div>
                                             <div class="tw:text-ui-xs">{{ __('common.chat.start') }}</div>
                                         </div>
                                     `;
@@ -718,8 +719,9 @@
                                     return;
                                 }
                                 messagesEl.innerHTML = `
-                                    <div class="tw:m-3 tw:rounded-ui-sm tw:border-s-4 tw:border-error tw:bg-error-container tw:p-3 tw:text-ui-sm tw:text-error-container-foreground" role="alert">
-                                        {{ __('common.chat.failed_details') }}
+                                    <div class="ui-alert tw:m-3 tw:flex tw:items-start tw:gap-2.5 tw:rounded-ui-md tw:border tw:border-error/40 tw:bg-error-container tw:p-3 tw:text-ui-sm tw:text-error-container-foreground tw:text-pretty" role="alert">
+                                        ${@json(\App\View\Components\Ui\Icon::html(new \Illuminate\View\ComponentAttributeBag(['name' => 'circle-x', 'size' => 'sm', 'class' => 'tw:mt-0.5 tw:shrink-0 tw:text-error'])))}
+                                        <span class="tw:min-w-0 tw:flex-1">{{ __('common.chat.failed_details') }}</span>
                                     </div>
                                 `;
                             });

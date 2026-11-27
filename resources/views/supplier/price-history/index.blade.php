@@ -22,7 +22,7 @@
     <x-supplier.price-history-tabs active="overview" />
 
     {{-- 2 Metrics Strip --}}
-    <div class="tw:grid tw:gap-px tw:overflow-hidden tw:rounded-ui-md tw:border tw:border-outline-variant tw:bg-outline-variant tw:sm:grid-cols-2">
+    <div class="tw:grid tw:gap-px tw:overflow-hidden tw:rounded-ui-md tw:border tw:border-outline tw:bg-outline-variant tw:shadow-ui-surface tw:sm:grid-cols-2">
         <x-ui.metric-card
             flat
             :label="__('supplier.copy.materials_offered')"

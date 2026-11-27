@@ -136,6 +136,7 @@ Route::prefix(PortalPath::prefix())->group(function () {
         Route::get('/purchase-orders', [LocalSupplierPurchaseOrderController::class, 'index'])->name('purchase-orders.index');
         Route::get('/purchase-orders/search', [LocalSupplierInvoiceController::class, 'searchPurchaseOrders'])->name('purchase-orders.search');
         Route::get('/purchase-orders/{purchaseOrder}/goods-receipts/data', LocalGoodsReceiptTableController::class)->name('purchase-orders.goods-receipts.data');
+        Route::get('/purchase-orders/{purchaseOrder}/satellite', [LocalSupplierPurchaseOrderController::class, 'satellite'])->name('purchase-orders.satellite');
         Route::get('/purchase-orders/{purchase_order}', [LocalSupplierPurchaseOrderController::class, 'show'])->name('purchase-orders.show');
         Route::get('/invoices', [LocalSupplierInvoiceController::class, 'index'])->name('invoices.index');
         Route::get('/invoices/create', [LocalSupplierInvoiceController::class, 'create'])->name('invoices.create');
@@ -362,6 +363,7 @@ Route::get('/verify-receipt/ga/{receipt}', [ReceiptVerificationController::class
 
 // Application Locale Switcher (Guest & Authenticated)
 Route::match(['get', 'post'], '/locale/{locale?}', [LocaleController::class, 'switch'])
+    ->middleware('throttle:60,1')
     ->name('locale.switch');
 
 // Supplier Public Registration & Status Tracking
@@ -529,6 +531,7 @@ Route::prefix(PortalPath::prefix())->group(function () {
         Route::post('/reference-prices/rules/import-confirm', [MaterialReferencePriceController::class, 'importConfirm'])->name('reference-prices.rules.import-confirm');
         Route::post('/reference-prices/rules/category', [MaterialReferencePriceController::class, 'saveCategory'])->name('reference-prices.rules.category.save');
         Route::patch('/reference-prices/rules/category/{rule}/toggle', [MaterialReferencePriceController::class, 'toggleCategoryStatus'])->name('reference-prices.rules.category.toggle');
+        Route::delete('/reference-prices/rules/category/{rule}', [MaterialReferencePriceController::class, 'destroyCategory'])->middleware('throttle:30,1')->name('reference-prices.rules.category.destroy');
         Route::post('/reference-prices', [MaterialReferencePriceController::class, 'store'])->name('reference-prices.store');
         Route::post('/reference-prices/{referencePrice}/supersede', [MaterialReferencePriceController::class, 'supersede'])->name('reference-prices.supersede');
         Route::post('/reference-prices/{referencePrice}/void', [MaterialReferencePriceController::class, 'void'])->name('reference-prices.void');
@@ -591,6 +594,7 @@ Route::prefix(PortalPath::prefix())->group(function () {
         Route::post('/reference-prices/rules/import-confirm', [MaterialReferencePriceController::class, 'importConfirm'])->name('reference-prices.rules.import-confirm');
         Route::post('/reference-prices/rules/category', [MaterialReferencePriceController::class, 'saveCategory'])->name('reference-prices.rules.category.save');
         Route::patch('/reference-prices/rules/category/{rule}/toggle', [MaterialReferencePriceController::class, 'toggleCategoryStatus'])->name('reference-prices.rules.category.toggle');
+        Route::delete('/reference-prices/rules/category/{rule}', [MaterialReferencePriceController::class, 'destroyCategory'])->middleware('throttle:30,1')->name('reference-prices.rules.category.destroy');
         Route::post('/reference-prices', [MaterialReferencePriceController::class, 'store'])->name('reference-prices.store');
         Route::post('/reference-prices/{referencePrice}/supersede', [MaterialReferencePriceController::class, 'supersede'])->name('reference-prices.supersede');
         Route::post('/reference-prices/{referencePrice}/void', [MaterialReferencePriceController::class, 'void'])->name('reference-prices.void');
@@ -698,6 +702,7 @@ Route::prefix(PortalPath::prefix())->group(function () {
         Route::match(['get', 'post'], '/export/purchase-orders/{purchaseOrder}', [ExportController::class, 'purchaseOrderDetail'])->name('export.purchase-orders.detail');
         Route::match(['get', 'post'], '/export/quotations', [ExportController::class, 'quotations'])->name('export.quotations');
         Route::match(['get', 'post'], '/export/quotations/{quotation}', [ExportController::class, 'quotationDetail'])->name('export.quotations.detail');
+        Route::match(['get', 'post'], '/export/price-history', [ExportController::class, 'priceHistory'])->name('export.price-history');
         Route::match(['get', 'post'], '/export/shipments', [ExportController::class, 'shipments'])->name('export.shipments');
         Route::match(['get', 'post'], '/export/supplier-audits/{supplierAudit}', [ExportController::class, 'supplierAuditDetail'])->name('export.supplier-audits.detail');
         // Supplier Audit (Supplier Local)

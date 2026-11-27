@@ -4,7 +4,7 @@
 @section('page-title', __('purchasing.copy.price_comparison'))
 
 @section('content')
-<div id="purchasingComparisonContainer" class="tw:grid tw:gap-6 tw:min-w-0 tw:max-w-full" data-server-tabs-container>
+<div id="purchasingComparisonContainer" class="tw:grid tw:gap-6 tw:min-w-0 tw:max-w-full" data-server-tabs-container data-server-tabs-prefetch="false">
     <x-ui.page-header
         :title="__('purchasing.copy.price_comparison')"
         :description="__('purchasing.copy.compare_supplier_offers_for_a_pr_inspect_historical_movement_and_benchmark_current_prices')"
@@ -23,11 +23,11 @@
 @include('purchasing.comparison._scripts')
 <script>
 if (typeof AdasiServerTabs !== 'undefined') {
-    AdasiServerTabs.init('#purchasingComparisonContainer');
+    AdasiServerTabs.init('#purchasingComparisonContainer', { prefetch: false });
 } else {
     document.addEventListener('DOMContentLoaded', function() {
         if (typeof AdasiServerTabs !== 'undefined') {
-            AdasiServerTabs.init('#purchasingComparisonContainer');
+            AdasiServerTabs.init('#purchasingComparisonContainer', { prefetch: false });
         }
     });
 }

@@ -21,7 +21,7 @@
 
     @if($events === [])
         <section class="tw:border tw:border-outline tw:bg-surface tw:p-5" aria-labelledby="notification-options-title">
-            <h2 id="notification-options-title" class="tw:m-0 tw:text-ui-sm tw:font-semibold">{{ __('notifications.preferences.settings') }}</h2>
+            <h2 id="notification-options-title" class="tw:m-0 tw:text-ui-base tw:font-semibold">{{ __('notifications.preferences.settings') }}</h2>
             <p class="tw:m-0 tw:mt-2 tw:text-ui-sm tw:text-on-surface-variant">{{ __('notifications.preferences.no_settings') }}</p>
         </section>
     @else
@@ -182,7 +182,7 @@
                                 @foreach($filterOptions as $filterValue => $filterLabel)
                                     <button
                                         type="button"
-                                        class="ui-focus-ring ui-motion tw:relative tw:inline-flex tw:min-h-[var(--ui-control-height-sm)] tw:shrink-0 tw:items-center tw:justify-center tw:gap-1.5 tw:whitespace-nowrap tw:max-sm:whitespace-normal tw:max-sm:px-2 tw:max-sm:py-1 tw:max-sm:text-center tw:border tw:border-outline tw:bg-surface tw:px-3 tw:text-ui-xs tw:font-medium tw:text-on-surface tw:hover:bg-surface-container tw:first:rounded-l-ui-sm tw:last:rounded-r-ui-sm tw:[&:not(:first-child)]:-ml-px tw:aria-pressed:z-10 tw:aria-pressed:border-primary tw:aria-pressed:bg-primary tw:aria-pressed:text-on-primary"
+                                        class="ui-focus-ring ui-motion tw:relative tw:inline-flex tw:min-h-[var(--ui-control-height-sm)] tw:shrink-0 tw:items-center tw:justify-center tw:gap-1.5 tw:whitespace-nowrap tw:max-sm:whitespace-normal tw:max-sm:px-2 tw:max-sm:py-1 tw:max-sm:text-center tw:border tw:border-outline tw:bg-surface tw:px-3 tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:hover:bg-surface-container tw:first:rounded-l-ui-sm tw:last:rounded-r-ui-sm tw:[&:not(:first-child)]:-ml-px tw:aria-pressed:z-10 tw:aria-pressed:border-primary tw:aria-pressed:bg-primary tw:aria-pressed:text-on-primary"
                                         aria-pressed="{{ $loop->first ? 'true' : 'false' }}"
                                         :aria-pressed="filter === '{{ $filterValue }}' ? 'true' : 'false'"
                                         @click="setFilter('{{ $filterValue }}')"
@@ -304,7 +304,7 @@
                                 <div class="tw:flex tw:flex-wrap tw:items-center tw:gap-x-2 tw:gap-y-0.5">
                                     <span id="notification-{{ $key }}-label" class="tw:text-ui-sm tw:font-semibold tw:text-on-surface">{{ __($event['label']) }}</span>
                                     @if($isActionRequired)
-                                        <span class="tw:inline-flex tw:items-center tw:gap-1 tw:text-ui-xs tw:font-medium tw:text-on-surface-variant">
+                                        <span class="tw:inline-flex tw:items-center tw:gap-1 tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant">
                                             <x-ui.icon name="triangle-alert" size="xs" class="tw:text-warning" />
                                             {{ __('notifications.preferences.action') }}
                                         </span>
@@ -329,7 +329,7 @@
                             <div class="tw:flex tw:gap-6 tw:md:contents">
                                 <div class="tw:flex tw:md:justify-center">
                                     <input type="hidden" name="notification_preferences[{{ $key }}]" value="0">
-                                    <label for="{{ $controlId }}" class="tw:inline-flex tw:min-h-11 tw:cursor-pointer tw:items-center tw:gap-2 tw:text-ui-xs tw:font-medium tw:text-on-surface tw:md:min-w-11 tw:md:justify-center">
+                                    <label for="{{ $controlId }}" class="tw:inline-flex tw:min-h-11 tw:cursor-pointer tw:items-center tw:gap-2 tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:md:min-w-11 tw:md:justify-center">
                                         <input
                                             id="{{ $controlId }}"
                                             type="checkbox"
@@ -349,7 +349,7 @@
                                     <input type="hidden" name="notification_delivery[{{ $key }}]" value="silent">
                                     <label
                                         for="{{ $controlId }}-popup"
-                                        class="tw:inline-flex tw:min-h-11 tw:cursor-pointer tw:items-center tw:gap-2 tw:text-ui-xs tw:font-medium tw:text-on-surface tw:md:min-w-11 tw:md:justify-center"
+                                        class="tw:inline-flex tw:min-h-11 tw:cursor-pointer tw:items-center tw:gap-2 tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:md:min-w-11 tw:md:justify-center"
                                         :class="state['{{ $key }}'].inbox ? '' : 'tw:cursor-not-allowed tw:opacity-50'"
                                     >
                                         <input
@@ -397,7 +397,7 @@
                 <x-slot:left>
                     <div class="tw:flex tw:flex-wrap tw:items-center tw:gap-x-3 tw:gap-y-1 tw:text-ui-xs">
                         <div role="status" aria-live="polite">
-                            <span x-show="dirtyCount > 0" x-cloak class="tw:font-medium tw:text-on-surface" x-text="unsavedText()">{{ __('notifications.preferences.unsaved', ['count' => 0]) }}</span>
+                            <span x-show="dirtyCount > 0" x-cloak class="tw:font-semibold tw:text-on-surface" x-text="unsavedText()">{{ __('notifications.preferences.unsaved', ['count' => 0]) }}</span>
                             <span x-show="dirtyCount === 0" class="tw:text-on-surface-variant">{{ __('notifications.preferences.no_changes') }}</span>
                         </div>
                         <x-ui.button

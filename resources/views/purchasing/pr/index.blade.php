@@ -13,7 +13,7 @@
         :description="__('purchasing.copy.create_filter_and_monitor_material_requisitions_across_active_procurement_periods')"
     >
         <x-slot:actions>
-<x-export.advanced-modal export-key="purchasing.pr" :action="route('purchasing.export.requisitions')" :periods="$periods" :filter-selectors="['period_id'=>'#period_id','status'=>'#status']" table="#prTable" trigger-id="exportRequisitionsBtn" />
+            <x-export.advanced-modal export-key="purchasing.pr" :action="route('purchasing.export.requisitions')" :periods="$periods" :filter-selectors="['search'=>'#filter_pr_search','period_id'=>'#period_id','status'=>'#status']" table="#prTable" trigger-id="exportRequisitionsBtn" />
             <x-ui.button :href="\App\Support\PurchasingNavigation::toRoute('purchasing.requisitions.create')" size="sm">
                 <x-ui.icon name="plus-circle" size="sm" />
                 <span>{{ __('purchasing.copy.create_requisition') }}</span>
@@ -29,24 +29,38 @@
         reset-id="resetFilter"
         :reset-label="__('purchasing.copy.reset')"
     >
+        <x-slot:search>
+            <label for="filter_pr_search" class="tw:sr-only">{{ __('purchasing.copy.search') }}</label>
+            <x-ui.icon name="search" size="sm" class="ui-filter-bar__search-icon" aria-hidden="true" />
+            <input
+                type="search"
+                id="filter_pr_search"
+                class="ui-input ui-input--sm ui-filter-bar__search-input"
+                placeholder="{{ __('exports.advanced.filters.placeholders.pr_search') }}"
+                autocomplete="off"
+                aria-label="{{ __('purchasing.copy.search') }}"
+                value="{{ request('search') }}"
+            >
+        </x-slot:search>
+
         <x-slot:filters>
             <label for="period_id" class="tw:sr-only">{{ __('purchasing.copy.filter_by_period') }}</label>
             <select name="period_id" id="period_id" class="ui-select ui-select--sm tw:w-full tw:min-w-0 tw:sm:w-52" aria-label="{{ __('purchasing.copy.filter_by_period') }}">
                 <option value="">{{ __('purchasing.copy.all_periods') }}</option>
                 @foreach($periods as $period)
-                    <option value="{{ $period->id }}">{{ $period->display_label }}</option>
+                    <option value="{{ $period->id }}" @selected((string) request('period_id') === (string) $period->id)>{{ $period->display_label }}</option>
                 @endforeach
             </select>
 
             <label for="status" class="tw:sr-only">{{ __('purchasing.copy.filter_by_status') }}</label>
             <select name="status" id="status" class="ui-select ui-select--sm tw:w-full tw:min-w-0 tw:sm:w-44" aria-label="{{ __('purchasing.copy.filter_by_status') }}">
                 <option value="">{{ __('purchasing.copy.all_statuses') }}</option>
-                <option value="draft">{{ __('purchasing.copy.draft') }}</option>
-                <option value="submitted">{{ __('purchasing.copy.submitted') }}</option>
-                <option value="rejected">{{ __('purchasing.copy.rejected') }}</option>
-                <option value="bidding">{{ __('purchasing.copy.bidding') }}</option>
-                <option value="completed">{{ __('purchasing.copy.completed') }}</option>
-                <option value="cancelled">{{ __('status.pr.cancelled') }}</option>
+                <option value="draft" @selected(request('status') === 'draft')>{{ __('purchasing.copy.draft') }}</option>
+                <option value="submitted" @selected(request('status') === 'submitted')>{{ __('purchasing.copy.submitted') }}</option>
+                <option value="rejected" @selected(request('status') === 'rejected')>{{ __('purchasing.copy.rejected') }}</option>
+                <option value="bidding" @selected(request('status') === 'bidding')>{{ __('purchasing.copy.bidding') }}</option>
+                <option value="completed" @selected(request('status') === 'completed')>{{ __('purchasing.copy.completed') }}</option>
+                <option value="cancelled" @selected(request('status') === 'cancelled')>{{ __('status.pr.cancelled') }}</option>
             </select>
         </x-slot:filters>
 
@@ -88,6 +102,8 @@
         const table = new DataTable(tableEl, {
             processing: true,
             serverSide: true,
+            layout: { topStart: null, topEnd: null, bottomStart: 'info', bottomEnd: 'paging' },
+            search: { search: @json((string) request('search', '')) },
             ajax: {
                 url: '{{ route("purchasing.requisitions.index") }}',
                 data: function(d) {
@@ -114,10 +130,11 @@
 
         window.AdasiFilterBar.bindLive('#prFilterBar', {
             fields: [
+                { key: 'search', label: @json(__('purchasing.copy.search')), selector: '#filter_pr_search', type: 'search' },
                 { key: 'period_id', label: @json(__('purchasing.copy.period')), selector: '#period_id', type: 'select' },
                 { key: 'status', label: @json(__('purchasing.copy.status')), selector: '#status', type: 'select' },
             ],
-            onFilterChange: () => table.ajax.reload(),
+            onFilterChange: () => table.search(document.getElementById('filter_pr_search')?.value || '').draw(),
         });
 
         let draftSubmitConfirmationOpen = false;

@@ -67,35 +67,35 @@
     <x-ui.card :title="__('local_invoice.receipt.company_title')">
         <div class="tw:flex tw:flex-col tw:sm:flex-row tw:gap-6 tw:items-start">
             <dl class="tw:grid tw:grid-cols-12 tw:gap-y-2 tw:gap-x-3 tw:text-ui-xs tw:flex-1 tw:m-0">
-                <dt class="tw:col-span-12 tw:sm:col-span-4 tw:text-on-surface-variant tw:font-medium">{{ __('local_invoice.receipt.number') }}</dt>
-                <dd class="tw:col-span-12 tw:sm:col-span-8 tw:m-0"><strong class="ui-tabular-nums tw:text-primary">{{ $invoice->receipt->receipt_number }}</strong></dd>
+                <dt class="tw:col-span-12 tw:sm:col-span-4 tw:text-on-surface-variant tw:font-semibold">{{ __('local_invoice.receipt.number') }}</dt>
+                <dd class="tw:min-w-0 tw:col-span-12 tw:sm:col-span-8 tw:m-0"><strong class="ui-tabular-nums tw:text-primary">{{ $invoice->receipt->receipt_number }}</strong></dd>
 
-                <dt class="tw:col-span-12 tw:sm:col-span-4 tw:text-on-surface-variant tw:font-medium">{{ __('local_invoice.receipt.submission_number') }}</dt>
-                <dd class="tw:col-span-12 tw:sm:col-span-8 tw:m-0"><strong class="ui-tabular-nums">{{ $invoice->submission_number }}</strong></dd>
+                <dt class="tw:col-span-12 tw:sm:col-span-4 tw:text-on-surface-variant tw:font-semibold">{{ __('local_invoice.receipt.submission_number') }}</dt>
+                <dd class="tw:min-w-0 tw:col-span-12 tw:sm:col-span-8 tw:m-0"><strong class="ui-tabular-nums">{{ $invoice->submission_number }}</strong></dd>
 
-                <dt class="tw:col-span-12 tw:sm:col-span-4 tw:text-on-surface-variant tw:font-medium">{{ __('local_invoice.receipt.invoice_number') }}</dt>
-                <dd class="tw:col-span-12 tw:sm:col-span-8 tw:m-0"><strong class="ui-tabular-nums">{{ $invoice->invoice_number }}</strong></dd>
+                <dt class="tw:col-span-12 tw:sm:col-span-4 tw:text-on-surface-variant tw:font-semibold">{{ __('local_invoice.receipt.invoice_number') }}</dt>
+                <dd class="tw:min-w-0 tw:col-span-12 tw:sm:col-span-8 tw:m-0"><strong class="ui-tabular-nums">{{ $invoice->invoice_number }}</strong></dd>
 
-                <dt class="tw:col-span-12 tw:sm:col-span-4 tw:text-on-surface-variant tw:font-medium">{{ __('local_invoice.receipt.po_number') }}</dt>
-                <dd class="tw:col-span-12 tw:sm:col-span-8 tw:m-0"><span class="ui-tabular-nums">{{ $invoice->po_number }}</span></dd>
+                <dt class="tw:col-span-12 tw:sm:col-span-4 tw:text-on-surface-variant tw:font-semibold">{{ __('local_invoice.receipt.po_number') }}</dt>
+                <dd class="tw:min-w-0 tw:col-span-12 tw:sm:col-span-8 tw:m-0"><span class="ui-tabular-nums">{{ $invoice->po_number }}</span></dd>
 
-                <dt class="tw:col-span-12 tw:sm:col-span-4 tw:text-on-surface-variant tw:font-medium">{{ __('local_invoice.receipt.supplier_name') }}</dt>
-                <dd class="tw:col-span-12 tw:sm:col-span-8 tw:m-0"><strong>{{ $invoice->supplier->supplier?->company_name ?: $invoice->supplier->name }}</strong></dd>
+                <dt class="tw:col-span-12 tw:sm:col-span-4 tw:text-on-surface-variant tw:font-semibold">{{ __('local_invoice.receipt.supplier_name') }}</dt>
+                <dd class="tw:min-w-0 tw:col-span-12 tw:sm:col-span-8 tw:m-0"><strong>{{ $invoice->supplier->supplier?->company_name ?: $invoice->supplier->name }}</strong></dd>
 
-                <dt class="tw:col-span-12 tw:sm:col-span-4 tw:text-on-surface-variant tw:font-medium">{{ __('local_invoice.receipt.invoice_ppn') }}</dt>
-                <dd class="tw:col-span-12 tw:sm:col-span-8 tw:m-0"><strong class="ui-tabular-nums">Rp {{ number_format($invoice->invoice_amount, 0, ',', '.') }}</strong> (PPN: Rp {{ number_format($invoice->tax_amount, 0, ',', '.') }})</dd>
+                <dt class="tw:col-span-12 tw:sm:col-span-4 tw:text-on-surface-variant tw:font-semibold">{{ __('local_invoice.receipt.invoice_ppn') }}</dt>
+                <dd class="tw:min-w-0 tw:col-span-12 tw:sm:col-span-8 tw:m-0"><strong class="ui-tabular-nums">Rp {{ number_format($invoice->invoice_amount, 0, ',', '.') }}</strong> (PPN: Rp {{ number_format($invoice->tax_amount, 0, ',', '.') }})</dd>
 
-                <dt class="tw:col-span-12 tw:sm:col-span-4 tw:text-on-surface-variant tw:font-medium">{{ __('local_invoice.labels.submitted_time') }}</dt>
-                <dd class="tw:col-span-12 tw:sm:col-span-8 tw:m-0">@bizdt($invoice->submitted_at)</dd>
+                <dt class="tw:col-span-12 tw:sm:col-span-4 tw:text-on-surface-variant tw:font-semibold">{{ __('local_invoice.labels.submitted_time') }}</dt>
+                <dd class="tw:min-w-0 tw:col-span-12 tw:sm:col-span-8 tw:m-0">@bizdt($invoice->submitted_at)</dd>
 
-                <dt class="tw:col-span-12 tw:sm:col-span-4 tw:text-on-surface-variant tw:font-medium">{{ __('local_invoice.labels.revision') }}</dt>
-                <dd class="tw:col-span-12 tw:sm:col-span-8 tw:m-0">{{ $invoice->revision_number }}</dd>
+                <dt class="tw:col-span-12 tw:sm:col-span-4 tw:text-on-surface-variant tw:font-semibold">{{ __('local_invoice.labels.revision') }}</dt>
+                <dd class="tw:min-w-0 tw:col-span-12 tw:sm:col-span-8 tw:m-0">{{ $invoice->revision_number }}</dd>
             </dl>
 
             @if(isset($qrCode))
                 <div class="tw:text-center tw:shrink-0 tw:p-3 tw:bg-surface-container tw:rounded-lg tw:border tw:border-outline-variant">
                     <img src="{{ $qrCode }}" alt="{{ __('local_invoice.receipt.qr_alt') }}" class="tw:w-28 tw:h-28 tw:mx-auto">
-                    <span class="tw:block tw:text-[10px] tw:text-on-surface-variant tw:mt-1.5">{{ __('local_invoice.receipt.scan_valid') }}</span>
+                    <span class="tw:block tw:text-ui-xs tw:text-on-surface-variant tw:mt-1.5">{{ __('local_invoice.receipt.scan_valid') }}</span>
                 </div>
             @endif
         </div>

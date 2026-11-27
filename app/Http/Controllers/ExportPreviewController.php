@@ -5,12 +5,14 @@ namespace App\Http\Controllers;
 use App\Exports\InspectionsExport;
 use App\Exports\LocalInvoicesExport;
 use App\Exports\PurchaseOrdersExport;
+use App\Exports\PurchasingHistoricalPriceExport;
 use App\Exports\QuotationsExport;
 use App\Exports\RequisitionsExport;
 use App\Exports\ShipmentsExport;
 use App\Http\Requests\Export\Filters\InspectionExportFilters;
 use App\Http\Requests\Export\Filters\LocalInvoiceExportFilters;
 use App\Http\Requests\Export\Filters\PurchaseOrderExportFilters;
+use App\Http\Requests\Export\Filters\PurchasingPriceHistoryExportFilters;
 use App\Http\Requests\Export\Filters\QuotationExportFilters;
 use App\Http\Requests\Export\Filters\RequisitionExportFilters;
 use App\Http\Requests\Export\Filters\ShipmentExportFilters;
@@ -58,6 +60,7 @@ class ExportPreviewController extends Controller
             ShipmentsExport::class => $this->buildShipmentsExport($filterRequest, $user, $isSupplier),
             InspectionsExport::class => $this->buildInspectionsExport($filterRequest),
             LocalInvoicesExport::class => $this->buildLocalInvoicesExport($filterRequest, $user, str_starts_with($exportKey, 'accounting.')),
+            PurchasingHistoricalPriceExport::class => $this->buildPurchasingPriceHistoryExport($filterRequest),
             default => abort(422),
         };
 
@@ -141,5 +144,12 @@ class ExportPreviewController extends Controller
         unset($filters['report']);
 
         return new LocalInvoicesExport((int) $user->getKey(), $filters, $payments);
+    }
+
+    private function buildPurchasingPriceHistoryExport(Request $filterRequest): PurchasingHistoricalPriceExport
+    {
+        $filters = PurchasingPriceHistoryExportFilters::validated($filterRequest);
+
+        return new PurchasingHistoricalPriceExport($filters);
     }
 }

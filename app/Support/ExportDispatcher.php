@@ -11,6 +11,7 @@ use App\Exports\PaymentBatchTransferExport;
 use App\Exports\PurchaseOrderDetailExport;
 use App\Exports\PurchaseOrdersExport;
 use App\Exports\PurchaseRequisitionDetailExport;
+use App\Exports\PurchasingHistoricalPriceExport;
 use App\Exports\QuotationDetailExport;
 use App\Exports\QuotationsExport;
 use App\Exports\RequisitionsExport;
@@ -44,6 +45,7 @@ class ExportDispatcher
         QuotationDetailExport::class,
         PurchaseOrderDetailExport::class,
         InspectionsExport::class,
+        PurchasingHistoricalPriceExport::class,
         SupplierPriceHistoryExport::class,
         ShipmentsExport::class,
         SupplierAuditExport::class,
@@ -52,7 +54,7 @@ class ExportDispatcher
     private const LIST_EXPORT_CLASSES = [
         PurchaseOrdersExport::class, QuotationsExport::class, RequisitionsExport::class,
         ShipmentsExport::class, InspectionsExport::class, LocalInvoicesExport::class,
-        SupplierPriceHistoryExport::class,
+        PurchasingHistoricalPriceExport::class, SupplierPriceHistoryExport::class,
     ];
 
     public static function dispatch(string $label, string $exportClass, array $args, string $fileName, ?ExportOptions $options = null): ExportJob

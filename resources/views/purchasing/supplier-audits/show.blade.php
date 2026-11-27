@@ -14,7 +14,7 @@
     $canDeadline = Gate::allows('changeDeadline', $audit);
     $canCancel = Gate::allows('cancel', $audit);
 @endphp
-<div class="tw:grid tw:gap-5 tw:pb-16">
+<div class="tw:grid tw:gap-5">
     <x-ui.page-header :title="$audit->supplierName()" :description="$audit->template?->title" :eyebrow="__('supplier_audit.title')">
         <x-slot:status>
             <x-ui.status-chip :tone="\App\Support\StatusHelper::supplierAuditTone($audit->status)">{{ \App\Support\StatusHelper::supplierAuditLabel($audit->status) }}</x-ui.status-chip>
@@ -47,7 +47,7 @@
     @endif
 
     {{-- U7: Langkah berikutnya — satu aksi utama sesuai status --}}
-    <section class="tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface" aria-labelledby="next-step-title" data-next-step="{{ strtolower($audit->status) }}">
+    <section class="tw:rounded-ui-md tw:border tw:border-outline tw:bg-surface tw:shadow-ui-surface" aria-labelledby="next-step-title" data-next-step="{{ strtolower($audit->status) }}">
         <header class="tw:flex tw:flex-wrap tw:items-center tw:justify-between tw:gap-2 tw:border-b tw:border-outline-variant tw:px-4 tw:py-3">
             <h2 id="next-step-title" class="tw:m-0 tw:text-ui-base tw:font-semibold tw:text-on-surface">{{ __('supplier_audit.next_step.title') }}</h2>
             @if($canRevise || $canDeadline || $canCancel)
@@ -145,7 +145,7 @@
         </section>
 
         <aside class="tw:grid tw:content-start tw:gap-4">
-            <section class="tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface tw:p-4" aria-labelledby="assignment-title">
+            <section class="tw:rounded-ui-md tw:border tw:border-outline tw:bg-surface tw:shadow-ui-surface tw:p-4" aria-labelledby="assignment-title">
                 <h2 id="assignment-title" class="tw:m-0 tw:mb-2 tw:text-ui-sm tw:font-semibold tw:text-on-surface">{{ __('supplier_audit.fields.template') }}</h2>
                 <dl class="tw:m-0 tw:grid tw:grid-cols-[auto_1fr] tw:gap-x-3 tw:gap-y-1 tw:text-ui-xs">
                     <dt class="tw:text-on-surface-variant">{{ __('supplier_audit.fields.assigned_by') }}</dt>
@@ -157,12 +157,12 @@
                 </dl>
             </section>
 
-            <section class="tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface tw:p-4" aria-labelledby="history-title">
+            <section class="tw:rounded-ui-md tw:border tw:border-outline tw:bg-surface tw:shadow-ui-surface tw:p-4" aria-labelledby="history-title">
                 <h2 id="history-title" class="tw:m-0 tw:mb-3 tw:text-ui-sm tw:font-semibold tw:text-on-surface">{{ __('supplier_audit.labels.history') }}</h2>
-                <ol class="tw:m-0 tw:grid tw:list-none tw:gap-3 tw:p-0" data-supplier-audit-history>
+                <ol class="tw:m-0 tw:list-none tw:divide-y tw:divide-outline-variant tw:p-0" data-supplier-audit-history>
                     @foreach($audit->statusHistories->reverse() as $history)
-                        <li class="tw:border-s-2 tw:border-outline-variant tw:ps-3">
-                            <p class="tw:m-0 tw:text-ui-sm tw:font-medium tw:text-on-surface">{{ __('supplier_audit.history.events.'.$history->event) }}</p>
+                        <li class="tw:py-2.5 tw:first:pt-0 tw:last:pb-0">
+                            <p class="tw:m-0 tw:text-ui-sm tw:font-semibold tw:text-on-surface">{{ __('supplier_audit.history.events.'.$history->event) }}</p>
                             <p class="tw:m-0 tw:text-ui-xs tw:text-on-surface-variant" style="font-variant-numeric: tabular-nums;">
                                 {{ $regionalFormatter->timestamp($history->created_at) }} · {{ __('supplier_audit.history.by', ['name' => $history->actor?->name ?? '-']) }}
                             </p>

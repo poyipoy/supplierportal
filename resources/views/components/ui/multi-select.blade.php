@@ -13,6 +13,14 @@
     'disabled' => false,
     'emptyMessage' => __('common.select.empty'),
     'eventName' => null,
+    'itemUnitLabel' => 'GR',
+    'currencyPrefix' => 'Rp',
+    'size' => 'md',
+    'labelClass' => 'tw:text-ui-sm tw:font-semibold tw:text-on-surface',
+    'clearLabel' => null,
+    'selectedCountTemplate' => null,
+    'maxSelection' => null,
+    'dataFilterName' => null,
 ])
 
 @php
@@ -20,6 +28,8 @@
     $resolvedId = $id ?: preg_replace('/[^A-Za-z0-9_-]+/', '-', $inputBaseName);
     $validationKey = trim(preg_replace('/\[([^\]]*)\]/', '.$1', $inputBaseName), '.');
     $message = $error ?: (isset($errors) && $errors->has($validationKey) ? $errors->first($validationKey) : null);
+    $resolvedClearTitle = $clearLabel ?? ($itemUnitLabel === 'GR' ? __('common.select.clear_gr') : __('common.select.clear_all'));
+    $resolvedSelectedTemplate = $selectedCountTemplate ?? ($itemUnitLabel === 'GR' ? __('common.select.gr_selected') : __('common.select.items_selected'));
     
     // Normalisasi nilai awal
     $rawVal = old($validationKey, $value);
@@ -44,6 +54,7 @@
             $date = isset($item['date']) ? (string) $item['date'] : null;
             $dateFormatted = isset($item['dateFormatted']) ? (string) $item['dateFormatted'] : null;
             $keywords = (string) ($item['searchKeywords'] ?? ($lbl . ' ' . ($desc ?? '') . ' ' . ($sub ?? '') . ' ' . $amt));
+            $dataset = is_array($item['dataset'] ?? null) ? $item['dataset'] : [];
             return [
                 'value' => $val,
                 'label' => $lbl,
@@ -57,6 +68,7 @@
                 'date' => $date,
                 'dateFormatted' => $dateFormatted,
                 'searchKeywords' => strtolower($keywords),
+                'dataset' => $dataset,
             ];
         }
         return [
@@ -69,12 +81,16 @@
             'date' => null,
             'dateFormatted' => null,
             'searchKeywords' => strtolower((string) $item),
+            'dataset' => [],
         ];
     })->values()->all();
 @endphp
 
 <div
     {{ $attributes->only('class')->class(['tw:grid tw:gap-1.5 tw:relative tw:min-w-0']) }}
+    data-unit-label="{{ $itemUnitLabel }}"
+    data-currency-prefix="{{ $currencyPrefix }}"
+    data-max-selection="{{ $maxSelection ?? '' }}"
     x-data="{
         open: false,
         search: '',
@@ -118,10 +134,14 @@
         },
 
         formatRupiah(num) {
-            return 'Rp ' + Number(num || 0).toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            const el = this.$root || this.$el;
+            const prefix = (typeof el !== 'undefined' && el?.dataset?.currencyPrefix) || 'Rp';
+            return prefix + ' ' + Number(num || 0).toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         },
 
         get summaryDisplay() {
+            const el = this.$root || this.$el;
+            const unit = (typeof el !== 'undefined' && el?.dataset?.unitLabel) || 'GR';
             if (this.isDisabled && !this.options.length) {
                 return { count: 0, badgeText: '', text: this.disabledPlaceholder, totalFormatted: '' };
             }
@@ -132,14 +152,20 @@
             const totalStr = this.totalAmount > 0 ? this.formatRupiah(this.totalAmount) : '';
             if (count === 1) {
                 const first = this.selectedOptions[0];
-                const lbl = first ? first.label : '1 GR';
-                return { count: 1, badgeText: '1 GR', text: lbl, totalFormatted: totalStr };
+                const lbl = first ? first.label : `1 ${unit}`;
+                return { count: 1, badgeText: `1 ${unit}`, text: lbl, totalFormatted: totalStr };
             }
-            return { count: count, badgeText: `${count} GR`, text: @js(__('common.select.selected_state')), totalFormatted: totalStr };
+            return { count: count, badgeText: `${count} ${unit}`, text: @js(__('common.select.selected_state')), totalFormatted: totalStr };
         },
 
         isSelected(val) {
             return this.selectedValues.includes(String(val));
+        },
+
+        get maxSelectionLimit() {
+            const el = this.$root || this.$el;
+            const raw = typeof el !== 'undefined' ? Number(el?.dataset?.maxSelection || 0) : 0;
+            return Number.isFinite(raw) && raw > 0 ? raw : 0;
         },
 
         toggleOption(option) {
@@ -147,6 +173,9 @@
             const val = String(option.value);
             const idx = this.selectedValues.indexOf(val);
             if (idx === -1) {
+                if (this.maxSelectionLimit > 0 && this.selectedValues.length >= this.maxSelectionLimit) {
+                    return;
+                }
                 this.selectedValues.push(val);
             } else {
                 this.selectedValues.splice(idx, 1);
@@ -157,6 +186,9 @@
             if (this.isDisabled || !this.options.length) return;
             const visibleVals = this.filteredOptions.map(o => String(o.value));
             visibleVals.forEach(v => {
+                if (this.maxSelectionLimit > 0 && this.selectedValues.length >= this.maxSelectionLimit) {
+                    return;
+                }
                 if (!this.selectedValues.includes(v)) {
                     this.selectedValues.push(v);
                 }
@@ -175,9 +207,17 @@
                 this.search = '';
                 this.highlightedIndex = -1;
                 this.$nextTick(() => {
-                    this.$refs.searchInput?.focus();
+                    this.revealPopover();
+                    this.$refs.searchInput?.focus({ preventScroll: true });
                 });
             }
+        },
+
+        revealPopover() {
+            const popover = this.$refs.popover;
+            if (!popover || typeof popover.scrollIntoView !== 'function') return;
+            const reduceMotion = globalThis.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches === true;
+            popover.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: reduceMotion ? 'auto' : 'smooth' });
         },
 
         close(focusTrigger = false) {
@@ -220,7 +260,7 @@
             }
         },
 
-        setOptions(newOptions, autoSelectAll = false, emptyPlaceholder = null) {
+        setOptions(newOptions, autoSelectAll = false, emptyPlaceholder = null, explicitSelected = null, silent = false) {
             this.options = (newOptions || []).map(opt => ({
                 value: String(opt.id ?? opt.value),
                 label: String(opt.number ?? opt.label ?? ''),
@@ -233,6 +273,7 @@
                 quantityLabel: opt.quantityLabel ?? null,
                 date: opt.date ?? null,
                 dateFormatted: opt.dateFormatted ?? null,
+                dataset: opt.dataset && typeof opt.dataset === 'object' ? { ...opt.dataset } : {},
                 searchKeywords: (String(opt.number ?? opt.label ?? '') + ' ' + (opt.description ?? '') + ' ' + (opt.sublabel ?? '') + ' ' + (opt.amount ?? '') + ' ' + (opt.date ?? '')).toLowerCase(),
             }));
 
@@ -242,17 +283,40 @@
                 this.disabledPlaceholder = emptyPlaceholder;
             }
 
-            if (autoSelectAll && this.options.length > 0) {
-                this.selectedValues = this.options.map(o => String(o.value));
+            const validIds = this.options.map(o => String(o.value));
+            let nextSelected;
+            if (Array.isArray(explicitSelected)) {
+                nextSelected = explicitSelected.map(v => String(v)).filter(v => validIds.includes(v));
+            } else if (autoSelectAll && this.options.length > 0) {
+                nextSelected = this.maxSelectionLimit > 0 ? validIds.slice(0, this.maxSelectionLimit) : validIds;
             } else {
                 // Pertahankan pilihan yang masih valid dalam opsi baru
-                const validIds = this.options.map(o => String(o.value));
-                this.selectedValues = this.selectedValues.filter(v => validIds.includes(v));
+                nextSelected = this.selectedValues.filter(v => validIds.includes(v));
             }
-            this.syncNativeElements();
+            if (this.maxSelectionLimit > 0 && nextSelected.length > this.maxSelectionLimit) {
+                nextSelected = nextSelected.slice(0, this.maxSelectionLimit);
+            }
+            this._suppressWatchDispatch = Boolean(silent);
+            this.selectedValues = nextSelected;
+            this.syncNativeElements(!silent);
+            this.$nextTick?.(() => { this._suppressWatchDispatch = false; });
         },
 
-        syncNativeElements() {
+        setExternalValues(values, silent = false) {
+            const validIds = this.options.map(o => String(o.value));
+            let nextSelected = Array.isArray(values)
+                ? values.map(v => String(v)).filter(v => validIds.includes(v))
+                : [];
+            if (this.maxSelectionLimit > 0 && nextSelected.length > this.maxSelectionLimit) {
+                nextSelected = nextSelected.slice(0, this.maxSelectionLimit);
+            }
+            this._suppressWatchDispatch = Boolean(silent);
+            this.selectedValues = nextSelected;
+            this.syncNativeElements(!silent);
+            this.$nextTick?.(() => { this._suppressWatchDispatch = false; });
+        },
+
+        syncNativeElements(dispatchEvents = true) {
             const selectEl = this.$refs.nativeMultiSelect;
             if (selectEl) {
                 selectEl.innerHTML = '';
@@ -260,6 +324,13 @@
                     const optEl = document.createElement('option');
                     optEl.value = String(opt.value);
                     optEl.textContent = String(opt.label);
+                    if (opt.dataset) {
+                        Object.entries(opt.dataset).forEach(([k, v]) => {
+                            if (v !== undefined && v !== null) {
+                                optEl.dataset[k] = String(v);
+                            }
+                        });
+                    }
                     const isSelected = this.selectedValues.includes(String(opt.value));
                     optEl.selected = isSelected;
                     if (isSelected) {
@@ -267,22 +338,25 @@
                     }
                     selectEl.appendChild(optEl);
                 });
-                selectEl.dispatchEvent(new CustomEvent('multi-select-change', {
-                    bubbles: true,
-                    detail: {
-                        values: this.selectedValues,
-                        total: this.totalAmount,
-                        options: this.selectedOptions
-                    }
-                }));
-                selectEl.dispatchEvent(new Event('change', { bubbles: true }));
+                if (dispatchEvents && !this._suppressWatchDispatch) {
+                    selectEl.dispatchEvent(new CustomEvent('multi-select-change', {
+                        bubbles: true,
+                        detail: {
+                            values: this.selectedValues,
+                            total: this.totalAmount,
+                            options: this.selectedOptions
+                        }
+                    }));
+                    selectEl.dispatchEvent(new Event('change', { bubbles: true }));
+                }
             }
         }
     }"
     @if($eventName)
-        x-on:{{ $eventName }}.window="setOptions($event.detail.options, $event.detail.autoSelect, $event.detail.emptyPlaceholder)"
+        x-on:{{ $eventName }}.window="setOptions($event.detail.options, $event.detail.autoSelect, $event.detail.emptyPlaceholder, $event.detail.selected ?? null, Boolean($event.detail.silent))"
     @endif
-    x-on:set-multi-options.window="if ($event.detail.id === '{{ $resolvedId }}') setOptions($event.detail.options, $event.detail.autoSelect, $event.detail.emptyPlaceholder)"
+    x-on:set-multi-options.window="if ($event.detail.id === '{{ $resolvedId }}') setOptions($event.detail.options, $event.detail.autoSelect, $event.detail.emptyPlaceholder, $event.detail.selected ?? null, Boolean($event.detail.silent))"
+    x-on:set-multi-value.window="if ($event.detail.id === '{{ $resolvedId }}') setExternalValues($event.detail.values ?? [], Boolean($event.detail.silent))"
     @click.outside="close(false)"
     x-on:pointerdown.window="if (open && !$el.contains($event.target)) close(false)"
     x-on:adasi:dismiss-overlays.window="if (open) close(false)"
@@ -290,7 +364,7 @@
     @focusout="if ($event.relatedTarget && !$el.contains($event.relatedTarget)) close(false)"
 >
     @if($label)
-        <label id="{{ $resolvedId }}-label" for="{{ $resolvedId }}" class="tw:text-ui-sm tw:font-medium tw:text-on-surface" @mousedown.prevent @click.prevent="$refs.triggerButton?.focus()">
+        <label id="{{ $resolvedId }}-label" for="{{ $resolvedId }}" class="{{ $labelClass }}" @mousedown.prevent @click.prevent="$refs.triggerButton?.focus()">
             {{ $label }}
             @if($required)<span class="tw:text-error" aria-hidden="true">*</span><span class="tw:sr-only"> {{ __('common.required') }}</span>@endif
         </label>
@@ -302,6 +376,7 @@
         name="{{ $name }}"
         multiple
         x-ref="nativeMultiSelect"
+        @if($dataFilterName) data-filter-name="{{ $dataFilterName }}" @endif
         @required($required)
         x-bind:disabled="isDisabled"
         @if($describedBy) aria-describedby="{{ $describedBy }}" @endif
@@ -312,7 +387,13 @@
         style="position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); border: 0;"
     >
         @foreach($normalizedOptions as $opt)
-            <option value="{{ $opt['value'] }}" @selected(in_array((string)$opt['value'], $resolvedValues, true))>
+            <option
+                value="{{ $opt['value'] }}"
+                @foreach($opt['dataset'] ?? [] as $dataKey => $dataVal)
+                    data-{{ \Illuminate\Support\Str::kebab($dataKey) }}="{{ $dataVal }}"
+                @endforeach
+                @selected(in_array((string)$opt['value'], $resolvedValues, true))
+            >
                 {{ $opt['label'] }}
             </option>
         @endforeach
@@ -336,7 +417,7 @@
             aria-haspopup="listbox"
             :aria-expanded="open"
             aria-controls="{{ $resolvedId }}-listbox"
-            class="ui-motion tw:flex tw:min-h-[var(--ui-control-height-md)] tw:w-full tw:min-w-0 tw:items-center tw:justify-between tw:gap-2 tw:rounded-ui-sm tw:border tw:bg-surface tw:px-3 tw:py-2 tw:text-start tw:text-ui-sm tw:text-on-surface tw:shadow-none ui-focus-ring tw:disabled:cursor-not-allowed tw:disabled:bg-surface-container tw:disabled:opacity-60"
+            class="ui-motion tw:cursor-pointer tw:flex {{ $size === 'sm' ? 'tw:min-h-[var(--ui-control-height-sm)] tw:px-2.5 tw:py-1' : 'tw:min-h-[var(--ui-control-height-md)] tw:px-3 tw:py-2' }} tw:w-full tw:min-w-0 tw:items-center tw:justify-between tw:gap-2 tw:rounded-ui-sm tw:border tw:bg-surface tw:text-start tw:text-ui-sm tw:text-on-surface tw:shadow-none ui-focus-ring tw:hover:border-primary tw:hover:bg-surface-container-low tw:disabled:cursor-not-allowed tw:disabled:bg-surface-container tw:disabled:opacity-60"
             :class="{
                 'tw:border-error': {{ $message ? 'true' : 'false' }},
                 'tw:border-outline-strong': !{{ $message ? 'true' : 'false' }} && !open,
@@ -350,7 +431,7 @@
                             class="ui-tabular-nums tw:inline-flex tw:shrink-0 tw:items-center tw:px-2 tw:py-0.5 tw:rounded-full tw:text-ui-xs tw:font-bold tw:bg-primary/10 tw:text-primary"
                             x-text="summaryDisplay.badgeText"
                         ></span>
-                        <span class="ui-tabular-nums tw:min-w-0 tw:max-w-full tw:font-medium tw:text-on-surface tw:break-words" style="overflow-wrap: anywhere;" x-text="summaryDisplay.text"></span>
+                        <span class="ui-tabular-nums tw:min-w-0 tw:max-w-full tw:font-semibold tw:text-on-surface tw:break-words" style="overflow-wrap: anywhere;" x-text="summaryDisplay.text"></span>
                         <template x-if="summaryDisplay.totalFormatted">
                             <span class="ui-tabular-nums tw:min-w-0 tw:max-w-full tw:font-semibold tw:text-primary tw:break-words" style="overflow-wrap: anywhere;" x-text="'· ' + summaryDisplay.totalFormatted"></span>
                         </template>
@@ -374,7 +455,7 @@
                 type="button"
                 @click.stop="clearAll(); $nextTick(() => $refs.triggerButton?.focus())"
                 class="tw:absolute tw:end-8 tw:z-10 tw:inline-flex tw:size-6 tw:items-center tw:justify-center tw:rounded-full tw:border-0 tw:bg-transparent tw:p-0 tw:text-on-surface-variant tw:hover:text-error tw:hover:bg-surface-container tw:cursor-pointer ui-motion ui-focus-ring"
-                title="{{ __('common.select.clear_gr') }}"
+                title="{{ $resolvedClearTitle }}"
                 aria-label="{{ __('common.select.clear_all') }}"
             >
                 <x-ui.icon name="x" size="sm" class="tw:w-3.5 tw:h-3.5" />
@@ -385,6 +466,7 @@
     {{-- Dropdown Menu Popover --}}
     <div
         id="{{ $resolvedId }}-popover"
+        x-ref="popover"
         x-show="open"
         x-cloak
         x-transition:enter="ui-motion tw:transition tw:ease-out tw:duration-150"
@@ -393,13 +475,13 @@
         x-transition:leave="ui-motion tw:transition tw:ease-in tw:duration-100"
         x-transition:leave-start="tw:opacity-100 tw:translate-y-0"
         x-transition:leave-end="tw:opacity-0 tw:translate-y-1"
-        class="tw:absolute tw:top-full tw:left-0 tw:right-0 tw:mt-1.5 tw:z-dropdown tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface tw:shadow-ui-2 tw:overflow-hidden"
-        style="background-color: var(--ui-menu-bg);"
+        class="tw:absolute tw:top-full tw:left-0 tw:right-0 tw:mt-1.5 tw:z-dropdown tw:rounded-ui-md tw:border tw:border-outline tw:bg-surface tw:shadow-ui-2 tw:overflow-hidden"
+        style="background-color: var(--ui-menu-bg); z-index: calc(var(--ui-z-modal) + 10);"
     >
         <span class="tw:sr-only" role="status" aria-live="polite" x-text="open ? (@js(__('common.select.selected')) + ' ' + selectedValues.length + ' ' + @js(__('common.select.of')) + ' ' + filteredOptions.length) : ''"></span>
 
         {{-- Search Input in Popover --}}
-        <div class="tw:p-2 tw:border-b tw:border-outline-variant/60 tw:bg-surface-container-lowest">
+        <div class="tw:p-1.5 tw:border-b tw:border-outline-variant tw:bg-surface-container-low">
             <label for="{{ $resolvedId }}-search" class="tw:sr-only">{{ $searchPlaceholder }}</label>
             <div style="position: relative; display: flex; align-items: center; width: 100%;">
                 <span style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; pointer-events: none; display: flex; align-items: center; justify-content: center; z-index: 2;" class="tw:text-on-surface-variant" aria-hidden="true">
@@ -447,7 +529,7 @@
                     type="button"
                     @mousedown.prevent
                     @click="selectAll()"
-                    class="tw:min-h-6 tw:px-1.5 tw:inline-flex tw:items-center tw:rounded-ui-xs tw:text-primary tw:hover:underline tw:font-medium tw:bg-transparent tw:border-0 tw:cursor-pointer ui-focus-ring"
+                    class="tw:min-h-6 tw:px-1.5 tw:inline-flex tw:items-center tw:rounded-ui-xs tw:text-primary tw:hover:underline tw:font-semibold tw:bg-transparent tw:border-0 tw:cursor-pointer ui-focus-ring"
                 >
                     {{ __('common.actions.all') }}
                 </button>
@@ -456,7 +538,7 @@
                     type="button"
                     @mousedown.prevent
                     @click="clearAll()"
-                    class="tw:min-h-6 tw:px-1.5 tw:inline-flex tw:items-center tw:rounded-ui-xs tw:text-on-surface-variant tw:hover:text-error tw:hover:underline tw:font-medium tw:bg-transparent tw:border-0 tw:cursor-pointer ui-focus-ring"
+                    class="tw:min-h-6 tw:px-1.5 tw:inline-flex tw:items-center tw:rounded-ui-xs tw:text-on-surface-variant tw:hover:text-error tw:hover:underline tw:font-semibold tw:bg-transparent tw:border-0 tw:cursor-pointer ui-focus-ring"
                 >
                     {{ __('common.actions.cancel') }}
                 </button>
@@ -470,7 +552,7 @@
             role="listbox"
             aria-multiselectable="true"
             @if($label) aria-labelledby="{{ $resolvedId }}-label" @endif
-            class="tw:max-h-60 tw:overflow-y-auto tw:p-1 tw:divide-y tw:divide-outline-variant/30"
+            class="tw:max-h-60 tw:overflow-y-auto tw:p-1 tw:space-y-0.5"
         >
             <template x-for="(opt, idx) in filteredOptions" :key="opt.value">
                 <div
@@ -482,12 +564,12 @@
                     role="option"
                     tabindex="-1"
                     :aria-selected="isSelected(opt.value)"
-                    class="tw:flex tw:items-start tw:gap-3 tw:p-2.5 tw:rounded-ui-sm tw:cursor-pointer ui-motion"
+                    class="tw:flex tw:items-start tw:gap-3 tw:px-2.5 tw:py-2 tw:rounded-ui-sm tw:cursor-pointer ui-motion"
                     :class="{
-                        'tw:bg-primary/10': idx === highlightedIndex && !isSelected(opt.value),
-                        'tw:bg-primary/15': idx === highlightedIndex && isSelected(opt.value),
-                        'tw:bg-surface-container-low': isSelected(opt.value) && idx !== highlightedIndex,
-                        'tw:hover:bg-surface-container': !isSelected(opt.value) && idx !== highlightedIndex
+                        'tw:bg-surface-container-high': idx === highlightedIndex && !isSelected(opt.value),
+                        'tw:bg-primary-container tw:ring-1 tw:ring-primary': idx === highlightedIndex && isSelected(opt.value),
+                        'tw:bg-primary-container': isSelected(opt.value) && idx !== highlightedIndex,
+                        'tw:hover:bg-surface-container-high': !isSelected(opt.value) && idx !== highlightedIndex
                     }"
                 >
                     {{-- Custom Checkbox UI --}}
@@ -549,7 +631,7 @@
         </div>
 
         {{-- Footer with Total Nominal & Done Button --}}
-        <div class="tw:flex tw:flex-wrap tw:items-center tw:justify-between tw:gap-2 tw:p-2.5 tw:bg-surface-container-lowest tw:border-t tw:border-outline-variant/60">
+        <div class="tw:flex tw:flex-wrap tw:items-center tw:justify-between tw:gap-2 tw:p-2.5 tw:bg-surface-container-low tw:border-t tw:border-outline-variant">
             <div class="tw:min-w-0 tw:flex-1 tw:text-ui-xs tw:text-on-surface">
                 <template x-if="totalAmount > 0">
                     <div class="tw:flex tw:flex-wrap tw:items-baseline tw:gap-x-1">
@@ -558,7 +640,7 @@
                     </div>
                 </template>
                 <template x-if="!totalAmount || totalAmount === 0">
-                    <span class="ui-tabular-nums tw:text-on-surface-variant" x-text="@js(__('common.select.gr_selected')).replace(':count', selectedValues.length)"></span>
+                    <span class="ui-tabular-nums tw:text-on-surface-variant" x-text="@js($resolvedSelectedTemplate).replace(':count', selectedValues.length)"></span>
                 </template>
             </div>
             <x-ui.button
@@ -575,7 +657,7 @@
 
     @if($helper)<p id="{{ $helperId }}" class="tw:m-0 tw:text-ui-xs tw:text-on-surface-variant">{{ $helper }}</p>@endif
     @if($message)
-        <p id="{{ $errorId }}" class="tw:m-0 tw:flex tw:items-start tw:gap-1.5 tw:text-ui-xs tw:font-medium tw:text-error" role="alert">
+        <p id="{{ $errorId }}" class="tw:m-0 tw:flex tw:items-start tw:gap-1.5 tw:text-ui-xs tw:font-semibold tw:text-error" role="alert">
             <x-ui.icon name="circle-alert" size="sm" class="tw:mt-0.5" /><span>{{ $message }}</span>
         </p>
     @endif

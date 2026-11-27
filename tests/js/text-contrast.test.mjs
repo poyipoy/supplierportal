@@ -20,7 +20,7 @@ const linear = (c) => (c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
 const luminance = (value) => channel(value).map(linear).reduce((sum, c, i) => sum + c * [0.2126, 0.7152, 0.0722][i], 0);
 const contrast = (a, b) => (Math.max(luminance(a), luminance(b)) + 0.05) / (Math.min(luminance(a), luminance(b)) + 0.05);
 
-const SURFACES = ['--md-surface', '--md-background', '--md-surface-container-low', '--md-surface-container', '--md-surface-container-high', '--ui-workspace-bg'];
+const SURFACES = ['--md-surface', '--md-background', '--md-surface-container-low', '--md-surface-container', '--md-surface-container-high', '--md-surface-container-highest', '--ui-workspace-bg'];
 const BUTTON_SURFACES = ['--md-surface', '--ui-workspace-bg', '--md-surface-container'];
 const ACCENTS = ['brand', 'slate', 'indigo', 'teal', 'violet'];
 
@@ -209,6 +209,15 @@ test('Infor LN data-name column tokens pass WCAG AA across 5 accents x 2 modes a
                 const borderRatio = contrast(t('--md-outline-strong'), bg);
                 assert.ok(borderRatio >= 3.0, `[${mode}/${accent}] --md-outline-strong on ${bgToken} contrast ${borderRatio.toFixed(2)} < 3.0`);
             }
+
+            // Soft-blue row hover must also preserve >= 4.5:1 for all semantic inline text tokens.
+            const hoverBg = t('--ui-table-row-hover-bg');
+            for (const semanticFg of ['--md-success', '--md-warning', '--md-info']) {
+                const ratio = contrast(t(semanticFg), hoverBg);
+                assert.ok(ratio >= 4.5, `[${mode}/${accent}] ${semanticFg} on --ui-table-row-hover-bg contrast ${ratio.toFixed(2)} < 4.5`);
+            }
+            const [hr, hg, hb] = channel(hoverBg);
+            assert.ok(hb > hg && hg > hr, `[${mode}/${accent}] --ui-table-row-hover-bg (${hoverBg}) should remain a soft blue tint (B > G > R)`);
         }
     }
 });
@@ -255,4 +264,84 @@ test('templates never color text with outline tokens or fade it with opacity', (
         }
     }
     assert.deepEqual(offenders, []);
+});
+
+test('all 5 accents and semantic tokens pass WCAG 2.2 AA on highest surfaces, dialogs, hover states, auth.css, and adasi-alert.css', () => {
+    for (const mode of ['light', 'dark']) {
+        for (const accent of ACCENTS) {
+            const t = themeResolver(mode, accent);
+            const label = `${mode}/${accent}`;
+
+            for (const surfaceKey of ['--md-surface', '--ui-menu-bg', '--ui-dialog-bg', '--md-surface-container-highest']) {
+                const bg = t(surfaceKey);
+                assert.ok(contrast(t('--md-primary'), bg) >= 4.5, `${label} --md-primary on ${surfaceKey} < 4.5`);
+                assert.ok(contrast(t('--md-info'), bg) >= 4.5, `${label} --md-info on ${surfaceKey} < 4.5`);
+                assert.ok(contrast(t('--md-success'), bg) >= 4.5, `${label} --md-success on ${surfaceKey} < 4.5`);
+                assert.ok(contrast(t('--md-warning'), bg) >= 4.5, `${label} --md-warning on ${surfaceKey} < 4.5`);
+                assert.ok(contrast(t('--md-outline-strong'), bg) >= 3.0, `${label} --md-outline-strong on ${surfaceKey} < 3.0`);
+            }
+
+            assert.ok(contrast(t('--md-on-primary'), t('--ui-primary-hover')) >= 4.5, `${label} --md-on-primary on --ui-primary-hover < 4.5`);
+            assert.ok(contrast(t('--md-on-info'), t('--md-info')) >= 4.5, `${label} --md-on-info on --md-info < 4.5`);
+            assert.ok(contrast(t('--md-on-success'), t('--md-success')) >= 4.5, `${label} --md-on-success on --md-success < 4.5`);
+            assert.ok(contrast(t('--md-on-warning'), t('--md-warning')) >= 4.5, `${label} --md-on-warning on --md-warning < 4.5`);
+        }
+    }
+
+    const authCss = readFileSync(path.join(root, 'resources/css/auth.css'), 'utf8');
+    assert.match(authCss, /@custom-variant dark \(&:where\(\[data-theme="dark"\], \[data-theme="dark"\] \*\)\);/);
+    assert.match(authCss, /--auth-media-on-dark:\s*#FFFFFF;/);
+    assert.doesNotMatch(authCss, /stroke='%23fff'|fill='%23fff'/);
+
+    const alertCss = readFileSync(path.join(root, 'public/assets/css/adasi-alert.css'), 'utf8');
+    assert.match(alertCss, /--adasi-alert-surface:\s*var\(--ui-dialog-bg/);
+    assert.match(alertCss, /@media\s*\(forced-colors:\s*active\)/);
+});
+
+test('unified table header token, best-price tokens, and zero hardcoded accent rgba hold across all 10 themes', () => {
+    const theadMatches = css.match(/background-color:\s*var\(--ui-table-header-bg\)/g) ?? [];
+    assert.ok(theadMatches.length >= 6, `Expected at least 6 unified thead contexts using --ui-table-header-bg, found ${theadMatches.length}`);
+    assert.doesNotMatch(css, /rgba\(\s*31\s*,\s*95\s*,\s*166\b/, 'Hardcoded brand-blue rgba(31, 95, 166, ...) must use var(--md-primary-rgb)');
+    assert.match(css, /\.ui-best-price-cell\s*\{[^}]*background-color:\s*var\(--ui-best-price-bg\)\s*!important;/s);
+    assert.match(css, /\.ui-best-price-row\s*>\s*td\s*\{[^}]*background-color:\s*var\(--ui-best-price-row-bg\)\s*!important;/s);
+
+    const fgTokens = ['--md-on-surface', '--md-on-surface-variant', '--ui-primary-text', '--md-error', '--md-on-warning-container', '--md-on-success-container'];
+    for (const mode of ['light', 'dark']) {
+        for (const accent of ACCENTS) {
+            const t = themeResolver(mode, accent);
+            const theadBg = t('--ui-table-header-bg');
+            for (const fgToken of fgTokens) {
+                const ratio = contrast(t(fgToken), theadBg);
+                assert.ok(ratio >= 4.5, `[${mode}/${accent}] ${fgToken} on --ui-table-header-bg (${theadBg}) is ${ratio.toFixed(2)}:1 < 4.5`);
+            }
+            const borderRatio = contrast(t('--md-outline-strong'), theadBg);
+            assert.ok(borderRatio >= 3.0, `[${mode}/${accent}] --md-outline-strong on --ui-table-header-bg (${theadBg}) is ${borderRatio.toFixed(2)}:1 < 3.0`);
+
+            const bestPriceRatio = contrast(t('--ui-best-price-fg'), t('--ui-best-price-bg'));
+            const bestPriceHoverRatio = contrast(t('--ui-best-price-fg'), t('--ui-best-price-hover-bg'));
+            assert.ok(bestPriceRatio >= 4.5, `[${mode}/${accent}] best-price cell contrast is ${bestPriceRatio.toFixed(2)}:1 < 4.5`);
+            assert.ok(bestPriceHoverRatio >= 4.5, `[${mode}/${accent}] best-price hover contrast is ${bestPriceHoverRatio.toFixed(2)}:1 < 4.5`);
+        }
+    }
+
+    const authCss = readFileSync(path.join(root, 'resources/css/auth.css'), 'utf8');
+    const authDarkStart = authCss.indexOf(':root[data-theme="dark"] {');
+    const authLight = authCss.slice(authCss.indexOf(':root {'), authDarkStart);
+    const authDark = authCss.slice(authDarkStart, authCss.indexOf('}', authDarkStart));
+    assert.equal(hex(authLight, '--md-background'), hex(lightBlock, '--md-background'), 'auth.css light --md-background matches app.css');
+    assert.equal(hex(authLight, '--ui-workspace-bg'), hex(lightBlock, '--ui-workspace-bg'), 'auth.css light --ui-workspace-bg matches app.css');
+    assert.equal(hex(authDark, '--md-background'), hex(darkBlock, '--md-background'), 'auth.css dark --md-background matches app.css');
+    assert.equal(hex(authDark, '--ui-workspace-bg'), hex(darkBlock, '--ui-workspace-bg'), 'auth.css dark --ui-workspace-bg matches app.css');
+
+    assert.match(css, /\.ui-filter-bar--embedded\s+\.ui-filter-bar__surface\s*\{[^}]*box-shadow:\s*none;/s);
+    assert.doesNotMatch(css, /:root\[data-theme="dark"\]\s+\.ui-filter-bar__surface\s*\{/);
+    assert.match(css, /thead\s+\.ui-table-sticky-col\s*\{[^}]*z-index:\s*4;\s*background-color:\s*var\(--ui-table-header-bg\);/s);
+
+    const prTableStyles = readFileSync(path.join(root, 'resources/views/purchasing/pr/_form_table_styles.blade.php'), 'utf8');
+    assert.match(prTableStyles, /#itemsTable\.pr-items-table\s+thead\s+th\s*\{[^}]*background-color:\s*var\(--ui-table-header-bg\)\s*!important;/s);
+    assert.doesNotMatch(prTableStyles, /#itemsTable\.pr-items-table\s+thead\s+th\s*\{[^}]*background-color:\s*var\(--md-surface-container-low\)/s);
+
+    const quotationCreate = readFileSync(path.join(root, 'resources/views/supplier/quotations/create.blade.php'), 'utf8');
+    assert.match(quotationCreate, /\.quotation-items-table\s+\.quotation-field-header\s+th\s*\{[^}]*background:\s*var\(--ui-table-header-bg\)\s*!important;/s);
+    assert.doesNotMatch(quotationCreate, /\.quotation-items-table\s+\.quotation-field-header\s+th\s*\{[^}]*background:\s*var\(--md-surface-container-low\)/s);
 });

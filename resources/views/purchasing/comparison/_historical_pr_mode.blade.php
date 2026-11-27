@@ -20,11 +20,18 @@
         <div class="tw:text-ui-xs tw:text-on-surface-variant">{{ __('purchasing.quotation_history.pr_terms', ['incoterm' => $qh['pr']['incoterm'] ?? $notRecorded, 'port' => $portLabel($qh['pr']['port_of_discharge'] ?? null)]) }}</div>
     </div>
     <div class="tw:flex tw:flex-wrap tw:gap-2">
-        <x-ui.button :href="$interSupplierUrl" variant="outline" size="sm" data-server-tab data-tab-name="inter-supplier">
+        @php
+            $shouldEmbedPrLinks = \App\Support\WorkspaceShell::enabled()
+                && auth()->check()
+                && \App\Support\WorkspaceShell::originatedFromEmbed(request());
+            $safeInterSupplierUrl = $shouldEmbedPrLinks ? \App\Support\WorkspaceShell::appendEmbedParam($interSupplierUrl) : $interSupplierUrl;
+            $safeClearPrUrl = $shouldEmbedPrLinks ? \App\Support\WorkspaceShell::appendEmbedParam($clearPrUrl) : $clearPrUrl;
+        @endphp
+        <x-ui.button :href="$safeInterSupplierUrl" variant="outline" size="sm" data-server-tab data-tab-name="inter-supplier">
             <x-ui.icon name="arrow-left" size="sm" />
             <span>{{ __('purchasing.quotation_history.back_to_award') }}</span>
         </x-ui.button>
-        <x-ui.button :href="$clearPrUrl" variant="ghost" size="sm" data-historical-clear-pr>
+        <x-ui.button :href="$safeClearPrUrl" variant="ghost" size="sm" data-historical-clear-pr>
             <x-ui.icon name="x" size="sm" />
             <span>{{ __('purchasing.quotation_history.clear_pr') }}</span>
         </x-ui.button>
@@ -38,14 +45,26 @@
 @if($qh['chart_item'] !== null)
     <section class="tw:grid tw:gap-3 tw:rounded-ui-md tw:border tw:border-outline tw:bg-surface tw:p-4" aria-labelledby="historicalPrChartTitle">
         <div class="tw:flex tw:flex-wrap tw:items-end tw:justify-between tw:gap-3">
-            <div class="tw:grid tw:gap-1">
+            @php
+                $prChartItemOptions = collect($historyItems)->map(fn ($option) => [
+                    'value' => (string) $option['hash'],
+                    'label' => (string) $option['label'],
+                ])->values()->all();
+            @endphp
+            <div class="tw:grid tw:gap-1 tw:min-w-64">
                 <h2 id="historicalPrChartTitle" class="tw:m-0 tw:text-ui-base tw:font-semibold tw:text-on-surface">{{ __('purchasing.quotation_history.chart_title') }}</h2>
-                <label for="historicalPrChartItem" class="tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant">{{ __('purchasing.quotation_history.chart_item') }}</label>
-                <select id="historicalPrChartItem" class="ui-select ui-select--sm tw:min-w-64" data-historical-chart-item>
-                    @foreach($historyItems as $option)
-                        <option value="{{ $option['hash'] }}" @selected($option['hash'] === $qh['chart_item']['hash'])>{{ $option['label'] }}</option>
-                    @endforeach
-                </select>
+                <x-ui.searchable-select
+                    id="historicalPrChartItem"
+                    :label="__('purchasing.quotation_history.chart_item')"
+                    label-class="tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant"
+                    size="sm"
+                    :clearable="false"
+                    :show-sublabel-on-trigger="false"
+                    :value="$qh['chart_item']['hash']"
+                    :options="$prChartItemOptions"
+                    :select-attributes="['data-historical-chart-item' => true]"
+                    class="tw:gap-1"
+                />
             </div>
             <div class="tw:flex tw:flex-wrap tw:gap-1 tw:rounded-ui-sm tw:border tw:border-outline tw:p-1" role="group" aria-label="{{ __('purchasing.quotation_history.chart_modes') }}">
                 @foreach(['current_previous', 'quote_trend', 'po_history'] as $mode)
@@ -99,13 +118,13 @@
                             $previous = $row['previous'];
                         @endphp
                         <tr data-history-row data-status="{{ $row['status'] }}">
-                            <th scope="row" class="ui-sticky-col ui-col-data-name tw:font-medium tw:text-on-surface">{{ $row['supplier']['name'] }}</th>
+                            <th scope="row" class="ui-sticky-col ui-col-data-name tw:font-semibold tw:text-on-surface">{{ $row['supplier']['name'] }}</th>
                             <td>
                                 @if($row['status'] === 'ambiguous')
                                     <ul class="tw:m-0 tw:grid tw:list-none tw:gap-1 tw:p-0">
                                         @foreach($row['sources'] as $index => $source)
                                             <li>
-                                                <a href="{{ $source['detail_url'] }}" class="ui-focus-ring tw:font-medium tw:text-primary" data-return-url>{{ __('purchasing.quotation_history.view_source', ['number' => $index + 1]) }}</a>
+                                                <a href="{{ $source['detail_url'] }}" class="ui-focus-ring tw:font-semibold tw:text-primary" data-return-url>{{ __('purchasing.quotation_history.view_source', ['number' => $index + 1]) }}</a>
                                                 <span class="ui-tabular-nums">{{ $source['price_display'] }}</span>
                                                 <span class="tw:text-ui-xs tw:text-on-surface-variant">{{ $source['date_display'] }} · {{ \App\Support\StatusHelper::quotationLabel($source['status']) }}</span>
                                             </li>

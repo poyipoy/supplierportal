@@ -733,6 +733,13 @@ return [
         'satellite_empty_title' => 'Select a Local PO row',
         'satellite_empty' => 'Click a PO row above (or press Enter) to preview Goods Receipts, linked invoices, and PO PDF attachments here.',
         'open_detail' => 'Open PO Detail',
+        'satellite_tabs_label' => 'Satellite detail sections',
+        'row_hint' => 'Press Enter or Space on a PO row to load Goods Receipts, linked invoices, and PO PDF attachments in the detail panel below.',
+        'table_regions' => [
+            'goods_receipts' => 'Goods Receipts table',
+            'invoices' => 'Linked invoices table',
+            'documents' => 'PO documents table',
+        ],
         'tabs' => [
             'goods_receipts' => 'Goods Receipts',
             'invoices' => 'Invoices',

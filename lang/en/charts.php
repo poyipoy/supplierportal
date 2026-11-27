@@ -24,5 +24,8 @@ return [
         'summary_single' => ':series: :value (:label).',
         'summary_distribution' => 'Total :total. Largest: :label :value (:percent).',
         'summary_empty' => 'No data to display.',
+        'compact_million' => ':value M',
+        'compact_billion' => ':value B',
+        'compact_trillion' => ':value T',
     ],
 ];

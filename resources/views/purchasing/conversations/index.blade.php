@@ -42,7 +42,7 @@
                             @endif
                             <span class="tw:ms-2 tw:font-semibold">{{ $conv->context_label }}</span>
                         </td>
-                        <td class="tw:font-medium">{{ $conv->supplierUser->supplier->company_name ?? $conv->supplierUser->name }}</td>
+                        <td class="tw:font-semibold">{{ $conv->supplierUser->supplier->company_name ?? $conv->supplierUser->name }}</td>
                         <td>
                             @if($conv->latestMessage)
                                 @if($conv->latestMessage->sender_id === auth()->id())

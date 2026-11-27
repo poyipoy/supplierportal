@@ -47,7 +47,7 @@
             @foreach($groups as $prefix => [$title, $fields])
                 <section class="tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface-low tw:p-3">
                     <div class="tw:flex tw:flex-wrap tw:items-center tw:justify-between tw:gap-2 tw:mb-2">
-                        <h3 class="tw:m-0 tw:text-ui-xs tw:font-bold tw:uppercase tw:tracking-wider tw:text-on-surface">{{ $title }}</h3>
+                        <h3 class="tw:m-0 tw:text-ui-sm tw:font-bold tw:uppercase tw:tracking-wider tw:text-on-surface">{{ $title }}</h3>
                         @if($prefix === 'supplier' && $inspection->supplier_same_as_exporter)
                             <x-ui.status-chip tone="info" size="sm">{{ __('shipments.preshipment.same_as_exporter_badge') }}</x-ui.status-chip>
                         @endif

@@ -27,7 +27,7 @@
                 ]) }}
             </p>
             @if($pr->cancellation_reason)
-                <p class="tw:m-0 tw:mt-2 tw:whitespace-pre-line tw:font-medium">{{ $pr->cancellation_reason }}</p>
+                <p class="tw:m-0 tw:mt-2 tw:whitespace-pre-line tw:font-semibold">{{ $pr->cancellation_reason }}</p>
             @endif
         </x-ui.alert>
     @endif
@@ -54,8 +54,8 @@
         </dl>
     </section>
 
-    <section class="tw:border tw:border-outline tw:bg-surface" aria-labelledby="pr-notes-title">
-        <header class="tw:border-b tw:border-outline-variant tw:bg-surface-container tw:px-4 tw:py-3">
+    <section class="tw:overflow-hidden tw:rounded-ui-md tw:border tw:border-outline tw:bg-surface tw:shadow-ui-surface" aria-labelledby="pr-notes-title">
+        <header class="tw:border-b tw:border-outline-variant tw:px-4 tw:py-3">
             <h2 id="pr-notes-title" class="tw:m-0 tw:text-ui-sm tw:font-semibold">{{ __('admin.copy.requisition_instructions') }}</h2>
         </header>
         <div class="tw:p-4 tw:text-ui-sm tw:whitespace-pre-line {{ $pr->notes ? 'tw:text-on-surface' : 'tw:text-on-surface-variant' }}">{{ $pr->notes ?: __('admin.copy.no_additional_instructions_were_provided') }}</div>
@@ -84,7 +84,7 @@
                             <td class="tw:font-semibold ui-col-data-name">{{ $item->material_name }}</td>
                             <td class="tw:text-center">
                                 @if($item->shape)
-                                    <span class="tw:font-medium">{{ $item->shape }}</span>
+                                    <span class="tw:font-semibold">{{ $item->shape }}</span>
                                     <div class="tw:mt-1 tw:text-on-surface-variant">{{ $item->dimension_label }}</div>
                                 @else
                                     -

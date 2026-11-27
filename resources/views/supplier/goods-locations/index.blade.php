@@ -257,6 +257,7 @@
                                                 data-ui-dropdown-trigger
                                                 popovertarget="dd-loc-{{ $loc->id }}"
                                                 aria-controls="dd-loc-{{ $loc->id }}"
+                                                aria-haspopup="menu"
                                                 aria-expanded="false"
                                                 aria-label="{{ __('shipments.copy.more') }} {{ $loc->name }}"
                                             >

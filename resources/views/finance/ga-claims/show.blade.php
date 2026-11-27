@@ -3,7 +3,7 @@
 @section('page-title', __('ga.verification.title'))
 
 @section('content')
-<div class="tw:grid tw:gap-6 tw:pb-16">
+<div class="tw:grid tw:gap-6">
     <x-ui.page-header
         :title="__('ga.detail.title', ['number' => $claim->claim_number])"
         :description="__('ga.detail.description', ['name' => $claim->employee?->name, 'department' => $claim->employee?->department, 'type' => \App\Models\GaClaim::claimTypeLabel($claim->claim_type)])"
@@ -40,7 +40,7 @@
 
     <div class="tw:grid tw:grid-cols-1 tw:lg:grid-cols-12 tw:gap-6">
         {{-- Left: Details & Documents --}}
-        <div class="tw:lg:col-span-8 tw:space-y-6">
+        <div class="tw:min-w-0 tw:lg:col-span-8 tw:space-y-6">
             <x-ui.card :title="__('ga.labels.details_full')">
                 <div class="tw:grid tw:grid-cols-2 tw:sm:grid-cols-3 tw:gap-4 tw:text-ui-xs">
                     <div>
@@ -67,7 +67,7 @@
                     </div>
                     <div>
                         <span class="tw:text-on-surface-variant tw:block">{{ __('ga.labels.claim_type') }}:</span>
-                        <span class="tw:inline-flex tw:px-2 tw:py-0.5 tw:rounded-sm tw:text-[11px] tw:font-semibold tw:bg-primary/10 tw:text-primary">
+                        <span class="tw:inline-flex tw:px-2 tw:py-0.5 tw:rounded-sm tw:text-ui-xs tw:font-semibold tw:bg-primary/10 tw:text-primary">
                             {{ \App\Models\GaClaim::claimTypeLabel($claim->claim_type) }}
                         </span>
                     </div>
@@ -101,7 +101,7 @@
                                 <x-ui.icon name="file-text" size="md" class="tw:text-primary" />
                                 <div>
                                     <span class="tw:font-semibold tw:text-ui-xs tw:text-on-surface tw:block">{{ $doc->original_filename }}</span>
-                                    <span class="tw:text-[11px] tw:text-on-surface-variant">{{ $doc->document_type === 'supporting' ? __('ga.claims.document_supporting') : $doc->document_type }} · {{ __('local_invoice.labels.revision') }} {{ $doc->revision_number }} · {{ number_format($doc->file_size / 1024, 1) }} KB</span>
+                                    <span class="tw:text-ui-xs tw:text-on-surface-variant">{{ $doc->document_type === 'supporting' ? __('ga.claims.document_supporting') : $doc->document_type }} · {{ __('local_invoice.labels.revision') }} {{ $doc->revision_number }} · {{ number_format($doc->file_size / 1024, 1) }} KB</span>
                                 </div>
                             </div>
                             <x-ui.button :href="route('ga-claim-documents.show', $doc)" target="_blank" variant="outline-primary" size="sm">
@@ -118,7 +118,7 @@
         </div>
 
         {{-- Right: Destination Bank & Finance Verification --}}
-        <div class="tw:lg:col-span-4 tw:space-y-6">
+        <div class="tw:min-w-0 tw:lg:col-span-4 tw:space-y-6">
             {{-- Destination Bank --}}
             <x-ui.card :title="__('ga.verification.bank_destination')">
                 <div class="tw:space-y-2 tw:text-ui-xs">
@@ -134,7 +134,7 @@
                         <span class="tw:text-on-surface-variant">{{ __('local_invoice.labels.account_name') }}:</span>
                         <strong class="tw:text-on-surface">{{ $claim->employee?->account_holder_name }}</strong>
                     </div>
-                    <div class="tw:pt-2 tw:text-[11px] tw:text-on-surface-variant">
+                    <div class="tw:pt-2 tw:text-ui-xs tw:text-on-surface-variant">
                         {{ __('ga.form.bank_snapshot') }}
                     </div>
                 </div>
@@ -158,7 +158,7 @@
                         </p>
 
                         {{-- Approve Button Form --}}
-                        <form method="POST" action="{{ route('finance.ga-claims.verify', $claim) }}" onsubmit="event.preventDefault(); window.AdasiAlert.confirm({title: {{ json_encode(__('ga.verification.approve_title'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) }}, text: {{ json_encode(__('ga.verification.approve_confirm'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) }}, confirmText: {{ json_encode(__('ga.verification.approve_yes'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) }}, cancelText: {{ json_encode(__('local_invoice.actions.cancel'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) }}}).then(r => { if (r.isConfirmed) this.submit(); });">
+                        <form method="POST" action="{{ route('finance.ga-claims.verify', $claim) }}" onsubmit="event.preventDefault(); window.AdasiAlert.confirm({title: {{ json_encode(__('ga.verification.approve_title'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) }}, text: {{ json_encode(__('ga.verification.approve_confirm'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) }}, confirmText: {{ json_encode(__('ga.verification.approve_yes'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) }}, cancelText: {{ json_encode(__('local_invoice.actions.cancel'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) }}}).then(r => { if (r.isConfirmed) { window.AdasiButton?.submitForm ? window.AdasiButton.submitForm(this) : this.submit(); } });">
                             @csrf
                             <input type="hidden" name="approve" value="1">
                             <x-ui.button type="submit" variant="primary" size="sm" class="tw:w-full">
@@ -232,7 +232,7 @@
                             </div>
                             <div class="tw:text-on-surface-variant">{{ __('ga.detail.actor', ['name' => $hist->actor?->name ?? __('ga.detail.system')]) }}</div>
                             @if($hist->notes)
-                                <div class="tw:mt-1 tw:text-[11px] tw:italic">{{ $hist->notes }}</div>
+                                <div class="tw:mt-1 tw:text-ui-xs tw:italic">{{ $hist->notes }}</div>
                             @endif
                         </div>
                     @empty

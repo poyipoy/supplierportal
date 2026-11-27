@@ -3,7 +3,7 @@
 @section('page-title', __('accounting.overview.title'))
 
 @section('content')
-<div class="tw:grid tw:gap-6 tw:pb-16">
+<div class="tw:grid tw:gap-6">
     <x-ui.page-header
         :title="__('local_invoice.dashboard.page_heading')"
         :description="__('accounting.overview.description')"

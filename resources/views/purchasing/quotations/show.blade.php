@@ -43,8 +43,10 @@
         :description="__('purchasing.page.quotation_help', ['reference' => $quotation->purchaseRequisition->pr_number ?? __('purchasing.copy.quotation'), 'supplier' => $supplierDisplayName])"
         :record-nav="$recordNav ?? null"
     >
-        <x-slot:actions>
+        <x-slot:status>
             <x-status-badge type="quotation" :status="$quotation->status" size="lg" />
+        </x-slot:status>
+        <x-slot:actions>
             <x-ui.button :href="\App\Support\PurchasingNavigation::backUrl('purchasing.quotations.index')" variant="outline" size="sm">
                 <x-ui.icon name="arrow-left" />
                 <span>{{ __('purchasing.copy.back_to_quotations') }}</span>
@@ -325,7 +327,7 @@
                     @csrf
                     <div class="modal-header">
                         <div>
-                            <h5 class="modal-title tw:font-bold" id="generatePoModalTitle">{{ __('purchasing.copy.generate_purchase_order') }}</h5>
+                            <h2 class="modal-title tw:text-ui-lg tw:font-bold" id="generatePoModalTitle">{{ __('purchasing.copy.generate_purchase_order') }}</h2>
                             <div class="tw:text-ui-xs tw:text-on-surface-variant tw:mt-0.5">
                                 {{ $quotation->purchaseRequisition->pr_number ?? '-' }} &middot; {{ $supplierDisplayName }}
                             </div>

@@ -21,7 +21,7 @@
         @foreach($flowSteps as $index => $label)
             @php $state = $index < $position ? 'done' : ($index === $position ? 'current' : 'todo'); @endphp
             <li class="tw:flex tw:items-center tw:gap-2" @if($state === 'current') aria-current="step" @endif>
-                <span class="tw:inline-flex tw:h-5 tw:w-5 tw:shrink-0 tw:items-center tw:justify-center tw:rounded-full tw:border tw:text-[10px] tw:font-semibold {{ $state === 'done' ? 'tw:border-success tw:bg-success tw:text-success-foreground' : ($state === 'current' ? 'tw:border-primary tw:text-primary' : 'tw:border-outline-variant tw:text-on-surface-variant') }}"
+                <span class="tw:inline-flex tw:h-5 tw:w-5 tw:shrink-0 tw:items-center tw:justify-center tw:rounded-full tw:border tw:text-ui-xs tw:font-semibold {{ $state === 'done' ? 'tw:border-success tw:bg-success tw:text-success-foreground' : ($state === 'current' ? 'tw:border-primary tw:text-primary' : 'tw:border-outline-variant tw:text-on-surface-variant') }}"
                     style="font-variant-numeric: tabular-nums;" aria-hidden="true">
                     @if($state === 'done')
                         <x-ui.icon name="check" size="sm" class="tw:h-3 tw:w-3" />

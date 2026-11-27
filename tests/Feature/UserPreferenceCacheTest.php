@@ -60,4 +60,27 @@ class UserPreferenceCacheTest extends TestCase
         $this->assertSame('en', $service->for($user)['locale']);
         $this->assertSame(0, $service->for($user)['revision']);
     }
+
+    public function test_save_locale_skips_redundant_writes_when_locale_is_unchanged(): void
+    {
+        $user = User::factory()->create(['role' => 'purchasing']);
+        $service = app(UserPreferenceService::class);
+
+        $first = $service->saveLocale($user, 'id');
+        $this->assertSame('id', $first['locale']);
+        $this->assertSame(1, $first['revision']);
+
+        $writeQueries = 0;
+        DB::listen(function ($query) use (&$writeQueries): void {
+            $sql = strtolower($query->sql);
+            if (str_contains($sql, 'user_preferences') && (str_starts_with($sql, 'insert') || str_starts_with($sql, 'update'))) {
+                $writeQueries++;
+            }
+        });
+
+        $second = $service->saveLocale($user, 'id');
+        $this->assertSame('id', $second['locale']);
+        $this->assertSame(1, $second['revision']);
+        $this->assertSame(0, $writeQueries, 'Saving the already-persisted locale must be an idempotent no-op.');
+    }
 }

@@ -3,7 +3,7 @@
 @section('page-title', __('local_procurement.register.title'))
 
 @section('content')
-<div class="tw:grid tw:gap-6 tw:pb-16">
+<div class="tw:grid tw:gap-6">
     <x-ui.page-header
         :title="__('local_procurement.register.title')"
         :description="__('local_procurement.register.help')"
@@ -212,19 +212,18 @@
             :title="__('local_procurement.list.local')"
             :description="__('local_procurement.register.po_count', ['count' => $purchaseOrders->total()])"
         >
-        <div class="ui-table-responsive">
-            <table class="ui-table ui-table--hover tw:align-middle tw:m-0 tw:text-ui-sm tw:w-full">
+        <table class="ui-table ui-table--hover tw:align-middle tw:m-0 tw:text-ui-sm tw:w-full">
                 <thead>
                     <tr>
-                        <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('local_invoice.receipt.po_number') }}</th>
-                        <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('local_procurement.pr.label') }}</th>
-                        <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('local_invoice.labels.supplier') }}</th>
-                        <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('local_procurement.labels.po_date') }}</th>
-                        <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-end">{{ __('local_procurement.register.po_value') }}</th>
-                        <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-end">{{ __('local_procurement.register.gr_actual') }}</th>
-                        <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-center">{{ __('local_invoice.labels.status') }}</th>
-                        <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-center">{{ __('local_invoice.labels.source') }}</th>
-                        <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-end">{{ __('common.table.action') }}</th>
+                        <th scope="col">{{ __('local_invoice.receipt.po_number') }}</th>
+                        <th scope="col">{{ __('local_procurement.pr.label') }}</th>
+                        <th scope="col">{{ __('local_invoice.labels.supplier') }}</th>
+                        <th scope="col">{{ __('local_procurement.labels.po_date') }}</th>
+                        <th scope="col" class="tw:text-end">{{ __('local_procurement.register.po_value') }}</th>
+                        <th scope="col" class="tw:text-end">{{ __('local_procurement.register.gr_actual') }}</th>
+                        <th scope="col" class="tw:text-center">{{ __('local_invoice.labels.status') }}</th>
+                        <th scope="col" class="tw:text-center">{{ __('local_invoice.labels.source') }}</th>
+                        <th scope="col" class="tw:text-end">{{ __('common.table.action') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -241,7 +240,7 @@
                                         {{ $po->po_number }}
                                     </a>
                                     @if($po->latestPoDocument())
-                                        <a href="{{ route('attachments.show', $po->latestPoDocument()) }}" target="_blank" class="ui-status-chip ui-status-chip--info tw:border tw:border-outline-variant tw:no-underline tw:hover:bg-primary tw:hover:text-white tw:transition-colors" title="{{ __('local_procurement.actions.view_po') }}">
+                                        <a href="{{ route('attachments.show', $po->latestPoDocument()) }}" target="_blank" class="ui-status-chip ui-status-chip--info tw:border tw:border-outline-variant tw:no-underline tw:hover:bg-primary tw:hover:text-on-primary tw:transition-colors" title="{{ __('local_procurement.actions.view_po') }}">
                                             <x-ui.icon name="file-text" size="xs" />
                                             <span>PDF</span>
                                         </a>
@@ -254,10 +253,10 @@
                                 </div>
                             </td>
                             <td>
-                                <div class="tw:font-medium tw:text-on-surface">
+                                <div class="tw:font-semibold tw:text-on-surface">
                                     {{ $po->supplier->supplier?->company_name ?: $po->supplier->name }}
                                 </div>
-                                <div class="tw:text-[11px] tw:text-on-surface-variant">
+                                <div class="tw:text-ui-xs tw:text-on-surface-variant">
                                     {{ \App\Support\StatusHelper::vendorCategoryLabel($po->supplier->supplier?->vendor_category ?: $po->supplier->supplier?->category ?: __('local_invoice.labels.supplier')) }}
                                 </div>
                             </td>
@@ -273,7 +272,7 @@
                                 <div class="ui-tabular-nums tw:font-semibold tw:text-on-surface">
                                     {{ $po->active_gr_count }} GR
                                 </div>
-                                <div class="tw:text-[11px] tw:text-on-surface-variant">
+                                <div class="tw:text-ui-xs tw:text-on-surface-variant">
                                     {{ __('local_procurement.register.gr_files', ['count' => $po->active_gr_count]) }}
                                 </div>
                             </td>
@@ -283,7 +282,7 @@
                                 </x-ui.status-chip>
                             </td>
                             <td class="tw:text-center">
-                                <span class="tw:inline-flex tw:items-center tw:px-2 tw:py-0.5 tw:rounded-sm tw:text-[10px] tw:font-semibold {{ $po->source === 'IMPORT' ? 'tw:bg-secondary/10 tw:text-secondary' : 'tw:bg-surface-high tw:text-on-surface' }}">
+                                <span class="tw:inline-flex tw:items-center tw:px-2 tw:py-0.5 tw:rounded-sm tw:text-ui-xs tw:font-semibold {{ $po->source === 'IMPORT' ? 'tw:bg-secondary/10 tw:text-secondary' : 'tw:bg-surface-high tw:text-on-surface' }}">
                                     {{ __('local_procurement.sources.'.strtolower($po->source ?: 'MANUAL')) }}
                                 </span>
                             </td>
@@ -303,7 +302,6 @@
                     @endforelse
                 </tbody>
             </table>
-        </div>
 
         @if($purchaseOrders->hasPages())
             <x-slot:pagination>

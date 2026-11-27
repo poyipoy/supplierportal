@@ -77,7 +77,7 @@
 
     {{-- HP/tablet: pemilih bagian sticky menggantikan navigasi kiri (U5). --}}
     <div class="tw:sticky tw:top-14 tw:z-10 tw:flex tw:items-center tw:gap-3 tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface tw:px-3 tw:py-1.5 tw:lg:hidden">
-        <button type="button" class="ui-focus-ring tw:flex tw:min-h-11 tw:min-w-0 tw:flex-1 tw:items-center tw:gap-2 tw:rounded-ui-sm tw:text-start tw:text-ui-sm tw:font-medium tw:text-on-surface"
+        <button type="button" class="ui-focus-ring tw:flex tw:min-h-11 tw:min-w-0 tw:flex-1 tw:items-center tw:gap-2 tw:rounded-ui-sm tw:text-start tw:text-ui-sm tw:font-semibold tw:text-on-surface"
             x-on:click="$dispatch('open-ui-dialog', 'supplier-audit-sections')" aria-haspopup="dialog">
             <span class="tw:min-w-0 tw:flex-1 tw:truncate" x-text="sectionPickerLabel"></span>
             <x-ui.icon name="chevron-down" size="sm" class="tw:shrink-0" />
@@ -117,12 +117,12 @@
                                         'tw:border-outline-strong': sectionState(sections[{{ $loop->index }}]) === 'empty',
                                     }" aria-hidden="true">
                                     <span x-show="sectionState(sections[{{ $loop->index }}]) === 'done'" x-cloak class="tw:inline-flex"><x-ui.icon name="check" size="xs" /></span>
-                                    <span x-show="sectionState(sections[{{ $loop->index }}]) === 'error'" x-cloak class="tw:text-[11px] tw:font-bold tw:leading-none">!</span>
+                                    <span x-show="sectionState(sections[{{ $loop->index }}]) === 'error'" x-cloak class="tw:text-ui-xs tw:font-bold tw:leading-none">!</span>
                                     <span x-show="sectionState(sections[{{ $loop->index }}]) === 'partial'" x-cloak class="tw:h-1.5 tw:w-1.5 tw:rounded-full tw:bg-primary"></span>
                                 </span>
                                 <span class="tw:w-5 tw:shrink-0 tw:text-end" style="font-variant-numeric: tabular-nums;">{{ $section['code'] }}</span>
                                 <span class="tw:min-w-0 tw:flex-1 tw:truncate">{{ $section['title'] }}</span>
-                                <span class="tw:shrink-0 tw:text-[11px]" style="font-variant-numeric: tabular-nums;"
+                                <span class="tw:shrink-0 tw:text-ui-xs" style="font-variant-numeric: tabular-nums;"
                                     :class="sectionState(sections[{{ $loop->index }}]) === 'done' ? 'tw:text-success' : ''"
                                     x-text="`${sectionFilled(sections[{{ $loop->index }}])}/{{ count($section['ids']) }}`">0/{{ count($section['ids']) }}</span>
                                 <span class="tw:sr-only" x-text="sectionStateLabel(sections[{{ $loop->index }}])"></span>
@@ -183,9 +183,9 @@
                         </h2>
 
                         @foreach($step['sections'] as $section)
-                            <div class="ui-audit-list-card tw:overflow-hidden tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface">
+                            <div class="ui-audit-list-card tw:overflow-hidden tw:rounded-ui-md tw:border tw:border-outline tw:bg-surface tw:shadow-ui-surface">
                                 @if($section['parent_code'] !== null)
-                                    <h3 class="tw:m-0 tw:border-b tw:border-outline-variant tw:bg-surface-container tw:px-4 tw:py-2 tw:text-ui-sm tw:font-semibold tw:text-on-surface">
+                                    <h3 class="tw:m-0 tw:border-b tw:border-outline-variant tw:px-4 tw:py-2 tw:text-ui-sm tw:font-semibold tw:text-on-surface">
                                         {{ $section['code'] }}. {{ $section['title'] }}
                                     </h3>
                                 @endif
@@ -195,11 +195,11 @@
                                             $cid = (string) $answer->supplier_audit_criterion_id;
                                             $ref = __('supplier_audit.fields.criterion_ref', ['section' => $section['code'], 'number' => $answer->criterion_number_snapshot]);
                                         @endphp
-                                        {{-- Garis kiri hanya menandai baris yang sedang fokus (state nyata). --}}
+                                        {{-- Sorotan latar dan ring fokus inset menandai baris kriteria yang aktif. --}}
                                         <li tabindex="0" data-criterion-row="{{ $cid }}" x-on:keydown="onRowKeydown($event, '{{ $cid }}')"
                                             aria-labelledby="crit-{{ $cid }}-text"
-                                            class="ui-audit-row tw:scroll-mt-28 tw:border-s-2 tw:border-transparent tw:px-4 tw:py-3 tw:outline-hidden tw:focus-within:border-primary tw:focus-within:bg-surface-container"
-                                            style="transition-property: background-color, border-color; transition-duration: 150ms;"
+                                            class="ui-audit-row tw:scroll-mt-28 tw:px-4 tw:py-3 tw:focus-within:bg-surface-container tw:focus-visible:outline-2 tw:focus-visible:outline-offset-[-2px] tw:focus-visible:outline-primary"
+                                            style="transition-property: background-color; transition-duration: 150ms;"
                                             :class="rowFlagged('{{ $cid }}') ? 'tw:bg-error-container' : ''">
                                             <p id="crit-{{ $cid }}-text" class="tw:m-0 tw:flex tw:gap-2 tw:text-ui-sm tw:text-on-surface" style="text-wrap: pretty;">
                                                 <span class="tw:w-6 tw:shrink-0 tw:font-semibold" style="font-variant-numeric: tabular-nums;">{{ $answer->criterion_number_snapshot }}.</span>
@@ -252,7 +252,7 @@
                                                 </div>
                                             </div>
 
-                                            <p id="crit-{{ $cid }}-error" class="ui-audit-row__error tw:m-0 tw:text-ui-xs tw:font-medium tw:text-error" role="alert"
+                                            <p id="crit-{{ $cid }}-error" class="ui-audit-row__error tw:m-0 tw:text-ui-xs tw:font-semibold tw:text-error" role="alert"
                                                 x-show="rowFlagged('{{ $cid }}')" x-cloak
                                                 x-text="rowError('{{ $cid }}') || (answers['{{ $cid }}'].answer === 'YES' ? @js(__('supplier_audit.errors.score_required', ['criterion' => $ref])) : @js(__('supplier_audit.errors.answer_required', ['criterion' => $ref])))"></p>
                                         </li>
@@ -269,7 +269,7 @@
     <x-ui.action-bar>
         <div class="tw:flex tw:w-full tw:flex-wrap tw:items-center tw:justify-between tw:gap-3">
             <div class="tw:flex tw:min-w-0 tw:items-center tw:gap-2 tw:text-ui-xs" role="status" aria-live="polite" data-autosave-status>
-                <span class="tw:truncate" :class="saveState === 'failed' || saveState === 'expired' ? 'tw:font-medium tw:text-error' : 'tw:text-on-surface-variant'" x-text="saveStatusText">{{ $config['savedLabel'] ? __('supplier_audit.autosave.saved', ['time' => $config['savedLabel']]) : __('supplier_audit.autosave.idle') }}</span>
+                <span class="tw:truncate" :class="saveState === 'failed' || saveState === 'expired' ? 'tw:font-semibold tw:text-error' : 'tw:text-on-surface-variant'" x-text="saveStatusText">{{ $config['savedLabel'] ? __('supplier_audit.autosave.saved', ['time' => $config['savedLabel']]) : __('supplier_audit.autosave.idle') }}</span>
                 <x-ui.button type="button" variant="outline" size="sm" x-show="saveState === 'failed'" x-cloak x-on:click="retryNow()">{{ __('supplier_audit.autosave.retry') }}</x-ui.button>
                 <x-ui.button type="button" variant="outline" size="sm" x-show="saveState === 'expired'" x-cloak x-on:click="window.location.reload()">{{ __('supplier_audit.autosave.reload') }}</x-ui.button>
             </div>

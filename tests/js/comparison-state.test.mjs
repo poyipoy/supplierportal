@@ -6,7 +6,7 @@ import vm from 'node:vm';
 const scriptsView = await readFile(new URL('../../resources/views/purchasing/comparison/_scripts.blade.php', import.meta.url), 'utf8');
 
 // Run the real helper definitions (from the shared-keys line to the end of the guard).
-function loadHelpers({ tabs = [], forms = [], links = [], state = null } = {}) {
+function loadHelpers({ tabs = [], forms = [], links = [], state = null, documentElement = null } = {}) {
     const start = scriptsView.indexOf('const comparisonSharedKeys');
     const end = scriptsView.indexOf('if (!window._analysisCurrencyListener)');
     const replaced = [];
@@ -18,6 +18,7 @@ function loadHelpers({ tabs = [], forms = [], links = [], state = null } = {}) {
         },
     };
     const documentRef = {
+        ...(documentElement ? { documentElement } : {}),
         querySelectorAll(selector) {
             if (selector.includes('nav [data-server-tab]')) return tabs;
             if (selector.includes('[data-evaluation-header] form')) return forms;
@@ -428,4 +429,238 @@ test('submitting historical filter form without a selected material always calls
     assert.deepEqual(ctx.submitEvents, [{ defaultPrevented: true }]);
     assert.deepEqual(ctx.focused, ['historicalSupplierSelect'], 'focus moves to supplier select when material select is disabled');
     assert.notEqual(ctx.resultsStatus.textContent, '', 'polite status announces prompt to select a material');
+});
+
+test('syncComparisonState keeps _embed=1 on tab hrefs only inside workspace embed frames and request guard exposes abort()', () => {
+    const tabs = [
+        namedTab('inter-supplier', '/purchasing/comparison/inter-supplier'),
+        namedTab('historical', '/purchasing/comparison/historical'),
+    ];
+    const link = fakeTab('/purchasing/quotations/QHASH?return_url=%2Fpurchasing%2Fcomparison%2Fhistorical');
+    const { windowRef } = loadHelpers({
+        tabs,
+        links: [link],
+        documentElement: { dataset: { workspaceEmbed: 'true' } },
+    });
+
+    windowRef.syncComparisonState('http://portal.test/purchasing/comparison/historical?pr_id=PRB&currency=USD&_embed=1');
+
+    assert.equal(
+        tabs[0].href,
+        '/purchasing/comparison/inter-supplier?currency=USD&pr_id=PRB&_embed=1',
+        'embedded comparison tab links preserve _embed=1',
+    );
+    assert.equal(
+        tabs[1].href,
+        '/purchasing/comparison/historical?currency=USD&pr_id=PRB&_embed=1',
+        'embedded historical tab link preserves _embed=1',
+    );
+    const detailUrl = new URL(link.href, 'http://portal.test');
+    assert.equal(
+        detailUrl.searchParams.get('return_url'),
+        '/purchasing/comparison/historical?pr_id=PRB&currency=USD',
+        'detail return_url still strips _embed=1',
+    );
+
+    const guard = windowRef.createComparisonRequestGuard();
+    const active = guard.start();
+    assert.equal(typeof guard.abort, 'function');
+    guard.abort();
+    assert.equal(active.signal.aborted, true, 'abort() cancels the in-flight request');
+    assert.equal(guard.isCurrent(active.id), false, 'aborted request is invalidated');
+});
+
+test('initVsBestComparison wires top-toolbar search, respects AdasiPreferences.pageSize, enforces IME safety, and clears timer on abort', () => {
+    const helperStart = scriptsView.indexOf('const comparisonSharedKeys');
+    const helperEnd = scriptsView.indexOf('if (!window._analysisCurrencyListener)');
+    const abortStart = scriptsView.indexOf('window.abortComparisonPendingRequests = function()');
+    const abortEnd = scriptsView.indexOf('window.destroyComparisonActiveInstances = function()');
+    const vsBestStart = scriptsView.indexOf('window.initVsBestComparison = function()');
+    const vsBestEnd = scriptsView.indexOf('// ─── 4. GLOBAL CONTAINER COORDINATION');
+
+    assert.notEqual(abortStart, -1);
+    assert.notEqual(abortEnd, -1);
+    assert.notEqual(vsBestStart, -1);
+    assert.notEqual(vsBestEnd, -1);
+
+    const listeners = new WeakMap();
+    const focused = [];
+    const dtCalls = {
+        options: null,
+        searches: [],
+        draws: 0,
+    };
+
+    function makeNode(id, initial = {}) {
+        const node = {
+            id,
+            value: '',
+            hidden: false,
+            textContent: '',
+            selectedOptions: [],
+            focus() { focused.push(id); },
+            addEventListener(type, handler) {
+                const map = listeners.get(this) || new Map();
+                const list = map.get(type) || [];
+                list.push(handler);
+                map.set(type, list);
+                listeners.set(this, map);
+            },
+            dispatchEvent(event) {
+                if (typeof event.preventDefault !== 'function') {
+                    event.defaultPrevented = false;
+                    event.preventDefault = () => { event.defaultPrevented = true; };
+                }
+                if (typeof event.stopPropagation !== 'function') {
+                    event.stopPropagation = () => {};
+                }
+                event.target = this;
+                const map = listeners.get(this);
+                for (const handler of (map?.get(event.type) || [])) {
+                    handler.call(this, event);
+                }
+            },
+            ...initial,
+        };
+        return node;
+    }
+
+    const configEl = makeNode('vsBestConfig', {
+        textContent: JSON.stringify({
+            summaryFallback: { total_rows: 10 },
+            currency: 'IDR',
+            filterParams: { currency: 'IDR' },
+            tableDataUrl: 'http://portal.test/purchasing/comparison/vs-best/data',
+        }),
+    });
+    const tableEl = makeNode('vsBestTable');
+    const searchInput = makeNode('vsBestTableSearch', { value: '' });
+    const searchClear = makeNode('vsBestTableSearchClear', { hidden: true });
+
+    const nodes = {
+        vsBestConfig: configEl,
+        vsBestTable: tableEl,
+        vsBestTableSearch: searchInput,
+        vsBestTableSearchClear: searchClear,
+    };
+
+    let timerSeq = 0;
+    const timers = new Map();
+    const fakeSetTimeout = (fn, delay) => {
+        const id = ++timerSeq;
+        timers.set(id, { fn, delay });
+        return id;
+    };
+    const fakeClearTimeout = (id) => {
+        timers.delete(id);
+    };
+
+    class FakeDataTable {
+        static isDataTable() {
+            return false;
+        }
+        constructor(_el, options) {
+            dtCalls.options = options;
+        }
+        search(query) {
+            dtCalls.searches.push(query);
+            return this;
+        }
+        draw() {
+            dtCalls.draws += 1;
+            return this;
+        }
+    }
+
+    const windowRef = {
+        location: { origin: 'http://portal.test', href: 'http://portal.test/purchasing/comparison/vs-best' },
+        history: { state: null, replaceState() {} },
+        AdasiPreferences: { pageSize: 50 },
+        DataTable: FakeDataTable,
+    };
+
+    const documentRef = {
+        getElementById: (id) => nodes[id] || null,
+        querySelectorAll: () => [],
+        createElement: () => ({ type: '', name: '', value: '' }),
+    };
+
+    const combinedCode = [
+        scriptsView.slice(helperStart, helperEnd),
+        scriptsView.slice(abortStart, abortEnd),
+        stripBladeJsonCalls(scriptsView.slice(vsBestStart, vsBestEnd)),
+    ].join('\n');
+
+    vm.runInNewContext(combinedCode, {
+        window: windowRef,
+        document: documentRef,
+        DataTable: FakeDataTable,
+        URL,
+        AbortController,
+        setTimeout: fakeSetTimeout,
+        clearTimeout: fakeClearTimeout,
+        console,
+    });
+
+    windowRef.initVsBestComparison();
+
+    const parsedLayout = JSON.parse(JSON.stringify(dtCalls.options.layout));
+    assert.deepEqual(parsedLayout, {
+        topStart: null,
+        topEnd: null,
+        bottomStart: 'info',
+        bottomEnd: 'paging',
+    }, 'default DataTables pageLength/search rows stay omitted');
+    assert.equal(dtCalls.options.pageLength, 50, 'AdasiPreferences.pageSize sets initial pageLength without a dropdown');
+    assert.equal(searchClear.hidden, true, 'clear button stays hidden while search input is empty');
+
+    // Typing unhides clear button immediately and schedules 250ms debounced search.
+    searchInput.value = 'SKD11';
+    searchInput.dispatchEvent({ type: 'input' });
+    assert.equal(searchClear.hidden, false);
+    assert.equal(timers.size, 1);
+
+    // Aborting tab requests cancels any pending debounced search timer before navigating away.
+    windowRef.abortComparisonPendingRequests();
+    assert.equal(timers.size, 0, 'abortComparisonPendingRequests cancels pending search debounce timers');
+
+    // Re-trigger input and allow debounce timer to fire.
+    searchInput.dispatchEvent({ type: 'input' });
+    const pendingTimer = [...timers.values()][0];
+    assert.equal(pendingTimer.delay, 250);
+    pendingTimer.fn();
+    assert.deepEqual([...dtCalls.searches], ['SKD11']);
+    assert.equal(dtCalls.draws, 1);
+
+    // IME composing Enter (isComposing or Safari keyCode 229) must NOT trigger search.
+    searchInput.value = 'SUS304';
+    searchInput.dispatchEvent({ type: 'keydown', key: 'Enter', isComposing: true });
+    searchInput.dispatchEvent({ type: 'keydown', key: 'Enter', isComposing: false, keyCode: 229 });
+    assert.equal(dtCalls.draws, 1, 'IME composition Enter keys never trigger premature search');
+
+    // Confirmed non-composing Enter prevents form submission and commits immediately.
+    const enterEvent = { type: 'keydown', key: 'Enter', isComposing: false, keyCode: 13 };
+    searchInput.dispatchEvent(enterEvent);
+    assert.equal(enterEvent.defaultPrevented, true, 'Enter inside merged filter form prevents full tab reload');
+    assert.deepEqual([...dtCalls.searches], ['SKD11', 'SUS304']);
+    assert.equal(dtCalls.draws, 2);
+
+    // Escape clears active search text immediately.
+    const escEvent = { type: 'keydown', key: 'Escape' };
+    searchInput.dispatchEvent(escEvent);
+    assert.equal(escEvent.defaultPrevented, true);
+    assert.equal(searchInput.value, '');
+    assert.equal(searchClear.hidden, true);
+    assert.deepEqual([...dtCalls.searches], ['SKD11', 'SUS304', '']);
+    assert.equal(dtCalls.draws, 3);
+
+    // Clear button empties search, re-hides itself, redraws table, and restores focus.
+    searchInput.value = 'P20';
+    searchInput.dispatchEvent({ type: 'keydown', key: 'Enter', isComposing: false, keyCode: 13 });
+    searchClear.dispatchEvent({ type: 'click' });
+    assert.equal(searchInput.value, '');
+    assert.equal(searchClear.hidden, true);
+    assert.deepEqual([...dtCalls.searches], ['SKD11', 'SUS304', '', 'P20', '']);
+    assert.equal(dtCalls.draws, 5);
+    assert.deepEqual(focused, ['vsBestTableSearch']);
 });

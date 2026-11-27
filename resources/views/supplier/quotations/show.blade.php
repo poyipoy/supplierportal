@@ -25,8 +25,10 @@
         :eyebrow="__('supplier.copy.submitted_quotation')"
         :description="__('supplier.copy.review_your_submitted_prices_availability_parameters_supporting_mtc_files_and_purchasing_evaluation')"
     >
-        <x-slot:actions>
+        <x-slot:status>
             <x-status-badge type="quotation" :status="$quotation->status" size="lg" />
+        </x-slot:status>
+        <x-slot:actions>
             <x-ui.button :href="route('supplier.quotations.period', $requisition->period_id)" variant="outline" size="sm">
                 <x-ui.icon name="arrow-left" />
                 <span>{{ __('supplier.copy.back_to_requisitions') }}</span>

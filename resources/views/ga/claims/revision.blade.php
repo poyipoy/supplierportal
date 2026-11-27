@@ -3,7 +3,7 @@
 @section('page-title', __('ga.labels.claim_revision'))
 
 @section('content')
-<div class="tw:grid tw:gap-6 tw:pb-16">
+<div class="tw:grid tw:gap-6">
     <x-ui.page-header
         :title="__('ga.review.revision_heading', ['number' => $claim->claim_number])"
         :description="__('ga.review.revision_help', ['name' => $claim->employee?->name, 'department' => $claim->employee?->department, 'revision' => $claim->revision_number + 1])"
@@ -24,7 +24,7 @@
                 <x-ui.icon name="alert-circle" size="sm" />
                 <span>{{ __('ga.review.revision_notes') }}</span>
             </div>
-            <p class="tw:m-0 tw:text-ui-xs tw:font-medium">{{ $claim->revision_reason }}</p>
+            <p class="tw:m-0 tw:text-ui-xs tw:font-semibold">{{ $claim->revision_reason }}</p>
         </div>
     @endif
 
@@ -90,7 +90,7 @@
                             {{ __('ga.form.upload_revision') }}
                         </label>
                         <input type="file" name="supporting" id="supporting" class="ui-input ui-input--sm" accept=".pdf,.jpg,.jpeg,.png,.xlsx,.xls,.doc,.docx" aria-describedby="supporting-help" @if($errors->has('supporting')) aria-invalid="true" @endif>
-                        <span id="supporting-help" class="tw:text-[11px] tw:text-on-surface-variant tw:block tw:mt-1">
+                        <span id="supporting-help" class="tw:text-ui-xs tw:text-on-surface-variant tw:block tw:mt-1">
                             {{ __('ga.form.entertainment_supporting') }}
                             {{ __('ga.form.revision_formats') }}
                         </span>

@@ -17,8 +17,10 @@
         :eyebrow="__('claims.copy.quality_discrepancy')"
         :description="__('claims.page.response_help', ['po' => $claim->purchaseOrder?->po_number ?? '-']) "
     >
-        <x-slot:actions>
+        <x-slot:status>
             <x-status-badge type="claim" :status="$claim->status" />
+        </x-slot:status>
+        <x-slot:actions>
             <x-ui.button :href="route('supplier.claims.index')" variant="outline" size="sm">
                 <x-ui.icon name="arrow-left" />
                 <span>{{ __('claims.copy.back_to_claims') }}</span>

@@ -12,7 +12,7 @@
 @endphp
 
 @section('content')
-<div class="tw:grid tw:grid-cols-[minmax(0,1fr)] tw:min-w-0 tw:gap-6 tw:pb-16">
+<div class="tw:grid tw:grid-cols-[minmax(0,1fr)] tw:min-w-0 tw:gap-6">
     {{-- Header --}}
     <x-ui.page-header
         :title="'PO ' . $purchaseOrder->po_number"
@@ -145,7 +145,7 @@
 
             {{-- Progress bar --}}
             <div class="tw:space-y-1 tw:pt-1">
-                <div class="tw:flex tw:items-center tw:justify-between tw:text-[11px] tw:text-on-surface-variant">
+                <div class="tw:flex tw:items-center tw:justify-between tw:text-ui-xs tw:text-on-surface-variant">
                     <span>{{ __('local_procurement.surface.invoiced') }}</span>
                     <span class="tw:font-semibold tw:text-on-surface">{{ $invoicedPercent }}%</span>
                 </div>
@@ -184,7 +184,7 @@
 
                         <div class="tw:grid tw:grid-cols-1 tw:sm:grid-cols-2 tw:gap-3">
                             <div class="tw:grid tw:gap-1.5 tw:min-w-0 tw:content-start">
-                                <label for="add_gr_number" class="ui-label tw:m-0 tw:text-ui-sm tw:font-medium tw:text-on-surface">
+                                <label for="add_gr_number" class="ui-label tw:m-0 tw:text-ui-sm tw:font-semibold tw:text-on-surface">
                                     {{ __('local_procurement.surface.gr_number') }}
                                     <span class="tw:text-error" aria-hidden="true">*</span><span class="tw:sr-only"> {{ __('common.required') }}</span>
                                 </label>
@@ -213,7 +213,7 @@
                             </div>
 
                             <div class="tw:grid tw:gap-1.5 tw:min-w-0 tw:content-start">
-                                <label for="add_gr_qty" class="ui-label tw:m-0 tw:text-ui-sm tw:font-medium tw:text-on-surface">
+                                <label for="add_gr_qty" class="ui-label tw:m-0 tw:text-ui-sm tw:font-semibold tw:text-on-surface">
                                     {{ __('local_procurement.closure.quantity') }}
                                     <span class="tw:text-error" aria-hidden="true">*</span><span class="tw:sr-only"> {{ __('common.required') }}</span>
                                 </label>
@@ -233,7 +233,7 @@
                             </div>
 
                             <div class="tw:grid tw:gap-1.5 tw:min-w-0 tw:content-start">
-                                <label for="gr_uom_new" class="ui-label tw:m-0 tw:text-ui-sm tw:font-medium tw:text-on-surface">
+                                <label for="gr_uom_new" class="ui-label tw:m-0 tw:text-ui-sm tw:font-semibold tw:text-on-surface">
                                     {{ __('local_procurement.labels.uom') }}
                                     <span class="tw:text-error" aria-hidden="true">*</span><span class="tw:sr-only"> {{ __('common.required') }}</span>
                                 </label>
@@ -247,7 +247,7 @@
                             </div>
 
                             <div class="tw:grid tw:gap-1.5 tw:min-w-0 tw:content-start">
-                                <label for="add_gr_description" class="ui-label tw:m-0 tw:text-ui-sm tw:font-medium tw:text-on-surface">{{ __('local_procurement.labels.goods_description_optional') }}</label>
+                                <label for="add_gr_description" class="ui-label tw:m-0 tw:text-ui-sm tw:font-semibold tw:text-on-surface">{{ __('local_procurement.labels.goods_description_optional') }}</label>
                                 <input
                                     id="add_gr_description"
                                     name="description"
@@ -261,7 +261,7 @@
                             </div>
 
                             <div class="tw:grid tw:gap-1.5 tw:min-w-0 tw:content-start">
-                                <label for="add_gr_notes" class="ui-label tw:m-0 tw:text-ui-sm tw:font-medium tw:text-on-surface">{{ __('local_procurement.surface.notes') }}</label>
+                                <label for="add_gr_notes" class="ui-label tw:m-0 tw:text-ui-sm tw:font-semibold tw:text-on-surface">{{ __('local_procurement.surface.notes') }}</label>
                                 <input
                                     id="add_gr_notes"
                                     name="notes"
@@ -305,7 +305,7 @@
                 @csrf
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 id="closePoModalTitle" class="modal-title tw:text-ui-sm tw:font-bold tw:text-on-surface tw:flex tw:items-center tw:gap-2">
+                        <h5 id="closePoModalTitle" class="modal-title tw:text-ui-lg tw:font-bold tw:text-on-surface tw:flex tw:items-center tw:gap-2">
                             <x-ui.icon name="lock" size="sm" class="tw:text-warning" />
                             <span>{{ __('local_procurement.actions.close_po_full') }}</span>
                         </h5>
@@ -336,7 +336,7 @@
                 @csrf
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 id="cancelPoModalTitle" class="modal-title tw:text-ui-sm tw:font-bold tw:text-error tw:flex tw:items-center tw:gap-2">
+                        <h5 id="cancelPoModalTitle" class="modal-title tw:text-ui-lg tw:font-bold tw:text-error tw:flex tw:items-center tw:gap-2">
                             <x-ui.icon name="alert-triangle" size="sm" />
                             <span>{{ __('local_procurement.actions.cancel_po_full') }}</span>
                         </h5>

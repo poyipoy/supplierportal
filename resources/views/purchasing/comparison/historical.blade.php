@@ -4,7 +4,7 @@
 @section('page-title', __('purchasing.copy.price_comparison'))
 
 @section('content')
-<div id="purchasingComparisonContainer" class="tw:grid tw:gap-6 tw:min-w-0 tw:max-w-full" data-server-tabs-container>
+<div id="purchasingComparisonContainer" class="tw:grid tw:gap-6 tw:min-w-0 tw:max-w-full" data-server-tabs-container data-server-tabs-prefetch="false">
     <x-ui.page-header
         :title="__('purchasing.copy.historical_price_analysis')"
         :description="__('purchasing.copy.trace_supplier_price_movement_by_material_period_and_matching_dimensions')"
@@ -23,11 +23,11 @@
 @include('purchasing.comparison._scripts')
 <script>
 if (typeof AdasiServerTabs !== 'undefined') {
-    AdasiServerTabs.init('#purchasingComparisonContainer');
+    AdasiServerTabs.init('#purchasingComparisonContainer', { prefetch: false });
 } else {
     document.addEventListener('DOMContentLoaded', function() {
         if (typeof AdasiServerTabs !== 'undefined') {
-            AdasiServerTabs.init('#purchasingComparisonContainer');
+            AdasiServerTabs.init('#purchasingComparisonContainer', { prefetch: false });
         }
     });
 }

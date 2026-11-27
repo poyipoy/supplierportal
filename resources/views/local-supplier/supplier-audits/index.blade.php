@@ -3,7 +3,7 @@
 @section('page-title', __('supplier_audit.title'))
 
 @section('content')
-<div class="tw:grid tw:gap-6 tw:pb-16">
+<div class="tw:grid tw:gap-6">
     <x-ui.page-header
         :title="__('supplier_audit.title')"
         :description="__('supplier_audit.supplier_description')"
@@ -71,16 +71,16 @@
         <table class="ui-table ui-table--hover tw:align-middle tw:m-0 tw:text-ui-sm tw:w-full">
             <thead>
                 <tr>
-                    <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('supplier_audit.fields.period') }}</th>
-                    <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('supplier_audit.fields.status') }}</th>
-                    <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('supplier_audit.fields.submitted_at') }}</th>
-                    <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-end">{{ __('common.table.action') }}</th>
+                    <th scope="col">{{ __('supplier_audit.fields.period') }}</th>
+                    <th scope="col">{{ __('supplier_audit.fields.status') }}</th>
+                    <th scope="col">{{ __('supplier_audit.fields.submitted_at') }}</th>
+                    <th scope="col" class="tw:text-end">{{ __('common.table.action') }}</th>
                 </tr>
             </thead>
             <tbody>
                 @foreach($history as $audit)
                     <tr>
-                        <td class="tw:font-medium tw:text-on-surface">{{ $audit->period_label }}</td>
+                        <td class="tw:font-semibold tw:text-on-surface">{{ $audit->period_label }}</td>
                         <td><x-ui.status-chip :tone="\App\Support\StatusHelper::supplierAuditTone($audit->status)" size="sm">{{ \App\Support\StatusHelper::supplierAuditLabel($audit->status) }}</x-ui.status-chip></td>
                         <td class="tw:whitespace-nowrap" style="font-variant-numeric: tabular-nums;">{{ $audit->submitted_at ? $regionalFormatter->timestamp($audit->submitted_at) : '—' }}</td>
                         <td class="tw:text-end">

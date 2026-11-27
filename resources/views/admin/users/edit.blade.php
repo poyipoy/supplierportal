@@ -100,7 +100,7 @@
                 <div class="tw:flex tw:items-center tw:pt-6">
                     <div class="ui-check-group">
                         <input class="ui-switch" type="checkbox" name="is_active" id="isActive" value="1" {{ old('is_active', $user->is_active) ? 'checked' : '' }}>
-                        <label class="tw:cursor-pointer tw:text-ui-sm tw:font-medium tw:text-on-surface" for="isActive">
+                        <label class="tw:cursor-pointer tw:text-ui-sm tw:font-semibold tw:text-on-surface" for="isActive">
                             {{ __('admin.copy.active_account_allowed_to_sign_in') }}
                         </label>
                     </div>

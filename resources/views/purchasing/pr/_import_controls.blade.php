@@ -1,5 +1,5 @@
 <div class="dropdown">
-    <x-ui.button type="button" variant="outline" size="sm" class="dropdown-toggle" data-ui-dropdown-trigger popovertarget="prImportActionsMenu" aria-controls="prImportActionsMenu" aria-expanded="false">
+    <x-ui.button type="button" variant="outline" size="sm" class="dropdown-toggle" data-ui-dropdown-trigger popovertarget="prImportActionsMenu" aria-controls="prImportActionsMenu" aria-haspopup="menu" aria-expanded="false">
         <x-slot:leading><x-ui.icon name="upload" /></x-slot:leading>
         {{ __('purchasing.copy.import_data') }}
     </x-ui.button>

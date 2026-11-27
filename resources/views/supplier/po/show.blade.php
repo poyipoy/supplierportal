@@ -17,8 +17,10 @@
         :eyebrow="__('supplier.copy.supplier_purchase_order')"
         :description="__('supplier.copy.review_commercial_parameters_ordered_material_lines_customs_documentation_progress_and_quality_claim')"
     >
-        <x-slot:actions>
+        <x-slot:status>
             <x-status-badge type="po" :status="$po->status" :is-overdue="$po->is_overdue" :has-active-shipments="$po->hasActiveShipments()" />
+        </x-slot:status>
+        <x-slot:actions>
             <x-ui.button :href="route('supplier.purchase-orders.index')" variant="outline" size="sm">
                 <x-ui.icon name="arrow-left" />
                 <span>{{ __('supplier.copy.back_to_pos') }}</span>
@@ -39,7 +41,7 @@
                 <x-ui.icon name="file-spreadsheet" />
                 <span>{{ __('supplier.copy.export_excel') }}</span>
             </x-ui.button>
-            <x-ui.button :href="route('shared.pdf.purchase-order', $po)" variant="danger" size="sm" target="_blank" :title="__('supplier.copy.print_purchase_order')" data-pdf-confirm>
+            <x-ui.button :href="route('shared.pdf.purchase-order', $po)" variant="outline" size="sm" target="_blank" :title="__('supplier.copy.print_purchase_order')" data-pdf-confirm>
                 <x-ui.icon name="printer" />
                 <span>{{ __('supplier.copy.print_pdf') }}</span>
             </x-ui.button>
@@ -545,9 +547,9 @@
                                 <button type="button" class="btn-close" data-ui-modal-close aria-label="{{ __('supplier.copy.close') }}"></button>
                             </div>
                             <div class="modal-body">
-                                <div class="tw:rounded-ui-sm tw:border-s-4 tw:border-primary tw:bg-primary-container tw:text-primary-container-foreground tw:py-2 tw:px-3 tw:text-ui-xs tw:mb-3">
-                                    <x-ui.icon name="info" size="sm" class="tw:me-1" />
-                                    {{ __('supplier.copy.this_update_applies_to') }} <strong>{{ $p['supplier_controlled_qty'] }} pcs</strong> {{ __('supplier.copy.currently_under_supplier_control') }}
+                                <div class="ui-alert tw:flex tw:items-start tw:gap-2 tw:rounded-ui-md tw:border tw:border-primary/40 tw:bg-primary-container tw:text-primary-container-foreground tw:py-2.5 tw:px-3 tw:text-ui-xs tw:mb-3 tw:text-pretty">
+                                    <x-ui.icon name="info" size="sm" class="tw:mt-0.5 tw:shrink-0 tw:text-primary" />
+                                    <span>{{ __('supplier.copy.this_update_applies_to') }} <strong>{{ $p['supplier_controlled_qty'] }} pcs</strong> {{ __('supplier.copy.currently_under_supplier_control') }}</span>
                                 </div>
 
                                 <div class="tw:mb-3">
@@ -578,8 +580,8 @@
                                         {{ __('supplier.copy.progress_note_reason') }} <span class="backward-required-marker tw:text-error tw:hidden">*</span>
                                     </label>
                                     <textarea name="note" class="ui-textarea tw:text-ui-xs tw:px-2 tw:py-1 progress-note-input" rows="3" placeholder="{{ __('supplier.copy.provide_details_about_current_stage_or_operational_updates') }}"></textarea>
-                                    <div class="backward-notice tw:rounded-ui-sm tw:border-s-4 tw:border-warning tw:bg-warning-container tw:text-warning-container-foreground tw:py-1.5 tw:px-2.5 tw:text-ui-xs tw:mt-1.5 tw:hidden">
-                                        <x-ui.icon name="triangle-alert" size="sm" class="tw:me-1 tw:text-warning" />
+                                    <div class="backward-notice ui-alert tw:flex tw:items-start tw:gap-2 tw:rounded-ui-md tw:border tw:border-warning/40 tw:bg-warning-container tw:text-warning-container-foreground tw:py-2 tw:px-3 tw:text-ui-xs tw:mt-1.5 tw:text-pretty tw:hidden">
+                                        <x-ui.icon name="triangle-alert" size="sm" class="tw:mt-0.5 tw:shrink-0 tw:text-warning" />
                                         <span>{{ __('supplier.copy.a_note_reason_is_required_because_progress_is_moving_backward') }}</span>
                                     </div>
                                 </div>
@@ -611,11 +613,11 @@
                         <button type="button" class="btn-close" data-ui-modal-close aria-label="{{ __('supplier.copy.close') }}"></button>
                     </div>
                     <div class="modal-body">
-                        <div class="tw:rounded-ui-sm tw:border-s-4 tw:border-primary tw:bg-primary-container tw:text-primary-container-foreground tw:py-2 tw:px-3 tw:text-ui-xs tw:mb-3" role="status" aria-live="polite">
+                        <div class="ui-alert tw:rounded-ui-md tw:border tw:border-primary/40 tw:bg-primary-container tw:text-primary-container-foreground tw:py-2.5 tw:px-3 tw:text-ui-xs tw:mb-3" role="status" aria-live="polite">
                             <div class="tw:flex tw:items-start tw:gap-2">
-                                <x-ui.icon name="info" size="sm" class="tw:mt-0.5 tw:shrink-0" />
+                                <x-ui.icon name="info" size="sm" class="tw:mt-0.5 tw:shrink-0 tw:text-primary" />
                                 <div>
-                                    <div id="bulkUpdateSummaryText" class="tw:font-semibold"></div>
+                                    <div id="bulkUpdateSummaryText" class="tw:font-semibold tw:text-pretty"></div>
                                     <ul id="bulkUpdateSelectedList" class="tw:mb-0 tw:mt-1 tw:ps-3"></ul>
                                 </div>
                             </div>
@@ -648,8 +650,8 @@
                                 {{ __('supplier.copy.progress_note_reason') }} <span id="bulkBackwardRequiredMarker" class="tw:text-error tw:hidden" aria-hidden="true">*</span>
                             </label>
                             <textarea name="note" id="bulkProgressNote" class="ui-textarea tw:text-ui-xs tw:px-2 tw:py-1" rows="3" placeholder="{{ __('supplier.copy.provide_details_about_current_stage_or_operational_updates') }}"></textarea>
-                            <div id="bulkBackwardNotice" class="tw:rounded-ui-sm tw:border-s-4 tw:border-warning tw:bg-warning-container tw:text-warning-container-foreground tw:py-1.5 tw:px-2.5 tw:text-ui-xs tw:mt-1.5 tw:hidden" role="status" aria-live="polite">
-                                <x-ui.icon name="triangle-alert" size="sm" class="tw:me-1 tw:text-warning" />
+                            <div id="bulkBackwardNotice" class="ui-alert tw:flex tw:items-start tw:gap-2 tw:rounded-ui-md tw:border tw:border-warning/40 tw:bg-warning-container tw:text-warning-container-foreground tw:py-2 tw:px-3 tw:text-ui-xs tw:mt-1.5 tw:text-pretty tw:hidden" role="status" aria-live="polite">
+                                <x-ui.icon name="triangle-alert" size="sm" class="tw:mt-0.5 tw:shrink-0 tw:text-warning" />
                                 <span>{{ __('supplier.copy.backward_bulk_progress_notice') }}</span>
                             </div>
                         </div>

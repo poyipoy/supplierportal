@@ -36,6 +36,7 @@ use App\Support\Pricing\EvaluationContext;
 use App\Support\Procurement\ProcurementFeatures;
 use App\Support\Security\CspNonce;
 use App\Support\View\CompiledViewFilesystem;
+use App\Support\WorkspaceShell;
 use DateInterval;
 use Illuminate\Broadcasting\BroadcastEvent;
 use Illuminate\Console\Events\CommandStarting;
@@ -202,6 +203,7 @@ class AppServiceProvider extends ServiceProvider
         // Supplier scope memos live for one request or job only.
         Event::listen(RouteMatched::class, function (): void {
             User::resetSupplierScopeMemos();
+            WorkspaceShell::resetCaches();
             app()->forgetInstance(MaintenanceResolver::class);
             app()->forgetInstance(ReferencePriceResolver::class);
             app()->forgetInstance(ReferencePriceRuleResolver::class);
@@ -210,6 +212,7 @@ class AppServiceProvider extends ServiceProvider
         });
         Event::listen(JobProcessing::class, function (): void {
             User::resetSupplierScopeMemos();
+            WorkspaceShell::resetCaches();
             app()->forgetInstance(MaintenanceResolver::class);
             app()->forgetInstance(ReferencePriceResolver::class);
             app()->forgetInstance(ReferencePriceRuleResolver::class);

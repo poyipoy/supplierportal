@@ -8,8 +8,11 @@
 --}}
 @php
     $pc = 'purchasing.comparison_analytics';
-    $preserved = collect(request()->query())->except(['currency', 'history_page', 'view', '_'])->filter(fn ($value) => is_scalar($value) && $value !== '');
+    $rawQuery = collect(request()->query())->except(['currency', 'history_page', 'view', '_']);
+    $preserved = $rawQuery->filter(fn ($value) => is_scalar($value) && $value !== '');
+    $preservedArrays = $rawQuery->filter(fn ($value) => is_array($value));
     $selectId = 'analysisCurrency'.\Illuminate\Support\Str::studly(str_replace(['.', '-'], '_', $route));
+    $currencyOptions = collect($evaluation['currencies'])->map(fn ($code) => ['value' => (string) $code, 'label' => (string) $code])->values()->all();
 @endphp
 <section class="tw:flex tw:flex-wrap tw:items-end tw:justify-between tw:gap-3 tw:rounded-ui-md tw:border tw:border-outline tw:bg-surface tw:px-4 tw:py-3" data-evaluation-header aria-label="{{ __($pc.'.evaluation_title') }}">
     <div class="tw:grid tw:gap-1">
@@ -43,13 +46,27 @@
         @foreach($preserved as $key => $value)
             <input type="hidden" name="{{ $key }}" value="{{ $value }}">
         @endforeach
-        <div class="tw:grid tw:gap-1">
-            <label for="{{ $selectId }}" class="tw:text-ui-xs tw:font-semibold tw:text-on-surface">{{ __($pc.'.currency') }}</label>
-            <select name="currency" id="{{ $selectId }}" class="ui-select ui-select--sm" data-analysis-currency>
-                @foreach($evaluation['currencies'] as $code)
-                    <option value="{{ $code }}" @selected($evaluation['currency'] === $code)>{{ $code }}</option>
-                @endforeach
-            </select>
+        @foreach($preservedArrays as $key => $items)
+            @foreach($items as $item)
+                @if(is_scalar($item) && (string) $item !== '')
+                    <input type="hidden" name="{{ $key }}[]" value="{{ $item }}">
+                @endif
+            @endforeach
+        @endforeach
+        <div class="tw:min-w-36">
+            <x-ui.searchable-select
+                name="currency"
+                :id="$selectId"
+                :label="__($pc.'.currency')"
+                label-class="tw:text-ui-xs tw:font-semibold tw:text-on-surface"
+                size="sm"
+                :clearable="false"
+                :show-sublabel-on-trigger="false"
+                :value="$evaluation['currency']"
+                :options="$currencyOptions"
+                :select-attributes="['data-analysis-currency' => true]"
+                class="tw:gap-1"
+            />
         </div>
         <noscript><x-ui.button type="submit" variant="outline-primary" size="sm">{{ __($pc.'.apply') }}</x-ui.button></noscript>
     </form>

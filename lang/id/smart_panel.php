@@ -11,6 +11,13 @@ return [
     'open_in_new_tab' => 'Buka / Unduh',
     'expand_preview' => 'Lebar penuh',
     'collapse_preview' => 'Lebar standar',
+    'current_badge' => 'Sedang dibuka',
+    'read_only_hint' => 'Ringkasan saja',
+    'open_detail_label' => 'Buka :label :reference',
+    'retry' => 'Coba lagi',
+    'loading_preview' => 'Memuat pratinjau dokumen...',
+    'empty_chain' => 'Belum ada dokumen terkait yang terhubung pada alur ini.',
+    'empty_sla' => 'Belum ada ringkasan SLA atau status waktu untuk dokumen ini.',
     'tabs' => [
         'chain' => 'Rantai Dokumen',
         'preview' => 'Pratinjau PDF',

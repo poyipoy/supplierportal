@@ -116,6 +116,7 @@ export default {
                 'on-surface': 'var(--md-on-surface)',
                 'on-surface-variant': 'var(--md-on-surface-variant)',
                 'primary-text': 'var(--ui-primary-text)',
+                dialog: 'var(--ui-dialog-bg)',
             },
             fontFamily: {
                 // Defined once as --ui-font-sans in resources/css/app.css.
@@ -147,6 +148,7 @@ export default {
                 'ui-full': 'var(--md-shape-full)',
             },
             boxShadow: {
+                'ui-surface': 'var(--ui-shadow-surface)',
                 'ui-1': 'var(--ui-shadow-1)',
                 'ui-2': 'var(--ui-shadow-2)',
             },

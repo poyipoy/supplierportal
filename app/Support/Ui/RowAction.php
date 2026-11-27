@@ -180,7 +180,7 @@ final class RowAction
         $safeLabel = e($label ?? __('common.table.action'));
 
         return '<div class="dropdown">'
-            .'<button type="button" class="ui-data-action ui-focus-ring dropdown-toggle" data-ui-dropdown-trigger popovertarget="'.$safeId.'" aria-controls="'.$safeId.'" aria-expanded="false" aria-label="'.$safeAria.'">'.$safeLabel.'</button>'
+            .'<button type="button" class="ui-data-action ui-focus-ring dropdown-toggle" data-ui-dropdown-trigger popovertarget="'.$safeId.'" aria-controls="'.$safeId.'" aria-haspopup="menu" aria-expanded="false" aria-label="'.$safeAria.'">'.$safeLabel.'</button>'
             .'<ul id="'.$safeId.'" popover="auto" data-ui-dropdown-menu class="dropdown-menu dropdown-menu-end">'.implode('', $items).'</ul>'
             .'</div>';
     }

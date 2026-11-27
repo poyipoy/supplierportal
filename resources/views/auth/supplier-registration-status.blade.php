@@ -16,7 +16,7 @@
 
     <form method="POST" action="{{ route('supplier.registration.logout') }}">
         @csrf
-        <button type="submit" class="ui-focus-ring tw:inline-flex tw:items-center tw:gap-1.5 tw:px-3 tw:py-1.5 tw:rounded-ui-xs tw:border tw:border-outline-variant tw:bg-surface tw:text-ui-xs tw:font-medium tw:text-on-surface tw:hover:bg-surface-container">
+        <button type="submit" class="ui-focus-ring tw:inline-flex tw:items-center tw:gap-1.5 tw:px-3 tw:py-1.5 tw:rounded-ui-xs tw:border tw:border-outline-variant tw:bg-surface tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:hover:bg-surface-container">
             <x-ui.icon name="log-out" size="xs" />
             <span>{{ __('common.actions.exit') }}</span>
         </button>
@@ -24,7 +24,7 @@
 </div>
 
 @if (session('success'))
-    <div class="tw:rounded-ui-sm tw:bg-success/15 tw:p-3.5 tw:text-on-surface tw:mb-4 tw:flex tw:items-center tw:gap-2.5 tw:text-ui-sm tw:font-medium" role="alert">
+    <div class="tw:rounded-ui-sm tw:bg-success/15 tw:p-3.5 tw:text-on-surface tw:mb-4 tw:flex tw:items-center tw:gap-2.5 tw:text-ui-sm tw:font-semibold" role="alert">
         <x-ui.icon name="check-circle" size="sm" class="tw:text-success tw:shrink-0" />
         <span>{{ session('success') }}</span>
     </div>
@@ -136,34 +136,34 @@
     <dl class="tw:grid tw:grid-cols-1 tw:md:grid-cols-2 tw:gap-x-4 tw:gap-y-2.5 tw:text-ui-sm tw:m-0">
         <div>
             <dt class="tw:text-ui-xs tw:text-on-surface-variant">{{ __('registration.legal_name') }}</dt>
-            <dd class="tw:font-medium tw:text-on-surface tw:m-0">{{ $supplier?->company_title ? $supplier->company_title . ' ' : '' }}{{ $supplier?->company_name ?? '-' }}</dd>
+            <dd class="tw:font-semibold tw:text-on-surface tw:m-0">{{ $supplier?->company_title ? $supplier->company_title . ' ' : '' }}{{ $supplier?->company_name ?? '-' }}</dd>
         </div>
         <div>
             <dt class="tw:text-ui-xs tw:text-on-surface-variant">{{ __('registration.registered_email') }}</dt>
-            <dd class="tw:font-medium tw:text-on-surface tw:m-0">{{ $user->email }}</dd>
+            <dd class="tw:font-semibold tw:text-on-surface tw:m-0">{{ $user->email }}</dd>
         </div>
         <div>
             <dt class="tw:text-ui-xs tw:text-on-surface-variant">{{ __('registration.nib') }}</dt>
-            <dd class="tw:font-medium ui-tabular-nums tw:text-on-surface tw:m-0">{{ $supplier?->nib ?? '-' }}</dd>
+            <dd class="tw:font-semibold ui-tabular-nums tw:text-on-surface tw:m-0">{{ $supplier?->nib ?? '-' }}</dd>
         </div>
         <div>
             <dt class="tw:text-ui-xs tw:text-on-surface-variant">{{ __('registration.npwp') }}</dt>
-            <dd class="tw:font-medium ui-tabular-nums tw:text-on-surface tw:m-0">{{ $supplier?->npwp ?? '-' }}</dd>
+            <dd class="tw:font-semibold ui-tabular-nums tw:text-on-surface tw:m-0">{{ $supplier?->npwp ?? '-' }}</dd>
         </div>
         <div>
             <dt class="tw:text-ui-xs tw:text-on-surface-variant">{{ __('registration.pic_contact') }}</dt>
-            <dd class="tw:font-medium tw:text-on-surface tw:m-0">{{ $supplier?->pic_name }} ({{ $supplier?->pic_phone }})</dd>
+            <dd class="tw:font-semibold tw:text-on-surface tw:m-0">{{ $supplier?->pic_name }} ({{ $supplier?->pic_phone }})</dd>
         </div>
         <div>
             <dt class="tw:text-ui-xs tw:text-on-surface-variant">{{ __('registration.bank_account') }}</dt>
-            <dd class="tw:font-medium tw:text-on-surface tw:m-0">
+            <dd class="tw:font-semibold tw:text-on-surface tw:m-0">
                 @php $bank = $user->supplierBankAccounts->last(); @endphp
                 {{ $bank?->bank_name }} - {{ $bank?->account_number }} ({{ __('common.review.account_holder', ['name' => $bank?->account_holder_name]) }})
             </dd>
         </div>
         <div class="tw:md:col-span-2">
             <dt class="tw:text-ui-xs tw:text-on-surface-variant">{{ __('registration.official_address') }}</dt>
-            <dd class="tw:font-medium tw:text-on-surface tw:m-0">{{ $supplier?->address ?? '-' }}</dd>
+            <dd class="tw:font-semibold tw:text-on-surface tw:m-0">{{ $supplier?->address ?? '-' }}</dd>
         </div>
     </dl>
 </div>
@@ -179,7 +179,7 @@
                     <x-ui.icon name="file-text" size="sm" class="tw:text-primary" />
                     <div>
                         <span class="tw:text-ui-xs tw:font-semibold tw:text-on-surface">{{ $doc->document_type }}</span>
-                        <span class="tw:text-[11px] tw:text-on-surface-variant tw:block">{{ $doc->original_filename }} ({{ number_format($doc->file_size / 1024, 1) }} KB)</span>
+                        <span class="tw:text-ui-xs tw:text-on-surface-variant tw:block">{{ $doc->original_filename }} ({{ number_format($doc->file_size / 1024, 1) }} KB)</span>
                     </div>
                 </div>
 

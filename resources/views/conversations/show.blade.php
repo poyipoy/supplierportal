@@ -10,7 +10,7 @@
                 ? \App\Support\PurchasingNavigation::backUrl('purchasing.conversations.index')
                 : route('supplier.conversations.index');
         @endphp
-        <a href="{{ $backRoute }}" class="ui-focus-ring tw:inline-flex tw:items-center tw:gap-1.5 tw:rounded-ui-xs tw:text-ui-sm tw:font-medium tw:text-on-surface-variant tw:no-underline tw:hover:text-on-surface">
+        <a href="{{ $backRoute }}" class="ui-focus-ring tw:inline-flex tw:items-center tw:gap-1.5 tw:rounded-ui-xs tw:text-ui-sm tw:font-semibold tw:text-on-surface-variant tw:no-underline tw:hover:text-on-surface">
             <x-ui.icon name="arrow-left" /> {{ __('purchasing.copy.back_to_chat_list') }}
         </a>
     </div>
@@ -26,7 +26,7 @@
                     <span class="tw:text-ui-xs tw:text-on-surface-variant">{{ $chatContext['subtitle'] }}</span>
                 </div>
                 @if($chatContext['url'])
-                    <a href="{{ $chatContext['url'] }}" class="ui-focus-ring tw:inline-flex tw:h-8 tw:items-center tw:gap-1.5 tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-transparent tw:px-2.5 tw:text-ui-xs tw:font-medium tw:text-primary tw:no-underline tw:hover:bg-surface-low">
+                    <a href="{{ $chatContext['url'] }}" class="ui-focus-ring tw:inline-flex tw:h-8 tw:items-center tw:gap-1.5 tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-transparent tw:px-2.5 tw:text-ui-xs tw:font-semibold tw:text-primary tw:no-underline tw:hover:bg-surface-low">
                         <x-ui.icon name="external-link" /> {{ __('purchasing.copy.open_details') }}
                     </a>
                 @endif
@@ -48,12 +48,12 @@
                 <div class="chat-action-panel tw:border-t tw:border-outline-variant tw:px-4 tw:py-2 tw:flex tw:flex-nowrap tw:gap-2 tw:overflow-x-auto" id="chatQuickActions">
                     @foreach($quickActions as $action)
                         @if(($action['type'] ?? '') === 'link')
-                            <a href="{{ $action['url'] }}" class="ui-focus-ring tw:inline-flex tw:h-7 tw:shrink-0 tw:items-center tw:gap-1 tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-transparent tw:px-2.5 tw:text-ui-xs tw:font-medium tw:text-on-surface tw:no-underline tw:hover:bg-surface-low">
+                            <a href="{{ $action['url'] }}" class="ui-focus-ring tw:inline-flex tw:h-7 tw:shrink-0 tw:items-center tw:gap-1 tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-transparent tw:px-2.5 tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:no-underline tw:hover:bg-surface-low">
                                 <x-ui.icon :name="$action['icon'] ?? 'arrow-right'" />{{ $action['label'] }}
                             </a>
                         @else
                             <button type="button"
-                                class="ui-focus-ring tw:inline-flex tw:h-7 tw:shrink-0 tw:items-center tw:gap-1 tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-transparent tw:px-2.5 tw:text-ui-xs tw:font-medium tw:text-on-surface tw:hover:bg-surface-low"
+                                class="ui-focus-ring tw:inline-flex tw:h-7 tw:shrink-0 tw:items-center tw:gap-1 tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-transparent tw:px-2.5 tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:hover:bg-surface-low"
                                 data-chat-action="{{ $action['key'] }}"
                                 data-chat-action-label="{{ $action['label'] }}"
                                 data-chat-action-note="{{ !empty($action['requires_note']) ? '1' : '0' }}"
@@ -80,7 +80,7 @@
 
     <div class="chat-fullpage-card">
         {{-- Chat Header --}}
-        <div class="tw:flex tw:items-center tw:justify-between tw:gap-3 tw:border-b tw:border-outline-variant tw:bg-surface-container tw:px-4 tw:py-2.5">
+        <div class="tw:flex tw:items-center tw:justify-between tw:gap-3 tw:border-b tw:border-outline-variant tw:px-4 tw:py-2.5">
             <div class="tw:flex tw:items-center tw:gap-3 tw:min-w-0">
                 <x-ui.avatar :name="$partnerName" size="sm" />
                 <div class="tw:min-w-0">
@@ -131,7 +131,7 @@
         <div id="chat-messages" style="flex: 1; overflow-y: auto; padding: 1rem 1.25rem;">
             @if($hasMoreMessages ?? false)
                 <div class="tw:flex tw:justify-center tw:py-2" data-chat-older>
-                    <button type="button" id="chat-load-older" class="ui-focus-ring tw:inline-flex tw:h-7 tw:items-center tw:gap-1 tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-transparent tw:px-2.5 tw:text-ui-xs tw:font-medium tw:text-on-surface tw:hover:bg-surface-low">
+                    <button type="button" id="chat-load-older" class="ui-focus-ring tw:inline-flex tw:h-7 tw:items-center tw:gap-1 tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-transparent tw:px-2.5 tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:hover:bg-surface-low">
                         {{ __('common.chat.load_older') }}
                     </button>
                 </div>
@@ -183,7 +183,7 @@
             <form id="chat-form" data-managed-submit onsubmit="sendMessage(event)">
                 @if(!empty($messageTemplates))
                     <div class="dropdown tw:mb-2">
-                        <button class="ui-focus-ring tw:inline-flex tw:h-7 tw:items-center tw:gap-1 tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-transparent tw:px-2.5 tw:text-ui-xs tw:font-medium tw:text-on-surface tw:hover:bg-surface-low" type="button" data-ui-dropdown-trigger popovertarget="conversationTemplateMenu" aria-controls="conversationTemplateMenu" aria-expanded="false">
+                        <button class="ui-focus-ring tw:inline-flex tw:h-7 tw:items-center tw:gap-1 tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-transparent tw:px-2.5 tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:hover:bg-surface-low" type="button" data-ui-dropdown-trigger popovertarget="conversationTemplateMenu" aria-controls="conversationTemplateMenu" aria-expanded="false">
                             <x-ui.icon name="zap" />{{ __('purchasing.copy.template') }}
                         </button>
                         <div id="conversationTemplateMenu" popover="auto" data-ui-dropdown-menu class="dropdown-menu tw:p-2 chat-template-menu">

@@ -20,7 +20,7 @@
 @endphp
 
 <div {{ $attributes->class(['tw:flex tw:max-w-full']) }}>
-    <div role="tablist" aria-label="{{ $label }}" class="tw:flex tw:w-full tw:flex-wrap tw:items-center tw:gap-1.5 tw:rounded-ui-md tw:border tw:border-outline tw:bg-surface-container tw:p-1.5 tw:sm:inline-flex tw:sm:w-auto">
+    <div role="tablist" aria-label="{{ $label }}" class="tw:flex tw:w-full tw:flex-wrap tw:items-center tw:gap-1 tw:rounded-ui-md tw:border tw:border-outline tw:bg-surface-container tw:p-1 tw:sm:inline-flex tw:sm:w-auto">
         @foreach($tabs as $tab)
             @php($selected = $tab['id'] === $active)
             <button
@@ -40,7 +40,7 @@
                 <span>{{ $tab['label'] }}</span>
                 @isset($tab['count'])
                     <span @class([
-                        'tw:inline-flex tw:items-center tw:justify-center tw:rounded-full tw:px-2 tw:py-0.5 tw:text-[11px] tw:font-bold ui-tabular-nums',
+                        'tw:inline-flex tw:items-center tw:justify-center tw:rounded-full tw:px-2 tw:py-0.5 tw:text-ui-xs tw:font-bold ui-tabular-nums',
                         'tw:group-aria-selected:bg-primary-foreground tw:group-aria-selected:text-primary',
                         $tab['count'] > 0 ? ($chipTones[$tab['tone'] ?? ''] ?? 'tw:bg-surface tw:text-on-surface-variant') : 'tw:bg-surface tw:text-on-surface-variant',
                     ])>{{ $tab['count'] }}</span>

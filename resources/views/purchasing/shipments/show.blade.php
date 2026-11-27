@@ -62,19 +62,18 @@
         :description="__('shipments.copy.physical_delivery_verification_consolidated_shipping_documents_and_receiving_status')"
         :record-nav="$recordNav ?? null"
     >
+        <x-slot:status>
+            <x-ui.status-chip :tone="\App\Support\StatusHelper::shipmentTone($shipment->status)" size="md">
+                {{ \App\Support\StatusHelper::shipmentLabel($shipment->status) }}
+            </x-ui.status-chip>
+        </x-slot:status>
         <x-slot:actions>
-            <div class="tw:flex tw:flex-wrap tw:gap-2 tw:items-center">
-                <x-ui.status-chip :tone="\App\Support\StatusHelper::shipmentTone($shipment->status)" size="md">
-                    {{ \App\Support\StatusHelper::shipmentLabel($shipment->status) }}
-                </x-ui.status-chip>
-
-                @if($isSubmitted)
-                    <x-ui.button type="button" variant="primary" size="sm" data-ui-modal-open="#confirmArrivalModal">
-                        <x-ui.icon name="check-circle" size="sm" />
-                        <span>{{ __('shipments.copy.confirm_physical_arrival') }}</span>
-                    </x-ui.button>
-                @endif
-            </div>
+            @if($isSubmitted)
+                <x-ui.button type="button" variant="primary" size="sm" data-ui-modal-open="#confirmArrivalModal">
+                    <x-ui.icon name="check-circle" size="sm" />
+                    <span>{{ __('shipments.copy.confirm_physical_arrival') }}</span>
+                </x-ui.button>
+            @endif
         </x-slot:actions>
     </x-ui.page-header>
 
@@ -289,7 +288,7 @@
                             @endif
 
                             @if($attachment)
-                                <a href="{{ route('attachments.show', $attachment) }}" target="_blank" class="tw:text-primary tw:no-underline tw:inline-flex tw:items-center tw:gap-1 tw:font-medium">
+                                <a href="{{ route('attachments.show', $attachment) }}" target="_blank" class="tw:text-primary tw:no-underline tw:inline-flex tw:items-center tw:gap-1 tw:font-semibold">
                                     <x-ui.icon name="paperclip" size="sm" />
                                     <span class="tw:truncate" style="max-width: 170px;" title="{{ $attachment->file_name }}">
                                         {{ $attachment->file_name }}

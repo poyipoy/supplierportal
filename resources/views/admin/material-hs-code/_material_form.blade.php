@@ -85,7 +85,7 @@
                         <input type="hidden" name="is_active" value="0">
                         <div class="ui-check-group">
                             <input class="ui-switch" type="checkbox" name="is_active" value="1" id="materialActive" checked>
-                            <label class="tw:cursor-pointer tw:text-ui-sm tw:font-medium tw:text-on-surface" for="materialActive">
+                            <label class="tw:cursor-pointer tw:text-ui-sm tw:font-semibold tw:text-on-surface" for="materialActive">
                                 {{ __('admin.copy.active_selectable_in_requisition_items') }}
                             </label>
                         </div>

@@ -16,7 +16,7 @@
         <x-slot:actions>
             <form action="{{ route('notifications.mark-all-read') }}" method="POST">
                 @csrf
-                <button type="submit" class="ui-focus-ring ui-motion tw:inline-flex tw:h-9 tw:items-center tw:gap-2 tw:rounded-ui-sm tw:border tw:border-outline tw:bg-transparent tw:px-3 tw:text-ui-sm tw:font-medium tw:text-on-surface tw:hover:bg-surface-container">
+                <button type="submit" class="ui-focus-ring ui-motion tw:inline-flex tw:h-9 tw:items-center tw:gap-2 tw:rounded-ui-sm tw:border tw:border-outline tw:bg-transparent tw:px-3 tw:text-ui-sm tw:font-semibold tw:text-on-surface tw:hover:bg-surface-container">
                     <x-ui.icon name="check-check" />{{ __('common.notification.mark_all') }}
                 </button>
             </form>
@@ -25,11 +25,11 @@
 
     <div class="tw:grid tw:gap-5 tw:lg:grid-cols-[16rem_minmax(0,1fr)] tw:lg:items-start">
         {{-- Category Sidebar --}}
-        <nav class="tw:border tw:border-outline tw:bg-surface-container" aria-label="{{ __('common.notification.categories') }}">
-            <div class="tw:border-b tw:border-outline-variant tw:bg-surface-low tw:px-4 tw:py-3">
-                <h2 class="tw:m-0 tw:text-ui-xs tw:font-semibold tw:uppercase tw:tracking-wider tw:text-on-surface-variant">{{ __('common.fields.category') }}</h2>
+        <nav class="tw:overflow-hidden tw:rounded-ui-md tw:border tw:border-outline tw:bg-surface tw:shadow-ui-surface" aria-label="{{ __('common.notification.categories') }}">
+            <div class="tw:border-b tw:border-outline-variant tw:px-4 tw:py-3">
+                <h2 class="tw:m-0 tw:text-ui-sm tw:font-semibold tw:uppercase tw:tracking-wider tw:text-on-surface-variant">{{ __('common.fields.category') }}</h2>
             </div>
-            <div class="tw:divide-y tw:divide-outline-variant">
+            <div class="tw:p-1.5 tw:space-y-0.5">
                 @foreach($categoryOptions as $key => $category)
                     @php
                         $counts = $categoryCounts[$key] ?? ['total' => 0, 'unread' => 0];
@@ -38,15 +38,19 @@
                             : route('notifications.index', ['category' => $key]);
                         $isActive = $selectedCategory === $key;
                     @endphp
-                    <a href="{{ $url }}" class="tw:flex tw:items-center tw:justify-between tw:gap-2 tw:px-4 tw:py-2.5 tw:text-ui-sm tw:no-underline tw:transition-colors {{ $isActive ? 'tw:bg-primary/5 tw:font-semibold tw:text-primary tw:border-l-2 tw:border-l-primary' : 'tw:text-on-surface tw:hover:bg-surface-low' }}">
+                    <a
+                        href="{{ $url }}"
+                        @if($isActive) aria-current="page" @endif
+                        class="ui-focus-ring tw:flex tw:min-h-[40px] tw:items-center tw:justify-between tw:gap-2 tw:rounded-ui-sm tw:px-3 tw:py-2 tw:text-ui-sm tw:no-underline tw:transition-colors tw:duration-fast {{ $isActive ? 'tw:bg-primary-container tw:font-semibold tw:text-primary-container-foreground' : 'tw:text-on-surface tw:hover:bg-surface-container' }}"
+                    >
                         <span class="tw:inline-flex tw:items-center tw:gap-2 tw:min-w-0">
-                            <x-ui.icon :name="$category['icon']" class="tw:shrink-0" />
+                            <x-ui.icon :name="$category['icon']" class="tw:shrink-0 {{ $isActive ? 'tw:text-primary' : 'tw:text-on-surface-variant' }}" />
                             <span class="tw:truncate">{{ $category['label'] }}</span>
                         </span>
                         @if($counts['unread'] > 0)
-                            <span class="tw:inline-flex tw:h-5 tw:min-w-5 tw:items-center tw:justify-center tw:rounded-full tw:bg-error tw:px-1.5 tw:text-ui-xs tw:font-bold tw:text-error-foreground">{{ $counts['unread'] }}</span>
+                            <span class="ui-tabular-nums tw:inline-flex tw:h-5 tw:min-w-5 tw:items-center tw:justify-center tw:rounded-full tw:bg-error tw:px-1.5 tw:text-ui-xs tw:font-bold tw:text-error-foreground">{{ $counts['unread'] }}</span>
                         @elseif($counts['total'] > 0)
-                            <span class="tw:text-ui-xs tw:text-on-surface-variant">{{ $counts['total'] }}</span>
+                            <span class="ui-tabular-nums tw:text-ui-xs {{ $isActive ? 'tw:text-primary-container-foreground' : 'tw:text-on-surface-variant' }}">{{ $counts['total'] }}</span>
                         @endif
                     </a>
                 @endforeach
@@ -54,10 +58,10 @@
         </nav>
 
         {{-- Notification Feed --}}
-        <section class="tw:border tw:border-outline tw:bg-surface" aria-labelledby="notification-feed-title">
-            <header class="tw:flex tw:items-center tw:justify-between tw:gap-3 tw:border-b tw:border-outline-variant tw:bg-surface-container tw:px-5 tw:py-3">
+        <section class="tw:overflow-hidden tw:rounded-ui-md tw:border tw:border-outline tw:bg-surface tw:shadow-ui-surface" aria-labelledby="notification-feed-title">
+            <header class="tw:flex tw:items-center tw:justify-between tw:gap-3 tw:border-b tw:border-outline-variant tw:px-5 tw:py-3">
                 <div>
-                    <h2 id="notification-feed-title" class="tw:m-0 tw:flex tw:items-center tw:gap-2 tw:text-ui-sm tw:font-semibold">
+                    <h2 id="notification-feed-title" class="tw:m-0 tw:flex tw:items-center tw:gap-2 tw:text-ui-base tw:font-semibold">
                         <x-ui.icon :name="$selectedOption['icon']" class="tw:text-primary" />{{ $selectedOption['label'] }}
                     </h2>
                     <p class="tw:m-0 tw:mt-0.5 tw:text-ui-xs tw:text-on-surface-variant">{{ $selectedOption['description'] }}</p>
@@ -77,12 +81,12 @@
                         </div>
                         <div class="tw:min-w-0 tw:flex-1">
                             <div class="tw:flex tw:items-start tw:justify-between tw:gap-2">
-                                <span class="tw:text-ui-sm {{ $isUnread ? 'tw:font-semibold' : 'tw:font-medium' }} tw:truncate">{{ $notif->data['title'] ?? __('common.notification.single') }}</span>
+                                <span class="tw:text-ui-sm {{ $isUnread ? 'tw:font-semibold' : 'tw:font-semibold' }} tw:truncate">{{ $notif->data['title'] ?? __('common.notification.single') }}</span>
                                 <span class="tw:shrink-0 tw:text-ui-xs tw:text-on-surface-variant tw:whitespace-nowrap">{{ $notif->created_at->locale(app()->getLocale())->diffForHumans(short: true) }}</span>
                             </div>
                             <div class="tw:mt-0.5 tw:text-ui-xs tw:text-on-surface-variant tw:line-clamp-2">{{ $notif->data['message'] ?? '-' }}</div>
                             <div class="tw:mt-1.5 tw:flex tw:items-center tw:gap-3">
-                                <span class="tw:inline-flex tw:items-center tw:gap-1 tw:text-ui-xs tw:font-medium tw:text-on-surface-variant">
+                                <span class="tw:inline-flex tw:items-center tw:gap-1 tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant">
                                     <x-ui.icon :name="$notifCategory['icon']" />{{ $notifCategory['label'] }}
                                 </span>
                                 @if($isUnread)

@@ -48,7 +48,7 @@
                 value="{{ $itemData['material_name'] ?? '' }}"
             >
             <div
-                class="material-search-results tw:list-none tw:m-0 tw:p-0 tw:border tw:border-outline-variant tw:rounded-ui-sm tw:shadow-ui-1 tw:hidden tw:absolute tw:left-0 tw:top-full tw:mt-1 tw:w-full tw:bg-surface tw:z-[1000] tw:max-h-[220px] tw:overflow-y-auto tw:rounded-md tw:border tw:border-outline-variant"
+                class="material-search-results tw:list-none tw:m-0 tw:p-0 tw:border tw:border-outline-variant tw:rounded-ui-sm tw:shadow-ui-2 tw:hidden tw:absolute tw:left-0 tw:top-full tw:mt-1 tw:w-full tw:bg-surface tw:z-[1000] tw:max-h-[220px] tw:overflow-y-auto tw:rounded-md tw:border tw:border-outline-variant"
                 role="listbox"
             ></div>
         </div>

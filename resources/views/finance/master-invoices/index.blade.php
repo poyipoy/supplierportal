@@ -3,7 +3,7 @@
 @section('page-title', __('common.final_review.master_reporting'))
 
 @section('content')
-<div id="masterInvoicesContainer" class="tw:grid tw:gap-6 tw:pb-16" data-server-tabs-container>
+<div id="masterInvoicesContainer" class="tw:grid tw:gap-6" data-server-tabs-container>
     <x-ui.page-header
         :title="__('common.final_review.master_reporting')"
         :description="__('finance.copy_review.master_help')"

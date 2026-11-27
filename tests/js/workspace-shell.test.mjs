@@ -36,6 +36,7 @@ import {
     MIN_SHORTCUTS_PANE_WIDTH_PX,
     normalizeShortcutsLayout,
     resizeShortcutsPairByDelta,
+    resolveActiveSidebarLinks,
     resolveDragTargetZoneIndex,
     resolveGroupSessionMenuItems,
     resolveModuleKey,
@@ -698,7 +699,9 @@ test('workspace-shell.css enforces connected card-tabs (non-ghost), hover/focus-
     }
 
     // Infor LN-style flat 3-pane Shortcuts workspace contracts with dual splitters & anti-overlap rules
-    const shellBlade = readFileSync(resolve(repoRoot, 'resources/views/layouts/workspace-shell.blade.php'), 'utf8');
+    const shellLayoutBlade = readFileSync(resolve(repoRoot, 'resources/views/layouts/workspace-shell.blade.php'), 'utf8');
+    assert.equal(shellLayoutBlade.includes("partials.workspace-shortcuts-panel"), true);
+    const shellBlade = readFileSync(resolve(repoRoot, 'resources/views/partials/workspace-shortcuts-panel.blade.php'), 'utf8');
     assert.equal(shellBlade.includes('data-shortcuts-board'), true);
     assert.equal(shellBlade.includes('workspace-shortcuts-board__left'), false, 'Sub-wrapper __left must remain removed to avoid flex spillover overlap');
     assert.equal(shellBlade.includes('data-shortcuts-pane='), true);
@@ -730,7 +733,7 @@ test('workspace-shell.css enforces connected card-tabs (non-ghost), hover/focus-
     assert.ok(
         paneHoverMatch
             && paneHoverMatch[0].includes('var(--md-outline-strong)')
-            && paneHoverMatch[0].includes('var(--ui-shadow-2)'),
+            && paneHoverMatch[0].includes('var(--ui-shadow-1)'),
         'Hovered or focused shortcuts pane must elevate border and shadow',
     );
     assert.equal(css.includes('.workspace-shortcuts-dock'), true);
@@ -1377,7 +1380,7 @@ test('workspace and page transitions run ease-in enter and ease-out exit simulta
 
     const stageRule = shellCss.match(/\.content-area\.workspace-stage\s*\{[\s\S]*?\}/);
     assert.ok(stageRule, '.content-area.workspace-stage rule must exist');
-    assert.equal(stageRule[0].includes('background: var(--md-surface);'), true);
+    assert.equal(stageRule[0].includes('background: var(--ui-workspace-bg);'), true);
 
     const activePanelRule = shellCss.match(/\.workspace-panel\.is-active\s*\{[\s\S]*?\}/);
     assert.ok(activePanelRule, '.workspace-panel.is-active rule must exist');
@@ -2789,4 +2792,237 @@ test('bootEmbedReadiness tracks DataTables 3 events and settles on custom ajax.e
     await new Promise((resolve) => setTimeout(resolve, 140));
     assert.equal(readiness.isReady, true, 'must settle cleanly without window.jQuery');
     assert.deepEqual(readyEvents, ['adasi:embed-ready']);
+});
+
+test('workspace-shell.js consumes single-RTT workspace_config, prioritizes active embed, staggers background tabs, and preempts on activation', () => {
+    const testDir = dirname(fileURLToPath(import.meta.url));
+    const shellJs = readFileSync(resolve(testDir, '../../resources/js/workspace-shell.js'), 'utf8');
+    const authJs = readFileSync(resolve(testDir, '../../resources/js/auth.js'), 'utf8');
+
+    assert.equal(shellJs.includes('detail.workspace_config || parseWorkspaceConfigFromDocument(detail.document)'), true);
+    assert.equal(shellJs.includes('const pendingLocaleSyncFrames = new Map();'), true);
+    assert.equal(shellJs.includes('childWin.AdasiLocaleSwitcher?.syncLocaleDictionaries?.(syncPayload)'), true);
+    assert.equal(shellJs.includes('await syncFrameLocale(activeFrameId, activeIframe, syncPayload, { seq });'), true);
+    assert.equal(shellJs.includes('for (const frameId of backgroundFrameIds)'), true);
+    assert.equal(shellJs.includes('pendingLocaleSyncFrames.delete(frameId);'), true);
+    assert.equal(shellJs.includes('syncLocaleIfNeeded(res.frame.frameId, activeIframe, activeWin, activeDoc);'), true);
+    assert.equal(authJs.includes("hasMarker('form[data-locale-switcher], [data-locale-option]')"), true);
+});
+
+test('resolveActiveSidebarLinks highlights only the specific link when sibling routes share a moduleKey', () => {
+    const localSupplierLinks = [
+        { url: `${ORIGIN}${PREFIX}/local-supplier/dashboard`, key: 'dashboard' },
+        { url: `${ORIGIN}${PREFIX}/local-supplier/invoices/create`, key: 'invoices' },
+        { url: `${ORIGIN}${PREFIX}/local-supplier/invoices`, key: 'invoices' },
+        { url: `${ORIGIN}${PREFIX}/local-supplier/purchase-orders`, key: 'purchase-orders' },
+    ];
+
+    // Invoice Register list highlights only Invoice Register (never Submit Invoice)
+    assert.deepEqual(
+        resolveActiveSidebarLinks(localSupplierLinks, {
+            activeUrl: `${ORIGIN}${PREFIX}/local-supplier/invoices?status=SUBMITTED`,
+            activeKey: 'invoices',
+            catalog: SAMPLE_CATALOG,
+            origin: ORIGIN,
+        }),
+        [false, false, true, false],
+    );
+
+    // Submit Invoice highlights only Submit Invoice (longest path match wins over /invoices prefix)
+    assert.deepEqual(
+        resolveActiveSidebarLinks(localSupplierLinks, {
+            activeUrl: `${ORIGIN}${PREFIX}/local-supplier/invoices/create`,
+            activeKey: 'invoices',
+            catalog: SAMPLE_CATALOG,
+            origin: ORIGIN,
+        }),
+        [false, true, false, false],
+    );
+
+    // Invoice detail / revision / receipt highlights only Invoice Register
+    assert.deepEqual(
+        resolveActiveSidebarLinks(localSupplierLinks, {
+            activeUrl: `${ORIGIN}${PREFIX}/local-supplier/invoices/AbCd1234`,
+            activeKey: 'invoices',
+            catalog: SAMPLE_CATALOG,
+            origin: ORIGIN,
+        }),
+        [false, false, true, false],
+    );
+
+    // GA Claims vs Submit Claim share moduleKey "claims" and remain distinct
+    const gaLinks = [
+        { url: `${ORIGIN}${PREFIX}/ga/dashboard`, key: 'dashboard' },
+        { url: `${ORIGIN}${PREFIX}/ga/claims`, key: 'claims' },
+        { url: `${ORIGIN}${PREFIX}/ga/claims/create`, key: 'claims' },
+    ];
+    assert.deepEqual(
+        resolveActiveSidebarLinks(gaLinks, {
+            activeUrl: `${ORIGIN}${PREFIX}/ga/claims`,
+            activeKey: 'claims',
+            catalog: SAMPLE_CATALOG,
+            origin: ORIGIN,
+        }),
+        [false, true, false],
+    );
+    assert.deepEqual(
+        resolveActiveSidebarLinks(gaLinks, {
+            activeUrl: `${ORIGIN}${PREFIX}/ga/claims/create`,
+            activeKey: 'claims',
+            catalog: SAMPLE_CATALOG,
+            origin: ORIGIN,
+        }),
+        [false, false, true],
+    );
+
+    // Non-prefix sibling overview views still fall back to moduleKey matching
+    assert.deepEqual(
+        resolveActiveSidebarLinks(
+            [
+                { url: `${ORIGIN}${PREFIX}/purchasing/comparison/inter-supplier`, key: 'comparison' },
+                { url: `${ORIGIN}${PREFIX}/purchasing/shipments`, key: 'shipments' },
+            ],
+            {
+                activeUrl: `${ORIGIN}${PREFIX}/purchasing/comparison/historical`,
+                activeKey: 'comparison',
+                catalog: SAMPLE_CATALOG,
+                origin: ORIGIN,
+            },
+        ),
+        [true, false],
+    );
+
+    // Empty activeUrl clears all active highlights
+    assert.deepEqual(
+        resolveActiveSidebarLinks(localSupplierLinks, {
+            activeUrl: '',
+            activeKey: null,
+            catalog: SAMPLE_CATALOG,
+            origin: ORIGIN,
+        }),
+        [false, false, false, false],
+    );
+});
+
+test('bootWorkspaceEmbedBridge preserves _embed=1 on un-prevented [data-server-tab] fallback clicks without opening a workspace tab', async () => {
+    const { bootWorkspaceEmbedBridge } = await import('../../resources/js/workspace-embed-bridge.js');
+    const saved = {
+        window: globalThis.window,
+        Window: globalThis.Window,
+        document: globalThis.document,
+        HTMLFormElement: globalThis.HTMLFormElement,
+    };
+
+    const docListeners = new Map();
+    const winListeners = new Map();
+    const shellCalls = { openUrl: [], handleEmbedLinkClick: [], openedUrls: [] };
+    const parentShell = {
+        showToast: () => {},
+        openChatDrawer: () => {},
+        openChatConversation: () => {},
+        openLightbox: () => {},
+        openSmartPanel: () => {},
+        breakoutToTop: (url) => shellCalls.openedUrls.push(url),
+        openUrl: (url) => shellCalls.openUrl.push(url),
+        handleEmbedLinkClick: (...args) => {
+            shellCalls.handleEmbedLinkClick.push(args);
+            return 'handled';
+        },
+        syncPreferencesFromEmbed: () => {},
+        dismissFloatingOverlays: () => {},
+        notifyEmbedBooted: () => {},
+        notifyEmbedReady: () => {},
+    };
+
+    const fakeDoc = {
+        title: 'Inter-Supplier Comparison',
+        addEventListener(type, handler, capture = false) {
+            const list = docListeners.get(type) ?? [];
+            list.push({ handler, capture: Boolean(capture) });
+            docListeners.set(type, list);
+        },
+    };
+    class FakeWindow {}
+    const fakeWin = Object.assign(new FakeWindow(), {
+        location: { origin: ORIGIN, href: `${ORIGIN}/v1/ADSI_DEV/purchasing/comparison/inter-supplier?_embed=1` },
+        document: fakeDoc,
+        history: {
+            pushState() {},
+            replaceState() {},
+        },
+        addEventListener(type, handler) {
+            const list = winListeners.get(type) ?? [];
+            list.push(handler);
+            winListeners.set(type, list);
+        },
+        parent: {
+            location: { origin: ORIGIN },
+            AdasiWorkspaceShell: parentShell,
+        },
+        AdasiPortal: { pathPrefix: 'v1/ADSI_DEV', httpPrefix: '/v1/ADSI_DEV' },
+    });
+    fakeWin.self = fakeWin;
+    globalThis.window = fakeWin;
+    globalThis.Window = FakeWindow;
+    globalThis.document = fakeDoc;
+    globalThis.HTMLFormElement = class FakeForm {};
+
+    try {
+        const booted = bootWorkspaceEmbedBridge();
+        assert.equal(booted, parentShell);
+
+        const attributes = new Map([
+            ['href', '/v1/ADSI_DEV/purchasing/comparison/historical?currency=USD'],
+            ['data-server-tab', ''],
+            ['data-tab-name', 'historical'],
+        ]);
+        const tabAnchor = {
+            get href() {
+                return new URL(attributes.get('href'), fakeWin.location.href).toString();
+            },
+            set href(value) {
+                attributes.set('href', String(value));
+            },
+            hasAttribute: (name) => attributes.has(name),
+            getAttribute: (name) => attributes.get(name) ?? null,
+            setAttribute: (name, value) => attributes.set(name, String(value)),
+            closest: (selector) => (selector === 'a[href]' ? tabAnchor : null),
+        };
+
+        let defaultPrevented = false;
+        const clickEvent = {
+            target: tabAnchor,
+            button: 0,
+            metaKey: false,
+            ctrlKey: false,
+            shiftKey: false,
+            altKey: false,
+            get defaultPrevented() {
+                return defaultPrevented;
+            },
+            preventDefault() {
+                defaultPrevented = true;
+            },
+            stopImmediatePropagation() {},
+        };
+
+        for (const { handler, capture } of docListeners.get('click') ?? []) {
+            if (!capture) handler(clickEvent);
+        }
+
+        assert.equal(defaultPrevented, false, 'fallback native navigation stays un-prevented');
+        assert.equal(shellCalls.handleEmbedLinkClick.length, 0, 'must never spawn a new WorkspaceShell tab for a server-tab link');
+        const resolved = new URL(tabAnchor.getAttribute('href'), fakeWin.location.href);
+        assert.equal(resolved.searchParams.get('_embed'), '1', 'fallback [data-server-tab] href must carry _embed=1 to avoid X-Frame-Options: DENY');
+        assert.equal(resolved.searchParams.get('currency'), 'USD');
+    } finally {
+        if (saved.window === undefined) delete globalThis.window;
+        else globalThis.window = saved.window;
+        if (saved.Window === undefined) delete globalThis.Window;
+        else globalThis.Window = saved.Window;
+        if (saved.document === undefined) delete globalThis.document;
+        else globalThis.document = saved.document;
+        if (saved.HTMLFormElement === undefined) delete globalThis.HTMLFormElement;
+        else globalThis.HTMLFormElement = saved.HTMLFormElement;
+    }
 });

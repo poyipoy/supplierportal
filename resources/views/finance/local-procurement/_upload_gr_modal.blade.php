@@ -3,9 +3,9 @@
         <div class="modal-content">
             <div class="modal-header tw:border-b tw:border-outline-variant">
                 <div>
-                    <h6 class="modal-title tw:font-bold tw:text-on-surface" id="uploadGrBulkModalLabel">
+                    <h2 class="modal-title tw:text-ui-lg tw:font-bold tw:text-on-surface" id="uploadGrBulkModalLabel">
                         {{ __('local_procurement.gr_documents.title') }}
-                    </h6>
+                    </h2>
                     <div class="tw:text-on-surface-variant tw:text-ui-xs tw:mt-0.5">
                         {{ __('local_procurement.gr_documents.help') }}
                     </div>
@@ -40,7 +40,7 @@
                         required
                     />
 
-                    <div class="tw:rounded-ui-md tw:border tw:border-outline-variant tw:bg-surface-container tw:p-3 tw:text-[11px] tw:text-on-surface-variant tw:leading-relaxed">
+                    <div class="tw:rounded-ui-md tw:border tw:border-outline-variant tw:bg-surface-container tw:p-3 tw:text-ui-xs tw:text-on-surface-variant tw:leading-relaxed">
                         <div class="tw:font-bold tw:text-on-surface tw:mb-1 tw:flex tw:items-center tw:gap-1.5">
                             <x-ui.icon name="info" size="xs" />
                             <span>{{ __('local_procurement.surface.naming') }}</span>

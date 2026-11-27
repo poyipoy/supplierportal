@@ -20,6 +20,7 @@ use App\Support\BusinessTime;
 use App\Support\Money;
 use App\Support\Pricing\EvaluationContext;
 use App\Support\PurchasingNavigation;
+use App\Support\ServerTabsResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -359,12 +360,12 @@ class InterSupplierComparisonController extends Controller
             'evaluation' => $this->evaluationMeta($currency, $context),
         ];
 
-        if ($request->ajax()) {
-            return response()->json([
-                'html' => view('purchasing.comparison._inter_supplier_content', $viewData)->render(),
-                'tab' => 'inter-supplier',
-                'url' => route('purchasing.comparison.inter-supplier', $request->query()),
-            ]);
+        if (ServerTabsResponse::wants($request) || $request->ajax()) {
+            return ServerTabsResponse::make(
+                view('purchasing.comparison._inter_supplier_content', $viewData)->render(),
+                'inter-supplier',
+                $request,
+            );
         }
 
         return view('purchasing.comparison.inter-supplier', $viewData);
@@ -452,6 +453,8 @@ class InterSupplierComparisonController extends Controller
             quotationItem: null,
             targetCurrency: $currency,
             benchmarkYear: $benchmarkYear,
+            benchmarkMonth: $benchmarkMonth,
+            allYears: $benchmarkYear === null,
         );
         $mainRef = $benchmark->main;
         if ($best !== null) {
@@ -464,12 +467,15 @@ class InterSupplierComparisonController extends Controller
             'reference' => [
                 'matched' => $mainRef->isMatched(),
                 'converted' => $mainRef->weightedAveragePricePerKg,
+                'average_converted' => $mainRef->weightedAveragePricePerKg,
+                'best_converted' => $mainRef->lowestPricePerKg,
                 'original' => null,
                 'original_currency' => null,
                 'reason' => $mainRef->reasonCode,
                 'category_key' => $mainRef->categoryKey,
                 'category_name' => $mainRef->rule?->category_name,
                 'benchmark_year' => $mainRef->benchmarkYear,
+                'benchmark_month' => $benchmarkMonth,
                 'po_count' => $mainRef->poCount,
                 'line_count' => $mainRef->lineCount,
                 'total_kg' => $mainRef->totalKg,

@@ -156,9 +156,6 @@ export function bootWorkspaceEmbedBridge() {
             || anchor.hasAttribute('data-ui-tab')
             || anchor.hasAttribute('popovertarget')
             || anchor.hasAttribute('data-ui-modal-open')
-            || anchor.hasAttribute('data-server-tab')
-            || anchor.hasAttribute('data-tabs-link')
-            || anchor.closest?.('[data-server-tabs-nav]')
         ) {
             return;
         }
@@ -181,6 +178,22 @@ export function bootWorkspaceEmbedBridge() {
         if (isTopLevelOnlyUrl(absUrl, origin, prefix)) {
             event.preventDefault();
             shell.breakoutToTop(absUrl);
+            return;
+        }
+
+        // Fallback protection when an in-page server tab link reaches native navigation without preventDefault().
+        if (
+            anchor.hasAttribute('data-server-tab')
+            || anchor.hasAttribute('data-tabs-link')
+            || anchor.closest?.('[data-server-tabs-nav]')
+        ) {
+            if (!rawHref.includes('_embed=') && !String(anchor.href || '').includes('_embed=')) {
+                const embeddedHref = appendEmbedParam(absUrl, origin);
+                anchor.href = embeddedHref;
+                if (typeof anchor.setAttribute === 'function') {
+                    anchor.setAttribute('href', embeddedHref);
+                }
+            }
             return;
         }
 

@@ -19,7 +19,7 @@
     </div>
 @endif
 
-<div class="tw:grid tw:grid-cols-1 tw:gap-6 tw:pb-16">
+<div class="tw:grid tw:grid-cols-1 tw:gap-4">
     {{-- Top Page Header --}}
     <x-ui.page-header
         :title="__('terms.invoice').' '.$invoice->invoice_number"
@@ -31,7 +31,7 @@
                 {{ \App\Support\StatusHelper::localInvoiceLabel($invoice->status) }}
             </x-ui.status-chip>
             @if($invoice->physical_verified_at)
-                <span class="tw:inline-flex tw:items-center tw:gap-1 tw:px-2 tw:py-0.5 tw:rounded-sm tw:text-ui-xs tw:bg-success/10 tw:text-success tw:font-medium">
+                <span class="tw:inline-flex tw:items-center tw:gap-1 tw:px-2 tw:py-0.5 tw:rounded-sm tw:text-ui-xs tw:bg-success/10 tw:text-success tw:font-semibold">
                     <x-ui.icon name="check-circle" size="sm" /> {{ __('local_invoice.labels.verified_physical') }}
                 </span>
             @else
@@ -66,7 +66,7 @@
             </x-ui.button>
 
             @can('cancel', $invoice)
-                <form method="POST" action="{{ route('local-supplier.invoices.cancel', $invoice) }}" class="tw:inline" onsubmit="event.preventDefault(); window.AdasiAlert.confirmDanger({title: 'Batalkan Invoice?', text: 'Batalkan invoice ini dan lepaskan seluruh reservasi GR?', confirmText: 'Ya, Batalkan', cancelText: 'Batal'}).then(r => { if (r.isConfirmed) this.submit(); });">
+                <form method="POST" action="{{ route('local-supplier.invoices.cancel', $invoice) }}" class="tw:inline" onsubmit="event.preventDefault(); window.AdasiAlert.confirmDanger({title: @js(__('local_invoice.detail.cancel_title')), text: @js(__('local_invoice.detail.cancel_help')), confirmText: @js(__('local_invoice.detail.cancel_yes')), cancelText: @js(__('local_invoice.detail.cancel'))}).then(r => { if (r.isConfirmed) { window.AdasiButton?.submitForm ? window.AdasiButton.submitForm(this) : this.submit(); } });">
                     @csrf
                     <x-ui.button type="submit" variant="danger-outline" size="sm"><x-ui.icon name="x-circle" size="sm" /> {{ __('local_invoice.detail.cancel') }}</x-ui.button>
                 </form>
@@ -129,7 +129,7 @@
                 <div class="tw:min-w-0 tw:flex-1">
                     <div class="tw:flex tw:items-center tw:gap-2">
                         <h4 class="tw:m-0 tw:text-ui-sm tw:font-bold tw:text-on-surface">{{ __('local_invoice.detail.underpaid_title') }}</h4>
-                        <span class="tw:px-2 tw:py-0.5 tw:rounded-sm tw:text-[10px] tw:font-bold tw:bg-warning/20 tw:text-warning-container-foreground">
+                        <span class="tw:px-2 tw:py-0.5 tw:rounded-sm tw:text-ui-xs tw:font-bold tw:bg-warning/20 tw:text-warning-container-foreground">
                             {{ __('local_invoice.detail.remaining_settlement') }}
                         </span>
                     </div>
@@ -138,15 +138,15 @@
                     </p>
                     <div class="tw:mt-3 tw:grid tw:grid-cols-1 tw:sm:grid-cols-3 tw:gap-2 tw:p-2.5 tw:rounded-sm tw:bg-surface tw:border tw:border-outline-variant tw:text-ui-xs ui-tabular-nums">
                         <div>
-                            <span class="tw:text-on-surface-variant tw:block tw:text-[10px] tw:uppercase tw:font-sans tw:font-semibold">{{ __('local_invoice.detail.net_amount') }}</span>
+                            <span class="tw:text-on-surface-variant tw:block tw:text-ui-xs tw:uppercase tw:font-sans tw:font-semibold">{{ __('local_invoice.detail.net_amount') }}</span>
                             <span class="tw:font-bold tw:text-on-surface">Rp {{ $regionalFormatter->number(number_format($expectedNet, 0, ',', '.'), 'indonesian') }}</span>
                         </div>
                         <div>
-                            <span class="tw:text-success tw:block tw:text-[10px] tw:uppercase tw:font-sans tw:font-semibold">{{ __('local_invoice.labels.transferred') }}:</span>
+                            <span class="tw:text-success tw:block tw:text-ui-xs tw:uppercase tw:font-sans tw:font-semibold">{{ __('local_invoice.labels.transferred') }}:</span>
                             <span class="tw:font-bold tw:text-success">Rp {{ $regionalFormatter->number(number_format($alreadyPaid, 0, ',', '.'), 'indonesian') }}</span>
                         </div>
                         <div>
-                            <span class="tw:text-warning-container-foreground tw:block tw:text-[10px] tw:uppercase tw:font-sans tw:font-semibold">{{ __('local_invoice.labels.remaining_unpaid') }}:</span>
+                            <span class="tw:text-warning-container-foreground tw:block tw:text-ui-xs tw:uppercase tw:font-sans tw:font-semibold">{{ __('local_invoice.labels.remaining_unpaid') }}:</span>
                             <span class="tw:font-bold tw:text-warning-container-foreground">Rp {{ $regionalFormatter->number(number_format($remainingPayable, 0, ',', '.'), 'indonesian') }}</span>
                         </div>
                     </div>
@@ -176,15 +176,15 @@
             }
             $adasiFinanceWa = config('finance.adasi_refund_account.finance_wa');
         @endphp
-        <div class="tw:rounded-ui-md tw:border tw:border-amber-500/30 tw:bg-amber-500/5 tw:p-5">
+        <div class="tw:rounded-ui-md tw:border tw:border-warning-container-foreground/30 tw:bg-warning-container/25 tw:p-5">
             <div class="tw:flex tw:items-start tw:gap-3.5">
-                <div class="tw:w-9 tw:h-9 tw:rounded-full tw:bg-amber-500/10 tw:text-amber-600 tw:dark:text-amber-400 tw:flex tw:items-center tw:justify-center tw:shrink-0">
+                <div class="tw:w-9 tw:h-9 tw:rounded-full tw:bg-warning-container tw:text-warning-container-foreground tw:flex tw:items-center tw:justify-center tw:shrink-0">
                     <x-ui.icon name="alert-triangle" size="sm" />
                 </div>
                 <div class="tw:min-w-0 tw:flex-1">
                     <div class="tw:flex tw:flex-wrap tw:items-center tw:gap-2">
                         <h4 class="tw:m-0 tw:text-ui-base tw:font-bold tw:text-on-surface">{{ __('local_invoice.detail.overpayment_title') }}</h4>
-                        <span class="tw:px-2.5 tw:py-0.5 tw:rounded-full tw:text-[11px] tw:font-semibold tw:bg-amber-100 tw:text-amber-800 tw:dark:bg-amber-950 tw:dark:text-amber-300">
+                        <span class="tw:px-2.5 tw:py-0.5 tw:rounded-full tw:text-ui-xs tw:font-semibold tw:bg-warning-container tw:text-warning-container-foreground">
                             {{ __('local_invoice.detail.refund_required') }}
                         </span>
                     </div>
@@ -194,16 +194,16 @@
 
                     <div class="tw:grid tw:grid-cols-1 tw:sm:grid-cols-3 tw:gap-3 tw:mt-3 tw:p-3 tw:bg-surface tw:rounded-ui-sm tw:border tw:border-outline-variant/50">
                         <div>
-                            <span class="tw:text-[11px] tw:text-on-surface-variant tw:block">{{ __('local_invoice.detail.invoice_amount') }}</span>
+                            <span class="tw:text-ui-xs tw:text-on-surface-variant tw:block">{{ __('local_invoice.detail.invoice_amount') }}</span>
                             <span class="ui-tabular-nums tw:font-semibold tw:text-ui-sm tw:text-on-surface">Rp {{ $regionalFormatter->number(number_format($expectedNet, 0, ',', '.'), 'indonesian') }}</span>
                         </div>
                         <div>
-                            <span class="tw:text-[11px] tw:text-on-surface-variant tw:block">{{ __('finance.drp.total_transferred') }}</span>
+                            <span class="tw:text-ui-xs tw:text-on-surface-variant tw:block">{{ __('finance.drp.total_transferred') }}</span>
                             <span class="ui-tabular-nums tw:font-semibold tw:text-ui-sm tw:text-on-surface">Rp {{ $regionalFormatter->number(number_format($alreadyPaid, 0, ',', '.'), 'indonesian') }}</span>
                         </div>
                         <div>
-                            <span class="tw:text-[11px] tw:text-amber-700 tw:dark:text-amber-400 tw:block tw:font-medium">{{ __('local_invoice.detail.overpayment_amount') }}</span>
-                            <span class="ui-tabular-nums tw:font-bold tw:text-ui-sm tw:text-amber-700 tw:dark:text-amber-400">Rp {{ $regionalFormatter->number(number_format($overAmount, 0, ',', '.'), 'indonesian') }}</span>
+                            <span class="tw:text-ui-xs tw:text-warning-container-foreground tw:block tw:font-semibold">{{ __('local_invoice.detail.overpayment_amount') }}</span>
+                            <span class="ui-tabular-nums tw:font-bold tw:text-ui-sm tw:text-warning-container-foreground">Rp {{ $regionalFormatter->number(number_format($overAmount, 0, ',', '.'), 'indonesian') }}</span>
                         </div>
                     </div>
 
@@ -264,6 +264,7 @@
                                                     data-ui-dropdown-trigger
                                                     popovertarget="dd-inv-email-{{ $invoice->id }}"
                                                     aria-controls="dd-inv-email-{{ $invoice->id }}"
+                                                    aria-haspopup="menu"
                                                     aria-expanded="false"
                                                     title="{{ __('local_invoice.refund_contact.email_options', ['email' => $adasiFinanceEmail]) }}">
                                                     <x-ui.icon name="mail" size="sm" class="tw:w-4 tw:h-4 tw:shrink-0" />
@@ -335,7 +336,7 @@
                                             <a href="{{ $waUrl }}"
                                                 target="_blank"
                                                 rel="noopener noreferrer"
-                                                class="tw:inline-flex tw:items-center tw:gap-1.5 tw:px-2 tw:py-1 tw:rounded-ui-sm tw:text-ui-xs tw:font-semibold tw:bg-emerald-500/10 tw:hover:bg-emerald-500/20 tw:text-emerald-700 tw:dark:text-emerald-400 tw:dark:hover:text-emerald-300 tw:hover:underline tw:transition-colors"
+                                                class="tw:inline-flex tw:items-center tw:gap-1.5 tw:px-2 tw:py-1 tw:rounded-ui-sm tw:text-ui-xs tw:font-semibold tw:bg-success-container tw:hover:bg-success-container/80 tw:text-success-container-foreground tw:hover:underline tw:transition-colors"
                                                 title="{{ __('local_invoice.refund_contact.whatsapp') }}">
                                                 <x-ui.icon name="whatsapp" size="sm" class="tw:w-4 tw:h-4 tw:shrink-0" />
                                                 <span>WhatsApp</span>
@@ -347,7 +348,7 @@
                         </div>
                     </div>
 
-                    <p class="tw:m-0 tw:mt-3 tw:text-[11px] tw:text-on-surface-variant">
+                    <p class="tw:m-0 tw:mt-3 tw:text-ui-xs tw:text-on-surface-variant">
                         <strong>{{ __('local_invoice.detail.instructions') }}</strong> {{ __('local_invoice.labels.refund_help') }}
                     </p>
                 </div>
@@ -359,15 +360,15 @@
         @php
             $proof = $overpaymentRefund->attachments->first();
         @endphp
-        <div class="tw:rounded-ui-md tw:border tw:border-emerald-500/30 tw:bg-emerald-500/5 tw:p-5">
+        <div class="tw:rounded-ui-md tw:border tw:border-success-container-foreground/30 tw:bg-success-container/25 tw:p-5">
             <div class="tw:flex tw:items-start tw:gap-3.5">
-                <div class="tw:w-9 tw:h-9 tw:rounded-full tw:bg-emerald-500/10 tw:text-emerald-600 tw:dark:text-emerald-400 tw:flex tw:items-center tw:justify-center tw:shrink-0">
+                <div class="tw:w-9 tw:h-9 tw:rounded-full tw:bg-success-container tw:text-success-container-foreground tw:flex tw:items-center tw:justify-center tw:shrink-0">
                     <x-ui.icon name="check-circle" size="sm" />
                 </div>
                 <div class="tw:min-w-0 tw:flex-1">
                     <div class="tw:flex tw:flex-wrap tw:items-center tw:gap-2">
                         <h4 class="tw:m-0 tw:text-ui-base tw:font-bold tw:text-on-surface">{{ __('local_invoice.detail.refund_settlement') }}</h4>
-                        <span class="tw:px-2.5 tw:py-0.5 tw:rounded-full tw:text-[11px] tw:font-semibold tw:bg-emerald-100 tw:text-emerald-800 tw:dark:bg-emerald-950 tw:dark:text-emerald-300">
+                        <span class="tw:px-2.5 tw:py-0.5 tw:rounded-full tw:text-ui-xs tw:font-semibold tw:bg-success-container tw:text-success-container-foreground">
                             {{ __('local_invoice.detail.verified_settlement') }}
                         </span>
                     </div>
@@ -378,7 +379,7 @@
                     <div class="tw:grid tw:grid-cols-1 tw:sm:grid-cols-2 tw:lg:grid-cols-4 tw:gap-3 tw:mt-3 tw:p-3.5 tw:bg-surface tw:rounded-ui-sm tw:border tw:border-outline-variant/50 tw:text-ui-xs">
                         <div>
                             <span class="tw:text-on-surface-variant tw:block">{{ __('local_invoice.detail.returned_amount') }}</span>
-                            <span class="ui-tabular-nums tw:font-bold tw:text-ui-sm tw:text-emerald-700 tw:dark:text-emerald-400">
+                            <span class="ui-tabular-nums tw:font-bold tw:text-ui-sm tw:text-success">
                                 Rp {{ $regionalFormatter->number(number_format((float) ($overpaymentRefund->refund_amount ?? $overpaymentRefund->overpayment_amount), 0, ',', '.'), 'indonesian') }}
                             </span>
                         </div>
@@ -400,7 +401,7 @@
                         <div class="tw:mt-3 tw:flex tw:items-center tw:justify-between tw:p-2.5 tw:rounded-ui-sm tw:bg-surface-container-low tw:border tw:border-outline-variant/60">
                             <div class="tw:flex tw:items-center tw:gap-2 tw:min-w-0">
                                 <x-ui.icon name="file-text" size="xs" class="tw:text-primary tw:shrink-0" />
-                                <span class="tw:text-ui-xs tw:font-medium tw:text-on-surface tw:truncate" title="{{ $proof->file_name }}">
+                                <span class="tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:truncate" title="{{ $proof->file_name }}">
                                     {{ __('local_invoice.detail.settlement_proof', ['filename' => $proof->file_name]) }}
                                 </span>
                             </div>
@@ -430,7 +431,7 @@
                     </div>
                     <div>
                         <span class="tw:text-ui-xs tw:text-on-surface-variant tw:block">{{ __('local_invoice.labels.invoice_date') }}</span>
-                        <span class="tw:font-medium tw:text-ui-sm tw:text-on-surface">{{ $regionalFormatter->date($invoice->invoice_date, 'human') }}</span>
+                        <span class="tw:font-semibold tw:text-ui-sm tw:text-on-surface">{{ $regionalFormatter->date($invoice->invoice_date, 'human') }}</span>
                     </div>
                     <div>
                         <span class="tw:text-ui-xs tw:text-on-surface-variant tw:block">{{ __('local_invoice.receipt.po_number') }}</span>
@@ -438,7 +439,7 @@
                     </div>
                     <div>
                         <span class="tw:text-ui-xs tw:text-on-surface-variant tw:block">{{ __('local_procurement.labels.vendor') }}</span>
-                        <span class="tw:font-medium tw:text-ui-sm tw:text-on-surface">{{ $companyName }}</span>
+                        <span class="tw:font-semibold tw:text-ui-sm tw:text-on-surface">{{ $companyName }}</span>
                         <span class="tw:block tw:text-ui-xs tw:text-on-surface-variant">{{ $invoice->supplier->email }}</span>
                     </div>
                     @if($invoice->tax_invoice_number)
@@ -452,25 +453,25 @@
                 <div class="tw:border-t tw:border-outline-variant tw:mt-4 tw:pt-4">
                     <div class="tw:grid tw:gap-3 tw:sm:grid-cols-3 tw:p-3 tw:rounded-ui-sm tw:bg-surface-container-low">
                         <div>
-                            <span class="tw:text-[11px] tw:text-on-surface-variant tw:uppercase tw:font-semibold tw:tracking-wider">{{ __('local_invoice.detail.dpp') }}</span>
+                            <span class="tw:text-ui-xs tw:text-on-surface-variant tw:uppercase tw:font-semibold tw:tracking-wider">{{ __('local_invoice.detail.dpp') }}</span>
                             <span class="tw:block ui-tabular-nums tw:font-semibold tw:text-ui-sm tw:text-on-surface">
                                 Rp {{ $regionalFormatter->number(number_format((float) $invoice->invoice_amount, 0, ',', '.'), 'indonesian') }}
                             </span>
-                            <span class="tw:text-[11px] tw:text-on-surface-variant ui-tabular-nums tw:block" title="{{ __('local_invoice.detail.original_amount') }}">
+                            <span class="tw:text-ui-xs tw:text-on-surface-variant ui-tabular-nums tw:block" title="{{ __('local_invoice.detail.original_amount') }}">
                                 IDR {{ $invoice->invoice_amount }}
                             </span>
                         </div>
                         <div>
-                            <span class="tw:text-[11px] tw:text-on-surface-variant tw:uppercase tw:font-semibold tw:tracking-wider">PPN</span>
+                            <span class="tw:text-ui-xs tw:text-on-surface-variant tw:uppercase tw:font-semibold tw:tracking-wider">PPN</span>
                             <span class="tw:block ui-tabular-nums tw:font-semibold tw:text-ui-sm tw:text-on-surface">
                                 Rp {{ $regionalFormatter->number(number_format((float) $invoice->tax_amount, 0, ',', '.'), 'indonesian') }}
                             </span>
-                            <span class="tw:text-[11px] tw:text-on-surface-variant ui-tabular-nums tw:block" title="{{ __('local_invoice.detail.original_amount') }}">
+                            <span class="tw:text-ui-xs tw:text-on-surface-variant ui-tabular-nums tw:block" title="{{ __('local_invoice.detail.original_amount') }}">
                                 IDR {{ $invoice->tax_amount }}
                             </span>
                         </div>
                         <div>
-                            <span class="tw:text-[11px] tw:text-primary tw:uppercase tw:font-semibold tw:tracking-wider">{{ __('finance.labels.payment_total') }}</span>
+                            <span class="tw:text-ui-xs tw:text-primary tw:uppercase tw:font-semibold tw:tracking-wider">{{ __('finance.labels.payment_total') }}</span>
                             <span class="tw:block ui-tabular-nums tw:font-bold tw:text-ui-base tw:text-primary">
                                 Rp {{ $regionalFormatter->number(number_format((float) $totalAmount, 0, ',', '.'), 'indonesian') }}
                             </span>
@@ -518,14 +519,14 @@
                                 @foreach($payment->transfers->sortBy('sequence_no') as $transfer)
                                     <tr>
                                         <td>{{ $transfer->sequence_no }}</td>
-                                        <td class="tw:font-medium">{{ $transfer->transfer_date ? $regionalFormatter->date($transfer->transfer_date, 'human') : '—' }}</td>
+                                        <td class="tw:font-semibold">{{ $transfer->transfer_date ? $regionalFormatter->date($transfer->transfer_date, 'human') : '—' }}</td>
                                         <td>
                                             @if($transfer->transfer_type === 'primary')
-                                                <span class="tw:inline-flex tw:items-center tw:gap-1 tw:px-1.5 tw:py-0.5 tw:rounded-sm tw:text-[10px] tw:font-semibold tw:bg-primary/10 tw:text-primary">
+                                                <span class="tw:inline-flex tw:items-center tw:gap-1 tw:px-1.5 tw:py-0.5 tw:rounded-sm tw:text-ui-xs tw:font-semibold tw:bg-primary/10 tw:text-primary">
                                                     {{ __('local_invoice.labels.primary_transfer') }}
                                                 </span>
                                             @else
-                                                <span class="tw:inline-flex tw:items-center tw:gap-1 tw:px-1.5 tw:py-0.5 tw:rounded-sm tw:text-[10px] tw:font-semibold tw:bg-warning/10 tw:text-warning-container-foreground">
+                                                <span class="tw:inline-flex tw:items-center tw:gap-1 tw:px-1.5 tw:py-0.5 tw:rounded-sm tw:text-ui-xs tw:font-semibold tw:bg-warning/10 tw:text-warning-container-foreground">
                                                     {{ __('local_invoice.labels.correction_transfer') }}
                                                 </span>
                                             @endif
@@ -582,7 +583,7 @@
                                     <div class="tw:flex tw:items-center tw:gap-2">
                                         <span class="tw:font-bold tw:text-ui-xs tw:text-on-surface">{{ __('local_invoice.detail.revision', ['number' => $rev->revision_number]) }}</span>
                                         @if($rev->revision_number === $invoice->revision_number)
-                                            <span class="tw:px-2 tw:py-0.5 tw:rounded-full tw:text-[10px] tw:font-semibold tw:bg-primary/10 tw:text-primary">{{ __('local_invoice.labels.active') }}</span>
+                                            <span class="tw:px-2 tw:py-0.5 tw:rounded-full tw:text-ui-xs tw:font-semibold tw:bg-primary/10 tw:text-primary">{{ __('local_invoice.labels.active') }}</span>
                                         @endif
                                     </div>
                                     <span class="tw:text-ui-xs tw:text-on-surface-variant">{{ $regionalFormatter->timestamp($rev->created_at, 'datetime_comma') }}</span>
@@ -608,7 +609,7 @@
         </div>
 
         {{-- Right Column: Sticky Workflow Actions, Status Stepper & Information (Offset accounts for 56px navbar) --}}
-        <div class="tw:lg:col-span-4 ui-density-stack-list tw:sticky" style="top: calc(var(--topbar-height, 56px) + 1.25rem);">
+        <div class="tw:min-w-0 tw:lg:col-span-4 ui-density-stack-list tw:sticky" style="top: calc(var(--topbar-height, 56px) + 1.25rem);">
             {{-- Payment & Due Date Card --}}
             <x-ui.card :title="__('local_invoice.labels.payment_schedule')">
                 <div class="ui-density-list">
@@ -686,7 +687,7 @@
 
                                         @if(in_array($action, ['request-revision', 'reject', 'physical-verification', 'schedule-payment', 'complete-payment']))
                                             <div class="tw:mb-2">
-                                                <label for="notes-{{ $action }}" class="ui-label tw:text-[11px] tw:text-on-surface-variant">
+                                                <label for="notes-{{ $action }}" class="ui-label tw:text-ui-xs tw:text-on-surface-variant">
                                                     {{ __(in_array($action, ['request-revision', 'reject']) ? 'local_invoice.closure.notes_required' : 'local_invoice.closure.notes_optional') }}
                                                     @if(in_array($action, ['request-revision', 'reject'])) <span class="tw:text-error">*</span> @endif
                                                 </label>
@@ -704,7 +705,7 @@
 
                                         @if($action === 'schedule-payment')
                                             <div class="tw:mb-3">
-                                                <label for="scheduled-payment-date" class="ui-label tw:text-[11px] tw:text-on-surface-variant">
+                                                <label for="scheduled-payment-date" class="ui-label tw:text-ui-xs tw:text-on-surface-variant">
                                                     {{ __('common.final_review.payment_schedule_date') }} <span class="tw:text-error">*</span>
                                                 </label>
                                                 <x-ui.date-picker

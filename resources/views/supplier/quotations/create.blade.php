@@ -87,11 +87,12 @@
     .quotation-col-availability { width: var(--q-col-availability); }
 
     .quotation-items-table .quotation-field-header th {
-        background: var(--md-surface-container-low) !important;
-        color: var(--md-on-surface-variant) !important;
-        font-size: var(--ui-font-size-xs);
+        background: var(--ui-table-header-bg) !important;
+        border-bottom: 1px solid var(--md-outline) !important;
+        color: var(--md-on-surface) !important;
+        font-size: 0.8125rem;
         font-weight: 700;
-        height: 42px;
+        min-height: 2.625rem;
         position: sticky;
         text-align: center;
         top: 0;
@@ -134,7 +135,7 @@
     .quotation-items-table thead .quotation-sticky-number,
     .quotation-items-table thead .quotation-sticky-material,
     .quotation-items-table thead .quotation-sticky-row-type {
-        background: var(--md-surface-container-low) !important;
+        background: var(--ui-table-header-bg) !important;
         z-index: 12;
     }
 
@@ -204,7 +205,7 @@
 
     .quotation-items-table .quotation-editable {
         background: var(--md-surface);
-        border-color: var(--md-outline);
+        border-color: var(--ui-input-border);
         height: 34px;
         min-height: 34px;
         box-sizing: border-box;
@@ -775,7 +776,7 @@
                         <div class="tw:text-on-surface-variant tw:text-ui-xs tw:font-semibold tw:uppercase">{{ __('supplier.copy.requisition_reference') }}</div>
                         <div class="tw:font-bold tw:text-primary tw:text-ui-sm tw:mt-0.5">{{ $pr->pr_number ?? 'PR -' }}</div>
                     </div>
-                    <div class="tw:sm:col-span-2 tw:lg:col-span-1 tw:p-2.5 tw:bg-surface-low tw:border tw:border-outline-variant tw:rounded-ui-md">
+                    <div class="tw:min-w-0 tw:sm:col-span-2 tw:lg:col-span-1 tw:p-2.5 tw:bg-surface-low tw:border tw:border-outline-variant tw:rounded-ui-md">
                         <div class="tw:text-on-surface-variant tw:text-ui-xs tw:font-semibold tw:uppercase">{{ __('supplier.copy.purchasing_instructions') }}</div>
                         <div class="tw:text-on-surface tw:text-ui-xs tw:mt-0.5">{{ $pr->notes ?: __('supplier.copy.no_additional_notes_provided') }}</div>
                     </div>
@@ -1259,7 +1260,7 @@
                                                             >
                                                                 <x-ui.icon name="copy" size="sm" />
                                                             </button>
-                                                            <ul id="dd-qitem-{{ $item->id }}" popover="auto" data-ui-dropdown-menu class="dropdown-menu dropdown-menu-end tw:shadow-ui-1" style="font-size: 0.75rem; min-width: 220px; z-index: 1060;">
+                                                            <ul id="dd-qitem-{{ $item->id }}" popover="auto" data-ui-dropdown-menu class="dropdown-menu dropdown-menu-end tw:shadow-ui-2" style="font-size: 0.75rem; min-width: 220px; z-index: 1060;">
                                                                 <li>
                                                                     <button type="button" class="dropdown-item tw:py-1.5 tw:px-3 tw:flex tw:items-center tw:gap-1.5" data-mtc-apply="same_material">
                                                                         <x-ui.icon name="layers" size="sm" class="tw:text-on-surface-variant tw:shrink-0" />
@@ -1368,19 +1369,19 @@
         <div class="modal-content">
             <div class="modal-header">
                 <div>
-                    <h6 class="modal-title tw:font-bold" id="quotationImportModalLabel">{{ __('supplier.copy.import_quotation_items_from_spreadsheet') }}</h6>
+                    <h2 class="modal-title tw:text-ui-lg tw:font-bold" id="quotationImportModalLabel">{{ __('supplier.copy.import_quotation_items_from_spreadsheet') }}</h2>
                     <div class="tw:text-on-surface-variant tw:text-ui-xs">{{ __('supplier.copy.imported_values_are_mapped_by_pr_item_id_and_are_not_committed_to_database_until_saved') }}</div>
                 </div>
                 <button type="button" class="btn-close" data-ui-modal-close aria-label="{{ __('supplier.copy.close') }}"></button>
             </div>
             <div class="modal-body tw:p-4">
                 <div class="tw:grid tw:grid-cols-12 tw:gap-3">
-                    <div class="tw:col-span-12 tw:md:col-span-7">
+                    <div class="tw:min-w-0 tw:col-span-12 tw:md:col-span-7">
                         <label for="quotationImportFile" class="ui-label tw:text-ui-xs tw:font-semibold tw:text-on-surface">{{ __('supplier.copy.spreadsheet_file_xlsx_xls_csv') }}</label>
                         <input type="file" id="quotationImportFile" class="ui-input ui-input--sm" accept=".xlsx,.xls,.csv">
                         <div class="ui-field-help">{{ __('supplier.copy.use_the_template_for_this_pr_max_10_mb_and_1_000_data_rows') }}</div>
                     </div>
-                    <div class="tw:col-span-12 tw:md:col-span-5">
+                    <div class="tw:min-w-0 tw:col-span-12 tw:md:col-span-5">
                         <label for="quotationImportMode" class="ui-label tw:text-ui-xs tw:font-semibold tw:text-on-surface">{{ __('supplier.copy.import_mode') }}</label>
                         <select id="quotationImportMode" class="ui-select ui-select--sm" aria-describedby="quotationImportModeHelp">
                             <option value="fill_empty" selected>{{ __('supplier.copy.fill_empty_fields_only') }}</option>
@@ -1393,13 +1394,13 @@
                 <div id="quotationImportResult" class="tw:hidden tw:mt-3">
                     <div id="quotationImportSummary" class="tw:mb-2.5 tw:rounded-ui-sm tw:border tw:border-outline tw:bg-surface-container tw:px-3 tw:py-2 tw:text-ui-xs tw:font-semibold tw:text-on-surface" role="status"></div>
 
-                    <div id="quotationImportWarningsPanel" class="tw:hidden tw:mb-2.5 tw:rounded-ui-sm tw:border-s-4 tw:border-warning tw:bg-warning-container tw:px-3 tw:py-2 tw:text-ui-xs tw:text-warning-container-foreground" role="status">
-                        <div class="tw:font-bold tw:mb-1"><x-ui.icon name="triangle-alert" size="sm" class="tw:me-1" />{{ __('supplier.copy.warnings') }}</div>
+                    <div id="quotationImportWarningsPanel" class="ui-alert tw:hidden tw:mb-2.5 tw:rounded-ui-md tw:border tw:border-warning/40 tw:bg-warning-container tw:px-3 tw:py-2.5 tw:text-ui-xs tw:text-warning-container-foreground" role="status">
+                        <div class="tw:font-bold tw:mb-1 tw:flex tw:items-center tw:gap-1.5"><x-ui.icon name="triangle-alert" size="sm" class="tw:shrink-0 tw:text-warning" /><span>{{ __('supplier.copy.warnings') }}</span></div>
                         <ul id="quotationImportWarnings" class="tw:mb-0 tw:ps-3"></ul>
                     </div>
 
-                    <div id="quotationImportErrorsPanel" class="tw:hidden tw:mb-2.5 tw:rounded-ui-sm tw:border-s-4 tw:border-error tw:bg-error-container tw:px-3 tw:py-2 tw:text-ui-xs tw:text-error-container-foreground" role="alert">
-                        <div class="tw:font-bold tw:mb-1"><x-ui.icon name="circle-x" size="sm" class="tw:me-1" />{{ __('supplier.copy.import_errors') }}</div>
+                    <div id="quotationImportErrorsPanel" class="ui-alert tw:hidden tw:mb-2.5 tw:rounded-ui-md tw:border tw:border-error/40 tw:bg-error-container tw:px-3 tw:py-2.5 tw:text-ui-xs tw:text-error-container-foreground" role="alert">
+                        <div class="tw:font-bold tw:mb-1 tw:flex tw:items-center tw:gap-1.5"><x-ui.icon name="circle-x" size="sm" class="tw:shrink-0 tw:text-error" /><span>{{ __('supplier.copy.import_errors') }}</span></div>
                         <ul id="quotationImportErrors" class="tw:mb-0 tw:ps-3"></ul>
                     </div>
 

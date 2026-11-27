@@ -72,7 +72,7 @@
                 @foreach($recentInspections as $insp)
                     <tr>
                         <td class="tw:font-bold tw:text-on-surface">{{ $insp->purchaseOrder->po_number ?? '-' }}</td>
-                        <td class="tw:text-on-surface tw:font-medium">{{ $insp->purchaseOrder->supplier->name ?? '-' }}</td>
+                        <td class="tw:text-on-surface tw:font-semibold">{{ $insp->purchaseOrder->supplier->name ?? '-' }}</td>
                         <td class="tw:text-on-surface-variant ui-tabular-nums">{{ $insp->inspected_at ? $regionalFormatter->timestamp($insp->inspected_at, 'datetime_comma') : '-' }}</td>
                         <td class="tw:text-on-surface-variant">{{ $insp->inspector->name ?? '-' }}</td>
                         <td class="tw:text-center">
@@ -93,7 +93,7 @@
 
         <x-slot:metrics>
 {{-- Restrained operational summary --}}
-    <div class="tw:grid tw:gap-px tw:overflow-hidden tw:rounded-ui-md tw:border tw:border-outline-variant tw:bg-outline-variant tw:sm:grid-cols-2 tw:xl:grid-cols-4" aria-label="{{ __('qc.copy.quality_control_summary') }}">
+    <div class="tw:grid tw:gap-px tw:overflow-hidden tw:rounded-ui-md tw:border tw:border-outline tw:bg-outline-variant tw:shadow-ui-surface tw:sm:grid-cols-2 tw:xl:grid-cols-4" aria-label="{{ __('qc.copy.quality_control_summary') }}">
         <x-ui.metric-card flat :label="__('qc.copy.total_inspections')" :value="$regionalFormatter->number((string) ($totalInspections), 'plain')" icon="clipboard-check" tone="neutral" :href="route('qc.inspections.index')" />
         <x-ui.metric-card flat :label="__('qc.copy.material_ok')" :value="$regionalFormatter->number((string) ($totalOk), 'plain')" icon="circle-check" tone="success" :href="route('qc.inspections.index', ['status' => 'ok'])" />
         <x-ui.metric-card flat :label="__('qc.copy.material_ng_defective')" :value="$regionalFormatter->number((string) ($totalNg), 'plain')" icon="circle-x" :tone="$totalNg > 0 ? 'error' : 'neutral'" :href="route('qc.inspections.index', ['status' => 'ng'])" />
@@ -192,29 +192,12 @@
                     {
                         label: @json(__('qc.copy.material_ok')),
                         data: @json(array_column($trendData, 'ok')),
-                        borderColor: chart.color('ok'),
-                        backgroundColor: chart.color('ok'),
-                        pointBorderColor: chart.color('surface'),
-                        pointStyle: 'circle',
-                        borderWidth: 2,
-                        pointRadius: 4,
-                        pointHoverRadius: 6,
-                        pointBorderWidth: 2,
-                        tension: 0,
+                        ...chart.lineDataset({ color: chart.color('ok'), pointStyle: 'circle', borderDash: [] }),
                     },
                     {
                         label: @json(__('qc.copy.material_ng')),
                         data: @json(array_column($trendData, 'ng')),
-                        borderColor: chart.color('ng'),
-                        backgroundColor: chart.color('ng'),
-                        pointBorderColor: chart.color('surface'),
-                        pointStyle: 'triangle',
-                        borderDash: [6, 4],
-                        borderWidth: 2,
-                        pointRadius: 5,
-                        pointHoverRadius: 7,
-                        pointBorderWidth: 2,
-                        tension: 0,
+                        ...chart.lineDataset({ color: chart.color('ng'), pointStyle: 'triangle', borderDash: [6, 4] }),
                     },
                 ],
             },

@@ -18,6 +18,6 @@
 @endphp
 
 <span {{ $attributes->class(['ui-status-chip', 'ui-status-chip--'.$normalizedTone, 'tw:inline-flex tw:max-w-full tw:items-center tw:rounded-ui-full tw:font-semibold', $toneClasses, $sizes[$size] ?? $sizes['sm']]) }}>
-    <x-ui.icon :name="$icon ?: $defaultIcon" size="sm" class="tw:shrink-0" />
+    <x-ui.icon :name="$icon ?: $defaultIcon" size="xs" class="tw:shrink-0" />
     <span class="tw:truncate">{{ $slot }}</span>
 </span>

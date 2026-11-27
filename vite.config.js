@@ -35,11 +35,23 @@ export default defineConfig(({ mode }) => ({
                     }
                 },
                 Declaration(declaration) {
-                    // With Preflight disabled, v3 width utilities preserved the minimal
-                    // ADASI foundation/UA border style. v4 must not turn them all solid.
+                    // With Preflight disabled, v4 width/divide utilities emit `border*-style: var(--tw-border-style)`
+                    // which stays unset unless given a fallback. Strip it on zero-width resets (border-0),
+                    // and emit `var(--tw-border-style, solid)` on non-zero borders/dividers so utilities like
+                    // `tw:divide-y` and `tw:sm:border-r` render while explicit `tw:border-dashed` still wins.
                     if (declaration.prop.startsWith('border') && declaration.prop.endsWith('-style')
                         && declaration.value === 'var(--tw-border-style)') {
-                        declaration.remove();
+                        const isZeroWidth = declaration.parent?.nodes?.some(
+                            node => node.type === 'decl'
+                                && node.prop.startsWith('border')
+                                && node.prop.endsWith('-width')
+                                && /^0(?:px)?$/.test(node.value),
+                        );
+                        if (isZeroWidth) {
+                            declaration.remove();
+                        } else {
+                            declaration.value = 'var(--tw-border-style, solid)';
+                        }
                     }
                 },
                 OnceExit(root) {

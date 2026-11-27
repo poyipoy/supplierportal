@@ -35,6 +35,8 @@ class HistoricalReferencePriceService
         ?int $benchmarkYear = null,
         DateTimeInterface|string|null $historyAsOfAt = null,
         array $excludePoIds = [],
+        ?int $benchmarkMonth = null,
+        bool $allYears = false,
     ): HistoricalCalculationResult {
         $targetCurrency = strtoupper(trim($targetCurrency));
         $materialMasterId = $prItem->material_master_id;
@@ -80,6 +82,8 @@ class HistoricalReferencePriceService
             rawDimension: $ruleResult->rawDimension,
             roundedDimension: $ruleResult->roundedDimension,
             basisType: 'requested',
+            benchmarkMonth: $benchmarkMonth,
+            allYears: $allYears,
         );
     }
 
@@ -89,6 +93,8 @@ class HistoricalReferencePriceService
         ?int $benchmarkYear = null,
         DateTimeInterface|string|null $historyAsOfAt = null,
         array $excludePoIds = [],
+        ?int $benchmarkMonth = null,
+        bool $allYears = false,
     ): HistoricalCalculationResult {
         $targetCurrency = strtoupper(trim($targetCurrency));
         $prItem = $quotationItem->prItem;
@@ -135,6 +141,8 @@ class HistoricalReferencePriceService
             rawDimension: $ruleResult->rawDimension,
             roundedDimension: $ruleResult->roundedDimension,
             basisType: 'supplier_offered',
+            benchmarkMonth: $benchmarkMonth,
+            allYears: $allYears,
         );
     }
 
@@ -149,12 +157,18 @@ class HistoricalReferencePriceService
         ?string $rawDimension = null,
         ?int $roundedDimension = null,
         string $basisType = 'requested',
+        ?int $benchmarkMonth = null,
+        bool $allYears = false,
     ): HistoricalCalculationResult {
         $targetCurrency = strtoupper(trim($targetCurrency));
         $cutoffStr = $this->formatCutoff($historyAsOfAt);
         $currentYear = $this->annualRates->year(BusinessTime::now());
-        $benchmarkYear ??= ($historyAsOfAt !== null ? $this->annualRates->year($historyAsOfAt) : $currentYear);
-        $isCurrentYear = ($benchmarkYear === $currentYear);
+        $benchmarkMonth = ($benchmarkMonth !== null && $benchmarkMonth >= 1 && $benchmarkMonth <= 12) ? $benchmarkMonth : null;
+        $aggregateAllYears = $allYears && $benchmarkYear === null;
+        $resolvedBenchmarkYear = $aggregateAllYears
+            ? null
+            : ($benchmarkYear ?? ($historyAsOfAt !== null ? $this->annualRates->year($historyAsOfAt) : $currentYear));
+        $isCurrentYear = $resolvedBenchmarkYear !== null && $resolvedBenchmarkYear === $currentYear;
 
         $dimensionField = ReferencePriceRuleResolver::DIMENSION_FIELD_BY_SHAPE[$shape] ?? null;
 
@@ -162,10 +176,12 @@ class HistoricalReferencePriceService
             materialMasterId: $materialMasterId,
             shape: $shape,
             ruleId: $rule->id,
-            benchmarkYear: $benchmarkYear,
+            benchmarkYear: $resolvedBenchmarkYear,
             targetCurrency: $targetCurrency,
             basisType: $basisType,
             historyAsOfAt: $cutoffStr,
+            benchmarkMonth: $benchmarkMonth,
+            allYears: $aggregateAllYears,
         );
 
         if (isset($this->memo[$calcKey])) {
@@ -179,6 +195,14 @@ class HistoricalReferencePriceService
             historyAsOfAt: $cutoffStr,
             excludePoIds: $excludePoIds,
         );
+
+        if ($benchmarkMonth !== null) {
+            $lines = $lines->filter(function ($line) use ($benchmarkMonth): bool {
+                $dt = BusinessTime::toBusiness(new \DateTimeImmutable((string) $line->po_created_at, new \DateTimeZone('UTC')));
+
+                return (int) $dt->month === $benchmarkMonth;
+            })->values();
+        }
 
         // Group lines by calendar year
         $linesByYear = [];
@@ -194,7 +218,9 @@ class HistoricalReferencePriceService
             $yearlySummaries[$year] = $this->summarizeYearLines($yearLines, $year, $targetCurrency);
         }
 
-        $targetYearSummary = $yearlySummaries[$benchmarkYear] ?? null;
+        $targetYearSummary = $aggregateAllYears
+            ? ($lines->isNotEmpty() ? $this->summarizeYearLines($lines->all(), null, $targetCurrency) : null)
+            : ($yearlySummaries[$resolvedBenchmarkYear] ?? null);
 
         if ($targetYearSummary === null || $targetYearSummary['status'] !== 'matched') {
             $reasonCode = 'no_eligible_historical_line';
@@ -212,7 +238,7 @@ class HistoricalReferencePriceService
                 roundedDimension: $roundedDimension,
                 ruleId: $rule->id,
                 categoryKey: $rule->category_key,
-                benchmarkYear: $benchmarkYear,
+                benchmarkYear: $resolvedBenchmarkYear,
                 isCurrentYear: $isCurrentYear,
                 historyAsOfAt: $cutoffStr,
                 rateMetadata: $this->annualRates->metadata(),
@@ -240,7 +266,7 @@ class HistoricalReferencePriceService
             ruleSetId: null,
             ruleId: $rule->id,
             categoryKey: $rule->category_key,
-            benchmarkYear: $benchmarkYear,
+            benchmarkYear: $resolvedBenchmarkYear,
             isCurrentYear: $isCurrentYear,
             currency: $targetCurrency,
             calculationMethod: 'weighted_average_kg',
@@ -271,7 +297,7 @@ class HistoricalReferencePriceService
      * @param  list<object>  $lines
      * @return array<string, mixed>
      */
-    private function summarizeYearLines(array $lines, int $year, string $targetCurrency): array
+    private function summarizeYearLines(array $lines, ?int $year, string $targetCurrency): array
     {
         $sumAmount = '0';
         $sumKg = '0';
@@ -292,8 +318,9 @@ class HistoricalReferencePriceService
             $origPrice = (string) $line->price_per_kg;
             $kg = (string) $line->kg;
             $currency = (string) $line->currency;
+            $lineYear = $year ?? $this->annualRates->year($line->po_created_at);
 
-            $converted = $this->annualRates->convert($origPrice, $currency, $targetCurrency, $year, self::SCALE);
+            $converted = $this->annualRates->convert($origPrice, $currency, $targetCurrency, $lineYear, self::SCALE);
 
             if ($converted === null) {
                 $excludedLineCount++;
@@ -481,15 +508,19 @@ class HistoricalReferencePriceService
         int $materialMasterId,
         string $shape,
         int $ruleId,
-        int $benchmarkYear,
+        ?int $benchmarkYear,
         string $targetCurrency,
         string $basisType = 'requested',
         ?string $historyAsOfAt = null,
         ?int $ruleSetId = null,
+        ?int $benchmarkMonth = null,
+        bool $allYears = false,
     ): string {
         $cutoff = $historyAsOfAt ? substr($historyAsOfAt, 0, 19) : 'live';
+        $yearPart = $benchmarkYear !== null ? (string) $benchmarkYear : ($allYears ? 'all' : 'current');
+        $monthPart = $benchmarkMonth !== null ? (string) $benchmarkMonth : 'all';
 
-        return "{$materialMasterId}:{$shape}:{$ruleId}:{$benchmarkYear}:{$targetCurrency}:{$basisType}:{$cutoff}";
+        return "{$materialMasterId}:{$shape}:{$ruleId}:{$yearPart}:{$monthPart}:{$targetCurrency}:{$basisType}:{$cutoff}";
     }
 
     public function clearMemo(): void

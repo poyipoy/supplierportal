@@ -9,11 +9,43 @@
 const FALLBACK_SERIES = ['#1F5FA6', '#D95926', '#14967A', '#B88600', '#C2477A', '#6250D6'];
 const POINT_STYLES = ['circle', 'rect', 'triangle', 'rectRot', 'crossRot', 'star'];
 const LINE_DASHES = [[], [6, 4], [2, 3], [10, 3, 2, 3], [4, 4], [1, 3]];
+const STROKE_ONLY_STYLES = ['cross', 'crossRot', 'star', 'line', 'dash'];
+const AREA_ALPHA = 0.08;
+const DIM_ALPHA = 0.35;
+const LINE_DIM_ALPHA = 0.2;
+const RESTING_RADIUS = 3;
+const LEGEND_BOTTOM_GAP = 16;
+const COMPACT_UNITS = [
+    [1e12, 'compact_trillion'],
+    [1e9, 'compact_billion'],
+    [1e6, 'compact_million'],
+];
 // Font objects carry no family, so Chart.js falls back to defaults.font.family (the portal token).
 const TICK_FONT = { size: 12, weight: '500' };
 const TITLE_FONT = { size: 12, weight: '600' };
 const FALLBACK_FONT_FAMILY = '"Source Sans Pro", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
-const TOOLTIP_BORDER = 'rgba(255, 255, 255, 0.08)';
+
+export const BAR_STYLE = Object.freeze({
+    borderWidth: 0,
+    borderRadius: 6,
+    borderSkipped: 'start',
+    minBarLength: 2,
+    maxBarThickness: 32,
+    categoryPercentage: 0.72,
+    barPercentage: 0.84,
+});
+
+export const LINE_STYLE = Object.freeze({
+    borderWidth: 2,
+    borderCapStyle: 'round',
+    borderJoinStyle: 'round',
+    tension: 0,
+    spanGaps: false,
+    pointBorderWidth: 2,
+    pointHoverRadius: 5,
+    pointHoverBorderWidth: 2,
+    pointHitRadius: 12,
+});
 
 const STRINGS = {
     point: ':label: :values',
@@ -23,6 +55,9 @@ const STRINGS = {
     summary_single: ':series: :value (:label).',
     summary_distribution: 'Total :total. Largest: :label :value (:percent).',
     summary_empty: 'No data to display.',
+    compact_million: ':value M',
+    compact_billion: ':value B',
+    compact_trillion: ':value T',
 };
 
 function media(query) {
@@ -62,6 +97,11 @@ export function resolveChartThemeColors() {
     const rootStyle = getComputedStyle(document.documentElement);
     const getVar = (name, fallback) => rootStyle.getPropertyValue(name).trim() || fallback;
 
+    const surface = getVar('--md-surface', '#FFFFFF');
+    const onSurface = getVar('--md-on-surface', '#1A202C');
+    const onSurfaceVariant = getVar('--md-on-surface-variant', '#64748B');
+    const outlineVariant = getVar('--md-outline-variant', '#E2E8F0');
+
     const colors = {
         primary: getVar('--md-chart-primary', '#1F5FA6'),
         primaryContainer: getVar('--md-chart-primary-container', '#EBF3FC'),
@@ -77,17 +117,19 @@ export function resolveChartThemeColors() {
         series: FALLBACK_SERIES.map((fallback, index) => getVar('--md-chart-series-' + (index + 1), fallback)),
         ok: getVar('--md-chart-ok', getVar('--md-success', '#198754')),
         ng: getVar('--md-chart-ng', getVar('--md-error', '#B12B21')),
-        surface: getVar('--md-surface', '#FFFFFF'),
+        surface,
         surfaceContainer: getVar('--md-surface-container', '#F0F4F9'),
         surfaceContainerLow: getVar('--md-surface-container-low', '#F8FAFC'),
-        onSurface: getVar('--md-on-surface', '#1A202C'),
-        onSurfaceVariant: getVar('--md-on-surface-variant', '#64748B'),
+        onSurface,
+        onSurfaceVariant,
         outline: getVar('--md-outline', '#CBD5E1'),
-        outlineVariant: getVar('--md-outline-variant', '#E2E8F0'),
-        gridLine: getVar('--md-chart-grid', 'rgba(226, 232, 240, 0.75)'),
-        tooltipBg: 'rgba(15, 23, 42, 0.94)',
-        tooltipText: '#F8FAFC',
-        tooltipMuted: '#94A3B8',
+        outlineVariant,
+        gridLine: getVar('--md-chart-grid', 'rgba(200, 208, 218, 0.6)'),
+        tooltipBg: getVar('--ui-menu-bg', surface),
+        tooltipText: onSurface,
+        tooltipMuted: onSurfaceVariant,
+        tooltipBorder: outlineVariant,
+        tooltipShadow: getVar('--md-chart-tooltip-shadow', 'rgba(15, 23, 42, 0.12)'),
         forced: false,
     };
 
@@ -105,6 +147,7 @@ export function resolveChartThemeColors() {
                 onSurface: text, onSurfaceVariant: text,
                 outline: system.gray, outlineVariant: system.gray, gridLine: system.gray,
                 tooltipBg: system.canvas, tooltipText: text, tooltipMuted: text,
+                tooltipBorder: text, tooltipShadow: 'transparent',
                 forced: true,
             };
         }
@@ -255,6 +298,145 @@ export function chartText(key, replacements = {}) {
     ));
 }
 
+/** Compact number formatting for large axis ticks (>= 1e6); tooltip, summary and table keep full values. */
+export function formatCompact(value, reference = value) {
+    if (value === null || value === undefined || value === '') return '-';
+    const number = Number(value);
+    if (!Number.isFinite(number)) return '-';
+    const unit = COMPACT_UNITS.find(([size]) => Math.abs(Number(reference) || 0) >= size);
+    if (!unit || number === 0) return formatChartNumber(number);
+    const text = (number / unit[0]).toLocaleString('id-ID', { maximumFractionDigits: 1 });
+    const display = globalThis.window?.AdasiPreferences?.displayNumber;
+    return chartText(unit[1], { value: typeof display === 'function' ? display(text, 'indonesian') : text });
+}
+
+/** Axis tick callback bound to a scale so every tick shares one unit derived from the axis range. */
+export function compactTicks(prefix = '') {
+    return function compactTick(value) {
+        const reference = Math.max(Math.abs(Number(this?.max ?? value) || 0), Math.abs(Number(this?.min ?? 0) || 0));
+        return prefix + formatCompact(value, reference);
+    };
+}
+
+const valueOf = (raw) => {
+    const value = raw !== null && typeof raw === 'object' ? raw.y : raw;
+    if (value === null || value === undefined || value === '') return null;
+    const number = Number(value);
+    return Number.isFinite(number) ? number : null;
+};
+
+function dimmableFill(base, dimMode = 'category') {
+    return (ctx) => {
+        const value = typeof base === 'function' ? base(ctx) : base;
+        const active = ctx?.chart?.$adasiActiveIndex;
+        if (active === null || active === undefined || ctx?.type !== 'data' || typeof value !== 'string' || currentChartColors().forced) {
+            return value;
+        }
+        const activeDataset = ctx?.chart?.$adasiActiveDatasetIndex;
+        const perBar = (dimMode === 'bar' || ctx?.dataset?.adasiDimMode === 'bar')
+            && activeDataset !== null
+            && activeDataset !== undefined;
+        const isActive = perBar
+            ? (ctx.dataIndex === active && ctx.datasetIndex === activeDataset)
+            : ctx.dataIndex === active;
+        if (isActive) {
+            return value;
+        }
+        return hexToRgba(value, DIM_ALPHA);
+    };
+}
+
+function withAlpha(color, alpha) {
+    return (ctx) => {
+        if (currentChartColors().forced) return 'transparent';
+        const resolved = typeof color === 'function' ? color(ctx) : color;
+        return hexToRgba(resolved, alpha);
+    };
+}
+
+function restingPointRadius(multi) {
+    return (ctx) => {
+        if (ctx?.type !== 'data') return RESTING_RADIUS;
+        const data = ctx.dataset?.data || [];
+        const index = ctx.dataIndex;
+        if (valueOf(data[index]) === null) return 0;
+        const isolated = valueOf(data[index - 1]) === null && valueOf(data[index + 1]) === null;
+        if (multi || isolated) return RESTING_RADIUS;
+        const plotted = data.filter((item) => valueOf(item) !== null).length;
+        return plotted < 3 ? RESTING_RADIUS + 1 : 0;
+    };
+}
+
+/** Shared bar dataset preset with rounded tops, token colors, and category/bar hover dimming. */
+export function barDataset({ index = 0, color = null, fill = null, dim = true, dimMode = 'category', ...overrides } = {}) {
+    const stroke = color ?? themeColor('series-' + (index + 1));
+    const base = fill ?? color ?? seriesFill(index);
+    return {
+        ...BAR_STYLE,
+        backgroundColor: dim ? dimmableFill(base, dimMode) : base,
+        borderColor: stroke,
+        adasiDim: dim,
+        adasiDimMode: dimMode,
+        ...overrides,
+    };
+}
+
+function dimmableLineColor(base, dimAlpha = LINE_DIM_ALPHA) {
+    return (ctx) => {
+        const value = typeof base === 'function' ? base(ctx) : base;
+        const activeDataset = ctx?.chart?.$adasiActiveDatasetIndex;
+        if (activeDataset === null || activeDataset === undefined || typeof value !== 'string' || currentChartColors().forced) {
+            return value;
+        }
+        if (ctx?.datasetIndex === activeDataset) {
+            return value;
+        }
+        return hexToRgba(value, dimAlpha);
+    };
+}
+
+/** Shared line dataset preset with round caps, non-color cues, optional area tint, and opt-in hover series spotlight. */
+export function lineDataset({
+    index = 0,
+    color = null,
+    pointStyle = null,
+    borderDash = null,
+    multi = true,
+    area = false,
+    dim = false,
+    borderWidth = LINE_STYLE.borderWidth,
+    hoverBorderWidth = null,
+    ...overrides
+} = {}) {
+    const style = getSeriesStyle(index);
+    const stroke = color ?? themeColor('series-' + (index + 1));
+    const lineStroke = dim ? dimmableLineColor(stroke) : stroke;
+    const widthProp = (dim && hoverBorderWidth !== null)
+        ? (ctx) => {
+            const activeDataset = ctx?.chart?.$adasiActiveDatasetIndex;
+            return activeDataset !== null && activeDataset !== undefined && ctx?.datasetIndex === activeDataset
+                ? hoverBorderWidth
+                : borderWidth;
+        }
+        : borderWidth;
+    return {
+        ...LINE_STYLE,
+        borderColor: lineStroke,
+        borderWidth: widthProp,
+        backgroundColor: area ? withAlpha(stroke, AREA_ALPHA) : lineStroke,
+        pointBackgroundColor: lineStroke,
+        pointHoverBackgroundColor: stroke,
+        pointBorderColor: themeColor('surface'),
+        pointHoverBorderColor: themeColor('surface'),
+        pointStyle: pointStyle ?? style.pointStyle,
+        borderDash: borderDash ?? (multi ? style.borderDash : []),
+        pointRadius: restingPointRadius(multi),
+        fill: area ? 'start' : false,
+        ...(dim ? { adasiDim: true } : {}),
+        ...overrides,
+    };
+}
+
 /**
  * Creates a vertical bar gradient (top solid highlight to bottom translucent tint)
  */
@@ -287,31 +469,72 @@ export function createAreaGradient(ctx, baseColor = '#1F5FA6', topAlpha = 0.22, 
     return gradient;
 }
 
+const nativeTooltipCallbacks = new WeakMap();
+
+function getNativeTooltipCallbacks(ChartInstance) {
+    const callbacks = ChartInstance?.defaults?.plugins?.tooltip?.callbacks;
+    if (!callbacks || typeof callbacks !== 'object' || Object.keys(callbacks).length === 0) {
+        return null;
+    }
+    if (!nativeTooltipCallbacks.has(ChartInstance)) {
+        nativeTooltipCallbacks.set(ChartInstance, { ...callbacks });
+    }
+    return nativeTooltipCallbacks.get(ChartInstance);
+}
+
+function defaultTooltipLabelColor(ctx) {
+    const raw = ctx?.dataset?.borderColor ?? ctx?.dataset?.backgroundColor;
+    const evaluated = typeof raw === 'function' ? raw(ctx) : raw;
+    const picked = Array.isArray(evaluated) ? (evaluated[ctx?.dataIndex] ?? evaluated[0]) : evaluated;
+    const resolved = typeof picked === 'string' ? picked : currentChartColors().primary;
+    const pointStyle = ctx?.dataset?.pointStyle;
+
+    return {
+        borderColor: resolved,
+        backgroundColor: resolved,
+        borderWidth: STROKE_ONLY_STYLES.includes(pointStyle) ? 2 : 0,
+        borderRadius: 2,
+    };
+}
+
 /**
- * Universal Dark Floating Pill Tooltip configuration
+ * Theme-aware surface tooltip configuration (light card in light mode, tonal elevated surface in dark mode).
  */
 export function getChartTooltip(customOptions = {}) {
     const colors = currentChartColors();
+    const { callbacks: customCallbacks, ...rest } = customOptions;
+    const globalChart = globalThis.window?.Chart;
+    const inheritedCallbacks = getNativeTooltipCallbacks(globalChart)
+        || globalChart?.defaults?.plugins?.tooltip?.callbacks
+        || {};
 
     return {
         enabled: true,
         backgroundColor: colors.tooltipBg,
         titleColor: colors.tooltipText,
         bodyColor: colors.tooltipText,
+        footerColor: colors.tooltipMuted,
         titleFont: { size: 12, weight: '600' },
         bodyFont: { size: 12, weight: '400' },
-        padding: { top: 8, bottom: 8, left: 12, right: 12 },
+        titleMarginBottom: 6,
+        bodySpacing: 4,
+        padding: { top: 10, bottom: 10, left: 12, right: 12 },
         cornerRadius: 8,
-        boxPadding: 4,
+        boxPadding: 6,
         displayColors: true,
         usePointStyle: true,
         boxWidth: 8,
         boxHeight: 8,
-        borderColor: colors.forced ? colors.tooltipText : TOOLTIP_BORDER,
+        borderColor: colors.tooltipBorder,
         borderWidth: 1,
-        caretPadding: 6,
-        caretSize: 5,
-        ...customOptions,
+        caretPadding: 8,
+        caretSize: 0,
+        ...rest,
+        callbacks: {
+            ...inheritedCallbacks,
+            labelColor: defaultTooltipLabelColor,
+            ...(customCallbacks || {}),
+        },
     };
 }
 
@@ -325,15 +548,21 @@ export function getChartScales(options = {}) {
         xTitle = null,
         yMaxTicks = 5,
         yBeginAtZero = true,
+        yGrace = null,
         yFormat = (val) => formatChartNumber(val),
         xGrid = false,
+        xOffset = false,
         yGrid = true,
+        xMaxRotation = 0,
+        xAutoSkip = true,
     } = options;
 
     return {
         x: {
+            ...(xOffset ? { offset: true } : {}),
             grid: {
                 display: xGrid,
+                drawTicks: false,
                 color: colors.gridLine,
             },
             border: {
@@ -342,7 +571,10 @@ export function getChartScales(options = {}) {
             ticks: {
                 font: TICK_FONT,
                 color: colors.onSurfaceVariant,
-                padding: 6,
+                padding: 8,
+                maxRotation: xMaxRotation,
+                autoSkip: xAutoSkip,
+                autoSkipPadding: 12,
             },
             title: xTitle ? {
                 display: true,
@@ -353,9 +585,18 @@ export function getChartScales(options = {}) {
         },
         y: {
             beginAtZero: yBeginAtZero,
+            ...(yGrace !== null && yGrace !== undefined ? { grace: yGrace } : {}),
+            ...(!yBeginAtZero ? {
+                afterDataLimits(scale) {
+                    if (Number.isFinite(scale?.min) && scale.min < 0) {
+                        scale.min = 0;
+                    }
+                },
+            } : {}),
             grid: {
                 display: yGrid,
-                color: colors.gridLine,
+                drawTicks: false,
+                color: (ctx) => (ctx?.tick?.value === 0 ? currentChartColors().outline : currentChartColors().gridLine),
             },
             border: {
                 display: false,
@@ -364,7 +605,7 @@ export function getChartScales(options = {}) {
                 maxTicksLimit: yMaxTicks,
                 font: TICK_FONT,
                 color: colors.onSurfaceVariant,
-                padding: 8,
+                padding: 10,
                 callback: yFormat,
             },
             title: yTitle ? {
@@ -377,19 +618,65 @@ export function getChartScales(options = {}) {
     };
 }
 
+function resolveUndimmedBarFill(dataset, datasetIndex) {
+    const raw = dataset?.backgroundColor;
+    if (typeof raw === 'function') {
+        return raw({ type: 'dataset', dataset, datasetIndex, dataIndex: 0, chart: { $adasiActiveIndex: null, $adasiActiveDatasetIndex: null } });
+    }
+    if (Array.isArray(raw)) {
+        return raw[0];
+    }
+    return raw;
+}
+
+function resolveUndimmedStroke(dataset, datasetIndex) {
+    const raw = dataset?.borderColor;
+    if (typeof raw === 'function') {
+        return raw({ type: 'dataset', dataset, datasetIndex, dataIndex: 0, chart: { $adasiActiveIndex: null, $adasiActiveDatasetIndex: null } });
+    }
+    if (Array.isArray(raw)) {
+        return raw[0];
+    }
+    return raw;
+}
+
+function defaultLegendLabels(chart) {
+    const base = globalThis.window?.Chart?.defaults?.plugins?.legend?.labels?.generateLabels?.(chart) ?? [];
+    return base.map((item) => {
+        const dataset = chart?.data?.datasets?.[item.datasetIndex] || {};
+        const isLine = (dataset.type || chart?.config?.type) === 'line';
+        const style = item.pointStyle ?? dataset.pointStyle;
+        const resolvedLineStroke = isLine ? resolveUndimmedStroke(dataset, item.datasetIndex) : null;
+        const stroke = (typeof resolvedLineStroke === 'string' && resolvedLineStroke.trim() !== '')
+            ? resolvedLineStroke
+            : (item.strokeStyle || (typeof dataset.borderColor === 'string' ? dataset.borderColor : item.fillStyle));
+        const barFill = !isLine && dataset.adasiDim
+            ? (resolveUndimmedBarFill(dataset, item.datasetIndex) || item.fillStyle)
+            : item.fillStyle;
+        return {
+            ...item,
+            fillStyle: isLine ? stroke : barFill,
+            strokeStyle: isLine ? stroke : item.strokeStyle,
+            lineWidth: STROKE_ONLY_STYLES.includes(style) ? 2 : item.lineWidth,
+            lineDash: [],
+        };
+    });
+}
+
 /** Legend that mirrors the marks (point shape for lines, square for bars) in 12px text. */
 export function getChartLegend(custom = {}) {
     return {
         position: 'top',
-        align: 'end',
+        align: 'start',
         ...custom,
         labels: {
             usePointStyle: true,
-            boxWidth: 10,
-            boxHeight: 10,
-            padding: 12,
+            boxWidth: 8,
+            boxHeight: 8,
+            padding: 20,
             font: TICK_FONT,
             color: currentChartColors().onSurfaceVariant,
+            generateLabels: defaultLegendLabels,
             ...(custom.labels || {}),
         },
     };
@@ -424,13 +711,6 @@ export function barValueLabels(format = (value) => formatChartNumber(value)) {
 }
 
 // ---- Text alternative ------------------------------------------------------------------------
-
-const valueOf = (raw) => {
-    const value = raw !== null && typeof raw === 'object' ? raw.y : raw;
-    if (value === null || value === undefined || value === '') return null;
-    const number = Number(value);
-    return Number.isFinite(number) ? number : null;
-};
 
 const flatLabel = (label) => (Array.isArray(label) ? label.join(' ') : String(label ?? ''));
 
@@ -509,11 +789,23 @@ export function describeChart(chart) {
     return parts.length ? parts.join(' ') : chartText('summary_empty');
 }
 
-/** Reading stops: one per category (all series at that label), or one per point on a linear axis. */
+/** Reading stops: one per category (all series at that label), per individual bar when opted-in, or per point on a linear axis. */
 export function chartStops(chart) {
     const visible = visibleDatasets(chart);
     const labels = chart.data.labels;
     if (labels && labels.length) {
+        if (a11yOptions(chart).perBarStops === true) {
+            const perBarStops = [];
+            labels.forEach((_, index) => {
+                visible.forEach((datasetIndex) => {
+                    if (valueOf(chart.data.datasets[datasetIndex].data[index]) !== null) {
+                        perBarStops.push({ datasetIndex, index });
+                    }
+                });
+            });
+            return perBarStops;
+        }
+
         return labels.map((_, index) => ({ index }))
             .filter((stop) => visible.some((datasetIndex) => valueOf(chart.data.datasets[datasetIndex].data[stop.index]) !== null));
     }
@@ -672,6 +964,96 @@ export const a11yPlugin = {
     },
 };
 
+const activeIndexOf = (chart) => chart?.getActiveElements?.()?.[0]?.index ?? null;
+const activeDatasetIndexOf = (chart) => chart?.getActiveElements?.()?.[0]?.datasetIndex ?? null;
+
+export const hoverFocusPlugin = {
+    id: 'adasiHoverFocus',
+    beforeUpdate(chart) {
+        chart.$adasiActiveIndex = activeIndexOf(chart);
+        chart.$adasiActiveDatasetIndex = activeDatasetIndexOf(chart);
+    },
+    afterEvent(chart, args) {
+        if (args?.replay) return;
+        const hasDim = chart?.data?.datasets?.some?.((dataset) => dataset?.adasiDim);
+        if (!hasDim) return;
+        const nextIndex = activeIndexOf(chart);
+        const nextDataset = activeDatasetIndexOf(chart);
+        if (nextIndex !== chart.$adasiActiveIndex || nextDataset !== chart.$adasiActiveDatasetIndex) {
+            chart.$adasiActiveIndex = nextIndex;
+            chart.$adasiActiveDatasetIndex = nextDataset;
+            chart.update('none');
+        }
+    },
+    beforeDatasetsDraw(chart) {
+        if (chart?.config?.type !== 'line') return;
+        const active = chart.getActiveElements?.();
+        if (!active?.length) return;
+        const first = active[0];
+        const x = first?.element?.x ?? chart.getDatasetMeta?.(first.datasetIndex)?.data?.[first.index]?.x;
+        const area = chart.chartArea;
+        if (!Number.isFinite(x) || !area || !chart.ctx) return;
+        const { ctx } = chart;
+        ctx.save();
+        ctx.strokeStyle = currentChartColors().outline;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(x, area.top);
+        ctx.lineTo(x, area.bottom);
+        ctx.stroke();
+        ctx.restore();
+    },
+};
+
+export const legendSpacingPlugin = {
+    id: 'adasiLegendSpacing',
+    beforeLayout(chart) {
+        const legend = chart?.legend;
+        if (!legend || typeof legend.fit !== 'function' || legend.$adasiSpaced) return;
+        const originalFit = legend.fit;
+        legend.fit = function fitWithBottomGap() {
+            originalFit.call(this);
+            if (this.options?.display !== false && this.position === 'top' && this.height > 0) {
+                this.height += LEGEND_BOTTOM_GAP;
+            }
+        };
+        legend.$adasiSpaced = true;
+    },
+};
+
+export const tooltipShadowPlugin = {
+    id: 'adasiTooltipShadow',
+    beforeTooltipDraw(chart, args) {
+        const tooltip = args?.tooltip;
+        const tooltipOpts = tooltip?.options || chart?.options?.plugins?.tooltip;
+        const colors = currentChartColors();
+        if (
+            !tooltip?.opacity
+            || tooltipOpts?.enabled === false
+            || typeof tooltipOpts?.external === 'function'
+            || colors.forced
+            || !chart?.ctx
+        ) return;
+        if (!Number.isFinite(tooltip.x) || !Number.isFinite(tooltip.y) || !(tooltip.width > 0) || !(tooltip.height > 0)) return;
+        const { ctx } = chart;
+        ctx.save();
+        ctx.globalAlpha = tooltip.opacity;
+        ctx.fillStyle = colors.tooltipBg;
+        ctx.shadowColor = colors.tooltipShadow;
+        ctx.shadowBlur = 16;
+        ctx.shadowOffsetX = 0;
+        ctx.shadowOffsetY = 4;
+        ctx.beginPath();
+        if (typeof ctx.roundRect === 'function') {
+            ctx.roundRect(tooltip.x, tooltip.y, tooltip.width, tooltip.height, 8);
+        } else {
+            ctx.rect(tooltip.x, tooltip.y, tooltip.width, tooltip.height);
+        }
+        ctx.fill();
+        ctx.restore();
+    },
+};
+
 /**
  * Configure global Chart.js defaults if Chart instance exists
  */
@@ -679,18 +1061,43 @@ export function applyGlobalChartDefaults(ChartInstance = window.Chart) {
     if (!ChartInstance?.defaults) return;
 
     const colors = currentChartColors();
+    const baseCallbacks = getNativeTooltipCallbacks(ChartInstance)
+        || ChartInstance.defaults.plugins?.tooltip?.callbacks
+        || {};
     ChartInstance.defaults.font.family = chartFontFamily();
     ChartInstance.defaults.font.size = 12;
     ChartInstance.defaults.color = colors.onSurfaceVariant;
     ChartInstance.defaults.responsive = true;
     ChartInstance.defaults.maintainAspectRatio = false;
-    ChartInstance.defaults.plugins.tooltip = {
-        ...ChartInstance.defaults.plugins.tooltip,
-        ...getChartTooltip(),
+    ChartInstance.defaults.interaction = {
+        ...(ChartInstance.defaults.interaction || {}),
+        mode: 'index',
+        intersect: false,
     };
-    if (prefersReducedMotion()) ChartInstance.defaults.animation = false;
+    const nextTooltip = getChartTooltip();
+    ChartInstance.defaults.plugins ??= {};
+    ChartInstance.defaults.plugins.tooltip = {
+        ...(ChartInstance.defaults.plugins.tooltip || {}),
+        ...nextTooltip,
+        callbacks: {
+            ...baseCallbacks,
+            ...(ChartInstance.defaults.plugins.tooltip?.callbacks || {}),
+            ...nextTooltip.callbacks,
+        },
+    };
+    if (prefersReducedMotion()) {
+        ChartInstance.defaults.animation = false;
+    } else {
+        if (ChartInstance.defaults.animation && typeof ChartInstance.defaults.animation === 'object') {
+            ChartInstance.defaults.animation.duration = 450;
+            ChartInstance.defaults.animation.easing = 'easeOutCubic';
+        }
+        if (ChartInstance.defaults.transitions?.active?.animation && typeof ChartInstance.defaults.transitions.active.animation === 'object') {
+            ChartInstance.defaults.transitions.active.animation.duration = 150;
+        }
+    }
     if (typeof ChartInstance.register === 'function' && !ChartInstance.$adasiA11yRegistered) {
-        ChartInstance.register(a11yPlugin);
+        ChartInstance.register(a11yPlugin, hoverFocusPlugin, tooltipShadowPlugin, legendSpacingPlugin);
         ChartInstance.$adasiA11yRegistered = true;
     }
 }
@@ -709,7 +1116,7 @@ export function refreshChartTheme(ChartInstance = window.Chart) {
         attachChartA11y(chart);
 
         Object.values(chart.options.scales || {}).forEach((scale) => {
-            if (scale.grid) scale.grid.color = colors.gridLine;
+            if (scale.grid && typeof scale.grid.color !== 'function') scale.grid.color = colors.gridLine;
             if (scale.border) scale.border.color = colors.outline;
             if (scale.ticks) scale.ticks.color = colors.onSurfaceVariant;
             if (scale.title) scale.title.color = colors.onSurfaceVariant;
@@ -726,7 +1133,8 @@ export function refreshChartTheme(ChartInstance = window.Chart) {
                 backgroundColor: colors.tooltipBg,
                 titleColor: colors.tooltipText,
                 bodyColor: colors.tooltipText,
-                borderColor: colors.forced ? colors.tooltipText : TOOLTIP_BORDER,
+                footerColor: colors.tooltipMuted,
+                borderColor: colors.tooltipBorder,
             };
         }
 
@@ -779,10 +1187,14 @@ export function fitChartScrollWidth(canvas, {
 
 // Attach to window object for global availability
 const AdasiChart = {
+    BAR_STYLE,
+    LINE_STYLE,
     getColors: currentChartColors,
     getSeriesPalette,
     getSeriesStyle,
     seriesFill,
+    barDataset,
+    lineDataset,
     color: themeColor,
     hatch: createHatchPattern,
     hexToRgba,
@@ -793,6 +1205,8 @@ const AdasiChart = {
     getLegend: getChartLegend,
     valueLabels: barValueLabels,
     formatNumber: formatChartNumber,
+    formatCompact,
+    compactTicks,
     t: chartText,
     describe: describeChart,
     applyDefaults: applyGlobalChartDefaults,

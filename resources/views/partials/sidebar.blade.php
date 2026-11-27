@@ -15,7 +15,7 @@
                 <x-ui.avatar :name="auth()->user()->name" size="xs" class="sidebar-mobile-avatar" />
                 <div class="tw:min-w-0">
                     <span class="sidebar-mobile-user-name tw:block tw:truncate tw:text-ui-xs tw:font-bold tw:text-on-surface">{{ auth()->user()->name }}</span>
-                    <span class="role-badge role-badge-{{ auth()->user()->role }} tw:text-[10px] tw:mt-0.5">
+                    <span class="role-badge role-badge-{{ auth()->user()->role }} tw:text-ui-xs tw:mt-0.5">
                         {{ __('navigation.roles.'.auth()->user()->role) }}
                     </span>
                 </div>
@@ -30,9 +30,11 @@
                     value="id"
                     data-locale-option="id"
                     class="lang-pill-btn ui-focus-ring tw:flex tw:items-center tw:justify-center tw:px-2 tw:py-0.5 tw:min-h-6 tw:rounded-ui-xs tw:text-ui-xs {{ app()->getLocale() === 'id' ? 'is-active tw:bg-surface tw:text-primary tw:font-bold tw:border tw:border-outline' : 'tw:border-transparent tw:text-on-surface-variant tw:font-semibold' }}"
-                    {{ app()->getLocale() === 'id' ? 'disabled aria-pressed=true' : 'aria-pressed=false' }}
+                    aria-pressed="{{ app()->getLocale() === 'id' ? 'true' : 'false' }}"
+                    aria-disabled="{{ app()->getLocale() === 'id' ? 'true' : 'false' }}"
                 >
                     <span class="tw:tracking-wider">ID</span>
+                    <span class="tw:sr-only"> (Bahasa Indonesia)</span>
                 </button>
                 <button
                     type="submit"
@@ -40,9 +42,11 @@
                     value="en"
                     data-locale-option="en"
                     class="lang-pill-btn ui-focus-ring tw:flex tw:items-center tw:justify-center tw:px-2 tw:py-0.5 tw:min-h-6 tw:rounded-ui-xs tw:text-ui-xs {{ app()->getLocale() === 'en' ? 'is-active tw:bg-surface tw:text-primary tw:font-bold tw:border tw:border-outline' : 'tw:border-transparent tw:text-on-surface-variant tw:font-semibold' }}"
-                    {{ app()->getLocale() === 'en' ? 'disabled aria-pressed=true' : 'aria-pressed=false' }}
+                    aria-pressed="{{ app()->getLocale() === 'en' ? 'true' : 'false' }}"
+                    aria-disabled="{{ app()->getLocale() === 'en' ? 'true' : 'false' }}"
                 >
                     <span class="tw:tracking-wider">EN</span>
+                    <span class="tw:sr-only"> (English)</span>
                 </button>
             </form>
         </div>
@@ -120,6 +124,7 @@
                 data-ui-dropdown-trigger
                 popovertarget="sidebarPortalSwitcherPopover"
                 aria-controls="sidebarPortalSwitcherPopover"
+                aria-haspopup="menu"
                 aria-expanded="false"
                 data-sidebar-tooltip
                 data-ui-tooltip="{{ $currentLabel ?: __('navigation.switch_portal') }}"
@@ -136,10 +141,10 @@
                     <x-ui.icon name="chevron-down" size="xs" />
                 </span>
             </button>
-            <div id="sidebarPortalSwitcherPopover" popover="auto" data-ui-dropdown-menu class="dropdown-menu dropdown-menu-start tw:shadow-xl tw:border tw:border-outline-variant tw:rounded-xl tw:p-1.5 tw:min-w-[270px] tw:bg-surface" aria-labelledby="portalContextSwitcherDropdown">
+            <div id="sidebarPortalSwitcherPopover" popover="auto" data-ui-dropdown-menu class="dropdown-menu dropdown-menu-start tw:shadow-xl tw:border tw:border-outline-variant tw:rounded-xl tw:p-1.5 tw:min-w-[min(270px,calc(100vw-1rem))] tw:max-w-[calc(100vw-1rem)] tw:bg-surface" aria-labelledby="portalContextSwitcherDropdown">
                 <div class="tw:px-2.5 tw:pt-1.5 tw:pb-2 tw:flex tw:items-center tw:justify-between">
-                    <span class="tw:text-[10px] tw:font-bold tw:text-on-surface-variant tw:uppercase tw:tracking-wider">{{ __('navigation.choose_portal') }}</span>
-                    <span class="tw:text-[10px] tw:text-on-surface-variant">{{ __('navigation.dual_scope') }}</span>
+                    <span class="tw:text-ui-xs tw:font-bold tw:text-on-surface-variant tw:uppercase tw:tracking-wider">{{ __('navigation.choose_portal') }}</span>
+                    <span class="tw:text-ui-xs tw:text-on-surface-variant">{{ __('navigation.dual_scope') }}</span>
                 </div>
                 <div class="tw:space-y-1">
                     {{-- Local Supplier Option --}}
@@ -244,7 +249,7 @@
                 <x-ui.sidebar-item :href="\App\Support\PageRegistry::url('supplier.conversations.index')" icon="message-circle-more" :active="request()->routeIs('supplier.conversations.*')" :label="__('navigation.chat_title')">
                     {{ __('common.chat.title') }}
                     <x-slot:trailing>
-                        <span class="chat-badge tw:inline-flex tw:min-w-5 tw:items-center tw:justify-center tw:rounded-full tw:bg-error tw:px-1.5 tw:text-ui-xs tw:font-semibold tw:text-error-foreground {{ $initChatCount > 0 ? '' : 'tw:hidden' }}" aria-label="{{ __('navigation.unread_chats', ['count' => $initChatCount]) }}">{{ $initChatCount }}</span>
+                        <span class="chat-badge tw:inline-flex tw:min-w-5 tw:items-center tw:justify-center tw:rounded-full tw:bg-error tw:px-1.5 tw:text-ui-xs tw:font-semibold tw:text-error-foreground {{ $initChatCount > 0 ? '' : 'tw:hidden' }}" aria-label="{{ __('navigation.unread_chats', ['count' => $initChatCount]) }}" data-locale-ignore>{{ $initChatCount }}</span>
                     </x-slot:trailing>
                 </x-ui.sidebar-item>
                 <x-ui.sidebar-item :href="\App\Support\PageRegistry::url('supplier.claims.index')" icon="shield-alert" :active="request()->routeIs('supplier.claims.*')" :label="__('navigation.material_claim')">{{ __('navigation.material_claim') }}</x-ui.sidebar-item>
@@ -326,7 +331,7 @@
             <x-ui.sidebar-item :href="\App\Support\PageRegistry::url('purchasing.conversations.index', \App\Support\PurchasingNavigation::listUrl('purchasing.conversations.index'))" icon="message-circle-more" :active="request()->routeIs('purchasing.conversations.*')" :label="__('navigation.chat_title')">
                 {{ __('common.chat.title') }}
                 <x-slot:trailing>
-                    <span class="chat-badge tw:inline-flex tw:min-w-5 tw:items-center tw:justify-center tw:rounded-full tw:bg-error tw:px-1.5 tw:text-ui-xs tw:font-semibold tw:text-error-foreground {{ $initChatCount > 0 ? '' : 'tw:hidden' }}" aria-label="{{ __('navigation.unread_chats', ['count' => $initChatCount]) }}">{{ $initChatCount }}</span>
+                    <span class="chat-badge tw:inline-flex tw:min-w-5 tw:items-center tw:justify-center tw:rounded-full tw:bg-error tw:px-1.5 tw:text-ui-xs tw:font-semibold tw:text-error-foreground {{ $initChatCount > 0 ? '' : 'tw:hidden' }}" aria-label="{{ __('navigation.unread_chats', ['count' => $initChatCount]) }}" data-locale-ignore>{{ $initChatCount }}</span>
                 </x-slot:trailing>
             </x-ui.sidebar-item>
             <x-ui.sidebar-item :href="\App\Support\PageRegistry::url('purchasing.claims.index', \App\Support\PurchasingNavigation::listUrl('purchasing.claims.index'))" icon="shield-alert" :active="request()->routeIs('purchasing.claims.*')" :label="__('navigation.material_claim')">{{ __('navigation.material_claim') }}</x-ui.sidebar-item>

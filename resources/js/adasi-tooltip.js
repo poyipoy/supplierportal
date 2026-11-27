@@ -2,9 +2,10 @@ const bootedDocuments = new WeakSet();
 const stateByDoc = new WeakMap();
 
 const TOOLTIP_ID = 'adasiTooltipPopover';
-const HIDE_DELAY_MS = 150;
-const SHOW_DELAY_MS = 120;
-const SIDEBAR_SHOW_DELAY_MS = 180;
+const HIDE_DELAY_MS = 120;
+const SHOW_DELAY_MS = 350;
+const SIDEBAR_SHOW_DELAY_MS = 350;
+const WARM_HANDOFF_MS = 400;
 const VIEWPORT_PADDING = 8;
 
 function getDoc(target) {
@@ -25,6 +26,7 @@ function getState(doc) {
             activeTrigger: null,
             showTimer: null,
             hideTimer: null,
+            lastHiddenAt: 0,
             pointerOverTrigger: false,
             pointerOverTooltip: false,
         };
@@ -66,6 +68,15 @@ function ensureTooltipElement(doc) {
     doc.body.appendChild(tip);
     state.tooltipEl = tip;
     return tip;
+}
+
+function isDuplicateAccessibleName(trigger, text) {
+    if (!trigger || !text) return false;
+    const normalized = text.trim().toLowerCase();
+    const ariaLabel = (trigger.getAttribute?.('aria-label') || '').trim().toLowerCase();
+    if (ariaLabel && ariaLabel === normalized) return true;
+    const visibleText = (trigger.textContent || '').trim().toLowerCase();
+    return Boolean(visibleText && visibleText === normalized);
 }
 
 function addDescribedByToken(trigger, token = TOOLTIP_ID) {
@@ -134,8 +145,18 @@ function positionTooltipFallback(trigger, tip, placement, win) {
     let top;
 
     if (placement === 'right') {
-        left = Math.min(vw - tipW - VIEWPORT_PADDING, tRect.right + 8);
+        left = Math.min(vw - tipW - VIEWPORT_PADDING, tRect.right + 6);
         top = Math.max(VIEWPORT_PADDING, Math.min(vh - tipH - VIEWPORT_PADDING, tRect.top + (tRect.height - tipH) / 2));
+    } else if (placement === 'left') {
+        left = Math.max(VIEWPORT_PADDING, tRect.left - tipW - 6);
+        top = Math.max(VIEWPORT_PADDING, Math.min(vh - tipH - VIEWPORT_PADDING, tRect.top + (tRect.height - tipH) / 2));
+    } else if (placement === 'bottom') {
+        left = tRect.left + (tRect.width - tipW) / 2;
+        left = Math.max(VIEWPORT_PADDING, Math.min(vw - tipW - VIEWPORT_PADDING, left));
+        top = tRect.bottom + 6;
+        if (top + tipH > vh - VIEWPORT_PADDING && tRect.top - 6 - tipH >= VIEWPORT_PADDING) {
+            top = tRect.top - tipH - 6;
+        }
     } else {
         left = tRect.left + (tRect.width - tipW) / 2;
         left = Math.max(VIEWPORT_PADDING, Math.min(vw - tipW - VIEWPORT_PADDING, left));
@@ -158,6 +179,7 @@ function hideTooltipNow(doc) {
     state.activeTrigger = null;
     state.pointerOverTrigger = false;
     state.pointerOverTooltip = false;
+    state.lastHiddenAt = Date.now();
 
     if (prevTrigger) {
         prevTrigger.removeAttribute?.('data-ui-tooltip-open');
@@ -207,7 +229,9 @@ function showTooltipNow(trigger, doc) {
     state.activeTrigger = trigger;
     trigger.setAttribute('data-ui-tooltip-open', 'true');
     stashTitleAttribute(trigger);
-    addDescribedByToken(trigger, TOOLTIP_ID);
+    if (!isDuplicateAccessibleName(trigger, text)) {
+        addDescribedByToken(trigger, TOOLTIP_ID);
+    }
 
     tip.textContent = text;
     tip.setAttribute('data-ui-placement', placement);
@@ -292,6 +316,7 @@ export function bootAdasiTooltips(root = typeof document !== 'undefined' ? docum
     bootedDocuments.add(doc);
 
     doc.addEventListener('pointerover', (event) => {
+        if (event.pointerType === 'touch') return;
         const target = event.target;
         if (!target?.closest) return;
         const state = getState(doc);
@@ -316,8 +341,16 @@ export function bootAdasiTooltips(root = typeof document !== 'undefined' ? docum
             return;
         }
 
+        const warmPeerSwitch = Boolean(
+            (state.activeTrigger && !state.tooltipEl?.hidden)
+            || (state.lastHiddenAt && Date.now() - state.lastHiddenAt <= WARM_HANDOFF_MS)
+        );
         clearTimers(state);
         state.pointerOverTrigger = true;
+        if (warmPeerSwitch) {
+            showTooltipNow(trigger, doc);
+            return;
+        }
         const delay = trigger.hasAttribute('data-sidebar-tooltip') ? SIDEBAR_SHOW_DELAY_MS : SHOW_DELAY_MS;
         state.showTimer = setTimeout(() => {
             state.showTimer = null;
@@ -328,6 +361,7 @@ export function bootAdasiTooltips(root = typeof document !== 'undefined' ? docum
     });
 
     doc.addEventListener('pointerout', (event) => {
+        if (event.pointerType === 'touch') return;
         const target = event.target;
         if (!target?.closest) return;
         const state = getState(doc);

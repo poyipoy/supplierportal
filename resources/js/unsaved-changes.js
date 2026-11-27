@@ -71,13 +71,15 @@
 
     function shouldTrackForm(form) {
         if (!form || !(form instanceof HTMLFormElement)) return false;
-        if (form.matches?.('[data-track-unsaved="false"], [data-logout-form], [data-notification-mark-form], [data-async-export]')) return false;
+        if (form.matches?.('[data-track-unsaved="false"], [data-logout-form], [data-notification-mark-form], [data-async-export], [data-advanced-export-form], [data-format-export-form]')) return false;
         // Component-owned state (presets/autosave) is authoritative for its form.
         if ([...dirtySources.values()].some((source) => source.form === form)) return false;
 
-        // Ignore forms inside closed Bootstrap modals, closed UI dialogs, or hidden containers
+        // Ignore forms inside closed Bootstrap modals, closed native dialogs, closed UI dialogs, or hidden containers
         const modal = form.closest?.('.modal');
         if (modal && !modal.classList?.contains?.('show')) return false;
+        const nativeDialog = form.closest?.('dialog');
+        if (nativeDialog && !nativeDialog.open && !nativeDialog.hasAttribute?.('open')) return false;
         const uiDialogWrapper = form.closest?.('[role="dialog"]')?.closest?.('[x-show]');
         if (uiDialogWrapper && uiDialogWrapper.style?.display === 'none') return false;
         if (form.closest?.('[hidden]')) return false;

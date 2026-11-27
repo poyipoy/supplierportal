@@ -117,8 +117,8 @@
             @if($title && !isset($header)) aria-labelledby="{{ $titleId }}" @elseif($title) aria-label="{{ $title }}" @endif
             @if($description && !isset($header)) aria-describedby="{{ $descriptionId }}" @endif
             tabindex="-1"
-            class="tw:relative tw:w-full tw:overflow-hidden tw:rounded-ui-md tw:border tw:border-outline-variant tw:bg-surface tw:shadow-ui-2 {{ $widths[$maxWidth] ?? $widths['lg'] }}"
-            x-transition:enter="tw:transition tw:duration-standard tw:ease-emphasized"
+            class="tw:relative tw:w-full tw:overflow-hidden tw:rounded-ui-md tw:border tw:border-outline-variant tw:bg-dialog tw:shadow-ui-2 {{ $widths[$maxWidth] ?? $widths['lg'] }}"
+            x-transition:enter="tw:transition tw:duration-standard tw:ease-standard"
             x-transition:enter-start="tw:translate-y-1 tw:opacity-0"
             x-transition:enter-end="tw:translate-y-0 tw:opacity-100"
             x-transition:leave="tw:transition tw:duration-fast tw:ease-standard"
@@ -133,7 +133,7 @@
                             @if($description)<p id="{{ $descriptionId }}" class="tw:m-0 tw:mt-1 tw:text-ui-sm tw:text-on-surface-variant">{{ $description }}</p>@endif
                         @endisset
                     </div>
-                    <button type="button" class="ui-focus-ring tw:inline-flex tw:h-11 tw:w-11 tw:shrink-0 tw:items-center tw:justify-center tw:rounded-ui-full tw:text-on-surface-variant tw:hover:bg-surface-container tw:hover:text-on-surface" @click="closeDialog()" aria-label="{{ __('common.dialog.close') }}">
+                    <button type="button" class="ui-focus-ring tw:inline-flex tw:h-11 tw:w-11 tw:shrink-0 tw:items-center tw:justify-center tw:rounded-ui-full tw:border-0 tw:bg-transparent tw:text-on-surface-variant tw:hover:bg-surface-container tw:hover:text-on-surface" @click="closeDialog()" aria-label="{{ __('common.dialog.close') }}">
                         <x-ui.icon name="x" size="sm" />
                     </button>
                 </header>

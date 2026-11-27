@@ -35,8 +35,8 @@
 
     @if($pendingRequest)
         @php $proposed = $pendingRequest->proposed_data ?? []; @endphp
-        <section aria-labelledby="pending-contact-title" class="tw:overflow-hidden tw:rounded-ui-md tw:border tw:border-warning tw:bg-surface">
-            <header class="tw:flex tw:flex-col tw:gap-1 tw:border-b tw:border-outline-variant tw:bg-surface-container tw:px-4 tw:py-3 tw:sm:flex-row tw:sm:items-center tw:sm:justify-between">
+        <section aria-labelledby="pending-contact-title" class="tw:overflow-hidden tw:rounded-ui-md tw:border tw:border-warning tw:bg-surface tw:shadow-ui-surface">
+            <header class="tw:flex tw:flex-col tw:gap-1 tw:border-b tw:border-outline-variant tw:px-4 tw:py-3 tw:sm:flex-row tw:sm:items-center tw:sm:justify-between">
                 <h2 id="pending-contact-title" class="ui-text-balance tw:m-0 tw:text-sm tw:font-bold tw:text-on-surface">{{ __('supplier_contact.directory.pending_title') }}</h2>
                 <span class="ui-tabular-nums tw:text-ui-xs tw:text-on-surface-variant">
                     {{ __('supplier_contact.directory.pending_meta', ['date' => $regionalFormatter->timestamp($pendingRequest->requested_at, 'datetime')]) }}
@@ -48,9 +48,9 @@
                     <caption class="tw:sr-only">{{ __('supplier_contact.directory.pending_title') }}</caption>
                     <thead>
                         <tr>
-                            <th scope="col" class="tw:w-1/4 tw:text-ui-xs tw:font-semibold"><span class="tw:sr-only">{{ __('supplier_contact.common.contact_title') }}</span></th>
-                            <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('supplier_contact.directory.current_title') }}</th>
-                            <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('supplier_contact.common.proposed') }}</th>
+                            <th scope="col" class="tw:w-1/4"><span class="tw:sr-only">{{ __('supplier_contact.common.contact_title') }}</span></th>
+                            <th scope="col">{{ __('supplier_contact.directory.current_title') }}</th>
+                            <th scope="col">{{ __('supplier_contact.common.proposed') }}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -78,7 +78,7 @@
 
             <div class="tw:flex tw:flex-col tw:gap-3 tw:border-t tw:border-outline-variant tw:px-4 tw:py-3 tw:sm:flex-row tw:sm:items-start tw:sm:justify-end">
                 <details class="tw:sm:order-1" @if($errors->has('notes')) open @endif>
-                    <summary class="ui-focus-ring tw:inline-flex tw:min-h-[var(--ui-control-height-md)] tw:cursor-pointer tw:list-none tw:items-center tw:gap-2 tw:rounded-ui-sm tw:border tw:border-outline tw:px-3.5 tw:text-ui-sm tw:font-medium tw:text-error tw:hover:bg-surface-container">
+                    <summary class="ui-focus-ring tw:inline-flex tw:min-h-[var(--ui-control-height-md)] tw:cursor-pointer tw:list-none tw:items-center tw:gap-2 tw:rounded-ui-sm tw:border tw:border-outline tw:px-3.5 tw:text-ui-sm tw:font-semibold tw:text-error tw:hover:bg-surface-container">
                         <x-ui.icon name="x" size="sm" />
                         <span>{{ __('supplier_contact.directory.reject') }}</span>
                     </summary>
@@ -94,7 +94,7 @@
                     method="POST"
                     action="{{ route('purchasing.import-suppliers.contact-requests.approve', $pendingRequest) }}"
                     class="tw:sm:order-2"
-                    onsubmit="event.preventDefault(); window.AdasiAlert.confirm({title: @js(__('supplier_contact.directory.approve_title')), text: @js(__('supplier_contact.directory.approve_body')), confirmText: @js(__('supplier_contact.directory.approve')), cancelText: @js(__('supplier_contact.directory.cancel'))}).then(r => { if (r.isConfirmed) this.submit(); });"
+                    onsubmit="event.preventDefault(); window.AdasiAlert.confirm({title: @js(__('supplier_contact.directory.approve_title')), text: @js(__('supplier_contact.directory.approve_body')), confirmText: @js(__('supplier_contact.directory.approve')), cancelText: @js(__('supplier_contact.directory.cancel'))}).then(r => { if (r.isConfirmed) { window.AdasiButton?.submitForm ? window.AdasiButton.submitForm(this) : this.submit(); } });"
                 >
                     @csrf
                     <x-ui.button type="submit" variant="primary">
