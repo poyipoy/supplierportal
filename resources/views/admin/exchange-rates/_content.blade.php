@@ -5,7 +5,7 @@
 @if($activeTab === 'annual')
         @include('admin.exchange-rates._annual_matrix', ['annualManagement' => true])
     @else
-    <section class="tw:border-y tw:border-outline tw:bg-surface-container" aria-labelledby="rate-summary-title">
+    <section class="tw:overflow-hidden tw:rounded-ui-md tw:border tw:border-outline tw:bg-surface tw:shadow-ui-surface" aria-labelledby="rate-summary-title">
         <h2 id="rate-summary-title" class="tw:sr-only">{{ __('admin.copy.rate_history_summary') }}</h2>
         <dl class="tw:m-0 tw:grid tw:grid-cols-2 tw:lg:grid-cols-5">
             <div class="tw:border-b tw:border-r tw:border-outline-variant tw:p-4 tw:lg:border-b-0"><dt class="tw:text-ui-xs tw:font-semibold tw:uppercase tw:tracking-wide tw:text-on-surface-variant">{{ __('admin.copy.all_records') }}</dt><dd class="ui-tabular-nums tw:m-0 tw:mt-1 tw:text-xl tw:font-semibold">{{ number_format($totalRates) }}</dd></div>

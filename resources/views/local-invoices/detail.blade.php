@@ -207,7 +207,7 @@
                         </div>
                     </div>
 
-                    <div class="tw:mt-4 tw:p-4 tw:rounded-ui-sm tw:bg-surface-container-low tw:border tw:border-outline-variant/60">
+                    <div class="tw:mt-4 tw:p-4 tw:rounded-ui-sm tw:bg-surface-low tw:border tw:border-outline-variant/60">
                         <div class="tw:flex tw:items-center tw:justify-between tw:gap-2 tw:mb-2">
                             <span class="tw:text-ui-xs tw:font-bold tw:text-on-surface tw:flex tw:items-center tw:gap-1.5">
                                 <x-ui.icon name="building-2" size="xs" /> {{ __('local_invoice.labels.refund_account') }}
@@ -398,7 +398,7 @@
                     </div>
 
                     @if($proof)
-                        <div class="tw:mt-3 tw:flex tw:items-center tw:justify-between tw:p-2.5 tw:rounded-ui-sm tw:bg-surface-container-low tw:border tw:border-outline-variant/60">
+                        <div class="tw:mt-3 tw:flex tw:items-center tw:justify-between tw:p-2.5 tw:rounded-ui-sm tw:bg-surface-low tw:border tw:border-outline-variant/60">
                             <div class="tw:flex tw:items-center tw:gap-2 tw:min-w-0">
                                 <x-ui.icon name="file-text" size="xs" class="tw:text-primary tw:shrink-0" />
                                 <span class="tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:truncate" title="{{ $proof->file_name }}">
@@ -451,7 +451,7 @@
                 </div>
 
                 <div class="tw:border-t tw:border-outline-variant tw:mt-4 tw:pt-4">
-                    <div class="tw:grid tw:gap-3 tw:sm:grid-cols-3 tw:p-3 tw:rounded-ui-sm tw:bg-surface-container-low">
+                    <div class="tw:grid tw:gap-3 tw:sm:grid-cols-3 tw:p-3 tw:rounded-ui-sm tw:bg-surface-low">
                         <div>
                             <span class="tw:text-ui-xs tw:text-on-surface-variant tw:uppercase tw:font-semibold tw:tracking-wider">{{ __('local_invoice.detail.dpp') }}</span>
                             <span class="tw:block ui-tabular-nums tw:font-semibold tw:text-ui-sm tw:text-on-surface">
@@ -542,7 +542,7 @@
                                 @endforeach
                             </tbody>
                             <tfoot>
-                                <tr class="tw:border-t tw:border-outline-variant tw:bg-surface-container-low">
+                                <tr class="tw:border-t tw:border-outline-variant tw:bg-surface-low">
                                     <th colspan="4" class="tw:font-bold">{{ __('local_invoice.labels.total_received') }}:</th>
                                     <th class="tw:text-end ui-tabular-nums tw:font-bold tw:text-ui-sm tw:text-success">
                                         Rp {{ $regionalFormatter->number(number_format((float) $payment->actual_paid_total, 0, ',', '.'), 'indonesian') }}
@@ -578,7 +578,7 @@
                 <x-ui.card :title="__('local_invoice.labels.revision_history')">
                     <div class="ui-density-list">
                         @foreach($invoice->revisions->sortByDesc('revision_number') as $rev)
-                            <div class="tw:border tw:border-outline-variant tw:rounded-ui-sm tw:p-3.5 {{ $rev->revision_number === $invoice->revision_number ? 'tw:bg-surface-container-low' : 'tw:bg-surface' }}">
+                            <div class="tw:border tw:border-outline-variant tw:rounded-ui-sm tw:p-3.5 {{ $rev->revision_number === $invoice->revision_number ? 'tw:bg-surface-low' : 'tw:bg-surface' }}">
                                 <div class="tw:flex tw:items-center tw:justify-between tw:gap-2 tw:mb-2">
                                     <div class="tw:flex tw:items-center tw:gap-2">
                                         <span class="tw:font-bold tw:text-ui-xs tw:text-on-surface">{{ __('local_invoice.detail.revision', ['number' => $rev->revision_number]) }}</span>
@@ -672,7 +672,7 @@
                                     $btnVariant = $isDestructive ? 'danger' : ($isWarning ? 'warning' : 'primary');
                                 @endphp
 
-                                <div class="tw:p-3 tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface-container-low">
+                                <div class="tw:p-3 tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface-low">
                                     <form
                                         method="POST"
                                         action="{{ route('accounting.invoices.'.$action, $invoice) }}"
@@ -721,7 +721,7 @@
                                             type="submit"
                                             :variant="$btnVariant"
                                             size="sm"
-                                            class="tw:w-full tw:shadow-xs"
+                                            class="tw:w-full"
                                         >
                                             @if($isPositive) <x-ui.icon name="check" size="sm" />
                                             @elseif($isWarning) <x-ui.icon name="file-edit" size="sm" />

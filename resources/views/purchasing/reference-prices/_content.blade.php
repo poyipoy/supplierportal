@@ -8,7 +8,7 @@
     @if($activeTab === 'rules')
         @if($preview)
             {{-- Import Preview Card --}}
-            <x-ui.card class="tw:border-2 {{ $preview['valid'] ? 'tw:border-primary/40 tw:bg-primary-container/10' : 'tw:border-error/40 tw:bg-error-container/10' }} tw:mb-4">
+            <x-ui.card class="{{ $preview['valid'] ? 'tw:border-primary' : 'tw:border-error' }} tw:mb-4">
                 <div class="tw:flex tw:flex-wrap tw:items-center tw:justify-between tw:gap-3 tw:mb-3">
                     <div>
                         <h3 class="tw:text-ui-base tw:font-semibold tw:m-0">{{ __($rp.'.rules.preview_title') }}</h3>
@@ -208,7 +208,10 @@
         @php
             $historicalItems = $historicalLines ?? collect();
             $poStatusFilter = $poStatusFilter ?? ($filters['po_status'] ?? 'completed');
+            $sourceFilter = $sourceFilter ?? ($filters['source'] ?? 'all');
             $targetCurrency = $targetCurrency ?? ($filters['currency'] ?? 'IDR');
+            $benchmarkPreviewData = $benchmarkPreview ?? null;
+            $benchmarkPreviewCounts = $benchmarkPreviewData['counts'] ?? ['new' => 0, 'updated' => 0, 'unchanged' => 0, 'removed' => 0, 'warnings' => 0];
             $benchmarkResetUrl = route($prefix.'.index', ['tab' => 'benchmark']);
             $benchmarkRemoveUrl = static function (array $dropKeys) use ($prefix): string {
                 $query = array_merge(request()->query(), ['tab' => 'benchmark']);
@@ -224,6 +227,11 @@
                 'all' => __('common.filters.all'),
                 'active' => __('purchasing.copy.active'),
                 'waiting_qc' => __('purchasing.copy.waiting_qc'),
+            ];
+            $benchmarkSourceLabels = [
+                'all' => __($rp.'.historical_import.source_all'),
+                'portal_po' => __($rp.'.historical_import.source_portal_po'),
+                'imported' => __($rp.'.historical_import.source_imported'),
             ];
 
             $benchmarkChips = [];
@@ -242,6 +250,15 @@
                     'label' => __($rp.'.shape'),
                     'value' => (string) $filters['shape'],
                     'removeUrl' => $benchmarkRemoveUrl(['shape']),
+                    'removeAttrs' => $benchmarkLinkAttrs,
+                ];
+            }
+            if ($sourceFilter !== 'all') {
+                $benchmarkChips[] = [
+                    'key' => 'source',
+                    'label' => __($rp.'.historical_import.source_filter_label'),
+                    'value' => $benchmarkSourceLabels[$sourceFilter] ?? (string) $sourceFilter,
+                    'removeUrl' => $benchmarkRemoveUrl(['source']),
                     'removeAttrs' => $benchmarkLinkAttrs,
                 ];
             }
@@ -264,6 +281,139 @@
                 ];
             }
         @endphp
+
+        @if(!empty($benchmarkPreviewData))
+            <x-ui.card class="{{ !empty($benchmarkPreviewData['valid']) ? 'tw:border-primary' : 'tw:border-error' }} tw:mb-4">
+                <div class="tw:flex tw:flex-wrap tw:items-center tw:justify-between tw:gap-3 tw:mb-3">
+                    <div>
+                        <h3 class="tw:text-ui-base tw:font-semibold tw:m-0">{{ __($rp.'.historical_import.preview_title') }}</h3>
+                        <p class="tw:text-ui-xs tw:text-on-surface-variant tw:m-0 ui-tabular-nums">
+                            {{ $benchmarkImportFilename }} (Mode: {{ strtoupper((string) ($benchmarkPreviewData['mode'] ?? 'merge')) }}) &bull;
+                            {{ __($rp.'.historical_import.preview_summary', [
+                                'new' => (int) ($benchmarkPreviewCounts['new'] ?? 0),
+                                'updated' => (int) ($benchmarkPreviewCounts['updated'] ?? 0),
+                                'unchanged' => (int) ($benchmarkPreviewCounts['unchanged'] ?? 0),
+                                'removed' => (int) ($benchmarkPreviewCounts['removed'] ?? 0),
+                            ]) }}
+                        </p>
+                    </div>
+                    <div class="tw:flex tw:items-center tw:gap-2">
+                        <form method="POST" action="{{ route($prefix.'.benchmark.import-cancel') }}">
+                            @csrf
+                            <input type="hidden" name="import_id" value="{{ $benchmarkImportId }}">
+                            <x-ui.button type="submit" variant="outline" size="sm">{{ __($rp.'.historical_import.cancel_button') }}</x-ui.button>
+                        </form>
+                        @if(!empty($benchmarkPreviewData['valid']))
+                            <form method="POST" action="{{ route($prefix.'.benchmark.import-confirm') }}">
+                                @csrf
+                                <input type="hidden" name="import_id" value="{{ $benchmarkImportId }}">
+                                <x-ui.button type="submit" variant="primary" size="sm">
+                                    <x-ui.icon name="check" size="sm" />
+                                    <span>{{ __($rp.'.historical_import.apply_button') }}</span>
+                                </x-ui.button>
+                            </form>
+                        @endif
+                    </div>
+                </div>
+
+                @if(!empty($benchmarkPreviewData['conflicts']))
+                    <x-ui.alert tone="error" :title="__($rp.'.historical_import.conflicts_title')" class="tw:mb-3">
+                        <ul class="tw:m-0 tw:ps-4 tw:text-ui-xs">
+                            @foreach($benchmarkPreviewData['conflicts'] as $conflict)
+                                <li>{{ $conflict }}</li>
+                            @endforeach
+                        </ul>
+                        @if(!empty($benchmarkPreviewData['conflicts_truncated']))
+                            <p class="tw:m-0 tw:mt-1.5 tw:text-ui-xs tw:font-semibold">
+                                {{ __($rp.'.historical_import.conflicts_more', ['count' => (int) $benchmarkPreviewData['conflicts_truncated']]) }}
+                            </p>
+                        @endif
+                    </x-ui.alert>
+                @endif
+
+                @if(!empty($benchmarkPreviewData['warnings']))
+                    <x-ui.alert tone="warning" :title="__($rp.'.historical_import.warnings_title')" class="tw:mb-3">
+                        <ul class="tw:m-0 tw:ps-4 tw:text-ui-xs">
+                            @foreach($benchmarkPreviewData['warnings'] as $warning)
+                                <li>{{ $warning }}</li>
+                            @endforeach
+                        </ul>
+                        @if(!empty($benchmarkPreviewData['warnings_truncated']))
+                            <p class="tw:m-0 tw:mt-1.5 tw:text-ui-xs tw:font-semibold">
+                                {{ __($rp.'.historical_import.warnings_more', ['count' => (int) $benchmarkPreviewData['warnings_truncated']]) }}
+                            </p>
+                        @endif
+                    </x-ui.alert>
+                @endif
+
+                @if(!empty($benchmarkPreviewData['sample_rows']))
+                    @if(!empty($benchmarkPreviewData['sample_truncated']))
+                        <p class="tw:m-0 tw:mb-2 tw:text-ui-xs tw:text-on-surface-variant ui-tabular-nums">
+                            {{ __($rp.'.historical_import.sample_note', [
+                                'shown' => count($benchmarkPreviewData['sample_rows']),
+                                'total' => (int) ($benchmarkPreviewData['valid_rows'] ?? count($benchmarkPreviewData['sample_rows'])),
+                            ]) }}
+                        </p>
+                    @endif
+                    <div class="tw:overflow-x-auto">
+                        <table class="ui-table ui-table--sm ui-table--bordered tw:align-middle tw:mb-0 tw:text-ui-xs" aria-label="{{ __($rp.'.historical_import.preview_title') }}">
+                            <thead>
+                                <tr>
+                                    <th scope="col">{{ __($rp.'.historical_import.change_type') }}</th>
+                                    <th scope="col">{{ __('purchasing.copy.po_number') }}</th>
+                                    <th scope="col">{{ __('purchasing.copy.po_date') }}</th>
+                                    <th scope="col">{{ __('purchasing.copy.supplier') }}</th>
+                                    <th scope="col">{{ __('purchasing.copy.material') }}</th>
+                                    <th scope="col">{{ __('purchasing.copy.dimensions') }}</th>
+                                    <th scope="col">{{ __($rp.'.rules.category_name') }}</th>
+                                    <th scope="col" class="tw:text-end">{{ __($rp.'.historical.ordered_kg') }}</th>
+                                    <th scope="col" class="tw:text-end">{{ __('purchasing.copy.price_kg') }}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($benchmarkPreviewData['sample_rows'] as $cand)
+                                    <tr>
+                                        <td>
+                                            @if(($cand['change_type'] ?? 'new') === 'new')
+                                                <x-ui.status-chip tone="success" size="sm">{{ __($rp.'.historical_import.change_new') }}</x-ui.status-chip>
+                                            @elseif(($cand['change_type'] ?? '') === 'updated')
+                                                <x-ui.status-chip tone="info" size="sm">{{ __($rp.'.historical_import.change_updated') }}</x-ui.status-chip>
+                                            @else
+                                                <x-ui.status-chip tone="neutral" size="sm">{{ __($rp.'.historical_import.change_unchanged') }}</x-ui.status-chip>
+                                            @endif
+                                        </td>
+                                        <td class="tw:font-semibold ui-tabular-nums">
+                                            {{ $cand['po_number'] }}
+                                            @if(((int) ($cand['line_no'] ?? 1)) > 1)
+                                                <span class="tw:text-on-surface-variant">#{{ (int) $cand['line_no'] }}</span>
+                                            @endif
+                                        </td>
+                                        <td class="ui-tabular-nums">{{ $cand['po_date'] }}</td>
+                                        <td>
+                                            <span>{{ $cand['supplier_name'] }}</span>
+                                            @if(!empty($cand['supplier_linked']))
+                                                <x-ui.status-chip tone="success" size="sm" class="tw:ms-1">{{ __($rp.'.historical_import.badge_linked_supplier') }}</x-ui.status-chip>
+                                            @endif
+                                        </td>
+                                        <td>
+                                            <span class="tw:font-semibold">{{ $cand['material_code'] }}</span>
+                                            <span class="ui-status-chip ui-status-chip--neutral tw:ms-1">{{ $cand['shape'] }}</span>
+                                        </td>
+                                        <td class="ui-tabular-nums">{{ $cand['key_dimension'] }} mm (&lceil;{{ $cand['rounded_dimension'] }}&rceil;)</td>
+                                        <td class="ui-tabular-nums">{{ $cand['category_name'] }}</td>
+                                        <td class="tw:text-end ui-tabular-nums">{{ $regionalFormatter->groupedDecimal((float) $cand['ordered_weight_kg'], 4) }}</td>
+                                        <td class="tw:text-end ui-tabular-nums">
+                                            {{ $regionalFormatter->groupedDecimal((float) $cand['price_per_kg'], 4) }}
+                                            <span class="tw:text-on-surface-variant">{{ $cand['currency'] }}</span>
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                @endif
+            </x-ui.card>
+        @endif
 
         <x-ui.filter-bar
             id="benchmarkRefFilterForm"
@@ -296,6 +446,13 @@
             </x-slot:search>
 
             <x-slot:filters>
+                <label for="historicalRefSourceFilter" class="tw:sr-only">{{ __($rp.'.historical_import.source_filter_label') }}</label>
+                <select name="source" id="historicalRefSourceFilter" class="ui-select ui-select--sm tw:w-full tw:min-w-0 tw:sm:w-44">
+                    <option value="all" @selected($sourceFilter === 'all')>{{ __($rp.'.historical_import.source_all') }}</option>
+                    <option value="portal_po" @selected($sourceFilter === 'portal_po')>{{ __($rp.'.historical_import.source_portal_po') }}</option>
+                    <option value="imported" @selected($sourceFilter === 'imported')>{{ __($rp.'.historical_import.source_imported') }}</option>
+                </select>
+
                 <label for="historicalRefShapeFilter" class="tw:sr-only">{{ __($rp.'.shape') }}</label>
                 <select name="shape" id="historicalRefShapeFilter" class="ui-select ui-select--sm tw:w-full tw:min-w-0 tw:sm:w-40">
                     <option value="">{{ __($rp.'.all_shapes') }}</option>
@@ -350,15 +507,20 @@
                         <th scope="col" class="tw:text-end">{{ __('purchasing.comparison_analytics.average_per_kg', ['currency' => $targetCurrency]) }}</th>
                         <th scope="col">{{ __('purchasing.copy.po_date') }}</th>
                         <th scope="col">{{ __('purchasing.copy.status') }}</th>
+                        <th scope="col" class="tw:text-end" style="width: 72px;">{{ __($rp.'.actions') }}</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse($historicalItems as $hRow)
                         <tr>
                             <td class="tw:font-bold tw:text-on-surface ui-tabular-nums">
-                                <a href="{{ route('purchasing.purchase-orders.show', \App\Support\HashidCodec::encode((int) $hRow['po_id'])) }}" class="tw:text-primary tw:no-underline tw:hover:underline">
-                                    {{ $hRow['po_number'] }}
-                                </a>
+                                @if(($hRow['source_type'] ?? 'portal_po') === 'portal_po' && !empty($hRow['po_id']))
+                                    <a href="{{ route('purchasing.purchase-orders.show', \App\Support\HashidCodec::encode((int) $hRow['po_id'])) }}" class="tw:text-primary tw:no-underline tw:hover:underline">
+                                        {{ $hRow['po_number'] }}
+                                    </a>
+                                @else
+                                    <span>{{ $hRow['po_number'] }}</span>
+                                @endif
                             </td>
                             <td>
                                 <span class="tw:font-semibold tw:text-on-surface">{{ $hRow['material_name'] }}</span>
@@ -388,16 +550,45 @@
                                 {{ !empty($hRow['po_created_at']) ? $regionalFormatter->timestamp(\Carbon\Carbon::parse($hRow['po_created_at'], 'UTC'), 'date') : '-' }}
                             </td>
                             <td>
-                                @if(!empty($hRow['po_status']))
+                                @if(($hRow['source_type'] ?? 'portal_po') === 'imported')
+                                    <x-ui.status-chip tone="info" size="sm">{{ __($rp.'.historical_import.badge_imported') }}</x-ui.status-chip>
+                                @elseif(!empty($hRow['po_status']))
                                     <x-status-badge type="po" :status="$hRow['po_status']" />
                                 @else
                                     -
                                 @endif
                             </td>
+                            <td class="tw:text-end">
+                                @if(($hRow['source_type'] ?? 'portal_po') === 'imported' && !empty($hRow['benchmark_line_hash']))
+                                    <form
+                                        method="POST"
+                                        action="{{ route($prefix.'.benchmark.lines.destroy', $hRow['benchmark_line_hash']) }}"
+                                        class="tw:inline"
+                                        data-managed-submit
+                                        data-delete-benchmark-form
+                                        data-po-number="{{ $hRow['po_number'] }}"
+                                        data-material-name="{{ $hRow['material_name'] }}"
+                                    >
+                                        @csrf
+                                        @method('DELETE')
+                                        <x-ui.icon-button
+                                            type="button"
+                                            icon="trash-2"
+                                            variant="danger-outline"
+                                            size="sm"
+                                            data-no-auto-spinner
+                                            data-delete-benchmark-trigger
+                                            :label="__($rp.'.historical_import.delete_action_label', ['po' => $hRow['po_number'], 'material' => $hRow['material_name']])"
+                                        />
+                                    </form>
+                                @else
+                                    <span class="tw:text-on-surface-variant">-</span>
+                                @endif
+                            </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="9" class="tw:text-center tw:py-4 tw:text-on-surface-variant">
+                            <td colspan="10" class="tw:text-center tw:py-4 tw:text-on-surface-variant">
                                 {{ __($rp.'.historical.no_data') }}
                             </td>
                         </tr>

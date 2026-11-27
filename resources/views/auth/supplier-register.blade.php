@@ -544,7 +544,7 @@
          â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• --}}
     <div x-show="step === 1" x-cloak data-wizard-step="1" class="tw:space-y-5 tw:transition-opacity tw:duration-200">
         {{-- Section 1.1: Portal Account Credentials --}}
-        <div class="tw:rounded-ui-md tw:border tw:border-outline-variant tw:bg-surface-container-lowest tw:p-5">
+        <div class="tw:rounded-ui-md tw:border tw:border-outline tw:bg-surface tw:shadow-ui-surface tw:p-5">
             <div class="tw:flex tw:items-center tw:gap-2 tw:text-primary tw:font-bold tw:text-ui-sm tw:mb-1">
                 <x-ui.icon name="key" size="sm" />
                 <span>{{ __('registration.credentials') }}</span>
@@ -677,7 +677,7 @@
         </div>
 
         {{-- Section 1.2: Company Profile & Identity --}}
-        <div class="tw:rounded-ui-md tw:border tw:border-outline-variant tw:bg-surface-container-lowest tw:p-5">
+        <div class="tw:rounded-ui-md tw:border tw:border-outline tw:bg-surface tw:shadow-ui-surface tw:p-5">
             <div class="tw:flex tw:items-center tw:gap-2 tw:text-primary tw:font-bold tw:text-ui-sm tw:mb-1">
                 <x-ui.icon name="building-2" size="sm" />
                 <span>{{ __('registration.legal_profile') }}</span>
@@ -846,7 +846,7 @@
          â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• --}}
     {{-- STEP 2: QUALITY & COMPLIANCE QUESTIONNAIRE (answers never block submission) --}}
     <div x-show="step === 2" x-cloak data-wizard-step="2" class="tw:space-y-5 tw:transition-opacity tw:duration-200">
-        <div class="tw:rounded-ui-md tw:border tw:border-outline-variant tw:bg-surface-container-lowest tw:p-5">
+        <div class="tw:rounded-ui-md tw:border tw:border-outline tw:bg-surface tw:shadow-ui-surface tw:p-5">
             <div class="tw:flex tw:flex-wrap tw:items-center tw:justify-between tw:gap-2 tw:mb-1">
                 <div class="tw:flex tw:items-center tw:gap-2 tw:text-primary tw:font-bold tw:text-ui-sm">
                     <x-ui.icon name="clipboard-check" size="sm" />
@@ -898,7 +898,7 @@
     {{-- STEP 3: LEGAL & TAX IDENTIFICATION, PIC & OFFICIAL BANK --}}
     <div x-show="step === 3" x-cloak data-wizard-step="3" class="tw:space-y-5 tw:transition-opacity tw:duration-200">
         {{-- Section 3.1: Legal & Tax Identification --}}
-        <div class="tw:rounded-ui-md tw:border tw:border-outline-variant tw:bg-surface-container-lowest tw:p-5">
+        <div class="tw:rounded-ui-md tw:border tw:border-outline tw:bg-surface tw:shadow-ui-surface tw:p-5">
             <div class="tw:flex tw:items-center tw:gap-2 tw:text-primary tw:font-bold tw:text-ui-sm tw:mb-1">
                 <x-ui.icon name="file-badge" size="sm" />
                 <span>{{ __('registration.legal_identification') }}</span>
@@ -985,7 +985,7 @@
         </div>
 
         {{-- Section 2.2: Person In Charge (PIC) --}}
-        <div class="tw:rounded-ui-md tw:border tw:border-outline-variant tw:bg-surface-container-lowest tw:p-5">
+        <div class="tw:rounded-ui-md tw:border tw:border-outline tw:bg-surface tw:shadow-ui-surface tw:p-5">
             <div class="tw:flex tw:items-center tw:gap-2 tw:text-primary tw:font-bold tw:text-ui-sm tw:mb-1">
                 <x-ui.icon name="user" size="sm" />
                 <span>{{ __('registration.contact_section') }}</span>
@@ -1076,7 +1076,7 @@
         </div>
 
         {{-- Section 2.3: Official Bank Account --}}
-        <div class="tw:rounded-ui-md tw:border tw:border-outline-variant tw:bg-surface-container-lowest tw:p-5">
+        <div class="tw:rounded-ui-md tw:border tw:border-outline tw:bg-surface tw:shadow-ui-surface tw:p-5">
             <div class="tw:flex tw:items-center tw:gap-2 tw:text-primary tw:font-bold tw:text-ui-sm tw:mb-1">
                 <x-ui.icon name="credit-card" size="sm" />
                 <span>{{ __('registration.bank_section') }}</span>
@@ -1192,7 +1192,7 @@
          STEP 3: VERIFICATION DOCUMENTS (DRAG & DROP ZONES)
          â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• --}}
     <div x-show="step === 4" x-cloak data-wizard-step="4" class="tw:space-y-5 tw:transition-opacity tw:duration-200">
-        <div class="tw:rounded-ui-md tw:border tw:border-outline-variant tw:bg-surface-container-lowest tw:p-5">
+        <div class="tw:rounded-ui-md tw:border tw:border-outline tw:bg-surface tw:shadow-ui-surface tw:p-5">
             <div class="tw:flex tw:items-center tw:justify-between tw:mb-1">
                 <div class="tw:flex tw:items-center tw:gap-2 tw:text-primary tw:font-bold tw:text-ui-sm">
                     <x-ui.icon name="file-text" size="sm" />
@@ -1320,7 +1320,7 @@
         </div>
 
         {{-- Summary Card 1: Akun & Profil Perusahaan --}}
-        <div class="tw:rounded-ui-md tw:border tw:border-outline-variant tw:bg-surface-container-lowest tw:p-5">
+        <div class="tw:rounded-ui-md tw:border tw:border-outline tw:bg-surface tw:shadow-ui-surface tw:p-5">
             <div class="tw:flex tw:items-center tw:justify-between tw:mb-3">
                 <div class="tw:flex tw:items-center tw:gap-2 tw:text-on-surface tw:font-bold tw:text-ui-sm">
                     <x-ui.icon name="building-2" size="sm" class="tw:text-primary" />
@@ -1361,7 +1361,7 @@
         </div>
 
         {{-- Summary Card: Kuesioner Kualitas & Kepatuhan --}}
-        <div class="tw:rounded-ui-md tw:border tw:border-outline-variant tw:bg-surface-container-lowest tw:p-5">
+        <div class="tw:rounded-ui-md tw:border tw:border-outline tw:bg-surface tw:shadow-ui-surface tw:p-5">
             <div class="tw:flex tw:items-center tw:justify-between tw:mb-3">
                 <div class="tw:flex tw:items-center tw:gap-2 tw:text-on-surface tw:font-bold tw:text-ui-sm">
                     <x-ui.icon name="clipboard-check" size="sm" class="tw:text-primary" />
@@ -1388,7 +1388,7 @@
         </div>
 
         {{-- Summary Card 2: Legalitas, PIC & Rekening Bank --}}
-        <div class="tw:rounded-ui-md tw:border tw:border-outline-variant tw:bg-surface-container-lowest tw:p-5">
+        <div class="tw:rounded-ui-md tw:border tw:border-outline tw:bg-surface tw:shadow-ui-surface tw:p-5">
             <div class="tw:flex tw:items-center tw:justify-between tw:mb-3">
                 <div class="tw:flex tw:items-center tw:gap-2 tw:text-on-surface tw:font-bold tw:text-ui-sm">
                     <x-ui.icon name="credit-card" size="sm" class="tw:text-primary" />
@@ -1441,7 +1441,7 @@
         </div>
 
         {{-- Summary Card 3: Dokumen Verifikasi --}}
-        <div class="tw:rounded-ui-md tw:border tw:border-outline-variant tw:bg-surface-container-lowest tw:p-5">
+        <div class="tw:rounded-ui-md tw:border tw:border-outline tw:bg-surface tw:shadow-ui-surface tw:p-5">
             <div class="tw:flex tw:items-center tw:justify-between tw:mb-3">
                 <div class="tw:flex tw:items-center tw:gap-2 tw:text-on-surface tw:font-bold tw:text-ui-sm">
                     <x-ui.icon name="file-text" size="sm" class="tw:text-primary" />
@@ -1486,7 +1486,7 @@
         </div>
 
         {{-- Legal Declaration Statement --}}
-        <div class="tw:p-4 tw:rounded-ui-md tw:border tw:border-outline-variant tw:bg-surface-container-low">
+        <div class="tw:p-4 tw:rounded-ui-md tw:border tw:border-outline-variant tw:bg-surface-low">
             <label class="tw:flex tw:items-start tw:gap-3 tw:cursor-pointer" for="legal_declaration">
                 <input
                     type="checkbox"

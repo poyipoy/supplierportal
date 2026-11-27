@@ -16,7 +16,7 @@
     </div>
 
     @isset($chatContext)
-        <div class="tw:border tw:border-outline tw:bg-surface-container tw:mb-2">
+        <div class="tw:rounded-ui-md tw:border tw:border-outline tw:bg-surface tw:shadow-ui-surface tw:mb-2">
             <div class="tw:flex tw:flex-wrap tw:items-start tw:justify-between tw:gap-3 tw:px-4 tw:py-3">
                 <div class="tw:min-w-0">
                     <div class="tw:flex tw:items-center tw:gap-2 tw:mb-0.5">

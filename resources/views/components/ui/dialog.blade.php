@@ -117,7 +117,7 @@
             @if($title && !isset($header)) aria-labelledby="{{ $titleId }}" @elseif($title) aria-label="{{ $title }}" @endif
             @if($description && !isset($header)) aria-describedby="{{ $descriptionId }}" @endif
             tabindex="-1"
-            class="tw:relative tw:w-full tw:overflow-hidden tw:rounded-ui-md tw:border tw:border-outline-variant tw:bg-dialog tw:shadow-ui-2 {{ $widths[$maxWidth] ?? $widths['lg'] }}"
+            class="tw:relative tw:w-full tw:overflow-hidden tw:rounded-ui-md tw:border tw:border-outline tw:bg-dialog tw:shadow-ui-2 {{ $widths[$maxWidth] ?? $widths['lg'] }}"
             x-transition:enter="tw:transition tw:duration-standard tw:ease-standard"
             x-transition:enter-start="tw:translate-y-1 tw:opacity-0"
             x-transition:enter-end="tw:translate-y-0 tw:opacity-100"

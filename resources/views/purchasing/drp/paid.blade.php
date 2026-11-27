@@ -72,7 +72,7 @@
         <nav class="tw:inline-flex tw:items-center tw:gap-1.5 tw:rounded-ui-md tw:border tw:border-outline tw:bg-surface-container tw:p-1.5 tw:shadow-none" aria-label="{{ __('common.accessibility.drp_tabs') }}">
             <a
                 href="{{ route('purchasing.drp.paid.index', array_merge(request()->query(), ['tab' => 'unpaid'])) }}"
-                class="ui-focus-ring ui-motion tw:inline-flex tw:items-center tw:gap-2 tw:rounded-ui-sm tw:px-3.5 tw:py-1.5 tw:text-ui-xs tw:font-semibold tw:no-underline {{ $tab === 'unpaid' ? 'tw:bg-primary tw:text-primary-foreground tw:shadow-xs' : 'tw:text-on-surface-variant tw:hover:bg-surface tw:hover:text-on-surface' }}"
+                class="ui-focus-ring ui-motion tw:inline-flex tw:items-center tw:gap-2 tw:rounded-ui-sm tw:px-3.5 tw:py-1.5 tw:text-ui-xs tw:font-semibold tw:no-underline {{ $tab === 'unpaid' ? 'tw:bg-primary tw:text-primary-foreground tw:shadow-ui-surface' : 'tw:text-on-surface-variant tw:hover:bg-surface tw:hover:text-on-surface' }}"
                 data-server-tab
                 data-tab-name="unpaid"
             >
@@ -84,7 +84,7 @@
             </a>
             <a
                 href="{{ route('purchasing.drp.paid.index', array_merge(request()->query(), ['tab' => 'paid'])) }}"
-                class="ui-focus-ring ui-motion tw:inline-flex tw:items-center tw:gap-2 tw:rounded-ui-sm tw:px-3.5 tw:py-1.5 tw:text-ui-xs tw:font-semibold tw:no-underline {{ $tab === 'paid' ? 'tw:bg-primary tw:text-primary-foreground tw:shadow-xs' : 'tw:text-on-surface-variant tw:hover:bg-surface tw:hover:text-on-surface' }}"
+                class="ui-focus-ring ui-motion tw:inline-flex tw:items-center tw:gap-2 tw:rounded-ui-sm tw:px-3.5 tw:py-1.5 tw:text-ui-xs tw:font-semibold tw:no-underline {{ $tab === 'paid' ? 'tw:bg-primary tw:text-primary-foreground tw:shadow-ui-surface' : 'tw:text-on-surface-variant tw:hover:bg-surface tw:hover:text-on-surface' }}"
                 data-server-tab
                 data-tab-name="paid"
             >
@@ -96,7 +96,7 @@
             </a>
             <a
                 href="{{ route('purchasing.drp.paid.index', array_merge(request()->query(), ['tab' => 'all'])) }}"
-                class="ui-focus-ring ui-motion tw:inline-flex tw:items-center tw:gap-2 tw:rounded-ui-sm tw:px-3.5 tw:py-1.5 tw:text-ui-xs tw:font-semibold tw:no-underline {{ $tab === 'all' ? 'tw:bg-primary tw:text-primary-foreground tw:shadow-xs' : 'tw:text-on-surface-variant tw:hover:bg-surface tw:hover:text-on-surface' }}"
+                class="ui-focus-ring ui-motion tw:inline-flex tw:items-center tw:gap-2 tw:rounded-ui-sm tw:px-3.5 tw:py-1.5 tw:text-ui-xs tw:font-semibold tw:no-underline {{ $tab === 'all' ? 'tw:bg-primary tw:text-primary-foreground tw:shadow-ui-surface' : 'tw:text-on-surface-variant tw:hover:bg-surface tw:hover:text-on-surface' }}"
                 data-server-tab
                 data-tab-name="all"
             >

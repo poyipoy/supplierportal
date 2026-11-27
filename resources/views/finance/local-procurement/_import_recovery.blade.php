@@ -3,7 +3,7 @@
 <section data-import-recovery hidden
     aria-labelledby="local{{ $importName }}ImportRecoveryTitle"
     data-slot-limit="{{ (int) config('local_procurement_imports.active_per_user') }}"
-    class="tw:rounded-ui-md tw:bg-surface-container tw:px-3.5 tw:pt-3 tw:pb-1">
+    class="tw:rounded-ui-md tw:border tw:border-outline-variant tw:bg-surface-low tw:px-3.5 tw:pt-3 tw:pb-1">
     <div class="tw:flex tw:flex-wrap tw:items-center tw:gap-x-3 tw:gap-y-1">
         <h6 id="local{{ $importName }}ImportRecoveryTitle" class="tw:m-0 tw:text-balance tw:text-ui-sm tw:font-semibold tw:text-on-surface">
             {{ __('local_procurement.large_import.recovery_title') }}

@@ -180,10 +180,10 @@
         </div>
 
         <div id="data-quality" role="tabpanel" aria-labelledby="data-quality-tab" tabindex="0" hidden>
-            <div class="tw:rounded-ui-md tw:border tw:border-outline tw:bg-surface tw:p-3 tw:shell:p-4">
+            <div class="tw:rounded-ui-md tw:border tw:border-outline tw:bg-surface tw:shadow-ui-surface tw:p-3 tw:shell:p-4">
                 <x-ui.inline-loader id="qualityLoading" :label="__('admin.copy.analyzing_master_data')" class="tw:py-12" />
                 <div id="qualityContent" class="tw:hidden">
-                    <section class="tw:overflow-hidden tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface-container" aria-labelledby="quality-summary-title">
+                    <section class="tw:overflow-hidden tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface-low" aria-labelledby="quality-summary-title">
                         <h3 id="quality-summary-title" class="tw:sr-only">{{ __('admin.copy.data_quality_summary') }}</h3>
                         <dl class="tw:m-0 tw:grid tw:grid-cols-2 tw:lg:grid-cols-5">
                             @foreach([
@@ -204,7 +204,7 @@
                     <div id="qualityError" class="tw:hidden tw:mt-4 tw:border tw:border-error/40 tw:bg-error-container tw:p-3 tw:text-ui-sm tw:text-on-surface" role="alert">{{ __('admin.copy.data_quality_could_not_be_loaded_try_opening_this_tab_again') }}</div>
 
                     <div class="tw:mt-5 tw:grid tw:gap-5 tw:lg:grid-cols-[minmax(0,1.35fr)_minmax(18rem,0.8fr)]">
-                        <section class="tw:min-w-0 tw:overflow-hidden tw:rounded-ui-sm tw:border tw:border-outline tw:bg-surface-container" aria-labelledby="quality-attention-title">
+                        <section class="tw:min-w-0 tw:overflow-hidden tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface-low" aria-labelledby="quality-attention-title">
                             <header class="tw:border-b tw:border-outline-variant tw:px-4 tw:py-3">
                                 <h3 id="quality-attention-title" class="tw:m-0 tw:text-ui-sm tw:font-semibold">{{ __('admin.copy.needs_attention') }}</h3>
                                 <p class="tw:m-0 tw:mt-1 tw:text-ui-xs tw:text-on-surface-variant">{{ __('admin.copy.records_that_can_affect_automatic_hs_code_results') }}</p>
@@ -215,7 +215,7 @@
                                 <div class="tw:p-4"><div class="tw:font-semibold">{{ __('admin.copy.rules_needing_review') }}</div><div id="rulesNeedingReview" class="tw:mt-2"></div></div>
                             </div>
                         </section>
-                        <section class="tw:min-w-0 tw:overflow-hidden tw:rounded-ui-sm tw:border tw:border-outline tw:bg-surface-container" aria-labelledby="quality-reference-title">
+                        <section class="tw:min-w-0 tw:overflow-hidden tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface-low" aria-labelledby="quality-reference-title">
                             <header class="tw:border-b tw:border-outline-variant tw:px-4 tw:py-3">
                                 <h3 id="quality-reference-title" class="tw:m-0 tw:text-ui-sm tw:font-semibold">{{ __('admin.copy.reference_context') }}</h3>
                                 <p class="tw:m-0 tw:mt-1 tw:text-ui-xs tw:text-on-surface-variant">{{ __('admin.copy.useful_context_that_does_not_require_immediate_action') }}</p>

@@ -10,7 +10,7 @@
 >
     {{-- Mobile Drawer Context Header --}}
     @auth
-        <div class="sidebar-mobile-header tw:lg:hidden tw:flex tw:items-center tw:justify-between tw:px-3 tw:py-2.5 tw:border-b tw:border-outline-variant tw:bg-surface-container-low">
+        <div class="sidebar-mobile-header tw:lg:hidden tw:flex tw:items-center tw:justify-between tw:px-3 tw:py-2.5 tw:border-b tw:border-outline-variant tw:bg-surface-low">
             <div class="tw:flex tw:items-center tw:gap-2 tw:min-w-0">
                 <x-ui.avatar :name="auth()->user()->name" size="xs" class="sidebar-mobile-avatar" />
                 <div class="tw:min-w-0">

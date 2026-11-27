@@ -108,7 +108,7 @@
         --md-secondary-rgb: 71, 85, 105;
         --md-on-secondary: #FFFFFF;
         --md-on-secondary-rgb: 255, 255, 255;
-        --md-secondary-container: #F3F5F8;
+        --md-secondary-container: #ECEFF4;
         --md-on-secondary-container: #1E293B;
         --md-error: #B12B21;
         --md-error-rgb: 177, 43, 33;
@@ -136,20 +136,20 @@
         --md-on-info-container: var(--md-on-primary-container);
 
         --md-surface-rgb: 255, 255, 255;
-        --md-surface-container-low-rgb: 250, 251, 253;
-        --md-surface-container-rgb: 243, 245, 248;
+        --md-surface-container-low-rgb: 246, 248, 251;
+        --md-surface-container-rgb: 236, 239, 244;
         --md-surface: #FFFFFF;
-        --md-surface-container-low: #FAFBFD;
-        --md-surface-container: #F3F5F8;
-        --md-surface-container-high: #E7EBF0;
-        --md-surface-container-highest: #DCE1E8;
-        --md-background: #EEF0F3;
-        --md-background-rgb: 238, 240, 243;
-        --md-outline: #C8D0DA;
+        --md-surface-container-low: #F6F8FB;
+        --md-surface-container: #ECEFF4;
+        --md-surface-container-high: #E1E6EE;
+        --md-surface-container-highest: #DAE0E9;
+        --md-background: #E5E9F0;
+        --md-background-rgb: 229, 233, 240;
+        --md-outline: #B8C4D4;
         /* Control boundaries: >= 3:1 on surface, workspace and surface-container-highest (WCAG 1.4.11). */
         --md-outline-strong: #5F6C7D;
-        --md-outline-variant: #E2E6EC;
-        --md-chart-grid: rgba(200, 208, 218, 0.6);
+        --md-outline-variant: #D8E0EA;
+        --md-chart-grid: rgba(184, 196, 212, 0.55);
         --md-chart-tooltip-shadow: rgba(15, 23, 42, 0.12);
         --md-on-surface: #0F172A;
         --md-on-surface-rgb: 15, 23, 42;
@@ -160,7 +160,7 @@
         --md-scrim-opacity: .4;
 
         /* Elevation, shape, state, typography, spacing, motion, and layering. */
-        --ui-shadow-surface: 0 1px 2px 0 rgba(15, 23, 42, 0.05);
+        --ui-shadow-surface: 0 1px 2px 0 rgba(15, 23, 42, 0.07), 0 1px 3px -1px rgba(15, 23, 42, 0.05);
         --ui-shadow-1: 0 1px 3px 0 rgba(15, 23, 42, 0.08), 0 1px 2px -1px rgba(15, 23, 42, 0.06);
         --ui-shadow-2: 0 4px 6px -1px rgba(15, 23, 42, 0.1), 0 2px 4px -2px rgba(15, 23, 42, 0.06);
         --md-elevation-1: var(--ui-shadow-1);
@@ -242,10 +242,10 @@
         --ui-error-hover: #8F211B;
         --ui-card-bg: var(--md-surface);
         --ui-card-border: var(--md-outline);
-        --ui-table-header-bg: var(--md-surface-container);
-        --ui-table-row-stripe-bg: #F8F9FB;
-        --ui-table-col-name-bg: #F8F9FB;
-        --ui-table-row-hover-bg: #EBF3FD;
+        --ui-table-header-bg: #EDF1F6;
+        --ui-table-row-stripe-bg: #F6F8FB;
+        --ui-table-col-name-bg: #F6F8FB;
+        --ui-table-row-hover-bg: #E6F0FC;
         --ui-best-price-bg: var(--md-success-container);
         --ui-best-price-fg: var(--md-on-success-container);
         --ui-best-price-hover-bg: #D6F0E1;
@@ -254,8 +254,8 @@
         --ui-menu-bg: var(--md-surface);
         --ui-dialog-scrim: rgba(var(--md-scrim-rgb), var(--md-scrim-opacity));
         --ui-sessionbar-trough-bg: var(--md-surface-container-high);
-        --ui-workspace-bg: #EEF0F3;
-        --ui-workspace-bg-rgb: 238, 240, 243;
+        --ui-workspace-bg: #E5E9F0;
+        --ui-workspace-bg-rgb: 229, 233, 240;
         --ui-surface-primary: var(--md-surface);
         --ui-surface-secondary: var(--md-surface-container);
         --ui-surface-subtle: var(--md-surface-container-low);
@@ -301,7 +301,7 @@
         --md-secondary: #AEBBD0;
         --md-secondary-rgb: 174, 187, 208;
         --md-on-secondary: #101725;
-        --md-secondary-container: #2A3546;
+        --md-secondary-container: #293649;
         --md-on-secondary-container: #E0E7F1;
         --md-error: #FFB4AB;
         --md-error-rgb: 255, 180, 171;
@@ -326,19 +326,19 @@
         --md-on-info-rgb: 8, 26, 48;
         --md-info-container: var(--md-primary-container);
         --md-on-info-container: var(--md-on-primary-container);
-        --md-surface: #171E29;
-        --md-surface-rgb: 23, 30, 41;
-        --md-surface-container-low: #1C2431;
-        --md-surface-container-low-rgb: 28, 36, 49;
-        --md-surface-container: #222B3A;
-        --md-surface-container-rgb: 34, 43, 58;
-        --md-surface-container-high: #2A3546;
-        --md-surface-container-highest: #334054;
-        --md-background: #0E131B;
-        --md-background-rgb: 14, 19, 27;
-        --md-outline: #3E4C63;
-        --md-outline-strong: #8999B0;
-        --md-outline-variant: #2E3A4D;
+        --md-surface: #151D28;
+        --md-surface-rgb: 21, 29, 40;
+        --md-surface-container-low: #1B2432;
+        --md-surface-container-low-rgb: 27, 36, 50;
+        --md-surface-container: #212C3C;
+        --md-surface-container-rgb: 33, 44, 60;
+        --md-surface-container-high: #293649;
+        --md-surface-container-highest: #324156;
+        --md-background: #0B1017;
+        --md-background-rgb: 11, 16, 23;
+        --md-outline: #3E4F68;
+        --md-outline-strong: #8B9BB2;
+        --md-outline-variant: #2B384C;
         --md-chart-grid: rgba(76, 91, 112, 0.45);
         --md-chart-tooltip-shadow: rgba(0, 0, 0, 0.45);
         --md-on-surface: #E7EDF6;
@@ -349,8 +349,8 @@
         --md-scrim-rgb: 0, 0, 0;
         --md-scrim-opacity: .62;
         --ui-sessionbar-trough-bg: #090D14;
-        --ui-workspace-bg: #0E131B;
-        --ui-workspace-bg-rgb: 14, 19, 27;
+        --ui-workspace-bg: #0B1017;
+        --ui-workspace-bg-rgb: 11, 16, 23;
         /* Dark elevation is tonal: workspace < card (surface) < low < container (menu) < high (dialog) < highest. */
         --ui-dialog-bg: var(--md-surface-container-high);
         --ui-menu-bg: var(--md-surface-container);
@@ -374,9 +374,10 @@
         --ui-primary-hover: #A6C8F0;
         --ui-success-hover: #7CE0AC;
         --ui-error-hover: #FFC7C0;
-        --ui-table-row-stripe-bg: #1C2431;
-        --ui-table-col-name-bg: #1C2431;
-        --ui-table-row-hover-bg: #1E334D;
+        --ui-table-header-bg: var(--md-surface-container);
+        --ui-table-row-stripe-bg: #1A2330;
+        --ui-table-col-name-bg: #1A2330;
+        --ui-table-row-hover-bg: #1D2F47;
         --ui-best-price-hover-bg: #174F3A;
         --ui-best-price-row-bg: rgba(var(--md-success-rgb), 0.14);
         --ui-calendar-range-bg: var(--md-primary-container);
@@ -839,6 +840,11 @@ code, kbd, pre, samp {
         min-height: var(--ui-density-table-head-min, 2.125rem);
         white-space: nowrap;
     }
+.ui-table > tfoot > tr > :is(td, th) {
+        background-color: var(--md-surface-container-low);
+        border-top: 1px solid var(--md-outline);
+        border-bottom-width: 0;
+    }
 .ui-table > thead > tr > th:has(> .ui-table-sort-btn) {
         padding: 0;
     }
@@ -936,6 +942,15 @@ th[aria-sort="ascending"] .ui-table-sort-icon {
         background: var(--md-surface);
     }
 .ui-data-table .ui-table-responsive {
+        border: 0;
+        border-radius: 0;
+        background: transparent;
+    }
+.ui-card .ui-table-responsive {
+        border-color: var(--md-outline-variant);
+        box-shadow: none;
+    }
+.ui-card__body--none > .ui-table-responsive {
         border: 0;
         border-radius: 0;
         background: transparent;
@@ -3572,7 +3587,7 @@ html[data-sidebar-resizing="true"] .workspace-stage__frames::after {
         border: 1px solid var(--ui-input-border);
         border-radius: var(--md-shape-sm);
         background: var(--md-surface);
-        box-shadow: var(--ui-shadow-1);
+        box-shadow: var(--ui-shadow-surface);
         overflow: hidden;
         flex: 0 0 auto;
     }
@@ -3891,7 +3906,7 @@ canvas[data-adasi-chart-focusable]:focus-visible {
     }
 .adasi-toast {
         --adasi-toast-accent: var(--md-info);
-        background: var(--md-surface);
+        background: var(--ui-dialog-bg);
         border: 1px solid var(--md-outline);
         border-radius: var(--md-shape-md);
         box-shadow: var(--ui-shadow-1);
@@ -6056,11 +6071,11 @@ html.js [data-calendar-native-submit] {
 }
 .ui-smart-panel-node.is-current {
     border-color: var(--md-primary);
-    box-shadow: 0 0 0 1px color-mix(in srgb, var(--md-primary) 22%, transparent);
-    background: color-mix(in srgb, var(--md-primary-container) 36%, var(--md-surface));
+    box-shadow: 0 0 0 1px color-mix(in oklab, var(--md-primary) 22%, transparent);
+    background: color-mix(in oklab, var(--md-primary-container) 36%, var(--md-surface));
 }
 :root[data-theme="dark"] .ui-smart-panel-node.is-current {
-    background: color-mix(in srgb, var(--md-primary-container) 48%, var(--ui-dialog-bg));
+    background: color-mix(in oklab, var(--md-primary-container) 48%, var(--ui-dialog-bg));
 }
 .ui-smart-panel-node.is-interactive:hover {
     border-color: var(--ui-primary-text);
@@ -6127,34 +6142,34 @@ html.js [data-calendar-native-submit] {
     background: var(--ui-dialog-bg);
 }
 .ui-smart-panel-sla-card--info {
-    border-color: color-mix(in srgb, var(--md-primary) 34%, var(--md-outline-variant));
+    border-color: color-mix(in oklab, var(--md-primary) 34%, var(--md-outline-variant));
 }
 .ui-smart-panel-sla-card--success {
-    border-color: color-mix(in srgb, var(--md-success) 34%, var(--md-outline-variant));
+    border-color: color-mix(in oklab, var(--md-success) 34%, var(--md-outline-variant));
 }
 .ui-smart-panel-sla-card--warning {
-    border-color: color-mix(in srgb, var(--md-warning) 40%, var(--md-outline-variant));
-    background: color-mix(in srgb, var(--md-warning-container) 42%, var(--md-surface));
+    border-color: color-mix(in oklab, var(--md-warning) 40%, var(--md-outline-variant));
+    background: color-mix(in oklab, var(--md-warning-container) 42%, var(--md-surface));
 }
 .ui-smart-panel-sla-card--error {
-    border-color: color-mix(in srgb, var(--md-error) 40%, var(--md-outline-variant));
-    background: color-mix(in srgb, var(--md-error-container) 42%, var(--md-surface));
+    border-color: color-mix(in oklab, var(--md-error) 40%, var(--md-outline-variant));
+    background: color-mix(in oklab, var(--md-error-container) 42%, var(--md-surface));
 }
 :root[data-theme="dark"] .ui-smart-panel-sla-card--warning {
-    background: color-mix(in srgb, var(--md-warning-container) 36%, var(--ui-dialog-bg));
+    background: color-mix(in oklab, var(--md-warning-container) 36%, var(--ui-dialog-bg));
 }
 :root[data-theme="dark"] .ui-smart-panel-sla-card--error {
-    background: color-mix(in srgb, var(--md-error-container) 36%, var(--ui-dialog-bg));
+    background: color-mix(in oklab, var(--md-error-container) 36%, var(--ui-dialog-bg));
 }
 .ui-smart-panel-preview-loading {
     position: absolute;
     inset: 0;
     z-index: 2;
     pointer-events: none;
-    background: color-mix(in srgb, var(--md-surface) 80%, transparent);
+    background: color-mix(in oklab, var(--md-surface) 80%, transparent);
 }
 :root[data-theme="dark"] .ui-smart-panel-preview-loading {
-    background: color-mix(in srgb, var(--ui-dialog-bg) 80%, transparent);
+    background: color-mix(in oklab, var(--ui-dialog-bg) 80%, transparent);
 }
 @media (prefers-reduced-motion: reduce) {
     .ui-smart-panel-dialog,
@@ -6214,7 +6229,7 @@ html.js [data-calendar-native-submit] {
 .local-import-modal [data-recovery-refresh] { min-height: 44px; }
 .local-import-modal .modal-body { min-width: 0; }
 .local-import-modal .local-import-recheck.is-primary { background: var(--md-primary); color: var(--md-on-primary); border-color: var(--md-primary); }
-.local-import-modal .ui-table thead th { color: var(--md-on-surface); background: var(--md-surface-container-high); }
+.local-import-modal .ui-table thead th { color: var(--md-on-surface); background: var(--ui-table-header-bg); }
 .local-import-modal [data-recovery-list] li { min-width: 0; }
 .local-import-modal .local-import-preview-metrics { border: 0; border-bottom: 1px solid var(--md-outline-variant); border-radius: 0; padding: 0.5rem 0; }
 @media (max-width: 640px) {
@@ -6274,7 +6289,7 @@ tr[data-mmt-row-url]:hover > :is(td, th) {
     background-color: var(--ui-table-cell-bg);
 }
 tr[data-mmt-row-url].is-mmt-selected > :is(td, th) {
-    --ui-table-cell-bg: color-mix(in srgb, var(--md-primary) 7%, var(--md-surface));
+    --ui-table-cell-bg: color-mix(in oklab, var(--md-primary) 7%, var(--md-surface));
     background-color: var(--ui-table-cell-bg);
 }
 @media (prefers-reduced-motion: reduce) {
@@ -7216,8 +7231,8 @@ div.dt-container div.dt-processing {
     overflow: hidden;
     padding: 0;
     width: min(720px, calc(100vw - 2rem));
-    border: 1px solid var(--md-outline-variant);
-    background: var(--md-surface);
+    border: 1px solid var(--md-outline);
+    background: var(--ui-menu-bg);
 }
 .notification-panel {
     display: grid;
@@ -7446,7 +7461,7 @@ div.dt-container div.dt-processing {
 .ui-searchable-free-input__chevron.is-open svg { transform: rotate(180deg); }
 .ui-searchable-free-input__menu {
     margin-top: .25rem;
-    box-shadow: 0 4px 12px color-mix(in srgb, var(--md-on-surface) 12%, transparent);
+    box-shadow: 0 4px 12px color-mix(in oklab, var(--md-on-surface) 12%, transparent);
 }
 .ui-searchable-free-input__option {
     transition-property: background-color, color;
@@ -8267,6 +8282,7 @@ dialog.ui-native-dialog[open] {
 
 dialog.ui-native-dialog::backdrop {
     background: var(--ui-dialog-scrim);
+    overflow: hidden;
     overscroll-behavior: contain;
 }
 
@@ -8332,6 +8348,7 @@ dialog.ui-native-dialog > .modal-dialog-scrollable .modal-body {
 
 :where(dialog.ui-native-dialog) :where(.modal-header) {
     display: flex;
+    flex-shrink: 0;
     align-items: center;
     justify-content: space-between;
     gap: var(--ui-space-3);
@@ -8346,6 +8363,7 @@ dialog.ui-native-dialog > .modal-dialog-scrollable .modal-body {
 
 :where(dialog.ui-native-dialog) :where(.modal-footer) {
     display: flex;
+    flex-shrink: 0;
     flex-wrap: wrap;
     align-items: center;
     justify-content: flex-end;

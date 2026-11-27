@@ -27,7 +27,7 @@
         <div
             id="smart-panel-dialog"
             tabindex="-1"
-            class="ui-smart-panel-dialog tw:w-screen tw:max-w-xl tw:bg-dialog tw:border-s tw:border-outline-variant tw:shadow-ui-2 tw:flex tw:flex-col tw:h-full"
+            class="ui-smart-panel-dialog tw:w-screen tw:max-w-xl tw:bg-dialog tw:border-s tw:border-outline tw:shadow-ui-2 tw:flex tw:flex-col tw:h-full"
         >
             {{-- Header --}}
             <header class="tw:shrink-0 tw:flex tw:items-start tw:justify-between tw:gap-3 tw:px-4 tw:sm:px-5 tw:py-3.5 tw:border-b tw:border-outline-variant">

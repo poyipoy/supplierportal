@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Http\Middleware\ValidateCsrfToken;
 use App\Listeners\ApplyNotificationPreferences;
+use App\Models\HistoricalBenchmarkLine;
 use App\Models\MaintenanceRecord;
 use App\Models\MaintenanceRecordModule;
 use App\Models\MaterialReferencePrice;
@@ -243,6 +244,8 @@ class AppServiceProvider extends ServiceProvider
         };
         ReferencePriceRule::saved($resetRuleBenchmarks);
         ReferencePriceRule::deleted($resetRuleBenchmarks);
+        HistoricalBenchmarkLine::saved($resetRuleBenchmarks);
+        HistoricalBenchmarkLine::deleted($resetRuleBenchmarks);
 
         // Enforce safety: testing environment (--env=testing or APP_ENV=testing) MUST NEVER touch adasi_portal
         if ($this->app->environment('testing') || (isset($_SERVER['argv']) && in_array('--env=testing', $_SERVER['argv'], true))) {

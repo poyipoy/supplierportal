@@ -240,6 +240,10 @@ export function adasiFileUploadComponent(paramA = '', paramB = false, paramC = {
                 this.clientError = '';
                 this.serverError = '';
             });
+            form.addEventListener('adasi:form-clear-errors', () => {
+                this.clientError = '';
+                this.serverError = '';
+            });
             form.addEventListener('adasi:form-errors', (event) => {
                 const errors = event.detail?.errors || {};
                 const match = Object.entries(errors).find(([key]) => key === base || key.startsWith(`${base}.`));

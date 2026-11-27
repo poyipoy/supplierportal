@@ -264,3 +264,57 @@ test('409 conflict dispatches cancelable adasi:form-conflict and skips default r
         Object.assign(globalThis, prior);
     }
 });
+
+test('modal form mounts generated error summary inside .modal-body with inline list buttons', () => {
+    const previous = { window: globalThis.window, document: globalThis.document, CustomEvent: globalThis.CustomEvent };
+    const createdNodes = [];
+    let prependedToModalBody = null;
+    let prependedToForm = false;
+
+    const modalBody = {
+        classList: { contains: (cls) => cls === 'modal-body' || cls === 'tw:grid' },
+        prepend(node) {
+            node.parentElement = modalBody;
+            prependedToModalBody = node;
+        },
+    };
+
+    const form = {
+        dataset: {},
+        dispatchEvent() {},
+        prepend() { prependedToForm = true; },
+        querySelector: (selector) => (selector === '.modal-body' ? modalBody : null),
+    };
+
+    try {
+        globalThis.window = { requestAnimationFrame: (cb) => cb(), AdasiI18n: { t: (key) => key } };
+        globalThis.document = {
+            createElement: (tag) => {
+                const node = {
+                    tagName: tag.toUpperCase(),
+                    children: [],
+                    attributes: new Map(),
+                    setAttribute(k, v) { this.attributes.set(k, v); },
+                    append(...kids) { this.children.push(...kids); },
+                    replaceChildren(...kids) { this.children = kids; },
+                    focus() {},
+                    scrollIntoView() {},
+                };
+                createdNodes.push(node);
+                return node;
+            },
+        };
+        globalThis.CustomEvent = class { constructor(type, opts) { this.type = type; this.detail = opts?.detail; } };
+
+        handleValidationErrors(form, { sheet_name: ['Worksheet was not found.'] });
+
+        assert.equal(prependedToForm, false);
+        assert.ok(prependedToModalBody);
+        assert.ok(prependedToModalBody.className.includes('tw:mb-0'));
+        const buttonNode = createdNodes.find((n) => n.tagName === 'BUTTON');
+        assert.ok(buttonNode?.className.includes('tw:inline'));
+        assert.ok(buttonNode?.className.includes('tw:wrap-anywhere'));
+    } finally {
+        Object.assign(globalThis, previous);
+    }
+});

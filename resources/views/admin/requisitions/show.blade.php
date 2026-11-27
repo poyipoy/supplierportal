@@ -32,7 +32,7 @@
         </x-ui.alert>
     @endif
 
-    <section class="tw:border-y tw:border-outline tw:bg-surface-container" aria-labelledby="pr-summary-title">
+    <section class="tw:overflow-hidden tw:rounded-ui-md tw:border tw:border-outline tw:bg-surface tw:shadow-ui-surface" aria-labelledby="pr-summary-title">
         <h2 id="pr-summary-title" class="tw:sr-only">{{ __('admin.copy.requisition_summary') }}</h2>
         <dl class="tw:m-0 tw:grid tw:grid-cols-2 tw:xl:grid-cols-4">
             <div class="tw:border-b tw:border-r tw:border-outline-variant tw:p-4 tw:xl:border-b-0">

@@ -432,10 +432,13 @@ test('dark overlays form a tonal elevation ladder and dark chart series stay per
     const lightTones = [
         luminance(value(light, '--md-surface')),
         luminance(value(light, '--ui-table-row-stripe-bg')),
+        luminance(value(light, '--ui-table-header-bg')),
         luminance(value(light, '--md-surface-container')),
         luminance(value(light, '--ui-workspace-bg')),
     ];
     lightTones.slice(1).forEach((tone, index) => assert.ok(tone < lightTones[index], 'light surface step ' + (index + 1) + ' is strictly separated from the tier above'));
+    assert.ok(ratio(value(light, '--md-surface'), value(light, '--ui-workspace-bg')) >= 1.20, 'light card/table surface separates clearly from the workspace canvas');
+    assert.ok(ratio(value(light, '--md-surface'), value(light, '--ui-table-header-bg')) >= 1.12, 'light table header separates clearly from table body rows');
 
     const dialog = value(dark, '--md-surface-container-high');
     assert.ok(ratio(value(dark, '--md-on-surface'), dialog) >= 4.5, 'primary text on dialogs');
@@ -449,6 +452,8 @@ test('dark overlays form a tonal elevation ladder and dark chart series stay per
     assert.match(cardComponent, /tw:bg-surface/, 'x-ui.card consumes --md-surface');
     assert.match(css, /dialog\.ui-native-dialog\s*>\s*\.modal-dialog\s*>\s*\.modal-content[\s\S]*?background-color:\s*var\(--ui-dialog-bg\);/, 'native dialog consumes --ui-dialog-bg');
     assert.match(css, /\[data-ui-dropdown-menu\]\[popover\]\s*\{[^}]*background-color:\s*var\(--ui-menu-bg\);/s, 'dropdown popover consumes --ui-menu-bg');
+    assert.match(css, /\.adasi-toast\s*\{[^}]*background:\s*var\(--ui-dialog-bg\);/s, 'toast consumes --ui-dialog-bg');
+    assert.match(css, /\.notification-dropdown\s*\{[^}]*background:\s*var\(--ui-menu-bg\);/s, 'notification dropdown consumes --ui-menu-bg');
     assert.match(css, /\.ui-tooltip\[popover\]\s*\{[^}]*background:\s*var\(--md-on-surface\);/s, 'tooltip popover uses inverted surface token');
     assert.match(dark, /--md-primary:\s*#8FB9EA;/, 'dark brand primary token is readable across dark surfaces');
     assert.match(dark, /--md-on-primary:\s*#0B192C;/, 'dark brand on-primary token passes AA on #8FB9EA');

@@ -140,7 +140,7 @@
                         </div>
                     </li>
                     <li class="topbar-menu-lang-row">
-                        <div class="dropdown-item-text tw:py-1.5 tw:flex tw:items-center tw:justify-between tw:gap-2 tw:bg-surface-container-low tw:rounded-ui-xs tw:mx-1 tw:my-1">
+                        <div class="dropdown-item-text tw:py-1.5 tw:flex tw:items-center tw:justify-between tw:gap-2 tw:bg-surface-low tw:rounded-ui-xs tw:mx-1 tw:my-1">
                             <span class="tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant">{{ __('customization.language.label') }}</span>
                             <form action="{{ route('locale.switch') }}" method="POST" data-locale-switcher data-managed-submit data-track-unsaved="false" class="lang-toggle-track tw:inline-flex tw:items-center tw:gap-0.5 tw:p-0.5 tw:rounded-ui-sm tw:bg-surface tw:border tw:border-outline tw:m-0" role="group" aria-label="{{ __('customization.language.label') }}">
                                 @csrf

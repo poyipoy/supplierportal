@@ -13,7 +13,7 @@
     </x-ui.page-header>
 
     <div id="exchangeRatesWorkspace" class="tw:grid tw:min-w-0 tw:gap-6" data-server-tabs-container data-exchange-rates-workspace>
-        <nav class="tw:inline-flex tw:w-full tw:sm:w-auto tw:gap-1.5 tw:overflow-x-auto tw:rounded-ui-md tw:border tw:border-outline tw:bg-surface-container tw:p-1.5 tw:shadow-xs" data-server-tabs-nav aria-label="{{ __('annual_rates.tabs_label') }}">
+        <nav class="tw:inline-flex tw:w-full tw:sm:w-auto tw:gap-1.5 tw:overflow-x-auto tw:rounded-ui-md tw:border tw:border-outline tw:bg-surface-container tw:p-1.5 tw:shadow-ui-surface" data-server-tabs-nav aria-label="{{ __('annual_rates.tabs_label') }}">
             @include('admin.exchange-rates._tabs')
         </nav>
         <div class="tw:min-w-0 tw:max-w-full" data-server-tabs-content>

@@ -203,7 +203,7 @@
                 </tr>
             </tbody>
         @endforeach
-        <tfoot class="tw:bg-surface-container-low tw:font-bold">
+        <tfoot class="tw:bg-surface-low tw:font-bold">
             <tr>
                 {{-- Span only the sticky columns (# + Material); a wider sticky span covers scrolled cells. --}}
                 <th scope="row" colspan="2" class="ui-sticky-col tw:text-end" style="--ui-sticky-col-left: 0;">{{ __('procurement.quotation.total_requested') }}</th>

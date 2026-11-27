@@ -103,13 +103,13 @@
             </span>
         </x-ui.card>
         @if($batch->status === \App\Models\PaymentBatch::STATUS_PARTIALLY_PAID)
-            <x-ui.card class="tw:min-w-0 tw:wrap-break-word tw:border-success/30 tw:bg-success/5">
+            <x-ui.card class="tw:min-w-0 tw:wrap-break-word">
                 <span class="tw:text-ui-xs tw:text-success tw:font-semibold tw:block">{{ __('local_invoice.labels.paid') }}</span>
                 <span class="ui-tabular-nums tw:font-bold tw:text-ui-base tw:text-success tw:block tw:mt-1">
                     Rp {{ $regionalFormatter->money($batch->actual_paid_amount, 0) }}
                 </span>
             </x-ui.card>
-            <x-ui.card class="tw:min-w-0 tw:wrap-break-word tw:border-warning/30 tw:bg-warning/5">
+            <x-ui.card class="tw:min-w-0 tw:wrap-break-word">
                 <span class="tw:text-ui-xs tw:text-warning-container-foreground tw:font-semibold tw:block">{{ __('local_invoice.labels.remaining') }}</span>
                 <span class="ui-tabular-nums tw:font-bold tw:text-ui-base tw:text-warning-container-foreground tw:block tw:mt-1">
                     Rp {{ $regionalFormatter->money($batch->remaining_amount, 0) }}
@@ -124,7 +124,7 @@
             $unvoucheredCount = $batch->unvoucheredSupplierItemsCount();
         @endphp
         @if($unvoucheredCount > 0)
-            <div class="tw:rounded-xl tw:border tw:border-warning/30 tw:bg-warning/10 tw:p-4">
+            <div class="tw:rounded-ui-md tw:border tw:border-warning/30 tw:bg-warning/10 tw:p-4">
                 <div class="tw:flex tw:flex-col tw:sm:flex-row tw:items-start tw:sm:items-center tw:gap-3">
                     <div class="tw:flex tw:items-center tw:gap-2 tw:flex-1">
                         <x-ui.icon name="alert-triangle" size="sm" class="tw:text-warning-container-foreground tw:shrink-0" />
@@ -135,7 +135,7 @@
                 </div>
             </div>
         @else
-            <div class="tw:rounded-xl tw:border tw:border-primary/20 tw:bg-primary/5 tw:p-4">
+            <div class="tw:rounded-ui-md tw:border tw:border-primary/20 tw:bg-primary/5 tw:p-4">
                 <div class="tw:flex tw:flex-col tw:sm:flex-row tw:items-start tw:sm:items-center tw:gap-3">
                     <div class="tw:flex tw:items-center tw:gap-2 tw:flex-1">
                         <x-ui.icon name="info" size="sm" class="tw:text-primary tw:shrink-0" />
@@ -218,7 +218,7 @@
                 </div>
 
                 {{-- Terbilang info --}}
-                <div class="tw:bg-surface-container tw:p-2.5 tw:rounded-sm tw:text-ui-xs tw:text-on-surface tw:mb-4 tw:italic">
+                <div class="tw:bg-surface-low tw:border tw:border-outline-variant tw:p-2.5 tw:rounded-ui-sm tw:text-ui-xs tw:text-on-surface tw:mb-4 tw:italic">
                     {{ __('finance.drp_ui.amount_words', ['words' => $voucherService->terbilang($group->net_payment_amount)]) }}
                 </div>
 

@@ -15,8 +15,10 @@ class SurfaceHierarchyTest extends TestCase
         $styles = file_get_contents(resource_path('css/app.css'));
         $authStyles = file_get_contents(resource_path('css/auth.css'));
 
-        $this->assertStringContainsString('--md-background: #EEF0F3;', $styles);
-        $this->assertStringContainsString('--ui-workspace-bg: #EEF0F3;', $styles);
+        $this->assertStringContainsString('--md-background: #E5E9F0;', $styles);
+        $this->assertStringContainsString('--ui-workspace-bg: #E5E9F0;', $styles);
+        $this->assertStringContainsString('--md-background: #0B1017;', $styles);
+        $this->assertStringContainsString('--ui-workspace-bg: #0B1017;', $styles);
         $this->assertStringContainsString('--ui-shadow-surface:', $styles);
         $this->assertStringContainsString('--ui-surface-primary: var(--md-surface);', $styles);
         $this->assertStringContainsString('--ui-surface-secondary: var(--md-surface-container);', $styles);
@@ -26,6 +28,9 @@ class SurfaceHierarchyTest extends TestCase
         $this->assertStringContainsString('--ui-control-border: var(--md-outline-strong);', $styles);
         $this->assertStringContainsString('background-color: var(--ui-workspace-bg);', $styles);
         $this->assertStringContainsString('background: var(--md-background);', $authStyles);
+        $this->assertMatchesRegularExpression('/\.adasi-toast\s*\{[^}]*background:\s*var\(--ui-dialog-bg\);/s', $styles);
+        $this->assertMatchesRegularExpression('/\.adasi-toast\s*\{[^}]*background:\s*var\(--ui-dialog-bg\);/s', $authStyles);
+        $this->assertMatchesRegularExpression('/\.notification-dropdown\s*\{[^}]*border:\s*1px solid var\(--md-outline\);[^}]*background:\s*var\(--ui-menu-bg\);/s', $styles);
     }
 
     public function test_shared_static_components_use_strong_outer_boundaries_and_surface_micro_elevation(): void
@@ -38,6 +43,10 @@ class SurfaceHierarchyTest extends TestCase
             'views/components/ui/toolbar.blade.php',
             'views/components/ui/mmt-workspace.blade.php',
             'views/components/purchasing/comparison-tabs.blade.php',
+            'views/components/ui/section.blade.php',
+            'views/components/ui/dialog.blade.php',
+            'views/components/ui/drawer.blade.php',
+            'views/components/ui/smart-panel.blade.php',
         ];
 
         foreach ($componentPaths as $componentPath) {
@@ -74,6 +83,9 @@ class SurfaceHierarchyTest extends TestCase
             'views/conversations',
             'views/notifications',
             'views/exports',
+            'views/finance',
+            'views/local-invoices',
+            'views/supplier-registrations',
         ];
 
         foreach ($directories as $directory) {
@@ -97,6 +109,16 @@ class SurfaceHierarchyTest extends TestCase
                     'tw:shadow-ui-1',
                     $source,
                     "Default static-container shadow remains in {$relativePath}",
+                );
+                $this->assertDoesNotMatchRegularExpression(
+                    '/\btw:shadow-(?:xs|xl)\b|\btw:rounded-xl\b/',
+                    $source,
+                    "Off-system shadow or oversized radius remains in {$relativePath}",
+                );
+                $this->assertDoesNotMatchRegularExpression(
+                    '/<section\b[^>]*\btw:bg-surface-container\b/',
+                    $source,
+                    "Tonal top-level section remains in {$relativePath}",
                 );
             }
         }

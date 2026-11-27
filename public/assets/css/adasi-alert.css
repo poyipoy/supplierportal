@@ -19,12 +19,12 @@
     --adasi-alert-on-warning-container: var(--md-on-warning-container, #5f3d08);
     --adasi-alert-info: var(--md-info, #1f5fa6);
     --adasi-alert-surface: var(--ui-dialog-bg, var(--md-surface, #ffffff));
-    --adasi-alert-surface-container: var(--md-surface-container, #f3f5f8);
-    --adasi-alert-surface-container-high: var(--md-surface-container-high, #e7ebf0);
+    --adasi-alert-surface-container: var(--md-surface-container, #eceff4);
+    --adasi-alert-surface-container-high: var(--md-surface-container-high, #e1e6ee);
     --adasi-alert-text: var(--md-on-surface, #0f172a);
     --adasi-alert-muted: var(--md-on-surface-variant, #526071);
     --adasi-alert-outline: var(--ui-input-border, var(--md-outline-strong, #5f6c7d));
-    --adasi-alert-border: var(--md-outline-variant, #e2e6ec);
+    --adasi-alert-border: var(--md-outline, #b8c4d4);
     --adasi-alert-focus: var(--md-focus-ring, var(--md-primary, #1f5fa6));
     --adasi-alert-shape-sm: var(--md-shape-sm, 0.5rem);
     --adasi-alert-shape-md: var(--md-shape-md, 0.75rem);

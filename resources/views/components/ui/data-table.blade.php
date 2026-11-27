@@ -53,16 +53,16 @@
     @else
         @isset($cards)
             <div x-data="{ viewMode: 'cards' }" class="ui-data-table__hybrid">
-                <div class="tw:md:hidden tw:flex tw:items-center tw:justify-between tw:px-3.5 tw:py-2 tw:bg-surface-container-low tw:border-b tw:border-outline-variant">
-                    <span class="tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant" x-text="viewMode === 'cards' ? 'Mode Kartu (Mobile)' : 'Mode Tabel'"></span>
-                    <div class="tw:inline-flex tw:items-center tw:rounded-ui-xs tw:bg-surface-container tw:p-0.5 tw:border tw:border-outline" role="group" aria-label="Table display mode">
-                        <button type="button" class="ui-focus-ring tw:flex tw:items-center tw:gap-1 tw:px-2.5 tw:py-1 tw:rounded-ui-xs tw:text-ui-xs tw:font-semibold tw:border-0" :class="viewMode === 'cards' ? 'tw:bg-surface tw:text-primary tw:shadow-xs' : 'tw:bg-transparent tw:text-on-surface-variant'" x-on:click="viewMode = 'cards'">
+                <div class="tw:md:hidden tw:flex tw:items-center tw:justify-between tw:px-3.5 tw:py-2 tw:bg-surface-low tw:border-b tw:border-outline-variant">
+                    <span class="tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant" x-text="viewMode === 'cards' ? @js(__('common.table.mode_cards_mobile')) : @js(__('common.table.mode_table'))"></span>
+                    <div class="tw:inline-flex tw:items-center tw:rounded-ui-xs tw:bg-surface-container tw:p-0.5 tw:border tw:border-outline" role="group" aria-label="{{ __('common.table.display_mode') }}">
+                        <button type="button" class="ui-focus-ring tw:flex tw:items-center tw:gap-1 tw:px-2.5 tw:py-1 tw:rounded-ui-xs tw:text-ui-xs tw:font-semibold tw:border-0" :class="viewMode === 'cards' ? 'tw:bg-surface tw:text-primary tw:shadow-ui-surface' : 'tw:bg-transparent tw:text-on-surface-variant'" x-on:click="viewMode = 'cards'">
                             <x-ui.icon name="layout-grid" size="xs" />
-                            <span>Cards</span>
+                            <span>{{ __('common.table.view_cards') }}</span>
                         </button>
-                        <button type="button" class="ui-focus-ring tw:flex tw:items-center tw:gap-1 tw:px-2.5 tw:py-1 tw:rounded-ui-xs tw:text-ui-xs tw:font-semibold tw:border-0" :class="viewMode === 'table' ? 'tw:bg-surface tw:text-primary tw:shadow-xs' : 'tw:bg-transparent tw:text-on-surface-variant'" x-on:click="viewMode = 'table'">
+                        <button type="button" class="ui-focus-ring tw:flex tw:items-center tw:gap-1 tw:px-2.5 tw:py-1 tw:rounded-ui-xs tw:text-ui-xs tw:font-semibold tw:border-0" :class="viewMode === 'table' ? 'tw:bg-surface tw:text-primary tw:shadow-ui-surface' : 'tw:bg-transparent tw:text-on-surface-variant'" x-on:click="viewMode = 'table'">
                             <x-ui.icon name="table" size="xs" />
-                            <span>Table</span>
+                            <span>{{ __('common.table.view_table') }}</span>
                         </button>
                     </div>
                 </div>

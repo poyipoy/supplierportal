@@ -181,7 +181,7 @@
             </x-ui.card>
 
             {{-- 2 Metrics Summary --}}
-            <section class="tw:grid tw:overflow-hidden tw:rounded-ui-md tw:border tw:border-outline tw:bg-surface-container tw:sm:grid-cols-2 tw:sm:divide-x tw:sm:divide-outline-variant tw:mb-4" id="historicalSummary" aria-label="{{ __('supplier.copy.historical_price_summary') }}">
+            <section class="tw:grid tw:overflow-hidden tw:rounded-ui-md tw:border tw:border-outline tw:bg-surface tw:shadow-ui-surface tw:sm:grid-cols-2 tw:sm:divide-x tw:sm:divide-outline-variant tw:mb-4" id="historicalSummary" aria-label="{{ __('supplier.copy.historical_price_summary') }}">
                 <div class="tw:p-3.5">
                     <div class="tw:text-ui-xs tw:font-semibold tw:uppercase tw:tracking-wider tw:text-on-surface-variant">{{ __('supplier.copy.average_change_per_period') }}</div>
                     <div class="tw:text-ui-2xl tw:font-bold ui-tabular-nums tw:mt-1 {{ ($summary['average_change_pct'] ?? null) > 0 ? 'tw:text-error' : ((($summary['average_change_pct'] ?? null) < 0) ? 'tw:text-success' : 'tw:text-on-surface-variant') }}" id="averageChangeValue">

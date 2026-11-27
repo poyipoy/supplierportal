@@ -195,8 +195,8 @@
             @click="goToStep(1)"
             class="tw:w-full tw:flex tw:items-center tw:justify-between tw:gap-3 tw:p-3.5 tw:rounded-ui-sm tw:text-start tw:border tw:transition-all tw:duration-200 tw:active:scale-[0.99] ui-focus-ring"
             :class="step === 1
-                ? 'tw:bg-surface tw:border-primary/30 tw:shadow-xs tw:ring-1 tw:ring-primary/10'
-                : 'tw:border-transparent tw:hover:bg-surface/80 tw:hover:border-outline-variant/60 tw:hover:shadow-xs'"
+                ? 'tw:bg-surface tw:border-primary/30 tw:shadow-ui-surface tw:ring-1 tw:ring-primary/10'
+                : 'tw:border-transparent tw:hover:bg-surface/80 tw:hover:border-outline-variant/60 tw:hover:shadow-ui-surface'"
             role="tab"
             :aria-selected="step === 1"
             aria-label="{{ __('local_invoice.form.documents_step') }}"
@@ -205,8 +205,8 @@
                 <div
                     class="tw:w-8 tw:h-8 tw:rounded-full tw:flex tw:items-center tw:justify-center tw:shrink-0 tw:text-ui-xs tw:font-bold tw:transition-all tw:duration-200"
                     :class="{
-                        'tw:bg-primary tw:text-on-primary tw:shadow-ui-1 tw:ring-4 tw:ring-primary/15': step === 1,
-                        'tw:bg-success tw:text-on-success tw:shadow-ui-1': isStep1Complete && step !== 1,
+                        'tw:bg-primary tw:text-on-primary tw:shadow-ui-surface tw:ring-4 tw:ring-primary/15': step === 1,
+                        'tw:bg-success tw:text-on-success tw:shadow-ui-surface': isStep1Complete && step !== 1,
                         'tw:bg-surface-high tw:text-on-surface-variant': !isStep1Complete && step !== 1
                     }"
                 >
@@ -259,8 +259,8 @@
             @click="goToStep(2)"
             class="tw:w-full tw:flex tw:items-center tw:justify-between tw:gap-3 tw:p-3.5 tw:rounded-ui-sm tw:text-start tw:border tw:transition-all tw:duration-200 tw:active:scale-[0.99] ui-focus-ring"
             :class="{
-                'tw:bg-surface tw:border-primary/30 tw:shadow-ui-1 tw:ring-1 tw:ring-primary/10': step === 2,
-                'tw:border-transparent tw:hover:bg-surface/80 tw:hover:border-outline-variant/60 tw:hover:shadow-ui-1': step !== 2 && isStep1Complete,
+                'tw:bg-surface tw:border-primary/30 tw:shadow-ui-surface tw:ring-1 tw:ring-primary/10': step === 2,
+                'tw:border-transparent tw:hover:bg-surface/80 tw:hover:border-outline-variant/60 tw:hover:shadow-ui-surface': step !== 2 && isStep1Complete,
                 'tw:border-transparent tw:opacity-80 tw:hover:bg-surface/50 tw:hover:border-outline-variant/40': step !== 2 && !isStep1Complete
             }"
             role="tab"
@@ -271,7 +271,7 @@
                 <div
                     class="tw:w-8 tw:h-8 tw:rounded-full tw:flex tw:items-center tw:justify-center tw:shrink-0 tw:text-ui-xs tw:font-bold tw:transition-colors tw:duration-200"
                     :class="{
-                        'tw:bg-primary tw:text-on-primary tw:shadow-ui-1 tw:ring-4 tw:ring-primary/15': step === 2,
+                        'tw:bg-primary tw:text-on-primary tw:shadow-ui-surface tw:ring-4 tw:ring-primary/15': step === 2,
                         'tw:bg-primary/15 tw:text-primary tw:border tw:border-primary/30': isStep1Complete && step !== 2,
                         'tw:bg-surface-high tw:text-on-surface-variant': !isStep1Complete && step !== 2
                     }"

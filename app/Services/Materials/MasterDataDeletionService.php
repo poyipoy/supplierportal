@@ -69,7 +69,8 @@ class MasterDataDeletionService
         return [
             'pr_items' => DB::table('pr_items')->where('material_master_id', $entity->getKey())->count(),
             'aliases' => DB::table('material_aliases')->where('material_master_id', $entity->getKey())->count(),
-            'reference_prices' => DB::table('material_reference_prices')->where('material_master_id', $entity->getKey())->count(),
+            'reference_prices' => DB::table('material_reference_prices')->where('material_master_id', $entity->getKey())->count()
+                + DB::table('historical_benchmark_lines')->where('material_master_id', $entity->getKey())->count(),
         ];
     }
 

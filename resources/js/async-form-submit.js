@@ -96,7 +96,8 @@ function errorSummary(form) {
     if (!summary) {
         summary = document.createElement('div');
         summary.setAttribute('data-async-error-summary', '');
-        form.prepend(summary);
+        const modalBody = typeof form.querySelector === 'function' ? form.querySelector('.modal-body') : null;
+        (modalBody || form).prepend?.(summary);
     }
 
     return summary;
@@ -122,6 +123,9 @@ export function clearValidationErrors(form) {
         summary.replaceChildren();
     }
     clearFormAnnouncement(form.ownerDocument || globalThis.document);
+    if (typeof CustomEvent === 'function') {
+        form.dispatchEvent?.(new CustomEvent('adasi:form-clear-errors'));
+    }
 }
 
 let generatedErrorSeq = 0;
@@ -160,7 +164,12 @@ function renderInlineError(field, message) {
 
 function renderSummary(form, items) {
     const summary = errorSummary(form);
-    summary.className = 'tw:mb-5 tw:rounded-ui-sm tw:border tw:border-error/40 tw:bg-error-container tw:p-3.5 tw:text-on-error-container';
+    const inGridOrModalBody = Boolean(
+        summary.parentElement?.classList?.contains?.('tw:grid')
+        || summary.parentElement?.classList?.contains?.('modal-body')
+    );
+    const spacingClass = inGridOrModalBody ? 'tw:mb-0' : 'tw:mb-5';
+    summary.className = `${spacingClass} tw:rounded-ui-sm tw:border tw:border-error/40 tw:bg-error-container tw:p-3.5 tw:text-on-error-container`;
     summary.setAttribute('role', 'alert');
     summary.setAttribute('tabindex', '-1');
     summary.setAttribute('data-error-summary', '');
@@ -174,12 +183,12 @@ function renderSummary(form, items) {
     kept.textContent = t('js.async_form.files_kept');
 
     const list = document.createElement('ul');
-    list.className = 'tw:m-0 tw:mt-2 tw:ps-5 tw:text-ui-xs tw:space-y-1';
+    list.className = 'tw:m-0 tw:mt-2 tw:list-disc tw:ps-5 tw:text-ui-xs tw:space-y-1';
     items.forEach(({ key, message }) => {
         const li = document.createElement('li');
         const link = document.createElement('button');
         link.type = 'button';
-        link.className = 'ui-focus-ring tw:border-0 tw:bg-transparent tw:p-0 tw:text-start tw:font-semibold tw:text-on-error-container tw:underline tw:underline-offset-2';
+        link.className = 'ui-focus-ring tw:inline tw:border-0 tw:bg-transparent tw:p-0 tw:text-start tw:font-semibold tw:text-on-error-container tw:underline tw:underline-offset-2 tw:wrap-anywhere';
         link.setAttribute('data-error-field', key);
         link.textContent = message;
         li.append(link);
@@ -409,13 +418,52 @@ function onSummaryClick(event) {
     focusField(field);
 }
 
+function onFilesChanged(event) {
+    const target = event.target;
+    const form = target?.closest?.('form[data-async-submit]');
+    if (!(form instanceof HTMLFormElement) || Number(event.detail?.count ?? 0) <= 0) return;
+
+    const inputId = event.detail?.id;
+    const input = inputId ? form.querySelector(`#${CSS.escape(inputId)}`) : null;
+    const baseName = String(input?.name || '').replace(/\[\]$/, '');
+    if (!baseName) return;
+
+    const summary = form.querySelector('[data-async-error-summary]');
+    if (!summary || summary.hidden) return;
+
+    summary.querySelectorAll('[data-error-field]').forEach((btn) => {
+        const key = btn.getAttribute('data-error-field') || '';
+        if (key === baseName || key.startsWith(`${baseName}.`)) {
+            btn.closest('li')?.remove();
+        }
+    });
+
+    if (!summary.querySelector('li')) {
+        summary.hidden = true;
+        summary.replaceChildren();
+        clearFormAnnouncement(form.ownerDocument || globalThis.document);
+    }
+}
+
+function onDialogClose(event) {
+    const dialog = event.target;
+    if (!(dialog instanceof HTMLElement) || dialog.tagName !== 'DIALOG') return;
+
+    dialog.querySelectorAll('form[data-async-submit]').forEach((form) => {
+        clearValidationErrors(form);
+    });
+}
+
 if (typeof document !== 'undefined') {
     // Bubble phase on document: runs after form-level handlers (validation, ceiling checks).
     document.addEventListener('submit', onSubmit);
     document.addEventListener('click', onSummaryClick);
+    document.addEventListener('adasi:files-changed', onFilesChanged);
+    document.addEventListener('close', onDialogClose, true);
 
     window.AdasiAsyncForm = Object.freeze({
         submit: submitAsync,
+        clearErrors: clearValidationErrors,
         findFieldForErrorKey,
         errorKeyToFieldNames,
     });

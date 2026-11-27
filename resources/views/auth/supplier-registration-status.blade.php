@@ -130,7 +130,7 @@
 @endif
 
 {{-- SUBMITTED INFORMATION SUMMARY --}}
-<div class="tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface-container-lowest tw:p-4 tw:mb-4">
+<div class="tw:rounded-ui-md tw:border tw:border-outline tw:bg-surface tw:shadow-ui-surface tw:p-4 tw:mb-4">
     <h4 class="tw:m-0 tw:text-ui-sm tw:font-bold tw:text-primary tw:uppercase tw:tracking-wider tw:mb-3">{{ __('registration.submitted_details') }}</h4>
 
     <dl class="tw:grid tw:grid-cols-1 tw:md:grid-cols-2 tw:gap-x-4 tw:gap-y-2.5 tw:text-ui-sm tw:m-0">
@@ -169,7 +169,7 @@
 </div>
 
 {{-- VERIFICATION DOCUMENTS --}}
-<div class="tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface-container-lowest tw:p-4 tw:mb-4">
+<div class="tw:rounded-ui-md tw:border tw:border-outline tw:bg-surface tw:shadow-ui-surface tw:p-4 tw:mb-4">
     <h4 class="tw:m-0 tw:text-ui-sm tw:font-bold tw:text-primary tw:uppercase tw:tracking-wider tw:mb-3">{{ __('registration.documents') }}</h4>
 
     <div class="tw:space-y-2">
@@ -199,7 +199,7 @@
 
 {{-- ATTEMPT HISTORY --}}
 @if ($attempts->count() > 1)
-    <div class="tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface-container-lowest tw:p-4">
+    <div class="tw:rounded-ui-md tw:border tw:border-outline tw:bg-surface tw:shadow-ui-surface tw:p-4">
         <h4 class="tw:m-0 tw:text-ui-sm tw:font-bold tw:text-on-surface-variant tw:uppercase tw:tracking-wider tw:mb-3">{{ __('registration.history') }}</h4>
         <div class="tw:space-y-2">
             @foreach ($attempts as $item)

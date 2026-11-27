@@ -41,7 +41,7 @@
         type="button"
         size="md"
         id="btnOpenMobileMaterialModal"
-        class="tw:w-full tw:justify-center tw:min-h-12 tw:gap-2 tw:text-ui-sm tw:font-bold tw:shadow-xs"
+        class="tw:w-full tw:justify-center tw:min-h-12 tw:gap-2 tw:text-ui-sm tw:font-bold"
     >
         <x-ui.icon name="plus-circle" size="md" />
         <span>{{ __('purchasing.copy.add_material') }}</span>

@@ -90,7 +90,7 @@
         aria-modal="true"
         @if($title && !isset($header)) aria-labelledby="{{ $titleId }}" @elseif($title) aria-label="{{ $title }}" @endif
         tabindex="-1"
-        class="tw:absolute tw:inset-y-0 tw:flex tw:w-[min(100vw,26rem)] tw:flex-col tw:bg-dialog tw:border-outline-variant tw:shadow-ui-2 {{ $resolvedSide === 'left' ? 'tw:start-0 tw:border-e' : 'tw:end-0 tw:border-s' }}"
+        class="tw:absolute tw:inset-y-0 tw:flex tw:w-[min(100vw,26rem)] tw:flex-col tw:bg-dialog tw:border-outline tw:shadow-ui-2 {{ $resolvedSide === 'left' ? 'tw:start-0 tw:border-e' : 'tw:end-0 tw:border-s' }}"
         x-transition:enter="tw:transition tw:duration-standard tw:ease-standard"
         x-transition:enter-start="{{ $resolvedSide === 'left' ? 'tw:-translate-x-full' : 'tw:translate-x-full' }}"
         x-transition:enter-end="tw:translate-x-0"

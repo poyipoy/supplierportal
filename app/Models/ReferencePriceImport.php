@@ -23,7 +23,12 @@ class ReferencePriceImport extends Model
 
     public const MODE_MANUAL = 'manual';
 
+    public const TYPE_RULES = 'rules';
+
+    public const TYPE_HISTORICAL_BENCHMARK = 'historical_benchmark';
+
     protected $fillable = [
+        'import_type',
         'uploaded_by',
         'source_file_name',
         'private_storage_path',

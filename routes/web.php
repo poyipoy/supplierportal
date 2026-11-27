@@ -532,6 +532,11 @@ Route::prefix(PortalPath::prefix())->group(function () {
         Route::post('/reference-prices/rules/category', [MaterialReferencePriceController::class, 'saveCategory'])->name('reference-prices.rules.category.save');
         Route::patch('/reference-prices/rules/category/{rule}/toggle', [MaterialReferencePriceController::class, 'toggleCategoryStatus'])->name('reference-prices.rules.category.toggle');
         Route::delete('/reference-prices/rules/category/{rule}', [MaterialReferencePriceController::class, 'destroyCategory'])->middleware('throttle:30,1')->name('reference-prices.rules.category.destroy');
+        Route::get('/reference-prices/benchmark/template', [MaterialReferencePriceController::class, 'downloadBenchmarkTemplate'])->middleware('throttle:30,1')->name('reference-prices.benchmark.template');
+        Route::post('/reference-prices/benchmark/import-preview', [MaterialReferencePriceController::class, 'benchmarkImportPreview'])->middleware('throttle:20,1')->name('reference-prices.benchmark.import-preview');
+        Route::post('/reference-prices/benchmark/import-confirm', [MaterialReferencePriceController::class, 'benchmarkImportConfirm'])->middleware('throttle:20,1')->name('reference-prices.benchmark.import-confirm');
+        Route::post('/reference-prices/benchmark/import-cancel', [MaterialReferencePriceController::class, 'benchmarkImportCancel'])->middleware('throttle:30,1')->name('reference-prices.benchmark.import-cancel');
+        Route::delete('/reference-prices/benchmark/lines/{benchmarkLine}', [MaterialReferencePriceController::class, 'destroyBenchmarkLine'])->middleware('throttle:30,1')->name('reference-prices.benchmark.lines.destroy');
         Route::post('/reference-prices', [MaterialReferencePriceController::class, 'store'])->name('reference-prices.store');
         Route::post('/reference-prices/{referencePrice}/supersede', [MaterialReferencePriceController::class, 'supersede'])->name('reference-prices.supersede');
         Route::post('/reference-prices/{referencePrice}/void', [MaterialReferencePriceController::class, 'void'])->name('reference-prices.void');
@@ -595,6 +600,11 @@ Route::prefix(PortalPath::prefix())->group(function () {
         Route::post('/reference-prices/rules/category', [MaterialReferencePriceController::class, 'saveCategory'])->name('reference-prices.rules.category.save');
         Route::patch('/reference-prices/rules/category/{rule}/toggle', [MaterialReferencePriceController::class, 'toggleCategoryStatus'])->name('reference-prices.rules.category.toggle');
         Route::delete('/reference-prices/rules/category/{rule}', [MaterialReferencePriceController::class, 'destroyCategory'])->middleware('throttle:30,1')->name('reference-prices.rules.category.destroy');
+        Route::get('/reference-prices/benchmark/template', [MaterialReferencePriceController::class, 'downloadBenchmarkTemplate'])->middleware('throttle:30,1')->name('reference-prices.benchmark.template');
+        Route::post('/reference-prices/benchmark/import-preview', [MaterialReferencePriceController::class, 'benchmarkImportPreview'])->middleware('throttle:20,1')->name('reference-prices.benchmark.import-preview');
+        Route::post('/reference-prices/benchmark/import-confirm', [MaterialReferencePriceController::class, 'benchmarkImportConfirm'])->middleware('throttle:20,1')->name('reference-prices.benchmark.import-confirm');
+        Route::post('/reference-prices/benchmark/import-cancel', [MaterialReferencePriceController::class, 'benchmarkImportCancel'])->middleware('throttle:30,1')->name('reference-prices.benchmark.import-cancel');
+        Route::delete('/reference-prices/benchmark/lines/{benchmarkLine}', [MaterialReferencePriceController::class, 'destroyBenchmarkLine'])->middleware('throttle:30,1')->name('reference-prices.benchmark.lines.destroy');
         Route::post('/reference-prices', [MaterialReferencePriceController::class, 'store'])->name('reference-prices.store');
         Route::post('/reference-prices/{referencePrice}/supersede', [MaterialReferencePriceController::class, 'supersede'])->name('reference-prices.supersede');
         Route::post('/reference-prices/{referencePrice}/void', [MaterialReferencePriceController::class, 'void'])->name('reference-prices.void');

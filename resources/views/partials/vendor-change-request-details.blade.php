@@ -42,7 +42,7 @@
 @endphp
 
 <div class="tw:mt-3 tw:bg-surface tw:border tw:border-outline-variant tw:rounded-ui-sm tw:overflow-hidden">
-    <div class="tw:px-3 tw:py-2 tw:bg-surface-container-low tw:border-b tw:border-outline-variant tw:flex tw:items-center tw:justify-between">
+    <div class="tw:px-3 tw:py-2 tw:bg-surface-low tw:border-b tw:border-outline-variant tw:flex tw:items-center tw:justify-between">
         <span class="tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:flex tw:items-center tw:gap-1.5">
             <x-ui.icon name="file-text" size="sm" class="tw:text-primary" />
             <span>{{ __('local_procurement.change_details.heading') }}</span>

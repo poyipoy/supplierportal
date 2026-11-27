@@ -8,7 +8,7 @@
     @if($title || $description || isset($actions))
         <header @class([
             'tw:flex tw:flex-col tw:gap-1 tw:shell:flex-row tw:shell:items-end tw:shell:justify-between',
-            'tw:pb-2 tw:border-b tw:border-outline-variant' => $divider,
+            'tw:pb-2 tw:border-b tw:border-outline' => $divider,
         ])>
             <div class="tw:min-w-0">
                 @if($title)<h2 class="ui-section__title tw:m-0 tw:font-bold tw:uppercase tw:tracking-wider tw:text-on-surface">{{ $title }}</h2>@endif

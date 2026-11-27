@@ -97,7 +97,7 @@
     <div data-async-error-summary hidden></div>
 
     {{-- SECTION 1: COMPANY INFORMATION --}}
-    <div class="tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface-container-lowest tw:p-4">
+    <div class="tw:rounded-ui-md tw:border tw:border-outline tw:bg-surface tw:shadow-ui-surface tw:p-4">
         <div class="form-section-title">
             <x-ui.icon name="building-2" size="sm" />
             <span>{{ __('registration.steps.company_edit') }}</span>
@@ -198,7 +198,7 @@
     </div>
 
     {{-- SECTION 2: QUALITY & COMPLIANCE QUESTIONNAIRE --}}
-    <div class="tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface-container-lowest tw:p-4">
+    <div class="tw:rounded-ui-md tw:border tw:border-outline tw:bg-surface tw:shadow-ui-surface tw:p-4">
         <div class="form-section-title">
             <x-ui.icon name="clipboard-check" size="sm" />
             <span>{{ __('registration.steps.questionnaire_edit') }}</span>
@@ -235,7 +235,7 @@
     </div>
 
     {{-- SECTION 3: TAX & LEGAL IDENTIFICATION --}}
-    <div class="tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface-container-lowest tw:p-4">
+    <div class="tw:rounded-ui-md tw:border tw:border-outline tw:bg-surface tw:shadow-ui-surface tw:p-4">
         <div class="form-section-title">
             <x-ui.icon name="file-badge" size="sm" />
             <span>{{ __('registration.steps.tax_edit') }}</span>
@@ -279,7 +279,7 @@
     </div>
 
     {{-- SECTION 3: PIC --}}
-    <div class="tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface-container-lowest tw:p-4">
+    <div class="tw:rounded-ui-md tw:border tw:border-outline tw:bg-surface tw:shadow-ui-surface tw:p-4">
         <div class="form-section-title">
             <x-ui.icon name="user" size="sm" />
             <span>{{ __('registration.steps.pic_edit') }}</span>
@@ -348,7 +348,7 @@
             'searchKeywords' => 'lainnya other asing luar negeri manual',
         ];
     @endphp
-    <div class="tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface-container-lowest tw:p-4">
+    <div class="tw:rounded-ui-md tw:border tw:border-outline tw:bg-surface tw:shadow-ui-surface tw:p-4">
         <div class="form-section-title">
             <x-ui.icon name="credit-card" size="sm" />
             <span>{{ __('registration.steps.bank_edit') }}</span>
@@ -449,7 +449,7 @@
     </div>
 
     {{-- SECTION 5: DOCUMENTS REPLACEMENT / UPLOAD --}}
-    <div class="tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface-container-lowest tw:p-4">
+    <div class="tw:rounded-ui-md tw:border tw:border-outline tw:bg-surface tw:shadow-ui-surface tw:p-4">
         <div class="form-section-title">
             <x-ui.icon name="file-text" size="sm" />
             <span>{{ __('registration.steps.doc_edit') }}</span>
@@ -536,7 +536,7 @@
     </div>
 
     {{-- SECTION 6: REVISION NOTES --}}
-    <div class="tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface-container-lowest tw:p-4">
+    <div class="tw:rounded-ui-md tw:border tw:border-outline tw:bg-surface tw:shadow-ui-surface tw:p-4">
         <div class="form-section-title">
             <x-ui.icon name="message-square" size="sm" />
             <span>{{ __('registration.steps.notes_edit') }}</span>

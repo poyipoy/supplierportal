@@ -22,7 +22,7 @@
 
     .po-tracking-step.is-active {
         border-color: var(--md-primary);
-        background: var(--md-primary-container);
+        background: var(--md-surface);
     }
 
     .po-sticky-nav-bar {
@@ -276,7 +276,7 @@
                 <strong class="ui-tabular-nums tw:text-on-surface">{{ $po->acknowledged_at ? $regionalFormatter->timestamp($po->acknowledged_at, 'datetime') : '-' }}</strong>
             </div>
             @if($po->acknowledgement_notes)
-                <div class="tw:min-w-0 tw:md:col-span-3 tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface-container tw:p-3">
+                <div class="tw:min-w-0 tw:md:col-span-3 tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface-low tw:p-3">
                     <span class="tw:text-on-surface-variant tw:font-semibold tw:block">{{ __('purchasing.po_ack.fields.notes') }}</span>
                     <p class="tw:mb-0 tw:mt-1 tw:text-on-surface">{{ $po->acknowledgement_notes }}</p>
                 </div>
@@ -331,12 +331,12 @@
             {{-- Order Info Card --}}
             <x-ui.card :title="__('purchasing.copy.order_information')" id="sec-info" class="tw:scroll-mt-24">
                 <div class="tw:grid tw:gap-px tw:overflow-hidden tw:border tw:border-outline-variant tw:bg-outline-variant tw:sm:grid-cols-2 tw:lg:grid-cols-3">
-                    <div class="tw:bg-surface-container tw:p-2.5">
+                    <div class="tw:bg-surface-low tw:p-2.5">
                         <div class="tw:text-on-surface-variant tw:text-ui-xs tw:font-semibold tw:uppercase">{{ __('purchasing.copy.supplier') }}</div>
                         <div class="tw:font-bold tw:text-on-surface tw:text-ui-sm tw:mt-0.5">{{ $po->supplier->name }}</div>
                         @include('quotations._supplier_pic', ['profile' => $po->supplier->supplier])
                     </div>
-                    <div class="tw:bg-surface-container tw:p-2.5">
+                    <div class="tw:bg-surface-low tw:p-2.5">
                         <div class="tw:text-on-surface-variant tw:text-ui-xs tw:font-semibold tw:uppercase">{{ __('purchasing.copy.reference_no_pr') }}</div>
                         <div class="tw:font-bold tw:text-primary tw:text-ui-sm tw:mt-0.5">
                             @php $prs = $po->purchaseRequisitions(); @endphp
@@ -354,20 +354,20 @@
                             @endif
                         </div>
                     </div>
-                    <div class="tw:bg-surface-container tw:p-2.5">
+                    <div class="tw:bg-surface-low tw:p-2.5">
                         <div class="tw:text-on-surface-variant tw:text-ui-xs tw:font-semibold tw:uppercase">{{ __('purchasing.copy.procurement_period') }}</div>
                         <div class="tw:font-semibold tw:text-on-surface tw:text-ui-sm tw:mt-0.5">
                             @php $periods = $prs->map(fn($pr) => $pr->period?->display_label ?? '-')->unique(); @endphp
                             {{ $periods->implode(', ') }}
                         </div>
                     </div>
-                    <div class="tw:bg-surface-container tw:p-2.5">
+                    <div class="tw:bg-surface-low tw:p-2.5">
                         <div class="tw:text-on-surface-variant tw:text-ui-xs tw:font-semibold tw:uppercase">{{ __('purchasing.copy.locked_currency') }}</div>
                         <div class="tw:font-bold tw:text-on-surface tw:text-ui-sm tw:mt-0.5">
                             <span class="ui-status-chip ui-status-chip--neutral">{{ $po->currency }}</span>
                         </div>
                     </div>
-                    <div class="tw:min-w-0 tw:bg-surface-container tw:p-2.5 tw:sm:col-span-2">
+                    <div class="tw:min-w-0 tw:bg-surface-low tw:p-2.5 tw:sm:col-span-2">
                         <div class="tw:text-on-surface-variant tw:text-ui-xs tw:font-semibold tw:uppercase">{{ __('purchasing.copy.po_notes_remark') }}</div>
                         <div class="tw:text-on-surface tw:text-ui-sm tw:mt-0.5">{{ $po->notes ?: '-' }}</div>
                     </div>
@@ -485,7 +485,7 @@
                             @endforeach
                         </tbody>
                     @endforeach
-                    <tfoot class="tw:bg-surface-container-low tw:font-bold tw:border-t tw:border-outline-variant">
+                    <tfoot class="tw:bg-surface-low tw:font-bold tw:border-t tw:border-outline">
                         <tr>
                             <td colspan="7" class="tw:text-end tw:text-on-surface">{{ __('purchasing.copy.grand_total') }}</td>
                             <td class="tw:text-end tw:text-on-surface ui-tabular-nums">{{ $regionalFormatter->groupedDecimal($grandTotalAmount) }} {{ $po->currency }}</td>
@@ -760,7 +760,7 @@
                             $evidenceGapCount = (int) ($progressItem['evidence_gap_count'] ?? 0);
                             $isWaitingForShipment = $usesShipmentWorkflow && $activeShipmentCount === 0;
                         @endphp
-                        <div class="po-doc-card tw:h-full tw:rounded-xl tw:border tw:border-outline-variant/80 tw:bg-surface tw:p-3.5 tw:shadow-2xs tw:flex tw:flex-col tw:justify-between tw:transition-colors tw:hover:border-primary/40 tw:hover:shadow-xs tw:min-w-0" id="doc-card-{{ $docKey }}">
+                        <div class="po-doc-card tw:h-full tw:rounded-ui-md tw:border tw:border-outline-variant tw:bg-surface-low tw:p-3.5 tw:flex tw:flex-col tw:justify-between tw:transition-colors tw:hover:border-primary/40 tw:min-w-0" id="doc-card-{{ $docKey }}">
                             {{-- Zone 1: Document Header (Centered & Uniform) --}}
                             <div class="tw:flex tw:flex-col tw:items-center tw:text-center">
                                 <div class="tw:w-10 tw:h-10 tw:rounded-full tw:flex tw:items-center tw:justify-center tw:mb-2 {{ $iconClasses }}">

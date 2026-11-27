@@ -90,7 +90,7 @@
                             <button
                                 type="button"
                                 @click="setMode('weekly')"
-                                :class="mode === 'weekly' ? 'tw:bg-surface tw:text-primary tw:shadow-ui-1 tw:font-semibold' : 'tw:bg-transparent tw:text-on-surface-variant tw:hover:text-on-surface tw:font-semibold'"
+                                :class="mode === 'weekly' ? 'tw:bg-surface tw:text-primary tw:shadow-ui-surface tw:font-semibold' : 'tw:bg-transparent tw:text-on-surface-variant tw:hover:text-on-surface tw:font-semibold'"
                                 class="ui-focus-ring tw:border-0 tw:h-full tw:w-20 tw:flex tw:items-center tw:justify-center tw:text-ui-xs tw:rounded-ui-sm tw:transition-colors tw:cursor-pointer"
                                 :aria-pressed="mode === 'weekly'"
                             >
@@ -99,7 +99,7 @@
                             <button
                                 type="button"
                                 @click="setMode('monthly')"
-                                :class="mode === 'monthly' ? 'tw:bg-surface tw:text-primary tw:shadow-ui-1 tw:font-semibold' : 'tw:bg-transparent tw:text-on-surface-variant tw:hover:text-on-surface tw:font-semibold'"
+                                :class="mode === 'monthly' ? 'tw:bg-surface tw:text-primary tw:shadow-ui-surface tw:font-semibold' : 'tw:bg-transparent tw:text-on-surface-variant tw:hover:text-on-surface tw:font-semibold'"
                                 class="ui-focus-ring tw:border-0 tw:h-full tw:w-20 tw:flex tw:items-center tw:justify-center tw:text-ui-xs tw:rounded-ui-sm tw:transition-colors tw:cursor-pointer"
                                 :aria-pressed="mode === 'monthly'"
                             >
@@ -147,7 +147,7 @@
                     </div>
 
                     {{-- Secondary: Ready to Pay Saat Ini --}}
-                    <div class="tw:p-4 tw:rounded-ui-md tw:border tw:border-outline-variant tw:bg-surface-container">
+                    <div class="tw:p-4 tw:rounded-ui-md tw:border tw:border-outline-variant tw:bg-surface-low">
                         <div class="tw:flex tw:items-center tw:justify-between tw:mb-1">
                             <span class="tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant tw:tracking-wide tw:uppercase">{{ __('finance.review.current_ready') }}</span>
                             <x-ui.icon name="badge-check" class="tw:text-success" size="sm" />
@@ -163,7 +163,7 @@
                     </div>
 
                     {{-- Additional: Invoice Masuk Periode --}}
-                    <div class="tw:p-4 tw:rounded-ui-md tw:border tw:border-outline-variant tw:bg-surface-container">
+                    <div class="tw:p-4 tw:rounded-ui-md tw:border tw:border-outline-variant tw:bg-surface-low">
                         <div class="tw:flex tw:items-center tw:justify-between tw:mb-1">
                             <span class="tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant tw:tracking-wide tw:uppercase">{{ __('finance.labels.period_invoices') }}</span>
                             <x-ui.icon name="inbox" class="tw:text-info" size="sm" />

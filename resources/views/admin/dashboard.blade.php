@@ -13,7 +13,7 @@
 
     <x-ui.dashboard-layout audience="admin">
         <x-slot:summary>
-            <section class="tw:rounded-ui-sm tw:border tw:border-outline tw:bg-surface-container tw:overflow-hidden" aria-labelledby="admin-summary-title">
+            <section class="tw:rounded-ui-md tw:border tw:border-outline tw:bg-surface tw:shadow-ui-surface tw:overflow-hidden" aria-labelledby="admin-summary-title">
                 <h2 id="admin-summary-title" class="tw:sr-only">{{ __('admin.copy.operational_summary') }}</h2>
                 <dl class="tw:m-0 tw:grid tw:grid-cols-2 tw:lg:grid-cols-4">
                     <div class="tw:border-b tw:border-r tw:border-outline-variant tw:p-4 tw:lg:border-b-0">

@@ -4,6 +4,7 @@ namespace Tests\Unit\Services\Pricing;
 
 use App\Models\AnnualExchangeRate;
 use App\Models\ExchangeRate;
+use App\Models\HistoricalBenchmarkLine;
 use App\Models\MaterialMaster;
 use App\Models\Period;
 use App\Models\PrItemAward;
@@ -671,5 +672,118 @@ class HistoricalReferencePriceServiceTest extends TestCase
         ])->save();
 
         return [$po, $quotation, $quotationItem];
+    }
+
+    public function test_imported_benchmark_lines_combine_with_portal_pos_and_count_distinct_pos_accurately(): void
+    {
+        $rule = $this->rules->where('category_key', '1-15')->firstOrFail();
+
+        // Portal PO: 10 kg @ 100 IDR/kg = 1,000 IDR
+        $this->createHistoricalPo(
+            material: $this->materialA,
+            shape: 'Flat',
+            thickness: 10,
+            pricePerKg: '100.0000',
+            kg: '10.0000',
+            currency: 'IDR',
+            createdAt: '2026-02-01 10:00:00'
+        );
+
+        // Imported PO 1 (two lines on same PO number): 10 kg @ 200 IDR/kg + 20 kg @ 250 IDR/kg = 7,000 IDR
+        // Note: 2026-01-01 00:00:00 WIB = 2025-12-31 17:00:00 UTC -> must still resolve to year 2026 and month 1!
+        HistoricalBenchmarkLine::create([
+            'po_number' => 'PO-IMP-JAN01',
+            'po_number_normalized' => 'PO-IMP-JAN01',
+            'line_no' => 1,
+            'po_date' => '2026-01-01',
+            'po_datetime_utc' => '2025-12-31 17:00:00',
+            'po_year' => 2026,
+            'supplier_name' => 'Legacy Supplier One',
+            'material_master_id' => $this->materialA->id,
+            'material_code_snapshot' => $this->materialA->material_code,
+            'shape' => 'Flat',
+            'key_dimension' => '10.0000',
+            'rounded_dimension' => 10,
+            'ordered_weight_kg' => '10.0000',
+            'currency' => 'IDR',
+            'price_per_kg' => '200.0000',
+            'created_by' => $this->purchasing->id,
+            'updated_by' => $this->purchasing->id,
+        ]);
+
+        HistoricalBenchmarkLine::create([
+            'po_number' => 'PO-IMP-JAN01',
+            'po_number_normalized' => 'PO-IMP-JAN01',
+            'line_no' => 2,
+            'po_date' => '2026-01-01',
+            'po_datetime_utc' => '2025-12-31 17:00:00',
+            'po_year' => 2026,
+            'supplier_name' => 'Legacy Supplier One',
+            'material_master_id' => $this->materialA->id,
+            'material_code_snapshot' => $this->materialA->material_code,
+            'shape' => 'Flat',
+            'key_dimension' => '10.0000',
+            'rounded_dimension' => 10,
+            'ordered_weight_kg' => '20.0000',
+            'currency' => 'IDR',
+            'price_per_kg' => '250.0000',
+            'created_by' => $this->purchasing->id,
+            'updated_by' => $this->purchasing->id,
+        ]);
+
+        // Imported PO 2 (later in March 2026): 10 kg @ 300 IDR/kg = 3,000 IDR
+        HistoricalBenchmarkLine::create([
+            'po_number' => 'PO-IMP-MAR15',
+            'po_number_normalized' => 'PO-IMP-MAR15',
+            'line_no' => 1,
+            'po_date' => '2026-03-15',
+            'po_datetime_utc' => '2026-03-14 17:00:00',
+            'po_year' => 2026,
+            'supplier_name' => 'Legacy Supplier Two',
+            'material_master_id' => $this->materialA->id,
+            'material_code_snapshot' => $this->materialA->material_code,
+            'shape' => 'Flat',
+            'key_dimension' => '12.5000',
+            'rounded_dimension' => 13,
+            'ordered_weight_kg' => '10.0000',
+            'currency' => 'IDR',
+            'price_per_kg' => '300.0000',
+            'created_by' => $this->purchasing->id,
+            'updated_by' => $this->purchasing->id,
+        ]);
+
+        // Total = 11,000 IDR / 50 kg = 220.0000 IDR/kg across 4 lines and 3 distinct POs
+        $result = $this->service->calculate(
+            materialMasterId: $this->materialA->id,
+            shape: 'Flat',
+            rule: $rule,
+            targetCurrency: 'IDR',
+            benchmarkYear: 2026,
+            historyAsOfAt: '2026-12-31 23:59:59'
+        );
+
+        $this->assertTrue($result->isMatched());
+        $this->assertSame('220.0000', $result->weightedAveragePricePerKg);
+        $this->assertSame('100.0000', $result->lowestPricePerKg);
+        $this->assertSame('300.0000', $result->highestPricePerKg);
+        $this->assertSame('300.0000', $result->lastPurchasePricePerKg);
+        $this->assertSame(4, $result->lineCount);
+        $this->assertSame(3, $result->poCount);
+
+        // Month 1 filter (January 2026 WIB) matches PO-IMP-JAN01 stored at 2025-12-31 17:00:00 UTC
+        $janResult = $this->service->calculate(
+            materialMasterId: $this->materialA->id,
+            shape: 'Flat',
+            rule: $rule,
+            targetCurrency: 'IDR',
+            benchmarkYear: 2026,
+            historyAsOfAt: '2026-12-31 23:59:59',
+            benchmarkMonth: 1
+        );
+
+        $this->assertTrue($janResult->isMatched());
+        $this->assertSame(2, $janResult->lineCount);
+        $this->assertSame(1, $janResult->poCount);
+        $this->assertSame('233.3333', $janResult->weightedAveragePricePerKg);
     }
 }

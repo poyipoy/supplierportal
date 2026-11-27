@@ -1339,7 +1339,7 @@
                     const item = document.createElement('button');
 
                     item.type = 'button';
-                    item.className = 'notification-item ui-focus-ring tw:block tw:w-full tw:text-start tw:bg-surface-container-low';
+                    item.className = 'notification-item ui-focus-ring tw:block tw:w-full tw:text-start tw:bg-surface-low';
                     item.dataset.notificationItem = '';
                     item.dataset.notificationCategory = category;
                     item.dataset.notificationUnread = '1';

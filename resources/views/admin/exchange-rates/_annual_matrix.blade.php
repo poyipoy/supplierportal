@@ -138,7 +138,7 @@
                 <caption class="tw:sr-only">{{ __('annual_rates.description') }}</caption>
                 <thead>
                     <tr>
-                        <th scope="col" class="tw:sticky tw:left-0 tw:z-sticky tw:min-w-24 tw:border-r tw:border-outline-variant tw:bg-surface">{{ __('admin.copy.currency') }}</th>
+                        <th scope="col" class="tw:sticky tw:left-0 tw:z-sticky tw:min-w-24 tw:border-r tw:border-outline-variant tw:bg-[var(--ui-table-header-bg)]">{{ __('admin.copy.currency') }}</th>
                         @foreach($annualMatrixYears as $matrixYear)
                             <th scope="col" data-annual-year="{{ $matrixYear }}" class="tw:text-end tw:min-w-36 {{ $annualEditing && $annualEditYear === (int) $matrixYear ? 'tw:bg-primary-container tw:text-on-primary-container' : '' }}">
                                 @if($annualManagement)
@@ -182,7 +182,7 @@
                 @if($annualManagement)
                     <tfoot>
                         <tr>
-                            <th scope="row" class="tw:sticky tw:left-0 tw:z-sticky tw:border-r tw:border-outline-variant tw:bg-surface">{{ __('annual_rates.actions') }}</th>
+                            <th scope="row" class="tw:sticky tw:left-0 tw:z-sticky tw:border-r tw:border-outline-variant tw:bg-surface-low">{{ __('annual_rates.actions') }}</th>
                             @foreach($annualMatrixYears as $matrixYear)
                                 <td class="tw:text-end {{ $annualEditing && $annualEditYear === (int) $matrixYear ? 'tw:bg-primary-container tw:text-on-primary-container' : '' }}">
                                     @if($annualEditing && $annualEditYear === (int) $matrixYear)

@@ -21,6 +21,16 @@
                     <span>{{ __($rp.'.rules.import_excel') }}</span>
                 </x-ui.button>
             </span>
+            <span data-reference-prices-benchmark-action @if($activeTab !== 'benchmark' && $activeTab !== 'historical') hidden @endif class="tw:inline-flex tw:items-center tw:gap-2">
+                <x-ui.button variant="outline" size="sm" :href="route($prefix.'.benchmark.template')" download data-no-loader>
+                    <x-ui.icon name="download" size="sm" />
+                    <span>{{ __($rp.'.historical_import.download_template') }}</span>
+                </x-ui.button>
+                <x-ui.button type="button" size="sm" variant="primary" data-ui-modal-open="#benchmarkImportModal">
+                    <x-ui.icon name="upload" size="sm" />
+                    <span>{{ __($rp.'.historical_import.import_button') }}</span>
+                </x-ui.button>
+            </span>
             <span data-reference-prices-legacy-action @if($activeTab !== 'legacy') hidden @endif>
                 <x-ui.button type="button" size="sm" variant="primary" data-ui-modal-open="#referencePriceCreateModal">
                     <x-ui.icon name="plus" size="sm" />
@@ -31,7 +41,7 @@
     </x-ui.page-header>
 
     <div id="referencePricesWorkspace" class="tw:grid tw:min-w-0 tw:gap-6" data-server-tabs-container>
-        <nav class="tw:inline-flex tw:w-full tw:sm:w-auto tw:gap-1.5 tw:overflow-x-auto tw:rounded-ui-md tw:border tw:border-outline tw:bg-surface-container tw:p-1.5 tw:shadow-xs" data-server-tabs-nav aria-label="{{ __($rp.'.title') }}">
+        <nav class="tw:inline-flex tw:w-full tw:sm:w-auto tw:gap-1.5 tw:overflow-x-auto tw:rounded-ui-md tw:border tw:border-outline tw:bg-surface-container tw:p-1.5 tw:shadow-ui-surface" data-server-tabs-nav aria-label="{{ __($rp.'.title') }}">
             @include('purchasing.reference-prices._tabs')
         </nav>
         <div class="tw:min-w-0 tw:max-w-full" data-server-tabs-content>
@@ -66,6 +76,89 @@
         </div>
     </form>
 </x-ui.dialog>
+
+{{-- MODAL: Import Historical Benchmark Prices --}}
+<dialog
+    class="ui-native-dialog"
+    id="benchmarkImportModal"
+    aria-labelledby="benchmarkImportModalLabel"
+    closedby="any"
+    style="--ui-dialog-max-width: 38rem;"
+>
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <form
+            method="POST"
+            action="{{ route($prefix.'.benchmark.import-preview') }}"
+            enctype="multipart/form-data"
+            class="modal-content"
+            id="benchmarkImportForm"
+            aria-labelledby="benchmarkImportModalLabel"
+            data-async-submit
+            data-async-summary-skip-file-errors="true"
+        >
+            @csrf
+            <div class="modal-header tw:items-start">
+                <div class="tw:min-w-0">
+                    <h2 class="modal-title tw:m-0 tw:text-ui-base tw:font-bold tw:leading-snug" id="benchmarkImportModalLabel">{{ __($rp.'.historical_import.dialog_title') }}</h2>
+                    <p class="tw:m-0 tw:mt-0.5 tw:text-ui-xs tw:text-on-surface-variant">{{ __($rp.'.historical_import.dialog_description') }}</p>
+                </div>
+                <button type="button" class="btn-close tw:mt-0.5 tw:shrink-0" data-ui-modal-close aria-label="{{ __($rp.'.cancel') }}"></button>
+            </div>
+            <div class="modal-body tw:grid tw:gap-3">
+                <div data-async-error-summary hidden></div>
+
+                <div class="tw:flex tw:items-center tw:justify-between tw:gap-3 tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface-container tw:px-3 tw:py-2">
+                    <span class="tw:min-w-0 tw:text-ui-xs tw:text-on-surface-variant">{{ __($rp.'.historical_import.template_callout') }}</span>
+                    <x-ui.button variant="outline" size="sm" :href="route($prefix.'.benchmark.template')" download data-no-loader class="tw:shrink-0">
+                        <x-ui.icon name="download" size="sm" />
+                        <span>{{ __($rp.'.historical_import.download_template') }}</span>
+                    </x-ui.button>
+                </div>
+
+                <div class="tw:grid tw:grid-cols-1 tw:gap-3 tw:sm:grid-cols-12 tw:items-start">
+                    <div class="tw:min-w-0 tw:sm:col-span-7">
+                        <x-ui.select name="import_mode" id="benchmarkImportMode" :label="__($rp.'.historical_import.import_mode')" required>
+                            <option value="{{ \App\Models\ReferencePriceImport::MODE_MERGE }}">{{ __($rp.'.historical_import.mode_merge') }}</option>
+                            <option value="{{ \App\Models\ReferencePriceImport::MODE_REPLACE }}">{{ __($rp.'.historical_import.mode_replace') }}</option>
+                        </x-ui.select>
+                    </div>
+                    <div class="tw:min-w-0 tw:sm:col-span-5">
+                        <x-ui.input
+                            name="sheet_name"
+                            id="benchmarkSheetName"
+                            :label="__($rp.'.historical_import.sheet_name')"
+                            :placeholder="__($rp.'.historical_import.sheet_name_placeholder')"
+                            :helper="__($rp.'.historical_import.sheet_name_help')"
+                            maxlength="50"
+                            autocorrect="off"
+                            autocapitalize="none"
+                            spellcheck="false"
+                        />
+                    </div>
+                </div>
+
+                <x-ui.file-upload
+                    name="file"
+                    id="benchmarkUploadFile"
+                    class="tw:h-auto"
+                    :label="__($rp.'.historical_import.upload_file')"
+                    :helper="__($rp.'.historical_import.upload_helper')"
+                    :max-size-mb="10"
+                    accept=".xlsx,.csv"
+                    :allowed-extensions="['xlsx', 'csv']"
+                    required
+                />
+            </div>
+            <div class="modal-footer">
+                <x-ui.button type="button" variant="outline" size="sm" data-ui-modal-close>{{ __($rp.'.cancel') }}</x-ui.button>
+                <x-ui.button type="submit" variant="primary" size="sm">
+                    <x-ui.icon name="file-search" size="sm" />
+                    <span>{{ __($rp.'.historical_import.preview_button') }}</span>
+                </x-ui.button>
+            </div>
+        </form>
+    </div>
+</dialog>
 
 {{-- MODAL: Add Category --}}
 <dialog class="ui-native-dialog" id="referencePriceAddCategoryModal" aria-labelledby="addCatModalLabel" closedby="any">
@@ -388,12 +481,60 @@
             }
         });
 
+        // Event delegation for Delete Imported Historical Benchmark line trigger
+        document.addEventListener('click', function (event) {
+            const trigger = event.target.closest('[data-delete-benchmark-trigger]');
+            if (!trigger) return;
+            event.preventDefault();
+
+            const form = trigger.closest('form[data-delete-benchmark-form]');
+            if (!form) return;
+
+            const po = form.dataset.poNumber || '';
+            const material = form.dataset.materialName || '';
+            const title = @js(__('materials.reference_prices.historical_import.delete_confirm_title', ['po' => '__PO__'])).replace('__PO__', po);
+            const text = @js(__('materials.reference_prices.historical_import.delete_confirm_text', ['po' => '__PO__', 'material' => '__MATERIAL__']))
+                .replace('__PO__', po)
+                .replace('__MATERIAL__', material);
+            const confirmText = @js(__('purchasing.audit_ui.confirm_delete'));
+            const cancelText = @js(__('common.actions.cancel'));
+
+            const submitDeleteBenchmarkForm = function () {
+                if (window.AdasiButton && typeof window.AdasiButton.startLoading === 'function') {
+                    window.AdasiButton.startLoading(trigger);
+                }
+                try {
+                    if (window.parent !== window && window.parent?.location?.origin === window.location.origin) {
+                        window.parent.AdasiWorkspaceShell?.notifyMutation?.(window);
+                    }
+                } catch {}
+                HTMLFormElement.prototype.submit.call(form);
+            };
+
+            if (window.AdasiAlert && typeof window.AdasiAlert.confirmDanger === 'function') {
+                window.AdasiAlert.confirmDanger({
+                    title: title,
+                    text: text,
+                    confirmText: confirmText,
+                    cancelText: cancelText,
+                }).then(function (result) {
+                    if (result && result.isConfirmed) {
+                        submitDeleteBenchmarkForm();
+                    }
+                });
+            } else if (window.confirm(title + '\n\n' + text)) {
+                submitDeleteBenchmarkForm();
+            }
+        });
+
         // React to server-tabs update to toggle action buttons in header
         document.addEventListener('adasi:server-tabs:updated', function (event) {
             const tab = event.detail?.tab;
             const rulesAction = document.querySelector('[data-reference-prices-rules-action]');
+            const benchmarkAction = document.querySelector('[data-reference-prices-benchmark-action]');
             const legacyAction = document.querySelector('[data-reference-prices-legacy-action]');
             if (rulesAction) rulesAction.hidden = (tab !== 'rules');
+            if (benchmarkAction) benchmarkAction.hidden = (tab !== 'benchmark' && tab !== 'historical');
             if (legacyAction) legacyAction.hidden = (tab !== 'legacy');
         });
 

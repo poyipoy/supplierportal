@@ -698,7 +698,7 @@ function renderMobileMaterialCards() {
         const displayName = isUnconfigured ? '— (Belum diisi)' : matName;
 
         const card = `
-            <div class="tw:p-3.5 tw:rounded-ui-md tw:border tw:border-outline tw:bg-surface tw:shadow-xs" data-mobile-row-card="${index}">
+            <div class="tw:p-3.5 tw:rounded-ui-md tw:border tw:border-outline tw:bg-surface tw:shadow-ui-surface" data-mobile-row-card="${index}">
                 <div class="tw:flex tw:items-start tw:justify-between tw:gap-2 tw:mb-2">
                     <div class="tw:min-w-0">
                         <div class="tw:flex tw:items-center tw:gap-1.5 tw:mb-0.5">

@@ -21,6 +21,10 @@ class MasterDataAuditLog extends Model
 
     public const ENTITY_REFERENCE_PRICE_RULE = 'reference_price_rule';
 
+    public const ENTITY_HISTORICAL_BENCHMARK_LINE = 'historical_benchmark_line';
+
+    public const ENTITY_REFERENCE_PRICE_IMPORT = 'reference_price_import';
+
     public const CREATED = 'created';
 
     public const UPDATED = 'updated';
@@ -50,6 +54,8 @@ class MasterDataAuditLog extends Model
             $entity instanceof HsCodeRule => self::ENTITY_HS_RULE,
             $entity instanceof MaterialMaster => self::ENTITY_MATERIAL,
             $entity instanceof ReferencePriceRule => self::ENTITY_REFERENCE_PRICE_RULE,
+            $entity instanceof HistoricalBenchmarkLine => self::ENTITY_HISTORICAL_BENCHMARK_LINE,
+            $entity instanceof ReferencePriceImport => self::ENTITY_REFERENCE_PRICE_IMPORT,
             default => throw new InvalidArgumentException('Unsupported master data audit entity: '.$entity::class),
         };
 

@@ -34,6 +34,7 @@ class DecodeHashids
     protected const HASHED_PARAM_KEYS = [
         'procurementImport',
         'poDocumentBatch',
+        'benchmarkLine',
         'invoice',
         'preset',
         'document',

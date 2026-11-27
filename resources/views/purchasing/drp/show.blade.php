@@ -46,13 +46,13 @@
             </span>
         </x-ui.card>
         @if($batch->status === \App\Models\PaymentBatch::STATUS_PARTIALLY_PAID)
-            <x-ui.card class="tw:border-success/30 tw:bg-success/5">
+            <x-ui.card>
                 <span class="tw:text-ui-xs tw:text-success tw:font-semibold tw:block">{{ __('local_invoice.labels.paid') }}</span>
                 <span class="ui-tabular-nums tw:font-bold tw:text-ui-base tw:text-success tw:block tw:mt-1">
                     Rp {{ $regionalFormatter->money($batch->actual_paid_amount, 0) }}
                 </span>
             </x-ui.card>
-            <x-ui.card class="tw:border-warning/30 tw:bg-warning/5">
+            <x-ui.card>
                 <span class="tw:text-ui-xs tw:text-warning-container-foreground tw:font-semibold tw:block">{{ __('local_invoice.labels.remaining') }}</span>
                 <span class="ui-tabular-nums tw:font-bold tw:text-ui-base tw:text-warning-container-foreground tw:block tw:mt-1">
                     Rp {{ $regionalFormatter->money($batch->remaining_amount, 0) }}

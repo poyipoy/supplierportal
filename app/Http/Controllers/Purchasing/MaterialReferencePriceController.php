@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers\Purchasing;
 
+use App\Exports\HistoricalBenchmarkTemplateExport;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ReferencePrice\SaveMaterialReferencePriceRequest;
 use App\Http\Requests\ReferencePrice\SupersedeMaterialReferencePriceRequest;
 use App\Http\Requests\ReferencePrice\VoidMaterialReferencePriceRequest;
 use App\Models\ExchangeRate;
+use App\Models\HistoricalBenchmarkLine;
 use App\Models\MasterDataAuditLog;
 use App\Models\MaterialMaster;
 use App\Models\MaterialReferencePrice;
@@ -14,28 +16,33 @@ use App\Models\PrItem;
 use App\Models\ReferencePriceImport;
 use App\Models\ReferencePriceRule;
 use App\Services\FileSecurity\FileInspectionService;
+use App\Services\Pricing\HistoricalBenchmarkImportService;
 use App\Services\Pricing\HistoricalReferencePriceService;
 use App\Services\Pricing\MaterialReferencePriceService;
-use App\Services\Pricing\PurchaseHistoryPriceService;
 use App\Services\Pricing\ReferencePriceRuleImportService;
 use App\Services\Pricing\ReferencePriceRuleResolver;
-use App\Support\Pricing\EvaluationContext;
 use App\Support\ServerTabsResponse;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
+use Maatwebsite\Excel\Facades\Excel;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class MaterialReferencePriceController extends Controller
 {
     public function __construct(
         private readonly MaterialReferencePriceService $prices,
-        private readonly ReferencePriceRuleImportService $ruleImportService
+        private readonly ReferencePriceRuleImportService $ruleImportService,
+        private readonly HistoricalBenchmarkImportService $benchmarkImportService
     ) {}
 
     public function index(Request $request): View|JsonResponse
@@ -59,20 +66,23 @@ class MaterialReferencePriceController extends Controller
             'currency' => ['nullable', Rule::in(ExchangeRate::CURRENCIES)],
             'status' => ['nullable', Rule::in(['active', 'void', 'all'])],
             'po_status' => ['nullable', Rule::in(['completed', 'active', 'waiting_qc', 'overdue', 'all'])],
+            'source' => ['nullable', Rule::in(['all', 'portal_po', 'imported'])],
             'history_page' => ['nullable', 'integer', 'min:1'],
         ]);
         $status = $filters['status'] ?? MaterialReferencePrice::STATUS_ACTIVE;
         $poStatusFilter = $filters['po_status'] ?? 'completed';
+        $sourceFilter = $filters['source'] ?? 'all';
         $targetCurrency = $filters['currency'] ?? ExchangeRate::CURRENCY_IDR;
         $historyPage = max(1, (int) ($filters['history_page'] ?? 1));
         $historyPerPage = 25;
 
-        $historyService = app(PurchaseHistoryPriceService::class);
-        $historyResult = $historyService->lines([
+        $benchmarkService = app(HistoricalReferencePriceService::class);
+        $historyResult = $benchmarkService->paginatedBenchmarkLines([
             'search' => $filters['search'] ?? null,
             'shape' => $filters['shape'] ?? null,
             'po_status' => $poStatusFilter,
-        ], $targetCurrency, EvaluationContext::current(), $historyPage, $historyPerPage);
+            'source' => $sourceFilter,
+        ], $targetCurrency, $historyPage, $historyPerPage);
 
         $historicalLines = new LengthAwarePaginator(
             $historyResult['rows'],
@@ -85,6 +95,27 @@ class MaterialReferencePriceController extends Controller
                 'query' => array_merge($request->query(), ['tab' => 'benchmark']),
             ]
         );
+
+        $benchmarkPreview = null;
+        $benchmarkImportId = null;
+        $benchmarkImportFilename = null;
+        $sessionBenchmarkImportId = session('benchmark_import_id');
+        if ($sessionBenchmarkImportId !== null) {
+            $pendingBenchmarkImport = ReferencePriceImport::query()
+                ->whereKey((int) $sessionBenchmarkImportId)
+                ->where('import_type', ReferencePriceImport::TYPE_HISTORICAL_BENCHMARK)
+                ->where('uploaded_by', $request->user()->id)
+                ->where('status', ReferencePriceImport::STATUS_PREVIEWED)
+                ->first();
+
+            if ($pendingBenchmarkImport instanceof ReferencePriceImport) {
+                $benchmarkPreview = $pendingBenchmarkImport->preview_diff;
+                $benchmarkImportId = $pendingBenchmarkImport->id;
+                $benchmarkImportFilename = $pendingBenchmarkImport->source_file_name;
+            } else {
+                session()->forget('benchmark_import_id');
+            }
+        }
 
         $legacyPrices = MaterialReferencePrice::query()
             ->with(['materialMaster:id,material_code', 'creator:id,name', 'voider:id,name'])
@@ -117,8 +148,9 @@ class MaterialReferencePriceController extends Controller
             'legacyPrices' => $legacyPrices,
             'historicalLines' => $historicalLines,
             'poStatusFilter' => $poStatusFilter,
+            'sourceFilter' => $sourceFilter,
             'targetCurrency' => $targetCurrency,
-            'filters' => [...$filters, 'status' => $status, 'po_status' => $poStatusFilter],
+            'filters' => [...$filters, 'status' => $status, 'po_status' => $poStatusFilter, 'source' => $sourceFilter],
             'shapes' => [PrItem::SHAPE_FLAT, PrItem::SHAPE_ROUND, PrItem::SHAPE_HOLLOW],
             'currencies' => ExchangeRate::CURRENCIES,
             'materialOptions' => $materialOptions,
@@ -127,6 +159,9 @@ class MaterialReferencePriceController extends Controller
             'preview' => session('import_preview'),
             'importId' => session('import_id'),
             'importFilename' => session('import_filename'),
+            'benchmarkPreview' => $benchmarkPreview,
+            'benchmarkImportId' => $benchmarkImportId,
+            'benchmarkImportFilename' => $benchmarkImportFilename,
         ];
 
         if (ServerTabsResponse::wants($request)) {
@@ -211,6 +246,7 @@ class MaterialReferencePriceController extends Controller
         $preview = $this->ruleImportService->buildPreview($parsed, $mode);
 
         $import = ReferencePriceImport::create([
+            'import_type' => ReferencePriceImport::TYPE_RULES,
             'uploaded_by' => $request->user()->id,
             'source_file_name' => $file->getClientOriginalName(),
             'private_storage_path' => $path,
@@ -247,7 +283,7 @@ class MaterialReferencePriceController extends Controller
 
         $import = ReferencePriceImport::findOrFail($validated['import_id']);
 
-        if ($import->status !== ReferencePriceImport::STATUS_PREVIEWED) {
+        if ($import->import_type !== ReferencePriceImport::TYPE_RULES || $import->status !== ReferencePriceImport::STATUS_PREVIEWED) {
             $msg = 'Import session has expired or was already confirmed.';
             if ($request->wantsJson()) {
                 return response()->json(['success' => false, 'message' => $msg], 422);
@@ -278,6 +314,269 @@ class MaterialReferencePriceController extends Controller
 
         return redirect()->route($this->resolveIndexRouteName($request), ['tab' => 'rules'])
             ->with('success', $msg);
+    }
+
+    public function downloadBenchmarkTemplate(Request $request): BinaryFileResponse
+    {
+        Gate::authorize('create', HistoricalBenchmarkLine::class);
+
+        return Excel::download(
+            new HistoricalBenchmarkTemplateExport,
+            'historical-benchmark-reference-prices-template.xlsx'
+        );
+    }
+
+    public function benchmarkImportPreview(Request $request): JsonResponse|RedirectResponse
+    {
+        Gate::authorize('create', HistoricalBenchmarkLine::class);
+
+        $validated = $request->validate([
+            'file' => ['required', 'file', 'mimes:xlsx,csv,txt', 'max:10240'],
+            'import_mode' => ['required', Rule::in([ReferencePriceImport::MODE_MERGE, ReferencePriceImport::MODE_REPLACE])],
+            'sheet_name' => ['nullable', 'string', 'max:50'],
+        ]);
+
+        $file = $request->file('file');
+        $clientExtension = strtolower(trim((string) $file->getClientOriginalExtension()));
+        if (! in_array($clientExtension, ['xlsx', 'csv'], true)) {
+            throw ValidationException::withMessages([
+                'file' => [__('materials.reference_prices.historical_import.unsupported_extension')],
+            ]);
+        }
+
+        app(FileInspectionService::class)->inspectUpload($file, 'spreadsheet_import', 'file');
+
+        $sourcePath = $file->getPathname();
+        if ($sourcePath === '' || ! is_file($sourcePath) || ! is_readable($sourcePath)) {
+            $sourcePath = $file->getRealPath() ?: '';
+        }
+
+        if ($sourcePath === '' || ! is_file($sourcePath) || ! is_readable($sourcePath)) {
+            throw ValidationException::withMessages([
+                'file' => [__('materials.reference_prices.historical_import.file_unreadable')],
+            ]);
+        }
+
+        $relativeDir = 'private/reference_price_imports';
+        Storage::makeDirectory($relativeDir);
+        $fileName = $file->hashName();
+        $path = $relativeDir.'/'.$fileName;
+        $fullPath = Storage::path($path);
+
+        if (! copy($sourcePath, $fullPath)) {
+            throw ValidationException::withMessages([
+                'file' => [__('materials.reference_prices.historical_import.file_unreadable')],
+            ]);
+        }
+
+        $fileHash = hash_file('sha256', $fullPath);
+        if (! is_string($fileHash) || $fileHash === '') {
+            Storage::delete($path);
+            throw ValidationException::withMessages([
+                'file' => [__('materials.reference_prices.historical_import.file_unreadable')],
+            ]);
+        }
+
+        $sheetName = isset($validated['sheet_name']) && trim((string) $validated['sheet_name']) !== ''
+            ? trim((string) $validated['sheet_name'])
+            : null;
+        $mode = $validated['import_mode'];
+
+        try {
+            $analysis = $this->benchmarkImportService->analyzeFile($fullPath, $mode, $sheetName, $clientExtension);
+        } catch (\InvalidArgumentException $e) {
+            Storage::delete($path);
+            throw ValidationException::withMessages([
+                'file' => [$e->getMessage()],
+            ]);
+        } catch (QueryException|\Error $e) {
+            Storage::delete($path);
+            throw $e;
+        } catch (\Throwable $e) {
+            Storage::delete($path);
+            report($e);
+            throw ValidationException::withMessages([
+                'file' => [__('purchasing.copy.the_spreadsheet_could_not_be_read_verify_the_file_and_try_again')],
+            ]);
+        }
+
+        $stalePathsToDelete = [];
+        try {
+            $import = DB::transaction(function () use ($request, $file, $path, $fileHash, $analysis, $mode, &$stalePathsToDelete): ReferencePriceImport {
+                $staleImports = ReferencePriceImport::query()
+                    ->where('import_type', ReferencePriceImport::TYPE_HISTORICAL_BENCHMARK)
+                    ->where('uploaded_by', $request->user()->id)
+                    ->where('status', ReferencePriceImport::STATUS_PREVIEWED)
+                    ->lockForUpdate()
+                    ->get();
+
+                foreach ($staleImports as $stale) {
+                    if (is_string($stale->private_storage_path) && $stale->private_storage_path !== '') {
+                        $stalePathsToDelete[] = $stale->private_storage_path;
+                    }
+                    $stale->update(['status' => ReferencePriceImport::STATUS_REJECTED]);
+                }
+
+                return ReferencePriceImport::create([
+                    'import_type' => ReferencePriceImport::TYPE_HISTORICAL_BENCHMARK,
+                    'uploaded_by' => $request->user()->id,
+                    'source_file_name' => mb_substr((string) $file->getClientOriginalName(), 0, 250),
+                    'private_storage_path' => $path,
+                    'source_file_hash' => $fileHash,
+                    'source_sheet' => (string) ($analysis['preview']['sheet_name'] ?? ''),
+                    'import_mode' => $mode,
+                    'status' => ReferencePriceImport::STATUS_PREVIEWED,
+                    'parsed_count' => $analysis['parsed_count'],
+                    'preview_diff' => $analysis['preview'],
+                ]);
+            });
+        } catch (\Throwable $e) {
+            Storage::delete($path);
+            throw $e;
+        }
+
+        foreach ($stalePathsToDelete as $stalePath) {
+            try {
+                Storage::delete($stalePath);
+            } catch (\Throwable $e) {
+                report($e);
+            }
+        }
+
+        session()->put('benchmark_import_id', $import->id);
+
+        $redirectUrl = route($this->resolveIndexRouteName($request), ['tab' => 'benchmark']);
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'redirect' => $redirectUrl,
+                'success' => true,
+                'import_id' => $import->id,
+                'preview' => $analysis['preview'],
+            ]);
+        }
+
+        return redirect()->to($redirectUrl);
+    }
+
+    public function benchmarkImportConfirm(Request $request): JsonResponse|RedirectResponse
+    {
+        Gate::authorize('create', HistoricalBenchmarkLine::class);
+
+        $validated = $request->validate([
+            'import_id' => ['required', 'integer', 'exists:reference_price_imports,id'],
+        ]);
+
+        $import = ReferencePriceImport::findOrFail((int) $validated['import_id']);
+
+        try {
+            $counts = $this->benchmarkImportService->commit($import, $request->user());
+        } catch (\InvalidArgumentException $e) {
+            if ($request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
+            }
+
+            return redirect()->route($this->resolveIndexRouteName($request), ['tab' => 'benchmark'])
+                ->with('error', $e->getMessage());
+        }
+
+        session()->forget('benchmark_import_id');
+
+        $totalApplied = (int) ($counts['new'] ?? 0) + (int) ($counts['updated'] ?? 0) + (int) ($counts['unchanged'] ?? 0);
+        $msg = __('materials.reference_prices.historical_import.import_success', [
+            'count' => $totalApplied,
+        ]);
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => $msg,
+                'counts' => $counts,
+            ]);
+        }
+
+        return redirect()->route($this->resolveIndexRouteName($request), ['tab' => 'benchmark'])
+            ->with('success', $msg);
+    }
+
+    public function benchmarkImportCancel(Request $request): JsonResponse|RedirectResponse
+    {
+        Gate::authorize('create', HistoricalBenchmarkLine::class);
+
+        $validated = $request->validate([
+            'import_id' => ['nullable', 'integer'],
+        ]);
+
+        $targetId = $validated['import_id'] ?? session('benchmark_import_id');
+        $pathToDelete = null;
+        if ($targetId !== null) {
+            DB::transaction(function () use ($request, $targetId, &$pathToDelete): void {
+                $pending = ReferencePriceImport::query()
+                    ->whereKey((int) $targetId)
+                    ->where('import_type', ReferencePriceImport::TYPE_HISTORICAL_BENCHMARK)
+                    ->where('uploaded_by', $request->user()->id)
+                    ->where('status', ReferencePriceImport::STATUS_PREVIEWED)
+                    ->lockForUpdate()
+                    ->first();
+
+                if ($pending instanceof ReferencePriceImport) {
+                    if (is_string($pending->private_storage_path) && $pending->private_storage_path !== '') {
+                        $pathToDelete = $pending->private_storage_path;
+                    }
+                    $pending->update(['status' => ReferencePriceImport::STATUS_REJECTED]);
+                }
+            });
+        }
+
+        if ($pathToDelete !== null) {
+            try {
+                Storage::delete($pathToDelete);
+            } catch (\Throwable $e) {
+                report($e);
+            }
+        }
+
+        session()->forget('benchmark_import_id');
+
+        if ($request->wantsJson()) {
+            return response()->json(['success' => true]);
+        }
+
+        return redirect()->route($this->resolveIndexRouteName($request), ['tab' => 'benchmark']);
+    }
+
+    public function destroyBenchmarkLine(Request $request, HistoricalBenchmarkLine $benchmarkLine): JsonResponse|RedirectResponse
+    {
+        Gate::authorize('delete', $benchmarkLine);
+
+        Cache::lock(HistoricalBenchmarkImportService::MUTATION_LOCK_KEY, 30)->block(10, function () use ($request, $benchmarkLine): void {
+            DB::transaction(function () use ($request, $benchmarkLine): void {
+                $locked = HistoricalBenchmarkLine::query()
+                    ->whereKey($benchmarkLine->id)
+                    ->lockForUpdate()
+                    ->first();
+
+                if (! $locked instanceof HistoricalBenchmarkLine) {
+                    abort(404);
+                }
+
+                $before = $locked->getAttributes();
+                $locked->delete();
+
+                MasterDataAuditLog::record($locked, MasterDataAuditLog::DELETED, $before, null, $request->user());
+            });
+        });
+
+        $this->benchmarkImportService->resetBenchmarkCaches();
+
+        $message = __('materials.reference_prices.historical_import.deleted_success');
+
+        if ($request->wantsJson()) {
+            return response()->json(['success' => true, 'message' => $message]);
+        }
+
+        return redirect()->route($this->resolveIndexRouteName($request), ['tab' => 'benchmark'])
+            ->with('success', $message);
     }
 
     public function saveCategory(Request $request): RedirectResponse
